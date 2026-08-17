@@ -1,0 +1,1228 @@
+// UAcademic — data model
+// MySQL 8 / InnoDB / utf8mb4_unicode_ci
+//
+// Conventions (see CLAUDE.md §5):
+//   - Models are PascalCase and map to snake_case tables.
+//   - Fields are camelCase and map to snake_case columns.
+//   - IDs are UUIDv7 stored as CHAR(36): time-ordered, keeps InnoDB clustered-index
+//     inserts sequential while staying opaque to clients.
+//   - Clock times are CHAR(5) "HH:MM" in center-local time; domain logic in
+//     packages/shared converts them to minutes-since-midnight.
+//   - weekday is ISO-8601: 1 = Monday … 7 = Sunday.
+//   - Hours are DECIMAL(6,2). Never floats.
+//
+// Multi-tenancy (R2): every business table carries centerId. The documented
+// exceptions — global by nature, never queried as tenant data — are:
+//   University, EntraTenant, Center, User, UserCenterRole, NotificationPref,
+//   PushSubscription, CalendarFeedToken, CalendarConnection, CalendarEventMap,
+//   AppVersion, Job. Of these, the user-owned ones are always scoped by userId.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+  runtime  = "nodejs"
+}
+
+// Prisma 7: the connection URL lives in prisma.config.ts (driver adapter),
+// never in the schema. See packages/db/prisma.config.ts.
+datasource db {
+  provider = "mysql"
+}
+
+// ───────────────────────────────────────────────────────────────────────────────
+// Enums
+// ───────────────────────────────────────────────────────────────────────────────
+
+enum Locale {
+  ca
+  es
+  en
+}
+
+enum ThemePreference {
+  light
+  dark
+  system
+}
+
+enum Role {
+  SUPERADMIN
+  CENTER_ADMIN
+  COORDINATOR
+  TEACHER
+}
+
+enum UserStatus {
+  active
+  invited
+  suspended
+}
+
+enum TenantStatus {
+  active
+  suspended
+}
+
+enum AcademicYearStatus {
+  draft
+  active
+  closed
+}
+
+enum DegreeLevel {
+  bachelor
+  master
+  doctorate
+  own_degree
+}
+
+enum SubjectType {
+  basic
+  compulsory
+  elective
+  practicum
+  final_project
+}
+
+enum Term {
+  t1
+  t2
+  t3
+  annual
+}
+
+enum TeachingLanguage {
+  ca
+  es
+  en
+  other
+}
+
+enum GroupType {
+  theory
+  seminar
+  lab
+  practicum
+  tutoring
+}
+
+enum SpaceType {
+  classroom
+  seminar_room
+  computer_lab
+  lab
+  auditorium
+  other
+}
+
+enum TeacherCategory {
+  full_professor
+  associate_professor
+  assistant_professor
+  lecturer
+  adjunct
+  visiting
+  external
+}
+
+enum Dedication {
+  full_time
+  part_time
+  hourly
+}
+
+enum ReductionStatus {
+  pending
+  approved
+  rejected
+}
+
+enum AvailabilityLevel {
+  preferred
+  available
+  avoid
+  unavailable
+}
+
+enum ScheduleVersionStatus {
+  draft
+  in_review
+  published
+  archived
+}
+
+enum Recurrence {
+  weekly
+  biweekly
+  once
+}
+
+enum AssignmentConcept {
+  lecture
+  tutoring
+  coordination
+  tfg
+  other
+}
+
+enum ChangeRequestType {
+  session_swap
+  session_move
+  session_cancel
+  space_change
+  substitution
+  availability_change
+}
+
+enum ChangeRequestStatus {
+  pending
+  approved
+  rejected
+  withdrawn
+}
+
+enum AbsenceType {
+  sick_leave
+  personal_leave
+  conference
+  training
+  other
+}
+
+enum AbsenceStatus {
+  requested
+  approved
+  rejected
+  cancelled
+}
+
+enum ConversationType {
+  direct
+  group
+  subject
+  announcement
+}
+
+enum CalendarProvider {
+  microsoft
+  google
+}
+
+enum SyncDirection {
+  push
+  pull
+  both
+}
+
+enum ConnectionStatus {
+  active
+  expired
+  revoked
+  error
+}
+
+enum BusySlotSource {
+  microsoft
+  google
+  manual
+}
+
+enum DocumentScope {
+  university
+  center
+  degree
+  subject
+}
+
+enum DocumentType {
+  regulation
+  teaching_plan
+  agreement
+  guide
+  minutes
+  other
+}
+
+enum DocumentVisibility {
+  public
+  center
+  coordinators
+  admins
+}
+
+enum DocumentStatus {
+  uploaded
+  processing
+  indexed
+  failed
+  archived
+}
+
+enum SettingsSource {
+  manual
+  ai_extraction
+}
+
+enum ExtractionStatus {
+  pending
+  accepted
+  edited
+  rejected
+  not_found
+}
+
+enum AuditSource {
+  user
+  ai
+  system
+}
+
+enum AppVersionStatus {
+  available
+  applying
+  applied
+  failed
+  rolled_back
+}
+
+enum JobStatus {
+  pending
+  running
+  succeeded
+  failed
+  dead
+}
+
+// ───────────────────────────────────────────────────────────────────────────────
+// Organization
+// ───────────────────────────────────────────────────────────────────────────────
+
+model University {
+  id           String   @id @default(uuid(7)) @db.Char(36)
+  name         String   @db.VarChar(200)
+  logoUrl      String?  @map("logo_url") @db.VarChar(500)
+  settingsJson Json?    @map("settings_json")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  centers Center[]
+
+  @@map("universities")
+}
+
+/// Microsoft Entra ID tenants explicitly registered by a SUPERADMIN.
+/// R3: the `tid` claim of every token is validated against this table.
+model EntraTenant {
+  id          String       @id @default(uuid(7)) @db.Char(36)
+  /// Microsoft tenant GUID (the `tid` claim).
+  tenantId    String       @unique @map("tenant_id") @db.Char(36)
+  displayName String       @map("display_name") @db.VarChar(200)
+  issuer      String?      @db.VarChar(300)
+  status      TenantStatus @default(active)
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  centers Center[]
+
+  @@map("entra_tenants")
+}
+
+model Center {
+  id            String   @id @default(uuid(7)) @db.Char(36)
+  universityId  String   @map("university_id") @db.Char(36)
+  name          String   @db.VarChar(200)
+  code          String   @db.VarChar(32)
+  entraTenantId String?  @map("entra_tenant_id") @db.Char(36)
+  timezone      String   @default("Europe/Madrid") @db.VarChar(64)
+  localeDefault Locale   @default(ca) @map("locale_default")
+  settingsJson  Json?    @map("settings_json")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  university  University   @relation(fields: [universityId], references: [id], onDelete: Restrict)
+  entraTenant EntraTenant? @relation(fields: [entraTenantId], references: [tenantId], onDelete: SetNull)
+
+  academicYears          AcademicYear[]
+  userRoles              UserCenterRole[]
+  degrees                Degree[]
+  subjects               Subject[]
+  subjectCoordinators    SubjectCoordinator[]
+  groups                 Group[]
+  teacherProfiles        TeacherProfile[]
+  teacherReductions      TeacherReduction[]
+  teacherSkills          TeacherSkill[]
+  availability           Availability[]
+  availabilityExceptions AvailabilityException[]
+  spaces                 Space[]
+  scheduleVersions       ScheduleVersion[]
+  sessions               ClassSession[]
+  assignments            Assignment[]
+  changeRequests         ChangeRequest[]
+  absences               Absence[]
+  conversations          Conversation[]
+  messages               Message[]
+  notifications          Notification[]
+  documents              Document[]
+  documentChunks         DocumentChunk[]
+  settingsVersions       CenterSettingsVersion[]
+  settingExtractions     SettingExtraction[]
+  settingProvenance      SettingProvenance[]
+  aiInteractions         AiInteraction[]
+  auditLog               AuditLog[]
+
+  @@unique([universityId, code])
+  @@index([entraTenantId])
+  @@map("centers")
+}
+
+model AcademicYear {
+  id        String             @id @default(uuid(7)) @db.Char(36)
+  centerId  String             @map("center_id") @db.Char(36)
+  name      String             @db.VarChar(32)
+  startDate DateTime           @map("start_date") @db.Date
+  endDate   DateTime           @map("end_date") @db.Date
+  status    AcademicYearStatus @default(draft)
+  createdAt DateTime           @default(now()) @map("created_at")
+  updatedAt DateTime           @updatedAt @map("updated_at")
+
+  center Center @relation(fields: [centerId], references: [id], onDelete: Cascade)
+
+  subjects         Subject[]
+  teacherProfiles  TeacherProfile[]
+  scheduleVersions ScheduleVersion[]
+  assignments      Assignment[]
+  documents        Document[]
+  settingsVersions CenterSettingsVersion[]
+
+  @@unique([centerId, name])
+  @@index([centerId, status])
+  @@map("academic_years")
+}
+
+// ───────────────────────────────────────────────────────────────────────────────
+// Identity
+// ───────────────────────────────────────────────────────────────────────────────
+
+model User {
+  id          String          @id @default(uuid(7)) @db.Char(36)
+  /// Entra ID `oid` claim — the stable identifier (R3). Null until first login.
+  entraOid    String?         @unique @map("entra_oid") @db.Char(36)
+  email       String          @unique @db.VarChar(255)
+  firstName   String          @map("first_name") @db.VarChar(100)
+  lastName    String          @map("last_name") @db.VarChar(150)
+  locale      Locale          @default(ca)
+  theme       ThemePreference @default(system)
+  avatarUrl   String?         @map("avatar_url") @db.VarChar(500)
+  status      UserStatus      @default(invited)
+  lastLoginAt DateTime?       @map("last_login_at")
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+
+  centerRoles         UserCenterRole[]
+  coordinatedSubjects SubjectCoordinator[]
+  teacherProfiles     TeacherProfile[]
+  approvedReductions  TeacherReduction[]      @relation("ReductionApprover")
+  publishedVersions   ScheduleVersion[]       @relation("SchedulePublisher")
+  requestedChanges    ChangeRequest[]         @relation("ChangeRequester")
+  targetedChanges     ChangeRequest[]         @relation("ChangeTarget")
+  resolvedChanges     ChangeRequest[]         @relation("ChangeResolver")
+  conversationMembers ConversationMember[]
+  messages            Message[]
+  notifications       Notification[]
+  notificationPrefs   NotificationPref[]
+  pushSubscriptions   PushSubscription[]
+  calendarFeedTokens  CalendarFeedToken[]
+  calendarConnections CalendarConnection[]
+  uploadedDocuments   Document[]              @relation("DocumentUploader")
+  approvedSettings    CenterSettingsVersion[] @relation("SettingsApprover")
+  resolvedExtractions SettingExtraction[]     @relation("ExtractionResolver")
+  aiInteractions      AiInteraction[]
+  auditEntries        AuditLog[]
+  appliedAppVersions  AppVersion[]            @relation("VersionApplier")
+
+  @@index([status])
+  @@map("users")
+}
+
+model UserCenterRole {
+  id        String    @id @default(uuid(7)) @db.Char(36)
+  userId    String    @map("user_id") @db.Char(36)
+  centerId  String    @map("center_id") @db.Char(36)
+  role      Role
+  validFrom DateTime  @default(now()) @map("valid_from") @db.Date
+  validTo   DateTime? @map("valid_to") @db.Date
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  center Center @relation(fields: [centerId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, centerId, role])
+  @@index([centerId, role])
+  @@map("user_center_roles")
+}
+
+// ───────────────────────────────────────────────────────────────────────────────
+// Academic catalog
+// ───────────────────────────────────────────────────────────────────────────────
+
+model Degree {
+  id        String      @id @default(uuid(7)) @db.Char(36)
+  centerId  String      @map("center_id") @db.Char(36)
+  code      String      @db.VarChar(32)
+  nameCa    String      @map("name_ca") @db.VarChar(200)
+  nameEs    String      @map("name_es") @db.VarChar(200)
+  nameEn    String      @map("name_en") @db.VarChar(200)
+  level     DegreeLevel
+  createdAt DateTime    @default(now()) @map("created_at")
+  updatedAt DateTime    @updatedAt @map("updated_at")
+
+  center   Center    @relation(fields: [centerId], references: [id], onDelete: Cascade)
+  subjects Subject[]
+
+  @@unique([centerId, code])
+  @@map("degrees")
+}
+
+model Subject {
+  id               String           @id @default(uuid(7)) @db.Char(36)
+  centerId         String           @map("center_id") @db.Char(36)
+  academicYearId   String           @map("academic_year_id") @db.Char(36)
+  degreeId         String           @map("degree_id") @db.Char(36)
+  code             String           @db.VarChar(32)
+  nameCa           String           @map("name_ca") @db.VarChar(200)
+  nameEs           String           @map("name_es") @db.VarChar(200)
+  nameEn           String           @map("name_en") @db.VarChar(200)
+  ects             Decimal          @db.Decimal(4, 1)
+  year             Int              @db.SmallInt
+  term             Term
+  type             SubjectType
+  teachingLanguage TeachingLanguage @default(ca) @map("teaching_language")
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+
+  center       Center       @relation(fields: [centerId], references: [id], onDelete: Cascade)
+  academicYear AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+  degree       Degree       @relation(fields: [degreeId], references: [id], onDelete: Restrict)
+
+  coordinators  SubjectCoordinator[]
+  groups        Group[]
+  skills        TeacherSkill[]
+  conversations Conversation[]
+
+  @@unique([centerId, academicYearId, code])
+  @@index([centerId, academicYearId])
+  @@index([degreeId])
+  @@map("subjects")
+}
+
+model SubjectCoordinator {
+  subjectId  String   @map("subject_id") @db.Char(36)
+  userId     String   @map("user_id") @db.Char(36)
+  centerId   String   @map("center_id") @db.Char(36)
+  assignedAt DateTime @default(now()) @map("assigned_at")
+
+  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  center  Center  @relation(fields: [centerId], references: [id], onDelete: Cascade)
+
+  @@id([subjectId, userId])
+  @@index([centerId, userId])
+  @@map("subject_coordinators")
+}
+
+model Group {
+  id                String     @id @default(uuid(7)) @db.Char(36)
+  centerId          String     @map("center_id") @db.Char(36)
+  subjectId         String     @map("subject_id") @db.Char(36)
+  type              GroupType
+  code              String     @db.VarChar(32)
+  plannedHours      Decimal    @map("planned_hours") @db.Decimal(6, 2)
+  capacity          Int?       @db.SmallInt
+  requiredSpaceType SpaceType? @map("required_space_type")
+  createdAt         DateTime   @default(now()) @map("created_at")
+  updatedAt         DateTime   @updatedAt @map("updated_at")
+
+  center  Center  @relation(fields: [centerId], references: [id], onDelete: Cascade)
+  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  assignments Assignment[]
+  sessions    ClassSession[]
+
+  @@unique([subjectId, code])
+  @@index([centerId, subjectId])
+  @@map("groups")
+}
+
+// ───────────────────────────────────────────────────────────────────────────────
+// Teaching capacity
+// ───────────────────────────────────────────────────────────────────────────────
+
+model TeacherProfile {
+  id              String          @id @default(uuid(7)) @db.Char(36)
+  userId          String          @map("user_id") @db.Char(36)
+  centerId        String          @map("center_id") @db.Char(36)
+  academicYearId  String          @map("academic_year_id") @db.Char(36)
+  category        TeacherCategory
+  dedication      Dedication
+  contractedHours Decimal         @map("contracted_hours") @db.Decimal(6, 2)
+  notes           String?         @db.Text
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  center       Center       @relation(fields: [centerId], references: [id], onDelete: Cascade)
+  academicYear AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+
+  reductions             TeacherReduction[]
+  skills                 TeacherSkill[]
+  availability           Availability[]
+  availabilityExceptions AvailabilityException[]
+  assignments            Assignment[]
+  sessions               ClassSession[]
+  absences               Absence[]               @relation("AbsentTeacher")
+  substitutions          Absence[]               @relation("SubstituteTeacher")
+  externalBusySlots      ExternalBusySlot[]
+
+  @@unique([userId, centerId, academicYearId])
+  @@index([centerId, academicYearId])
+  @@map("teacher_profiles")
+}
+
+model TeacherReduction {
+  id               String          @id @default(uuid(7)) @db.Char(36)
+  centerId         String          @map("center_id") @db.Char(36)
+  teacherProfileId String          @map("teacher_profile_id") @db.Char(36)
+  reason           String          @db.VarChar(255)
+  hours            Decimal         @db.Decimal(6, 2)
+  status           ReductionStatus @default(pending)
+  approvedBy       String?         @map("approved_by") @db.Char(36)
+  approvedAt       DateTime?       @map("approved_at")
+  createdAt        DateTime        @default(now()) @map("created_at")
+  updatedAt        DateTime        @updatedAt @map("updated_at")
+
+  center         Center         @relation(fields: [centerId], references: [id], onDelete: Cascade)
+  teacherProfile TeacherProfile @relation(fields: [teacherProfileId], references: [id], onDelete: Cascade)
+  approver       User?          @relation("ReductionApprover", fields: [approvedBy], references: [id], onDelete: SetNull)
+
+  @@index([centerId, teacherProfileId])
+  @@map("teacher_reductions")
+}
+
+/// Either a concrete subject the teacher can teach, or a free knowledge area.
+/// Exactly one of subjectId / knowledgeArea is set (enforced in the domain layer).
+model TeacherSkill {
+  id               String   @id @default(uuid(7)) @db.Char(36)
+  centerId         String   @map("center_id") @db.Char(36)
+  teacherProfileId String   @map("teacher_profile_id") @db.Char(36)
+  subjectId        String?  @map("subject_id") @db.Char(36)
+  knowledgeArea    String?  @map("knowledge_area") @db.VarChar(150)
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  center         Center         @relation(fields: [centerId], references: [id], onDelete: Cascade)
+  teacherProfile TeacherProfile @relation(fields: [teacherProfileId], references: [id], onDelete: Cascade)
+  subject        Subject?       @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  @@unique([teacherProfileId, subjectId])
+  @@index([centerId, subjectId])
+  @@map("teacher_skills")
+}
+
+model Availability {
+  id               String            @id @default(uuid(7)) @db.Char(36)
+  centerId         String            @map("center_id") @db.Char(36)
+  teacherProfileId String            @map("teacher_profile_id") @db.Char(36)
+  /// ISO weekday: 1 = Monday … 7 = Sunday.
+  weekday          Int               @db.TinyInt
+  startTime        String            @map("start_time") @db.Char(5)
+  endTime          String            @map("end_time") @db.Char(5)
+  level            AvailabilityLevel @default(available)
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+
+  center         Center         @relation(fields: [centerId], references: [id], onDelete: Cascade)
+  teacherProfile TeacherProfile @relation(fields: [teacherProfileId], references: [id], onDelete: Cascade)
+
+  @@index([teacherProfileId, weekday, startTime])
+  @@index([centerId, weekday])
+  @@map("availability")
+}
+
+model AvailabilityException {
+  id               String            @id @default(uuid(7)) @db.Char(36)
+  centerId         String            @map("center_id") @db.Char(36)
+  teacherProfileId String            @map("teacher_profile_id") @db.Char(36)
+  dateFrom         DateTime          @map("date_from") @db.Date
+  dateTo           DateTime          @map("date_to") @db.Date
+  reason           String?           @db.VarChar(255)
+  level            AvailabilityLevel @default(unavailable)
+  createdAt        DateTime          @default(now()) @map("created_at")
+
+  center         Center         @relation(fields: [centerId], references: [id], onDelete: Cascade)
+  teacherProfile TeacherProfile @relation(fields: [teacherProfileId], references: [id], onDelete: Cascade)
+
+  @@index([teacherProfileId, dateFrom])
+  @@index([centerId, dateFrom])
+  @@map("availability_exceptions")
+}
+
+model Space {
+  id            String    @id @default(uuid(7)) @db.Char(36)
+  centerId      String    @map("center_id") @db.Char(36)
+  building      String?   @db.VarChar(100)
+  name          String    @db.VarChar(100)
+  capacity      Int       @db.SmallInt
+  type          SpaceType @default(classroom)
+  equipmentJson Json?     @map("equipment_json")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  center   Center         @relation(fields: [centerId], references: [id], onDelete: Cascade)
+  sessions ClassSession[]
+
+  @@unique([centerId, building, name])
+  @@index([centerId, type])
+  @@map("spaces")
+}
+
+// ───────────────────────────────────────────────────────────────────────────────
+// Scheduling
+// ───────────────────────────────────────────────────────────────────────────────
+
+model ScheduleVersion {
+  id              String                @id @default(uuid(7)) @db.Char(36)
+  centerId        String                @map("center_id") @db.Char(36)
+  academicYearId  String                @map("academic_year_id") @db.Char(36)
+  name            String                @db.VarChar(150)
+  status          ScheduleVersionStatus @default(draft)
+  publishedAt     DateTime?             @map("published_at")
+  publishedBy     String?               @map("published_by") @db.Char(36)
+  parentVersionId String?               @map("parent_version_id") @db.Char(36)
+  createdAt       DateTime              @default(now()) @map("created_at")
+  updatedAt       DateTime              @updatedAt @map("updated_at")
+
+  center        Center            @relation(fields: [centerId], references: [id], onDelete: Cascade)
+  academicYear  AcademicYear      @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+  publisher     User?             @relation("SchedulePublisher", fields: [publishedBy], references: [id], onDelete: SetNull)
+  parentVersion ScheduleVersion?  @relation("VersionLineage", fields: [parentVersionId], references: [id], onDelete: SetNull)
+  childVersions ScheduleVersion[] @relation("VersionLineage")
+
+  sessions ClassSession[]
+
+  @@index([centerId, academicYearId, status])
+  @@index([parentVersionId])
+  @@map("schedule_versions")
+}
+
+/// A recurring class slot inside a schedule version. Mapped to `sessions`;
+/// named ClassSession in code to avoid collision with auth sessions.
+model ClassSession {
+  id                String     @id @default(uuid(7)) @db.Char(36)
+  centerId          String     @map("center_id") @db.Char(36)
+  scheduleVersionId String     @map("schedule_version_id") @db.Char(36)
+  groupId           String     @map("group_id") @db.Char(36)
+  teacherProfileId  String?    @map("teacher_profile_id") @db.Char(36)
+  spaceId           String?    @map("space_id") @db.Char(36)
+  /// ISO weekday: 1 = Monday … 7 = Sunday.
+  weekday           Int        @db.TinyInt
+  startTime         String     @map("start_time") @db.Char(5)
+  endTime           String     @map("end_time") @db.Char(5)
+  dateFrom          DateTime   @map("date_from") @db.Date
+  dateTo            DateTime   @map("date_to") @db.Date
+  recurrence        Recurrence @default(weekly)
+  isException       Boolean    @default(false) @map("is_exception")
+  notes             String?    @db.Text
+  createdAt         DateTime   @default(now()) @map("created_at")
+  updatedAt         DateTime   @updatedAt @map("updated_at")
+
+  center          Center          @relation(fields: [centerId], references: [id], onDelete: Cascade)
+  scheduleVersion ScheduleVersion @relation(fields: [scheduleVersionId], references: [id], onDelete: Cascade)
+  group           Group           @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  teacherProfile  TeacherProfile? @relation(fields: [teacherProfileId], references: [id], onDelete: SetNull)
+  space           Space?          @relation(fields: [spaceId], references: [id], onDelete: SetNull)
+
+  changeRequests   ChangeRequest[]
+  calendarMappings CalendarEventMap[]
+
+  @@index([scheduleVersionId, weekday])
+  @@index([teacherProfileId, weekday, startTime])
+  @@index([spaceId, weekday, startTime])
+  @@index([centerId, scheduleVersionId])
+  @@index([groupId])
+  @@map("sessions")
+}
+
+model Assignment {
+  id               String            @id @default(uuid(7)) @db.Char(36)
+  centerId         String            @map("center_id") @db.Char(36)
+  groupId          String            @map("group_id") @db.Char(36)
+  teacherProfileId String            @map("teacher_profile_id") @db.Char(36)
+  academicYearId   String            @map("academic_year_id") @db.Char(36)
+  assignedHours    Decimal           @map("assigned_hours") @db.Decimal(6, 2)
+  concept          AssignmentConcept @default(lecture)
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+
+  center         Center         @relation(fields: [centerId], references: [id], onDelete: Cascade)
+  group          Group          @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  teacherProfile TeacherProfile @relation(fields: [teacherProfileId], references: [id], onDelete: Cascade)
+  academicYear   AcademicYear   @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, teacherProfileId, concept])
+  @@index([centerId, academicYearId])
+  @@index([teacherProfileId])
+  @@map("assignments")
+}
+
+model ChangeRequest {
+  id           String              @id @default(uuid(7)) @db.Char(36)
+  centerId     String              @map("center_id") @db.Char(36)
+  type         ChangeRequestType
+  requesterId  String              @map("requester_id") @db.Char(36)
+  targetUserId String?             @map("target_user_id") @db.Char(36)
+  sessionId    String?             @map("session_id") @db.Char(36)
+  proposedJson Json                @map("proposed_json")
+  status       ChangeRequestStatus @default(pending)
+  resolvedBy   String?             @map("resolved_by") @db.Char(36)
+  resolvedAt   DateTime?           @map("resolved_at")
+  reason       String?             @db.Text
+  createdAt    DateTime            @default(now()) @map("created_at")
+  updatedAt    DateTime            @updatedAt @map("updated_at")
+
+  center     Center        @relation(fields: [centerId], references: [id], onDelete: Cascade)
+  requester  User          @relation("ChangeRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  targetUser User?         @relation("ChangeTarget", fields: [targetUserId], references: [id], onDelete: SetNull)
+  resolver   User?         @relation("ChangeResolver", fields: [resolvedBy], references: [id], onDelete: SetNull)
+  session    ClassSession? @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([centerId, status])
+  @@index([requesterId])
+  @@index([sessionId])
+  @@map("change_requests")
+}
+
+model Absence {
+  id                  String        @id @default(uuid(7)) @db.Char(36)
+  centerId            String        @map("center_id") @db.Char(36)
+  teacherProfileId    String        @map("teacher_profile_id") @db.Char(36)
+  dateFrom            DateTime      @map("date_from") @db.Date
+  dateTo              DateTime      @map("date_to") @db.Date
+  type                AbsenceType
+  substituteProfileId String?       @map("substitute_profile_id") @db.Char(36)
+  status              AbsenceStatus @default(requested)
+  createdAt           DateTime      @default(now()) @map("created_at")
+  updatedAt           DateTime      @updatedAt @map("updated_at")
+
+  center     Center          @relation(fields: [centerId], references: [id], onDelete: Cascade)
+  teacher    TeacherProfile  @relation("AbsentTeacher", fields: [teacherProfileId], references: [id], onDelete: Cascade)
+  substitute TeacherProfile? @relation("SubstituteTeacher", fields: [substituteProfileId], references: [id], onDelete: SetNull)
+
+  @@index([centerId, dateFrom])
+  @@index([teacherProfileId, dateFrom])
+  @@map("absences")
+}
+
+// ───────────────────────────────────────────────────────────────────────────────
+// Communication
+// ───────────────────────────────────────────────────────────────────────────────
+
+model Conversation {
+  id        String           @id @default(uuid(7)) @db.Char(36)
+  centerId  String           @map("center_id") @db.Char(36)
+  type      ConversationType
+  subjectId String?          @map("subject_id") @db.Char(36)
+  title     String?          @db.VarChar(200)
+  createdAt DateTime         @default(now()) @map("created_at")
+  updatedAt DateTime         @updatedAt @map("updated_at")
+
+  center  Center   @relation(fields: [centerId], references: [id], onDelete: Cascade)
+  subject Subject? @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+
+  members  ConversationMember[]
+  messages Message[]
+
+  @@index([centerId, type])
+  @@index([subjectId])
+  @@map("conversations")
+}
+
+model ConversationMember {
+  conversationId String    @map("conversation_id") @db.Char(36)
+  userId         String    @map("user_id") @db.Char(36)
+  lastReadAt     DateTime? @map("last_read_at")
+  joinedAt       DateTime  @default(now()) @map("joined_at")
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([conversationId, userId])
+  @@index([userId])
+  @@map("conversation_members")
+}
+
+model Message {
+  id              String    @id @default(uuid(7)) @db.Char(36)
+  centerId        String    @map("center_id") @db.Char(36)
+  conversationId  String    @map("conversation_id") @db.Char(36)
+  senderId        String    @map("sender_id") @db.Char(36)
+  body            String    @db.Text
+  attachmentsJson Json?     @map("attachments_json")
+  editedAt        DateTime? @map("edited_at")
+  deletedAt       DateTime? @map("deleted_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  center       Center       @relation(fields: [centerId], references: [id], onDelete: Cascade)
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+  @@index([centerId, createdAt])
+  @@map("messages")
+}
+
+model Notification {
+  id           String    @id @default(uuid(7)) @db.Char(36)
+  centerId     String?   @map("center_id") @db.Char(36)
+  userId       String    @map("user_id") @db.Char(36)
+  type         String    @db.VarChar(100)
+  payloadJson  Json      @map("payload_json")
+  readAt       DateTime? @map("read_at")
+  channelsSent Json?     @map("channels_sent")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  center Center? @relation(fields: [centerId], references: [id], onDelete: Cascade)
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+  @@index([centerId, createdAt])
+  @@map("notifications")
+}
+
+model NotificationPref {
+  userId    String  @map("user_id") @db.Char(36)
+  eventType String  @map("event_type") @db.VarChar(100)
+  inApp     Boolean @default(true) @map("in_app")
+  push      Boolean @default(false)
+  email     Boolean @default(false)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, eventType])
+  @@map("notification_prefs")
+}
+
+model PushSubscription {
+  id           String   @id @default(uuid(7)) @db.Char(36)
+  userId       String   @map("user_id") @db.Char(36)
+  endpoint     String   @db.Text
+  /// SHA-256 of the endpoint: MySQL cannot index a TEXT column for uniqueness.
+  endpointHash String   @unique @map("endpoint_hash") @db.Char(64)
+  p256dh       String   @db.VarChar(255)
+  auth         String   @db.VarChar(255)
+  userAgent    String?  @map("user_agent") @db.VarChar(400)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("push_subscriptions")
+}
+
+// ───────────────────────────────────────────────────────────────────────────────
+// Calendar integration
+// ───────────────────────────────────────────────────────────────────────────────
+
+model CalendarFeedToken {
+  id            String    @id @default(uuid(7)) @db.Char(36)
+  userId        String    @map("user_id") @db.Char(36)
+  token         String    @unique @db.Char(64)
+  filtersJson   Json?     @map("filters_json")
+  lastFetchedAt DateTime? @map("last_fetched_at")
+  revokedAt     DateTime? @map("revoked_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("calendar_feed_tokens")
+}
+
+/// Tokens are stored AES-256-GCM encrypted (R10). Never plaintext.
+model CalendarConnection {
+  id                 String           @id @default(uuid(7)) @db.Char(36)
+  userId             String           @map("user_id") @db.Char(36)
+  provider           CalendarProvider
+  externalCalendarId String?          @map("external_calendar_id") @db.VarChar(255)
+  accessTokenEnc     String           @map("access_token_enc") @db.Text
+  refreshTokenEnc    String?          @map("refresh_token_enc") @db.Text
+  expiresAt          DateTime?        @map("expires_at")
+  scopes             String?          @db.VarChar(500)
+  syncDirection      SyncDirection    @default(push) @map("sync_direction")
+  status             ConnectionStatus @default(active)
+  lastSyncAt         DateTime?        @map("last_sync_at")
+  lastError          String?          @map("last_error") @db.Text
+  consentAt          DateTime?        @map("consent_at")
+  createdAt          DateTime         @default(now()) @map("created_at")
+  updatedAt          DateTime         @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  eventMappings CalendarEventMap[]
+  externalBusy  ExternalBusySlot[]
+
+  @@unique([userId, provider])
+  @@map("calendar_connections")
+}
+
+model CalendarEventMap {
+  id              String   @id @default(uuid(7)) @db.Char(36)
+  connectionId    String   @map("connection_id") @db.Char(36)
+  sessionId       String   @map("session_id") @db.Char(36)
+  externalEventId String   @map("external_event_id") @db.VarChar(255)
+  etag            String?  @db.VarChar(255)
+  sequence        Int      @default(0)
+  lastSyncedAt    DateTime @default(now()) @map("last_synced_at")
+
+  connection CalendarConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  session    ClassSession       @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([connectionId, sessionId])
+  @@index([externalEventId])
+  @@map("calendar_event_map")
+}
+
+/// Free/busy only — no event content is ever stored.
+model ExternalBusySlot {
+  id               String         @id @default(uuid(7)) @db.Char(36)
+  teacherProfileId String         @map("teacher_profile_id") @db.Char(36)
+  connectionId     String         @map("connection_id") @db.Char(36)
+  startAt          DateTime       @map("start_at")
+  endAt            DateTime       @map("end_at")
+  source           BusySlotSource
+  fetchedAt        DateTime       @default(now()) @map("fetched_at")
+
+  teacherProfile TeacherProfile     @relation(fields: [teacherProfileId], references: [id], onDelete: Cascade)
+  connection     CalendarConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+  @@index([teacherProfileId, startAt])
+  @@index([connectionId])
+  @@map("external_busy_slots")
+}
+
+// ───────────────────────────────────────────────────────────────────────────────
+// Documents, settings and provenance
+// ───────────────────────────────────────────────────────────────────────────────
+
+model Document {
+  id             String             @id @default(uuid(7)) @db.Char(36)
+  centerId       String             @map("center_id") @db.Char(36)
+  scope          DocumentScope
+  scopeId        String?            @map("scope_id") @db.Char(36)
+  title          String             @db.VarChar(300)
+  type           DocumentType
+  academicYearId String?            @map("academic_year_id") @db.Char(36)
+  language       Locale             @default(ca)
+  validFrom      DateTime?          @map("valid_from") @db.Date
+  validTo        DateTime?          @map("valid_to") @db.Date
+  visibility     DocumentVisibility @default(center)
+  filePath       String             @map("file_path") @db.VarChar(500)
+  mime           String             @db.VarChar(150)
+  sizeBytes      BigInt             @map("size_bytes")
+  checksum       String             @db.Char(64)
+  status         DocumentStatus     @default(uploaded)
+  uploadedBy     String?            @map("uploaded_by") @db.Char(36)
+  createdAt      DateTime           @default(now()) @map("created_at")
+  updatedAt      DateTime           @updatedAt @map("updated_at")
+
+  center       Center        @relation(fields: [centerId], references: [id], onDelete: Cascade)
+  academicYear AcademicYear? @relation(fields: [academicYearId], references: [id], onDelete: SetNull)
+  uploader     User?         @relation("DocumentUploader", fields: [uploadedBy], references: [id], onDelete: SetNull)
+
+  chunks           DocumentChunk[]
+  extractions      SettingExtraction[]
+  settingsVersions CenterSettingsVersion[]
+  provenance       SettingProvenance[]
+
+  @@index([centerId, scope, scopeId])
+  @@index([centerId, academicYearId])
+  @@index([centerId, status])
+  @@map("documents")
+}
+
+model DocumentChunk {
+  id             String   @id @default(uuid(7)) @db.Char(36)
+  documentId     String   @map("document_id") @db.Char(36)
+  centerId       String   @map("center_id") @db.Char(36)
+  ordinal        Int
+  headingPath    String?  @map("heading_path") @db.VarChar(500)
+  pageFrom       Int?     @map("page_from") @db.SmallInt
+  pageTo         Int?     @map("page_to") @db.SmallInt
+  content        String   @db.Text
+  tokenCount     Int      @map("token_count")
+  embedding      Bytes?   @db.Blob
+  embeddingModel String?  @map("embedding_model") @db.VarChar(100)
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  center   Center   @relation(fields: [centerId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, ordinal])
+  @@index([centerId])
+  @@fulltext([content])
+  @@map("document_chunks")
+}
+
+model CenterSettingsVersion {
+  id               String         @id @default(uuid(7)) @db.Char(36)
+  centerId         String         @map("center_id") @db.Char(36)
+  academicYearId   String?        @map("academic_year_id") @db.Char(36)
+  settingsJson     Json           @map("settings_json")
+  source           SettingsSource @default(manual)
+  sourceDocumentId String?        @map("source_document_id") @db.Char(36)
+  approvedBy       String?        @map("approved_by") @db.Char(36)
+  notes            String?        @db.Text
+  createdAt        DateTime       @default(now()) @map("created_at")
+
+  center         Center        @relation(fields: [centerId], references: [id], onDelete: Cascade)
+  academicYear   AcademicYear? @relation(fields: [academicYearId], references: [id], onDelete: SetNull)
+  sourceDocument Document?     @relation(fields: [sourceDocumentId], references: [id], onDelete: SetNull)
+  approver       User?         @relation("SettingsApprover", fields: [approvedBy], references: [id], onDelete: SetNull)
+
+  provenance SettingProvenance[]
+
+  @@index([centerId, academicYearId])
+  @@map("center_settings_versions")
+}
+
+/// One proposed parameter value extracted from a regulatory document by the AI.
+/// R5: nothing is applied until a human resolves it.
+model SettingExtraction {
+  id                String           @id @default(uuid(7)) @db.Char(36)
+  centerId          String           @map("center_id") @db.Char(36)
+  documentId        String           @map("document_id") @db.Char(36)
+  block             String           @db.VarChar(100)
+  paramKey          String           @map("param_key") @db.VarChar(150)
+  proposedValueJson Json             @map("proposed_value_json")
+  unit              String?          @db.VarChar(50)
+  currentValueJson  Json?            @map("current_value_json")
+  confidence        Decimal          @db.Decimal(3, 2)
+  citationJson      Json?            @map("citation_json")
+  reasoning         String?          @db.Text
+  status            ExtractionStatus @default(pending)
+  resolvedValueJson Json?            @map("resolved_value_json")
+  resolvedBy        String?          @map("resolved_by") @db.Char(36)
+  resolvedAt        DateTime?        @map("resolved_at")
+  createdAt         DateTime         @default(now()) @map("created_at")
+
+  center   Center   @relation(fields: [centerId], references: [id], onDelete: Cascade)
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  resolver User?    @relation("ExtractionResolver", fields: [resolvedBy], references: [id], onDelete: SetNull)
+
+  @@index([centerId, status])
+  @@index([documentId, paramKey])
+  @@map("setting_extractions")
+}
+
+/// Backs the "why does this rule exist?" link next to every constraint.
+model SettingProvenance {
+  id                String   @id @default(uuid(7)) @db.Char(36)
+  centerId          String   @map("center_id") @db.Char(36)
+  paramKey          String   @map("param_key") @db.VarChar(150)
+  settingsVersionId String   @map("settings_version_id") @db.Char(36)
+  documentId        String?  @map("document_id") @db.Char(36)
+  page              Int?     @db.SmallInt
+  section           String?  @db.VarChar(200)
+  quote             String?  @db.Text
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  center          Center                @relation(fields: [centerId], references: [id], onDelete: Cascade)
+  settingsVersion CenterSettingsVersion @relation(fields: [settingsVersionId], references: [id], onDelete: Cascade)
+  document        Document?             @relation(fields: [documentId], references: [id], onDelete: SetNull)
+
+  @@unique([settingsVersionId, paramKey])
+  @@index([centerId, paramKey])
+  @@map("setting_provenance")
+}
+
+// ───────────────────────────────────────────────────────────────────────────────
+// AI, audit, platform
+// ───────────────────────────────────────────────────────────────────────────────
+
+model AiInteraction {
+  id                String   @id @default(uuid(7)) @db.Char(36)
+  centerId          String   @map("center_id") @db.Char(36)
+  userId            String   @map("user_id") @db.Char(36)
+  prompt            String   @db.Text
+  response          String?  @db.Text
+  toolsUsedJson     Json?    @map("tools_used_json")
+  documentsUsedJson Json?    @map("documents_used_json")
+  tokensIn          Int?     @map("tokens_in")
+  tokensOut         Int?     @map("tokens_out")
+  actionExecuted    Boolean  @default(false) @map("action_executed")
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  center Center @relation(fields: [centerId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([centerId, createdAt])
+  @@index([userId, createdAt])
+  @@map("ai_interactions")
+}
+
+/// R4: append-only. The application user has INSERT+SELECT grants only.
+model AuditLog {
+  id         String      @id @default(uuid(7)) @db.Char(36)
+  centerId   String?     @map("center_id") @db.Char(36)
+  userId     String?     @map("user_id") @db.Char(36)
+  entity     String      @db.VarChar(100)
+  entityId   String      @map("entity_id") @db.Char(36)
+  action     String      @db.VarChar(50)
+  beforeJson Json?       @map("before_json")
+  afterJson  Json?       @map("after_json")
+  source     AuditSource @default(user)
+  ip         String?     @db.VarChar(45)
+  createdAt  DateTime    @default(now()) @map("created_at")
+
+  center Center? @relation(fields: [centerId], references: [id], onDelete: Restrict)
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([centerId, entity, entityId])
+  @@index([centerId, createdAt])
+  @@index([userId, createdAt])
+  @@map("audit_log")
+}
+
+model AppVersion {
+  id         String           @id @default(uuid(7)) @db.Char(36)
+  version    String           @unique @db.VarChar(50)
+  releasedAt DateTime?        @map("released_at")
+  appliedAt  DateTime?        @map("applied_at")
+  appliedBy  String?          @map("applied_by") @db.Char(36)
+  status     AppVersionStatus @default(available)
+  changelog  String?          @db.Text
+  createdAt  DateTime         @default(now()) @map("created_at")
+
+  applier User? @relation("VersionApplier", fields: [appliedBy], references: [id], onDelete: SetNull)
+
+  @@map("app_versions")
+}
+
+/// MySQL-backed job queue (no Redis in production). A PM2 worker polls
+/// (status, run_at) and claims rows with a locked_at / locked_by pair.
+model Job {
+  id          String    @id @default(uuid(7)) @db.Char(36)
+  type        String    @db.VarChar(100)
+  payloadJson Json      @map("payload_json")
+  runAt       DateTime  @default(now()) @map("run_at")
+  attempts    Int       @default(0) @db.SmallInt
+  maxAttempts Int       @default(5) @map("max_attempts") @db.SmallInt
+  status      JobStatus @default(pending)
+  lockedAt    DateTime? @map("locked_at")
+  lockedBy    String?   @map("locked_by") @db.VarChar(100)
+  lastError   String?   @map("last_error") @db.Text
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@index([status, runAt])
+  @@index([type, status])
+  @@map("jobs")
+}
