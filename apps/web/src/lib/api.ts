@@ -62,6 +62,35 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
   return (await response.json()) as T
 }
 
+/**
+ * Binary download (the Excel export). It goes through the same headers as every
+ * other call — session cookie, active center, locale — so the server can scope
+ * and translate it exactly as it does the table on screen.
+ */
+export async function apiDownload(path: string): Promise<Blob> {
+  const headers = new Headers({ 'accept-language': currentLocale() })
+
+  const centerId = useSessionStore.getState().centerId
+  if (centerId) headers.set(CENTER_HEADER, centerId)
+
+  if (MOCK_AUTH) {
+    const mockUserEmail = useSessionStore.getState().mockUserEmail
+    if (mockUserEmail) headers.set('x-mock-user', mockUserEmail)
+  }
+
+  const response = await fetch(`${BASE_URL}${path}`, { headers, credentials: 'include' })
+  if (!response.ok) {
+    const body = (await response.json().catch(() => null)) as ApiErrorBody | null
+    throw new ApiRequestError(
+      response.status,
+      body?.error.code ?? 'INTERNAL_ERROR',
+      body?.error.message ?? 'errors.generic',
+    )
+  }
+
+  return response.blob()
+}
+
 /** Multipart upload: the browser sets the boundary, so no content-type here. */
 export async function apiUpload<T>(path: string, form: FormData): Promise<T> {
   return apiFetch<T>(path, { method: 'POST', body: form })

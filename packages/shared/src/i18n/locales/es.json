@@ -15,7 +15,17 @@
     "optional": "Opcional",
     "hours": "horas",
     "hoursShort": "h",
-    "of": "de"
+    "of": "de",
+    "add": "Añadir",
+    "edit": "Editar",
+    "remove": "Eliminar",
+    "apply": "Aplicar",
+    "clear": "Limpiar",
+    "all": "Todos",
+    "export": "Exportar",
+    "total": "Total",
+    "none": "Ninguno",
+    "discard": "Descartar"
   },
   "nav": {
     "dashboard": "Panel",
@@ -32,7 +42,8 @@
     "profile": "Perfil",
     "more": "Más",
     "admin": "Administración",
-    "imports": "Importaciones"
+    "imports": "Importaciones",
+    "availability": "Disponibilidad"
   },
   "layout": {
     "skipToContent": "Ir al contenido principal",
@@ -89,7 +100,10 @@
       "optimal": "Entre el 85 % y el 100 % de la capacidad contratada",
       "limit": "Entre el 100 % y el 110 % de la capacidad contratada",
       "over": "Por encima del 110 % de la capacidad contratada"
-    }
+    },
+    "summary": "Total del centro",
+    "thresholds": "Umbrales del semáforo",
+    "export": "Exportar a Excel"
   },
   "dashboard": {
     "title": "Panel",
@@ -113,6 +127,102 @@
       "title": "Todavía no hay profesorado",
       "description": "Importa el profesorado del centro o añádelo manualmente para empezar a repartir la carga.",
       "action": "Añadir profesorado"
+    },
+    "firstName": "Nombre",
+    "lastName": "Apellidos",
+    "email": "Correo electrónico",
+    "notes": "Notas",
+    "profile": {
+      "title": "Ficha docente",
+      "back": "Volver al profesorado",
+      "contract": "Contrato",
+      "notFound": "Esta persona no tiene ficha docente en el curso activo.",
+      "openProfile": "Abrir la ficha"
+    },
+    "reductions": {
+      "title": "Reducciones",
+      "description": "Horas que se descuentan de la capacidad contratada",
+      "reason": "Motivo",
+      "hours": "Horas",
+      "status": "Estado",
+      "approver": "Aprobada por",
+      "approvedAt": "Fecha",
+      "add": "Añadir una reducción",
+      "edit": "Editar la reducción",
+      "empty": "Esta persona no tiene ninguna reducción registrada.",
+      "pendingHint": "Las reducciones pendientes todavía no descuentan capacidad.",
+      "saved": "Reducción guardada",
+      "removed": "Reducción eliminada",
+      "confirmRemove": "¿Quieres eliminar esta reducción?"
+    },
+    "skills": {
+      "title": "Áreas y asignaturas",
+      "description": "Qué puede impartir esta persona",
+      "subjects": "Asignaturas",
+      "knowledgeAreas": "Áreas de conocimiento",
+      "empty": "Todavía no hay áreas ni asignaturas asignadas.",
+      "edit": "Editar",
+      "addArea": "Añadir un área",
+      "areaPlaceholder": "Por ejemplo: Estadística aplicada",
+      "saved": "Áreas y asignaturas guardadas"
+    },
+    "availability": {
+      "title": "Disponibilidad semanal",
+      "subtitle": "Pinta la rejilla con el nivel que quieras",
+      "legend": "Leyenda",
+      "level": "Nivel",
+      "paintWith": "Pintar con",
+      "save": "Guardar la disponibilidad",
+      "saved": "Disponibilidad guardada",
+      "unsaved": "Tienes cambios sin guardar",
+      "gridLabel": "Rejilla de disponibilidad semanal",
+      "cellLabel": "{{weekday}} de {{start}} a {{end}}: {{level}}",
+      "keyboardTitle": "Con el teclado",
+      "keyboardHint": "Muévete con las flechas, pulsa Espacio para pintar la casilla y Mayús+flechas para pintar varias casillas a la vez. Las teclas 1 a 4 cambian el nivel.",
+      "readOnly": "Solo puedes consultar esta disponibilidad.",
+      "hoursByLevel": "Horas por nivel",
+      "summary": "{{hours}} h disponibles cada semana",
+      "painted": "{{count}} casillas pintadas"
+    },
+    "exceptions": {
+      "title": "Excepciones por fecha",
+      "subtitle": "Congresos, bajas y otras ausencias puntuales",
+      "add": "Añadir una excepción",
+      "dateFrom": "Desde el",
+      "dateTo": "Hasta el",
+      "reason": "Motivo",
+      "level": "Nivel",
+      "empty": "No hay ninguna excepción registrada.",
+      "created": "Excepción añadida",
+      "removed": "Excepción eliminada",
+      "confirmRemove": "¿Quieres eliminar esta excepción?",
+      "reasonPlaceholder": "Por ejemplo: Congreso internacional"
+    },
+    "panel": {
+      "title": "Carga del centro",
+      "subtitle": "Capacidad contratada y encargo docente de todo el profesorado",
+      "degree": "Titulación",
+      "category": "Categoría",
+      "status": "Estado de la carga",
+      "search": "Buscar por nombre",
+      "results": "{{count}} personas",
+      "exporting": "Preparando el archivo…",
+      "exported": "Excel descargado",
+      "exportFailed": "No hemos podido generar el Excel",
+      "noResults": "Ninguna persona coincide con los filtros.",
+      "noResultsHint": "Prueba a quitar algún filtro."
+    },
+    "workload": {
+      "title": "Mi encargo docente",
+      "subtitle": "Horas por asignatura y por concepto",
+      "bySubject": "Por asignatura",
+      "byConcept": "Por concepto",
+      "subject": "Asignatura",
+      "groups": "Grupos",
+      "hours": "Horas",
+      "share": "Porcentaje",
+      "empty": "Todavía no tienes horas asignadas en este curso.",
+      "chartLabel": "Distribución del encargo docente por concepto"
     }
   },
   "subjects": {
@@ -455,5 +565,47 @@
     "draft": "Borrador",
     "active": "Activo",
     "closed": "Cerrado"
+  },
+  "availabilityLevel": {
+    "preferred": "Preferido",
+    "available": "Disponible",
+    "avoid": "Mejor evitar",
+    "unavailable": "No disponible"
+  },
+  "availabilityLevelHint": {
+    "preferred": "Franja en la que prefiere dar clase",
+    "available": "Franja en la que puede dar clase sin problema",
+    "avoid": "Franja que solo debería ocuparse si no hay alternativa",
+    "unavailable": "Franja en la que no se puede programar docencia"
+  },
+  "assignmentConcept": {
+    "lecture": "Docencia",
+    "tutoring": "Tutorías",
+    "coordination": "Coordinación",
+    "tfg": "TFG y TFM",
+    "other": "Otros"
+  },
+  "reductionStatus": {
+    "pending": "Pendiente de aprobación",
+    "approved": "Aprobada",
+    "rejected": "Denegada"
+  },
+  "weekday": {
+    "1": "Lunes",
+    "2": "Martes",
+    "3": "Miércoles",
+    "4": "Jueves",
+    "5": "Viernes",
+    "6": "Sábado",
+    "7": "Domingo"
+  },
+  "weekdayShort": {
+    "1": "lun.",
+    "2": "mar.",
+    "3": "mié.",
+    "4": "jue.",
+    "5": "vie.",
+    "6": "sáb.",
+    "7": "dom."
   }
 }

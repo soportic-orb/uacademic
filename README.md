@@ -132,10 +132,46 @@ tooling/          Shared tsconfig, ESLint and Prettier configs
 docs/             Architecture notes and decisions
 ```
 
-`packages/shared` has no browser and no Node dependencies on purpose: phase 2 reuses it
-from an Expo app.
+`packages/shared` has no browser and no Node dependencies on purpose: a later phase
+reuses it from an Expo app.
 
 ---
+
+## What phase 2 adds
+
+The core of the product: matching contracted capacity with the workload that has to
+be covered.
+
+```
+capacity = contracted hours − approved reductions
+workload = Σ assignments, by concept (teaching, tutoring, coordination, final projects, other)
+ratio    = workload / capacity → traffic light
+```
+
+Every one of those numbers is computed in `packages/shared` and unit-tested (R7/R11),
+and every traffic-light threshold is read from `centers.settings_json` (R9) — a center
+that considers 95 % under-loaded gets its own colours without a code change.
+
+- **Teaching profile** (`/teachers/:id`, and `/teachers/me` for yourself): contractual
+  category, dedication, contracted hours, reductions with their reason, status and
+  approver, plus the knowledge areas and subjects the person can teach. Only an
+  approved reduction lowers the capacity; a pending one is visible but inert.
+- **Weekly availability editor**: a grid of days × slots painted by dragging, with four
+  levels (preferred, available, better avoided, unavailable) and a legend that also
+  reports the hours declared at each level. The keyboard path is not a fallback — arrows
+  move, Space paints, Shift+arrows paint a rectangle and 1–4 pick the level, all through
+  the same pure helpers the pointer uses (R8). Consecutive slots are merged into
+  intervals before saving, so painting a morning writes one row, not sixteen.
+- **Date exceptions**: conferences, leave, sick leave. They only ever tighten the weekly
+  pattern.
+- **Center load panel** (`/teachers`): every teacher with capacity, workload, ratio and
+  traffic light, filtered by degree, category, load status and name. Filtering and
+  sorting happen on the server, and the **Excel export** takes the same query string, so
+  the download is the table on screen — with a second sheet stating the thresholds that
+  produced each colour.
+- **Personal panel** (`/my-load`): the teacher's own hours broken down by subject and by
+  concept, with a simple chart rendered as a table so it reads the same by eye and by
+  screen reader.
 
 ## What phase 1 adds
 
@@ -173,7 +209,7 @@ from an Expo app.
 
 The drag & drop planner, the AI assistant, calendar synchronisation, messaging, document
 ingestion and OTA updates. The tables, the settings schema and the job types they need
-are already in place.
+are already in place, as is the availability model the planner will read.
 
 ---
 

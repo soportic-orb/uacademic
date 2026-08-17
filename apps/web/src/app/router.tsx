@@ -20,6 +20,7 @@ import {
 } from '../pages/placeholders'
 import { SettingsPage } from '../pages/settings'
 import { SubjectsPage } from '../pages/subjects'
+import { TeacherDetailPage } from '../pages/teacher-detail'
 import { TeachersPage } from '../pages/teachers'
 
 /**
@@ -41,6 +42,7 @@ export const router = createBrowserRouter([
       { path: 'my-load', element: <MyLoadPage /> },
       { path: 'planning', element: <PlanningPage /> },
       { path: 'teachers', element: <TeachersPage /> },
+      { path: 'teachers/:id', element: <TeacherDetailPage /> },
       { path: 'subjects', element: <SubjectsPage /> },
       { path: 'assistant', element: <AssistantPage /> },
       { path: 'messages', element: <MessagesPage /> },

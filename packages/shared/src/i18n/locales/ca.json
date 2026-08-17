@@ -15,7 +15,17 @@
     "optional": "Opcional",
     "hours": "hores",
     "hoursShort": "h",
-    "of": "de"
+    "of": "de",
+    "add": "Afegeix",
+    "edit": "Edita",
+    "remove": "Elimina",
+    "apply": "Aplica",
+    "clear": "Neteja",
+    "all": "Tots",
+    "export": "Exporta",
+    "total": "Total",
+    "none": "Cap",
+    "discard": "Descarta"
   },
   "nav": {
     "dashboard": "Tauler",
@@ -32,7 +42,8 @@
     "profile": "Perfil",
     "more": "Més",
     "admin": "Administració",
-    "imports": "Importacions"
+    "imports": "Importacions",
+    "availability": "Disponibilitat"
   },
   "layout": {
     "skipToContent": "Ves al contingut principal",
@@ -89,7 +100,10 @@
       "optimal": "Entre el 85 % i el 100 % de la capacitat contractada",
       "limit": "Entre el 100 % i el 110 % de la capacitat contractada",
       "over": "Per sobre del 110 % de la capacitat contractada"
-    }
+    },
+    "summary": "Total del centre",
+    "thresholds": "Llindars del semàfor",
+    "export": "Exporta a Excel"
   },
   "dashboard": {
     "title": "Tauler",
@@ -113,6 +127,102 @@
       "title": "Encara no hi ha professorat",
       "description": "Importa el professorat del centre o afegeix-lo manualment per començar a repartir la càrrega.",
       "action": "Afegeix professorat"
+    },
+    "firstName": "Nom",
+    "lastName": "Cognoms",
+    "email": "Correu electrònic",
+    "notes": "Notes",
+    "profile": {
+      "title": "Fitxa docent",
+      "back": "Torna al professorat",
+      "contract": "Contracte",
+      "notFound": "Aquesta persona no té fitxa docent en el curs actiu.",
+      "openProfile": "Obre la fitxa"
+    },
+    "reductions": {
+      "title": "Reduccions",
+      "description": "Hores que es descompten de la capacitat contractada",
+      "reason": "Motiu",
+      "hours": "Hores",
+      "status": "Estat",
+      "approver": "Aprovada per",
+      "approvedAt": "Data",
+      "add": "Afegeix una reducció",
+      "edit": "Edita la reducció",
+      "empty": "Aquesta persona no té cap reducció registrada.",
+      "pendingHint": "Les reduccions pendents encara no descompten capacitat.",
+      "saved": "Reducció desada",
+      "removed": "Reducció eliminada",
+      "confirmRemove": "Vols eliminar aquesta reducció?"
+    },
+    "skills": {
+      "title": "Àrees i assignatures",
+      "description": "Què pot impartir aquesta persona",
+      "subjects": "Assignatures",
+      "knowledgeAreas": "Àrees de coneixement",
+      "empty": "Encara no hi ha àrees ni assignatures assignades.",
+      "edit": "Edita",
+      "addArea": "Afegeix una àrea",
+      "areaPlaceholder": "Per exemple: Estadística aplicada",
+      "saved": "Àrees i assignatures desades"
+    },
+    "availability": {
+      "title": "Disponibilitat setmanal",
+      "subtitle": "Pinta la graella amb el nivell que vulguis",
+      "legend": "Llegenda",
+      "level": "Nivell",
+      "paintWith": "Pinta amb",
+      "save": "Desa la disponibilitat",
+      "saved": "Disponibilitat desada",
+      "unsaved": "Tens canvis sense desar",
+      "gridLabel": "Graella de disponibilitat setmanal",
+      "cellLabel": "{{weekday}} de {{start}} a {{end}}: {{level}}",
+      "keyboardTitle": "Amb el teclat",
+      "keyboardHint": "Mou-te amb les fletxes, prem Espai per pintar la casella i Maj+fletxes per pintar diverses caselles alhora. Les tecles 1 a 4 canvien el nivell.",
+      "readOnly": "Només pots consultar aquesta disponibilitat.",
+      "hoursByLevel": "Hores per nivell",
+      "summary": "{{hours}} h disponibles cada setmana",
+      "painted": "{{count}} caselles pintades"
+    },
+    "exceptions": {
+      "title": "Excepcions per data",
+      "subtitle": "Congressos, baixes i altres absències puntuals",
+      "add": "Afegeix una excepció",
+      "dateFrom": "Des del",
+      "dateTo": "Fins al",
+      "reason": "Motiu",
+      "level": "Nivell",
+      "empty": "No hi ha cap excepció registrada.",
+      "created": "Excepció afegida",
+      "removed": "Excepció eliminada",
+      "confirmRemove": "Vols eliminar aquesta excepció?",
+      "reasonPlaceholder": "Per exemple: Congrés internacional"
+    },
+    "panel": {
+      "title": "Càrrega del centre",
+      "subtitle": "Capacitat contractada i encàrrec docent de tot el professorat",
+      "degree": "Titulació",
+      "category": "Categoria",
+      "status": "Estat de la càrrega",
+      "search": "Cerca per nom",
+      "results": "{{count}} persones",
+      "exporting": "Preparant el fitxer…",
+      "exported": "Excel descarregat",
+      "exportFailed": "No hem pogut generar l'Excel",
+      "noResults": "Cap persona coincideix amb els filtres.",
+      "noResultsHint": "Prova de treure algun filtre."
+    },
+    "workload": {
+      "title": "El meu encàrrec docent",
+      "subtitle": "Hores per assignatura i per concepte",
+      "bySubject": "Per assignatura",
+      "byConcept": "Per concepte",
+      "subject": "Assignatura",
+      "groups": "Grups",
+      "hours": "Hores",
+      "share": "Percentatge",
+      "empty": "Encara no tens hores assignades en aquest curs.",
+      "chartLabel": "Distribució de l'encàrrec docent per concepte"
     }
   },
   "subjects": {
@@ -455,5 +565,47 @@
     "draft": "Esborrany",
     "active": "Actiu",
     "closed": "Tancat"
+  },
+  "availabilityLevel": {
+    "preferred": "Preferit",
+    "available": "Disponible",
+    "avoid": "Millor evitar",
+    "unavailable": "No disponible"
+  },
+  "availabilityLevelHint": {
+    "preferred": "Franja on la persona prefereix fer classe",
+    "available": "Franja on pot fer classe sense problema",
+    "avoid": "Franja que només s'hauria d'ocupar si no hi ha alternativa",
+    "unavailable": "Franja on no es pot programar docència"
+  },
+  "assignmentConcept": {
+    "lecture": "Docència",
+    "tutoring": "Tutories",
+    "coordination": "Coordinació",
+    "tfg": "TFG i TFM",
+    "other": "Altres"
+  },
+  "reductionStatus": {
+    "pending": "Pendent d'aprovació",
+    "approved": "Aprovada",
+    "rejected": "Denegada"
+  },
+  "weekday": {
+    "1": "Dilluns",
+    "2": "Dimarts",
+    "3": "Dimecres",
+    "4": "Dijous",
+    "5": "Divendres",
+    "6": "Dissabte",
+    "7": "Diumenge"
+  },
+  "weekdayShort": {
+    "1": "dl.",
+    "2": "dt.",
+    "3": "dc.",
+    "4": "dj.",
+    "5": "dv.",
+    "6": "ds.",
+    "7": "dg."
   }
 }

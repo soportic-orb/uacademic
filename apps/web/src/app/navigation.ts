@@ -1,6 +1,7 @@
 import type { Role } from '@uacademic/shared'
 import {
   BookOpen,
+  CalendarClock,
   CalendarDays,
   FileText,
   LayoutDashboard,
@@ -43,6 +44,12 @@ export const NAV_ITEMS: NavItem[] = [
     icon: User,
     roles: ['TEACHER', 'COORDINATOR'],
     mobile: true,
+  },
+  {
+    key: 'availability',
+    path: '/teachers/me',
+    icon: CalendarClock,
+    roles: ['TEACHER', 'COORDINATOR'],
   },
   {
     key: 'planning',

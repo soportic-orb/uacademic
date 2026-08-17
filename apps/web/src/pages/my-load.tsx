@@ -1,15 +1,22 @@
 import { formatHours, formatPercent } from '@uacademic/shared'
+import { CalendarClock } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { Link } from 'react-router'
 
 import { LoadBadge } from '../components/data/load-badge'
 import { CardSkeleton, ErrorState } from '../components/feedback/states'
 import { Card, CardBody, CardHeader } from '../components/ui/card'
-import { useOwnLoad } from '../hooks/use-api'
+import { useTeacherWorkload } from '../features/capacity/queries'
+import { WorkloadBreakdown } from '../features/capacity/workload-breakdown'
 import { currentLocale } from '../i18n'
 
+/**
+ * Screen (e): the teacher's own hours — the totals that decide the traffic
+ * light, then the breakdown by subject and by concept.
+ */
 export function MyLoadPage() {
   const { t } = useTranslation()
-  const query = useOwnLoad()
+  const query = useTeacherWorkload('me')
   const locale = currentLocale()
 
   if (query.isPending) return <CardSkeleton />
@@ -26,8 +33,18 @@ export function MyLoadPage() {
 
   return (
     <div className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold text-text">{t('load.title')}</h1>
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold text-text">{t('load.title')}</h1>
+          <p className="mt-1 text-sm text-text-muted">{t('teachers.workload.subtitle')}</p>
+        </div>
+        <Link
+          to="/teachers/me"
+          className="inline-flex items-center gap-2 text-sm text-primary underline-offset-2 hover:underline"
+        >
+          <CalendarClock className="size-4" aria-hidden="true" />
+          {t('teachers.availability.title')}
+        </Link>
       </header>
 
       <Card className="max-w-2xl">
@@ -53,6 +70,8 @@ export function MyLoadPage() {
           </dl>
         </CardBody>
       </Card>
+
+      <WorkloadBreakdown workload={load} />
     </div>
   )
 }

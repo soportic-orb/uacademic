@@ -4,7 +4,16 @@
  */
 import { z } from 'zod'
 
-import { localeSchema, roleSchema, themeSchema, uuidSchema } from './common.js'
+import {
+  clockTimeSchema,
+  decimalHoursSchema,
+  isoDateSchema,
+  localeSchema,
+  roleSchema,
+  themeSchema,
+  uuidSchema,
+  weekdaySchema,
+} from './common.js'
 
 /** Machine-readable error codes; the message key is resolved per locale (R1). */
 export const API_ERROR_CODES = [
@@ -83,6 +92,8 @@ export const teacherLoadSchema = z.object({
   remainingHours: z.number(),
   ratioPercent: z.number().nullable(),
   status: loadStatusSchema,
+  /** Degrees the teacher has assignments in, which is what the filter offers. */
+  degreeIds: z.array(uuidSchema),
 })
 export type TeacherLoadDto = z.infer<typeof teacherLoadSchema>
 
@@ -99,6 +110,174 @@ export const centerLoadSummarySchema = z.object({
   }),
 })
 export type CenterLoadSummaryDto = z.infer<typeof centerLoadSummarySchema>
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Teaching capacity: profile, reductions, availability and the load panels
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const assignmentConceptSchema = z.enum([
+  'lecture',
+  'tutoring',
+  'coordination',
+  'tfg',
+  'other',
+])
+
+export const availabilityLevelSchema = z.enum(['preferred', 'available', 'avoid', 'unavailable'])
+
+export const conceptTotalSchema = z.object({
+  concept: assignmentConceptSchema,
+  hours: z.number(),
+  percent: z.number(),
+})
+
+export const subjectWorkloadSchema = z.object({
+  subjectId: uuidSchema,
+  subjectCode: z.string(),
+  subjectName: z.string(),
+  hours: z.number(),
+  percent: z.number(),
+  byConcept: z.array(conceptTotalSchema),
+  groups: z.array(
+    z.object({
+      groupId: uuidSchema.nullable(),
+      groupCode: z.string().nullable(),
+      hours: z.number(),
+    }),
+  ),
+})
+
+/** The personal panel: the same totals as the table, plus the breakdown. */
+export const teacherWorkloadSchema = teacherLoadSchema.extend({
+  academicYearId: uuidSchema,
+  bySubject: z.array(subjectWorkloadSchema),
+  conceptTotals: z.array(conceptTotalSchema),
+})
+export type TeacherWorkloadDto = z.infer<typeof teacherWorkloadSchema>
+
+export const teacherReductionSchema = z.object({
+  id: uuidSchema,
+  reason: z.string(),
+  hours: z.number(),
+  status: z.enum(['pending', 'approved', 'rejected']),
+  approvedBy: uuidSchema.nullable(),
+  approverName: z.string().nullable(),
+  approvedAt: z.string().nullable(),
+})
+export type TeacherReductionDto = z.infer<typeof teacherReductionSchema>
+
+export const teacherSkillSchema = z.object({
+  id: uuidSchema,
+  subjectId: uuidSchema.nullable(),
+  subjectCode: z.string().nullable(),
+  subjectName: z.string().nullable(),
+  knowledgeArea: z.string().nullable(),
+})
+export type TeacherSkillDto = z.infer<typeof teacherSkillSchema>
+
+/** The profile card of screen (a). */
+export const teacherProfileSchema = teacherWorkloadSchema.extend({
+  email: z.email(),
+  avatarUrl: z.string().nullable(),
+  notes: z.string().nullable(),
+  reductions: z.array(teacherReductionSchema),
+  skills: z.array(teacherSkillSchema),
+  weeklyAvailableHours: z.number(),
+})
+export type TeacherProfileDto = z.infer<typeof teacherProfileSchema>
+
+export const reductionInputSchema = z.object({
+  reason: z.string().trim().min(3).max(255),
+  hours: decimalHoursSchema,
+  status: z.enum(['pending', 'approved', 'rejected']).default('pending'),
+})
+export type ReductionInputDto = z.infer<typeof reductionInputSchema>
+
+export const teacherSkillsInputSchema = z.object({
+  subjectIds: z.array(uuidSchema).max(100).default([]),
+  knowledgeAreas: z.array(z.string().trim().min(2).max(150)).max(50).default([]),
+})
+export type TeacherSkillsInputDto = z.infer<typeof teacherSkillsInputSchema>
+
+export const availabilityEntrySchema = z.object({
+  weekday: weekdaySchema,
+  startTime: clockTimeSchema,
+  endTime: clockTimeSchema,
+  level: availabilityLevelSchema,
+})
+export type AvailabilityEntryDto = z.infer<typeof availabilityEntrySchema>
+
+/**
+ * The editor saves the whole week at once: a partial save would leave the grid
+ * and the stored intervals describing different things.
+ */
+export const saveAvailabilitySchema = z.object({
+  entries: z
+    .array(
+      availabilityEntrySchema.refine((entry) => entry.endTime > entry.startTime, {
+        message: 'validation.invalidRange',
+        path: ['endTime'],
+      }),
+    )
+    .max(500),
+})
+export type SaveAvailabilityDto = z.infer<typeof saveAvailabilitySchema>
+
+export const availabilityExceptionSchema = z.object({
+  id: uuidSchema,
+  dateFrom: isoDateSchema,
+  dateTo: isoDateSchema,
+  reason: z.string().nullable(),
+  level: availabilityLevelSchema,
+})
+export type AvailabilityExceptionDto = z.infer<typeof availabilityExceptionSchema>
+
+export const availabilityExceptionInputSchema = z
+  .object({
+    dateFrom: isoDateSchema,
+    dateTo: isoDateSchema,
+    reason: z.string().trim().max(255).optional(),
+    level: availabilityLevelSchema.default('unavailable'),
+  })
+  .refine((exception) => exception.dateTo >= exception.dateFrom, {
+    message: 'validation.invalidRange',
+    path: ['dateTo'],
+  })
+export type AvailabilityExceptionInputDto = z.infer<typeof availabilityExceptionInputSchema>
+
+/** Availability plus the grid geometry, which comes from the center settings. */
+export const availabilityResponseSchema = z.object({
+  teacherProfileId: uuidSchema,
+  entries: z.array(availabilityEntrySchema),
+  exceptions: z.array(availabilityExceptionSchema),
+  grid: z.object({
+    dayStart: clockTimeSchema,
+    dayEnd: clockTimeSchema,
+    slotMinutes: z.number().int(),
+    weekdays: z.array(weekdaySchema),
+  }),
+  hoursByLevel: z.object({
+    preferred: z.number(),
+    available: z.number(),
+    avoid: z.number(),
+    unavailable: z.number(),
+  }),
+  editable: z.boolean(),
+})
+export type AvailabilityResponseDto = z.infer<typeof availabilityResponseSchema>
+
+export const loadSortKeySchema = z.enum(['name', 'capacity', 'assigned', 'ratio', 'status'])
+
+/** Filters of the center load panel; the Excel export accepts the same ones. */
+export const loadQuerySchema = z.object({
+  degreeId: uuidSchema.optional(),
+  category: z.string().max(40).optional(),
+  status: loadStatusSchema.optional(),
+  q: z.string().trim().max(200).optional(),
+  sort: loadSortKeySchema.default('name'),
+  order: z.enum(['asc', 'desc']).default('asc'),
+})
+export type LoadQueryDto = z.infer<typeof loadQuerySchema>
 
 export const subjectSchema = z.object({
   id: uuidSchema,

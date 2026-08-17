@@ -15,7 +15,17 @@
     "optional": "Optional",
     "hours": "hours",
     "hoursShort": "h",
-    "of": "of"
+    "of": "of",
+    "add": "Add",
+    "edit": "Edit",
+    "remove": "Remove",
+    "apply": "Apply",
+    "clear": "Clear",
+    "all": "All",
+    "export": "Export",
+    "total": "Total",
+    "none": "None",
+    "discard": "Discard"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -32,7 +42,8 @@
     "profile": "Profile",
     "more": "More",
     "admin": "Administration",
-    "imports": "Imports"
+    "imports": "Imports",
+    "availability": "Availability"
   },
   "layout": {
     "skipToContent": "Skip to main content",
@@ -89,7 +100,10 @@
       "optimal": "Between 85% and 100% of the contracted capacity",
       "limit": "Between 100% and 110% of the contracted capacity",
       "over": "Above 110% of the contracted capacity"
-    }
+    },
+    "summary": "Center total",
+    "thresholds": "Traffic-light thresholds",
+    "export": "Export to Excel"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -113,6 +127,102 @@
       "title": "No teaching staff yet",
       "description": "Import the center's teaching staff or add them manually to start distributing the load.",
       "action": "Add teacher"
+    },
+    "firstName": "First name",
+    "lastName": "Last name",
+    "email": "Email",
+    "notes": "Notes",
+    "profile": {
+      "title": "Teaching profile",
+      "back": "Back to teachers",
+      "contract": "Contract",
+      "notFound": "This person has no teaching profile in the active year.",
+      "openProfile": "Open the profile"
+    },
+    "reductions": {
+      "title": "Reductions",
+      "description": "Hours deducted from the contracted capacity",
+      "reason": "Reason",
+      "hours": "Hours",
+      "status": "Status",
+      "approver": "Approved by",
+      "approvedAt": "Date",
+      "add": "Add a reduction",
+      "edit": "Edit the reduction",
+      "empty": "This person has no reductions on record.",
+      "pendingHint": "Pending reductions do not lower the capacity yet.",
+      "saved": "Reduction saved",
+      "removed": "Reduction removed",
+      "confirmRemove": "Remove this reduction?"
+    },
+    "skills": {
+      "title": "Areas and subjects",
+      "description": "What this person can teach",
+      "subjects": "Subjects",
+      "knowledgeAreas": "Knowledge areas",
+      "empty": "No areas or subjects assigned yet.",
+      "edit": "Edit",
+      "addArea": "Add an area",
+      "areaPlaceholder": "For example: Applied statistics",
+      "saved": "Areas and subjects saved"
+    },
+    "availability": {
+      "title": "Weekly availability",
+      "subtitle": "Paint the grid with the level you want",
+      "legend": "Legend",
+      "level": "Level",
+      "paintWith": "Paint with",
+      "save": "Save availability",
+      "saved": "Availability saved",
+      "unsaved": "You have unsaved changes",
+      "gridLabel": "Weekly availability grid",
+      "cellLabel": "{{weekday}} from {{start}} to {{end}}: {{level}}",
+      "keyboardTitle": "Using the keyboard",
+      "keyboardHint": "Move with the arrow keys, press Space to paint the cell and Shift+arrows to paint several cells at once. Keys 1 to 4 change the level.",
+      "readOnly": "You can only view this availability.",
+      "hoursByLevel": "Hours per level",
+      "summary": "{{hours}} h available each week",
+      "painted": "{{count}} cells painted"
+    },
+    "exceptions": {
+      "title": "Date exceptions",
+      "subtitle": "Conferences, leave and other one-off absences",
+      "add": "Add an exception",
+      "dateFrom": "From",
+      "dateTo": "To",
+      "reason": "Reason",
+      "level": "Level",
+      "empty": "No exceptions on record.",
+      "created": "Exception added",
+      "removed": "Exception removed",
+      "confirmRemove": "Remove this exception?",
+      "reasonPlaceholder": "For example: International conference"
+    },
+    "panel": {
+      "title": "Center teaching load",
+      "subtitle": "Contracted capacity and assigned workload across the center",
+      "degree": "Degree",
+      "category": "Category",
+      "status": "Load status",
+      "search": "Search by name",
+      "results": "{{count}} people",
+      "exporting": "Preparing the file…",
+      "exported": "Excel downloaded",
+      "exportFailed": "We could not generate the Excel file",
+      "noResults": "Nobody matches the filters.",
+      "noResultsHint": "Try removing a filter."
+    },
+    "workload": {
+      "title": "My teaching workload",
+      "subtitle": "Hours by subject and by concept",
+      "bySubject": "By subject",
+      "byConcept": "By concept",
+      "subject": "Subject",
+      "groups": "Groups",
+      "hours": "Hours",
+      "share": "Share",
+      "empty": "You have no assigned hours in this year yet.",
+      "chartLabel": "Workload distribution by concept"
     }
   },
   "subjects": {
@@ -455,5 +565,47 @@
     "draft": "Draft",
     "active": "Active",
     "closed": "Closed"
+  },
+  "availabilityLevel": {
+    "preferred": "Preferred",
+    "available": "Available",
+    "avoid": "Better avoided",
+    "unavailable": "Unavailable"
+  },
+  "availabilityLevelHint": {
+    "preferred": "A slot this person would rather teach in",
+    "available": "A slot they can teach in without any problem",
+    "avoid": "A slot to use only when there is no alternative",
+    "unavailable": "A slot where no teaching can be scheduled"
+  },
+  "assignmentConcept": {
+    "lecture": "Teaching",
+    "tutoring": "Tutoring",
+    "coordination": "Coordination",
+    "tfg": "Final projects",
+    "other": "Other"
+  },
+  "reductionStatus": {
+    "pending": "Awaiting approval",
+    "approved": "Approved",
+    "rejected": "Rejected"
+  },
+  "weekday": {
+    "1": "Monday",
+    "2": "Tuesday",
+    "3": "Wednesday",
+    "4": "Thursday",
+    "5": "Friday",
+    "6": "Saturday",
+    "7": "Sunday"
+  },
+  "weekdayShort": {
+    "1": "Mon",
+    "2": "Tue",
+    "3": "Wed",
+    "4": "Thu",
+    "5": "Fri",
+    "6": "Sat",
+    "7": "Sun"
   }
 }

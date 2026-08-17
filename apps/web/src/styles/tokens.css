@@ -36,6 +36,17 @@
   --load-limit-surface: #fef3c7;
   --load-over-surface: #fee2e2;
 
+  /* Availability levels of the weekly editor. Never the only carrier of
+     meaning: every cell also shows a symbol and an accessible label (R8). */
+  --availability-preferred: #a3cff5;
+  --availability-available: #eaf4fc;
+  --availability-avoid: #fef3c7;
+  --availability-unavailable: #f1f5f9;
+  --availability-preferred-text: #00335c;
+  --availability-available-text: #004782;
+  --availability-avoid-text: #92400e;
+  --availability-unavailable-text: #475569;
+
   /* Light theme surfaces */
   --bg: #f8fafc;
   --surface: #ffffff;
@@ -93,6 +104,15 @@
   --load-optimal-surface: #0d2e1d;
   --load-limit-surface: #33270a;
   --load-over-surface: #3a1414;
+
+  --availability-preferred: #1d4f7c;
+  --availability-available: #102a44;
+  --availability-avoid: #33270a;
+  --availability-unavailable: #1c2b47;
+  --availability-preferred-text: #d0e7fa;
+  --availability-available-text: #a3cff5;
+  --availability-avoid-text: #fbbf24;
+  --availability-unavailable-text: #a8b6c8;
 
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
   --shadow-md: 0 2px 8px -2px rgb(0 0 0 / 0.45);
