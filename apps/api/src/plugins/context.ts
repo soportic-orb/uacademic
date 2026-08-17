@@ -1,16 +1,21 @@
-import type { AppLocale, Principal, Role } from '@uacademic/shared'
+import type { AppLocale, Principal, Role, SessionUser } from '@uacademic/shared'
 import {
   CENTER_HEADER,
   CROSS_CENTER_HEADER,
+  DEFAULT_LOCALE,
+  SESSION_COOKIE,
   canAccessCenter,
   isSuperadmin,
+  parseAcceptLanguage,
+  resolveLocale,
 } from '@uacademic/shared'
-import { DEFAULT_LOCALE, parseAcceptLanguage, resolveLocale } from '@uacademic/shared'
 import type { FastifyInstance, FastifyRequest } from 'fastify'
 
+import type { Env } from '../config/env.js'
 import { writeAuditLog } from '../lib/audit.js'
 import { AppError } from '../lib/errors.js'
 import { type ScopedPrismaClient, prisma, scopedPrisma } from '../lib/prisma.js'
+import { type ActiveSession, loadSession } from '../services/auth-service.js'
 
 export interface RequestUser extends Principal {
   email: string
@@ -19,40 +24,56 @@ export interface RequestUser extends Principal {
   locale: AppLocale
   theme: 'light' | 'dark' | 'system'
   avatarUrl: string | null
+  status: 'active' | 'invited' | 'pending_activation' | 'suspended'
+  entraOid: string | null
   centerNames: Map<string, { name: string; code: string }>
+}
+
+export interface MicrosoftAccount {
+  objectId: string
+  tenantId: string
+  username: string | null
 }
 
 declare module 'fastify' {
   interface FastifyRequest {
     user?: RequestUser
+    session?: ActiveSession
+    microsoftAccount?: MicrosoftAccount | null
     locale: AppLocale
     centerId?: string
     crossCenter: boolean
   }
   interface FastifyContextConfig {
-    /** Routes that must answer without an identity (health, metrics). */
+    /** Routes that must answer without an identity (health, sign-in). */
     public?: boolean
     /** Roles allowed on this route, checked against the active center. */
     roles?: readonly Role[]
+    /** Routes only the platform superadmin may reach, in any center. */
+    superadminOnly?: boolean
   }
 }
 
-/**
- * Phase 0 identity. The mock reads a header and resolves the user in our
- * database; phase 1 swaps the header for an Entra ID token and validates
- * `tid`, `iss` and `oid` — but the roles keep coming from `user_center_roles`,
- * never from the token (R3).
- */
+export async function loadUserById(userId: string): Promise<RequestUser | null> {
+  return hydrate(await findUser({ id: userId }))
+}
+
 export async function loadUserByEmail(email: string): Promise<RequestUser | null> {
-  const client = prisma()
-  const user = await client.user.findUnique({
-    where: { email },
+  return hydrate(await findUser({ email }))
+}
+
+function findUser(where: { id: string } | { email: string }) {
+  return prisma().user.findUnique({
+    where: where as { id: string },
     include: {
-      centerRoles: {
-        include: { center: { select: { id: true, name: true, code: true } } },
-      },
+      centerRoles: { include: { center: { select: { id: true, name: true, code: true } } } },
     },
   })
+}
+
+type UserRow = Awaited<ReturnType<typeof findUser>>
+
+function hydrate(user: UserRow): RequestUser | null {
   if (!user) return null
 
   const centerNames = new Map<string, { name: string; code: string }>()
@@ -71,6 +92,8 @@ export async function loadUserByEmail(email: string): Promise<RequestUser | null
     locale: (user.locale ?? DEFAULT_LOCALE) as AppLocale,
     theme: user.theme,
     avatarUrl: user.avatarUrl,
+    status: user.status,
+    entraOid: user.entraOid,
     memberships: user.centerRoles.map((membership) => ({
       centerId: membership.centerId,
       role: membership.role as Role,
@@ -94,14 +117,44 @@ export function requireCenterScope(request: FastifyRequest): {
   if (!canAccessCenter(user, request.centerId) && !request.crossCenter) {
     throw AppError.tenantMismatch()
   }
+  return { centerId: request.centerId, db: scopedPrisma(prisma(), request.centerId) }
+}
+
+/** The session payload the client receives; roles always come from the DB (R3). */
+export async function buildSessionUser(
+  userId: string,
+  method: 'entra' | 'local',
+  expiresAt: Date,
+  microsoftAccount: MicrosoftAccount | null,
+): Promise<SessionUser> {
+  const user = await loadUserById(userId)
+  if (!user) throw AppError.unauthorized()
+
   return {
-    centerId: request.centerId,
-    db: scopedPrisma(prisma(), request.centerId),
+    id: user.userId,
+    email: user.email,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    locale: user.locale,
+    theme: user.theme,
+    avatarUrl: user.avatarUrl,
+    status: user.status,
+    authMethod: method,
+    microsoftAccount,
+    memberships: user.memberships.map((membership) => ({
+      centerId: membership.centerId,
+      centerName: user.centerNames.get(membership.centerId)?.name ?? '',
+      centerCode: user.centerNames.get(membership.centerId)?.code ?? '',
+      role: membership.role,
+    })),
+    expiresAt: expiresAt.toISOString(),
   }
 }
 
-export function registerContext(app: FastifyInstance): void {
+export function registerContext(app: FastifyInstance, env: Env): void {
   app.decorateRequest('user', undefined)
+  app.decorateRequest('session', undefined)
+  app.decorateRequest('microsoftAccount', undefined)
   app.decorateRequest('locale', DEFAULT_LOCALE)
   app.decorateRequest('centerId', undefined)
   app.decorateRequest('crossCenter', false)
@@ -111,59 +164,107 @@ export function registerContext(app: FastifyInstance): void {
 
     if (request.routeOptions.config?.public) return
 
-    const headerEmail = request.headers['x-mock-user']
-    const email =
-      typeof headerEmail === 'string' && headerEmail.length > 0
-        ? headerEmail
-        : process.env.MOCK_USER_EMAIL
-
-    if (!email) throw AppError.unauthorized()
-
-    const user = await loadUserByEmail(email)
+    const user = await authenticate(request, env)
     if (!user) throw AppError.unauthorized()
 
     request.user = user
-    // The user's stored preference wins over the browser header.
+    // The stored preference wins over the browser header.
     request.locale = user.locale
 
-    const centerHeader = request.headers[CENTER_HEADER]
-    if (typeof centerHeader === 'string' && centerHeader.length > 0) {
-      request.centerId = centerHeader
-    } else if (user.memberships.length === 1) {
-      request.centerId = user.memberships[0]?.centerId
-    }
-
-    const crossHeader = request.headers[CROSS_CENTER_HEADER]
-    const wantsCrossCenter = crossHeader === 'true' || crossHeader === '1'
-
-    if (wantsCrossCenter) {
-      // R2: only SUPERADMIN crosses centers, and the crossing is audited.
-      if (!isSuperadmin(user)) throw AppError.forbidden()
-      request.crossCenter = true
-      await writeAuditLog(prisma(), {
-        centerId: request.centerId ?? null,
-        userId: user.userId,
-        entity: 'center',
-        entityId: request.centerId ?? 'all',
-        action: 'cross_center_access',
-        after: { method: request.method, url: request.url },
-        source: 'user',
-        ip: request.ip,
-      })
-    }
-
-    if (request.centerId && !canAccessCenter(user, request.centerId) && !request.crossCenter) {
-      throw AppError.tenantMismatch()
-    }
-
-    const allowedRoles = request.routeOptions.config?.roles
-    if (allowedRoles && allowedRoles.length > 0) {
-      if (!request.centerId) throw AppError.tenantRequired()
-      const roles = user.memberships
-        .filter((membership) => membership.centerId === request.centerId)
-        .map((membership) => membership.role)
-      const allowed = isSuperadmin(user) || roles.some((role) => allowedRoles.includes(role))
-      if (!allowed) throw AppError.forbidden()
-    }
+    resolveActiveCenter(request, user)
+    await applyCrossCenter(request, user)
+    enforceRouteRoles(request, user)
   })
+}
+
+async function authenticate(request: FastifyRequest, env: Env): Promise<RequestUser | null> {
+  const cookie = request.cookies[SESSION_COOKIE]
+  if (cookie) {
+    const unsigned = request.unsignCookie(cookie)
+    if (!unsigned.valid || !unsigned.value) return null
+
+    const session = await loadSession(prisma(), unsigned.value)
+    if (!session) return null
+
+    const user = await loadUserById(session.userId)
+    if (!user) return null
+
+    // A suspended or deactivated account loses access on the next request,
+    // without waiting for the session to expire.
+    if (user.status !== 'active') return null
+
+    request.session = session
+    request.microsoftAccount =
+      session.method === 'entra' && user.entraOid && session.entraTid
+        ? { objectId: user.entraOid, tenantId: session.entraTid, username: user.email }
+        : null
+
+    return user
+  }
+
+  // Development and e2e only: refused in production by `loadEnv`.
+  if (env.AUTH_MODE === 'mock') {
+    const header = request.headers['x-mock-user']
+    const email = typeof header === 'string' && header.length > 0 ? header : env.MOCK_USER_EMAIL
+    if (!email) return null
+    return loadUserByEmail(email)
+  }
+
+  return null
+}
+
+function resolveActiveCenter(request: FastifyRequest, user: RequestUser): void {
+  const centerHeader = request.headers[CENTER_HEADER]
+  if (typeof centerHeader === 'string' && centerHeader.length > 0) {
+    request.centerId = centerHeader
+    return
+  }
+
+  const centers = new Set(user.memberships.map((membership) => membership.centerId))
+  if (centers.size === 1) request.centerId = [...centers][0]
+}
+
+async function applyCrossCenter(request: FastifyRequest, user: RequestUser): Promise<void> {
+  const crossHeader = request.headers[CROSS_CENTER_HEADER]
+  const wantsCrossCenter = crossHeader === 'true' || crossHeader === '1'
+
+  if (wantsCrossCenter) {
+    // R2: only SUPERADMIN crosses centers, and the crossing is audited.
+    if (!isSuperadmin(user)) throw AppError.forbidden()
+    request.crossCenter = true
+
+    await writeAuditLog(prisma(), {
+      centerId: request.centerId ?? null,
+      userId: user.userId,
+      entity: 'center',
+      entityId: request.centerId ?? 'all',
+      action: 'cross_center_access',
+      after: { method: request.method, url: request.url },
+      source: 'user',
+      ip: request.ip,
+    })
+  }
+
+  if (request.centerId && !canAccessCenter(user, request.centerId) && !request.crossCenter) {
+    throw AppError.tenantMismatch()
+  }
+}
+
+function enforceRouteRoles(request: FastifyRequest, user: RequestUser): void {
+  const config = request.routeOptions.config
+
+  if (config?.superadminOnly && !isSuperadmin(user)) throw AppError.forbidden()
+
+  const allowedRoles = config?.roles
+  if (!allowedRoles || allowedRoles.length === 0) return
+
+  if (!request.centerId) throw AppError.tenantRequired()
+
+  const roles = user.memberships
+    .filter((membership) => membership.centerId === request.centerId)
+    .map((membership) => membership.role)
+
+  if (!isSuperadmin(user) && !roles.some((role) => allowedRoles.includes(role))) {
+    throw AppError.forbidden()
+  }
 }

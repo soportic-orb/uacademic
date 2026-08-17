@@ -30,7 +30,9 @@
     "platform": "Plataforma",
     "assistant": "Asistente IA",
     "profile": "Perfil",
-    "more": "Más"
+    "more": "Más",
+    "admin": "Administración",
+    "imports": "Importaciones"
   },
   "layout": {
     "skipToContent": "Ir al contenido principal",
@@ -204,7 +206,9 @@
     "invalidRange": "La hora final debe ser posterior a la inicial.",
     "invalidWeekday": "El día de la semana debe estar entre 1 (lunes) y 7 (domingo).",
     "min": "El valor mínimo es {{min}}.",
-    "max": "El valor máximo es {{max}}."
+    "max": "El valor máximo es {{max}}.",
+    "invalidCode": "El código solo puede tener letras, cifras, puntos, guiones y guiones bajos.",
+    "invalidDateRange": "La fecha final debe ser igual o posterior a la inicial."
   },
   "email": {
     "greeting": "Hola, {{name}}",
@@ -237,5 +241,188 @@
     "t2": "2.º semestre",
     "t3": "3.er periodo",
     "annual": "Anual"
+  },
+  "auth": {
+    "title": "Inicia sesión",
+    "subtitle": "Accede con la cuenta de tu universidad",
+    "signInWithMicrosoft": "Entrar con Microsoft",
+    "signingIn": "Verificando la identidad…",
+    "localAccess": "Acceso de administración de plataforma",
+    "localAccessHint": "Vía alternativa para la superadministración, independiente de Microsoft.",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "totp": "Código de verificación",
+    "totpHint": "Seis dígitos de la aplicación de autenticación.",
+    "submit": "Entrar",
+    "signOut": "Cerrar sesión",
+    "signedOut": "Has cerrado la sesión",
+    "linkedAccount": "Cuenta de Microsoft vinculada",
+    "linkedAccountHint": "El acceso se hace con esta cuenta; la contraseña la gestiona tu organización.",
+    "objectId": "Identificador de objeto",
+    "tenant": "Organización",
+    "sessionExpires": "La sesión caduca",
+    "changePassword": "Cambiar la contraseña",
+    "currentPassword": "Contraseña actual",
+    "newPassword": "Contraseña nueva",
+    "confirmPassword": "Confirma la contraseña nueva",
+    "passwordChanged": "Contraseña actualizada",
+    "errors": {
+      "pendingActivation": "La cuenta todavía no está activada. Contacta con la administración del centro.",
+      "suspended": "La cuenta está suspendida.",
+      "invited": "La cuenta está invitada pero aún no se ha activado.",
+      "invalidCredentials": "Las credenciales no son correctas.",
+      "invalidTotp": "El código de verificación no es válido.",
+      "totpRequired": "Hace falta el código de verificación.",
+      "tokenInvalid": "El token de acceso no es válido.",
+      "tenantNotAuthorized": "La organización no está autorizada.",
+      "locked": "Cuenta bloqueada temporalmente por intentos fallidos.",
+      "passwordTooShort": "La contraseña debe tener como mínimo 12 caracteres.",
+      "passwordTooWeak": "La contraseña debe combinar mayúsculas, minúsculas y cifras.",
+      "passwordMismatch": "Las contraseñas no coinciden.",
+      "passwordReused": "La contraseña nueva debe ser distinta de la actual.",
+      "localNotAvailable": "Esta cuenta no tiene acceso local."
+    }
+  },
+  "admin": {
+    "title": "Administración",
+    "universities": "Universidades",
+    "centers": "Centros",
+    "tenants": "Tenants de identidad",
+    "degrees": "Titulaciones",
+    "academicYears": "Cursos académicos",
+    "groups": "Grupos",
+    "spaces": "Espacios",
+    "calendar": "Calendario académico",
+    "users": "Usuarios",
+    "roles": "Roles",
+    "create": "Crear",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "deleteConfirm": "¿Seguro que quieres eliminar «{{name}}»?",
+    "created": "Registro creado",
+    "updated": "Cambios guardados",
+    "deleted": "Registro eliminado",
+    "searchPlaceholder": "Buscar…",
+    "noResults": "Ningún resultado para esta búsqueda",
+    "rowsPerPage": "Filas por página",
+    "pageOf": "Página {{page}} de {{total}}",
+    "previousPage": "Página anterior",
+    "nextPage": "Página siguiente",
+    "sortBy": "Ordenar por {{column}}",
+    "actions": "Acciones",
+    "activate": "Activar",
+    "activated": "Cuenta activada",
+    "pendingUsers": "Cuentas pendientes de activación"
+  },
+  "imports": {
+    "title": "Importación masiva",
+    "subtitle": "Carga profesorado o asignaturas desde un CSV o Excel",
+    "kind": "Tipo de importación",
+    "kindTeachers": "Profesorado",
+    "kindSubjects": "Asignaturas",
+    "steps": {
+      "upload": "Archivo",
+      "mapping": "Columnas",
+      "preview": "Revisión",
+      "confirm": "Confirmación"
+    },
+    "selectFile": "Elige un archivo CSV o Excel",
+    "upload": "Subir el archivo",
+    "uploaded": "Archivo procesado",
+    "detectedColumns": "Columnas detectadas",
+    "mapColumn": "Columna del archivo",
+    "unmapped": "Sin asignar",
+    "missingRequired": "Faltan columnas obligatorias: {{fields}}",
+    "validate": "Validar los datos",
+    "dryRun": "Simulación: no se escribirá nada hasta que lo confirmes.",
+    "apply": "Aplicar la importación",
+    "applied": "Importación aplicada: {{count}} registros",
+    "cancel": "Cancelar la importación",
+    "rowNumber": "Fila",
+    "rowStatus": "Estado",
+    "summary": {
+      "total": "Filas leídas",
+      "valid": "Válidas",
+      "invalid": "Con errores",
+      "duplicates": "Duplicadas"
+    },
+    "onlyValidApplied": "Solo se aplican las filas válidas.",
+    "fields": {
+      "email": "Correo",
+      "firstName": "Nombre",
+      "lastName": "Apellidos",
+      "category": "Categoría",
+      "dedication": "Dedicación",
+      "contractedHours": "Horas contratadas",
+      "knowledgeArea": "Área de conocimiento",
+      "code": "Código",
+      "nameCa": "Nombre (catalán)",
+      "nameEs": "Nombre (castellano)",
+      "nameEn": "Nombre (inglés)",
+      "degreeCode": "Código de titulación",
+      "ects": "ECTS",
+      "year": "Curso",
+      "term": "Periodo",
+      "type": "Tipo",
+      "teachingLanguage": "Idioma de docencia"
+    },
+    "errors": {
+      "invalidEmail": "El correo no tiene un formato válido.",
+      "notANumber": "Debe ser un número.",
+      "notAnInteger": "Debe ser un número entero.",
+      "outOfRange": "El valor está fuera del intervalo permitido.",
+      "unknownValue": "El valor no es ninguna de las opciones aceptadas.",
+      "unsupportedFile": "Formato de archivo no admitido. Usa CSV o Excel.",
+      "emptyFile": "El archivo no contiene ninguna fila.",
+      "tooManyRows": "El archivo supera el máximo de {{max}} filas.",
+      "duplicateInFile": "Este valor aparece más de una vez en el archivo."
+    }
+  },
+  "calendarType": {
+    "holiday": "Festivo",
+    "non_teaching": "No lectivo",
+    "exam_period": "Periodo de exámenes",
+    "term_start": "Inicio de periodo",
+    "term_end": "Fin de periodo",
+    "event": "Evento"
+  },
+  "degreeLevel": {
+    "bachelor": "Grado",
+    "master": "Máster",
+    "doctorate": "Doctorado",
+    "own_degree": "Título propio"
+  },
+  "subjectType": {
+    "basic": "Básica",
+    "compulsory": "Obligatoria",
+    "elective": "Optativa",
+    "practicum": "Prácticas",
+    "final_project": "Trabajo final"
+  },
+  "groupType": {
+    "theory": "Teoría",
+    "seminar": "Seminario",
+    "lab": "Laboratorio",
+    "practicum": "Prácticas",
+    "tutoring": "Tutorías"
+  },
+  "spaceType": {
+    "classroom": "Aula",
+    "seminar_room": "Sala de seminarios",
+    "computer_lab": "Aula de informática",
+    "lab": "Laboratorio",
+    "auditorium": "Auditorio",
+    "other": "Otros"
+  },
+  "userStatus": {
+    "active": "Activo",
+    "invited": "Invitado",
+    "pending_activation": "Pendiente de activación",
+    "suspended": "Suspendido"
+  },
+  "academicYearStatus": {
+    "draft": "Borrador",
+    "active": "Activo",
+    "closed": "Cerrado"
   }
 }

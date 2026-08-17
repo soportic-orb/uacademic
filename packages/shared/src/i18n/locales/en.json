@@ -30,7 +30,9 @@
     "platform": "Platform",
     "assistant": "AI assistant",
     "profile": "Profile",
-    "more": "More"
+    "more": "More",
+    "admin": "Administration",
+    "imports": "Imports"
   },
   "layout": {
     "skipToContent": "Skip to main content",
@@ -204,7 +206,9 @@
     "invalidRange": "The end time must be after the start time.",
     "invalidWeekday": "The weekday must be between 1 (Monday) and 7 (Sunday).",
     "min": "The minimum value is {{min}}.",
-    "max": "The maximum value is {{max}}."
+    "max": "The maximum value is {{max}}.",
+    "invalidCode": "The code may only contain letters, digits, dots, hyphens and underscores.",
+    "invalidDateRange": "The end date must be the same as or after the start date."
   },
   "email": {
     "greeting": "Hello {{name}}",
@@ -237,5 +241,188 @@
     "t2": "2nd term",
     "t3": "3rd term",
     "annual": "Full year"
+  },
+  "auth": {
+    "title": "Sign in",
+    "subtitle": "Use your university account",
+    "signInWithMicrosoft": "Sign in with Microsoft",
+    "signingIn": "Verifying your identity…",
+    "localAccess": "Platform administration access",
+    "localAccessHint": "Break-glass path for the superadmin, independent of Microsoft.",
+    "email": "Email",
+    "password": "Password",
+    "totp": "Verification code",
+    "totpHint": "Six digits from your authenticator app.",
+    "submit": "Sign in",
+    "signOut": "Sign out",
+    "signedOut": "You have signed out",
+    "linkedAccount": "Linked Microsoft account",
+    "linkedAccountHint": "You sign in with this account; your organization manages the password.",
+    "objectId": "Object identifier",
+    "tenant": "Organization",
+    "sessionExpires": "Session expires",
+    "changePassword": "Change password",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm the new password",
+    "passwordChanged": "Password updated",
+    "errors": {
+      "pendingActivation": "This account is not activated yet. Contact the center administration.",
+      "suspended": "This account is suspended.",
+      "invited": "This account is invited but not activated yet.",
+      "invalidCredentials": "Those credentials are not correct.",
+      "invalidTotp": "That verification code is not valid.",
+      "totpRequired": "A verification code is required.",
+      "tokenInvalid": "The access token is not valid.",
+      "tenantNotAuthorized": "That organization is not authorized.",
+      "locked": "Account temporarily locked after failed attempts.",
+      "passwordTooShort": "The password must be at least 12 characters long.",
+      "passwordTooWeak": "The password must mix upper case, lower case and digits.",
+      "passwordMismatch": "The passwords do not match.",
+      "passwordReused": "The new password must differ from the current one.",
+      "localNotAvailable": "This account has no local access."
+    }
+  },
+  "admin": {
+    "title": "Administration",
+    "universities": "Universities",
+    "centers": "Centers",
+    "tenants": "Identity tenants",
+    "degrees": "Degrees",
+    "academicYears": "Academic years",
+    "groups": "Groups",
+    "spaces": "Spaces",
+    "calendar": "Academic calendar",
+    "users": "Users",
+    "roles": "Roles",
+    "create": "Create",
+    "edit": "Edit",
+    "delete": "Delete",
+    "deleteConfirm": "Delete “{{name}}”?",
+    "created": "Record created",
+    "updated": "Changes saved",
+    "deleted": "Record deleted",
+    "searchPlaceholder": "Search…",
+    "noResults": "No results for this search",
+    "rowsPerPage": "Rows per page",
+    "pageOf": "Page {{page}} of {{total}}",
+    "previousPage": "Previous page",
+    "nextPage": "Next page",
+    "sortBy": "Sort by {{column}}",
+    "actions": "Actions",
+    "activate": "Activate",
+    "activated": "Account activated",
+    "pendingUsers": "Accounts pending activation"
+  },
+  "imports": {
+    "title": "Bulk import",
+    "subtitle": "Load teachers or subjects from a CSV or Excel file",
+    "kind": "Import type",
+    "kindTeachers": "Teachers",
+    "kindSubjects": "Subjects",
+    "steps": {
+      "upload": "File",
+      "mapping": "Columns",
+      "preview": "Review",
+      "confirm": "Confirmation"
+    },
+    "selectFile": "Choose a CSV or Excel file",
+    "upload": "Upload the file",
+    "uploaded": "File processed",
+    "detectedColumns": "Detected columns",
+    "mapColumn": "File column",
+    "unmapped": "Unmapped",
+    "missingRequired": "Required columns are missing: {{fields}}",
+    "validate": "Validate the data",
+    "dryRun": "Dry run: nothing is written until you confirm.",
+    "apply": "Apply the import",
+    "applied": "Import applied: {{count}} records",
+    "cancel": "Cancel the import",
+    "rowNumber": "Row",
+    "rowStatus": "Status",
+    "summary": {
+      "total": "Rows read",
+      "valid": "Valid",
+      "invalid": "With errors",
+      "duplicates": "Duplicated"
+    },
+    "onlyValidApplied": "Only valid rows are applied.",
+    "fields": {
+      "email": "Email",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "category": "Category",
+      "dedication": "Dedication",
+      "contractedHours": "Contracted hours",
+      "knowledgeArea": "Knowledge area",
+      "code": "Code",
+      "nameCa": "Name (Catalan)",
+      "nameEs": "Name (Spanish)",
+      "nameEn": "Name (English)",
+      "degreeCode": "Degree code",
+      "ects": "ECTS",
+      "year": "Year",
+      "term": "Term",
+      "type": "Type",
+      "teachingLanguage": "Teaching language"
+    },
+    "errors": {
+      "invalidEmail": "That email is not valid.",
+      "notANumber": "Must be a number.",
+      "notAnInteger": "Must be a whole number.",
+      "outOfRange": "The value is outside the allowed range.",
+      "unknownValue": "The value is not one of the accepted options.",
+      "unsupportedFile": "Unsupported file format. Use CSV or Excel.",
+      "emptyFile": "The file has no rows.",
+      "tooManyRows": "The file exceeds the maximum of {{max}} rows.",
+      "duplicateInFile": "This value appears more than once in the file."
+    }
+  },
+  "calendarType": {
+    "holiday": "Holiday",
+    "non_teaching": "Non-teaching",
+    "exam_period": "Exam period",
+    "term_start": "Term start",
+    "term_end": "Term end",
+    "event": "Event"
+  },
+  "degreeLevel": {
+    "bachelor": "Bachelor",
+    "master": "Master",
+    "doctorate": "Doctorate",
+    "own_degree": "Own degree"
+  },
+  "subjectType": {
+    "basic": "Basic",
+    "compulsory": "Compulsory",
+    "elective": "Elective",
+    "practicum": "Practicum",
+    "final_project": "Final project"
+  },
+  "groupType": {
+    "theory": "Theory",
+    "seminar": "Seminar",
+    "lab": "Lab",
+    "practicum": "Practicum",
+    "tutoring": "Tutoring"
+  },
+  "spaceType": {
+    "classroom": "Classroom",
+    "seminar_room": "Seminar room",
+    "computer_lab": "Computer lab",
+    "lab": "Lab",
+    "auditorium": "Auditorium",
+    "other": "Other"
+  },
+  "userStatus": {
+    "active": "Active",
+    "invited": "Invited",
+    "pending_activation": "Pending activation",
+    "suspended": "Suspended"
+  },
+  "academicYearStatus": {
+    "draft": "Draft",
+    "active": "Active",
+    "closed": "Closed"
   }
 }

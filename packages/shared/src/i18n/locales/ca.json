@@ -30,7 +30,9 @@
     "platform": "Plataforma",
     "assistant": "Assistent IA",
     "profile": "Perfil",
-    "more": "Més"
+    "more": "Més",
+    "admin": "Administració",
+    "imports": "Importacions"
   },
   "layout": {
     "skipToContent": "Ves al contingut principal",
@@ -204,7 +206,9 @@
     "invalidRange": "L'hora final ha de ser posterior a la inicial.",
     "invalidWeekday": "El dia de la setmana ha de ser entre 1 (dilluns) i 7 (diumenge).",
     "min": "El valor mínim és {{min}}.",
-    "max": "El valor màxim és {{max}}."
+    "max": "El valor màxim és {{max}}.",
+    "invalidCode": "El codi només pot tenir lletres, xifres, punts, guions i guions baixos.",
+    "invalidDateRange": "La data final ha de ser igual o posterior a la inicial."
   },
   "email": {
     "greeting": "Hola, {{name}}",
@@ -237,5 +241,188 @@
     "t2": "2n semestre",
     "t3": "3r període",
     "annual": "Anual"
+  },
+  "auth": {
+    "title": "Inicia la sessió",
+    "subtitle": "Accedeix amb el compte de la teva universitat",
+    "signInWithMicrosoft": "Entra amb Microsoft",
+    "signingIn": "Verificant la identitat…",
+    "localAccess": "Accés d'administració de plataforma",
+    "localAccessHint": "Via alternativa per a la superadministració, independent de Microsoft.",
+    "email": "Correu electrònic",
+    "password": "Contrasenya",
+    "totp": "Codi de verificació",
+    "totpHint": "Sis dígits de l'aplicació d'autenticació.",
+    "submit": "Entra",
+    "signOut": "Tanca la sessió",
+    "signedOut": "Has tancat la sessió",
+    "linkedAccount": "Compte de Microsoft vinculat",
+    "linkedAccountHint": "L'accés es fa amb aquest compte; la contrasenya la gestiona la teva organització.",
+    "objectId": "Identificador d'objecte",
+    "tenant": "Organització",
+    "sessionExpires": "La sessió caduca",
+    "changePassword": "Canvia la contrasenya",
+    "currentPassword": "Contrasenya actual",
+    "newPassword": "Contrasenya nova",
+    "confirmPassword": "Confirma la contrasenya nova",
+    "passwordChanged": "Contrasenya actualitzada",
+    "errors": {
+      "pendingActivation": "El compte encara no està activat. Contacta amb l'administració del centre.",
+      "suspended": "El compte està suspès.",
+      "invited": "El compte està convidat però encara no s'ha activat.",
+      "invalidCredentials": "Les credencials no són correctes.",
+      "invalidTotp": "El codi de verificació no és vàlid.",
+      "totpRequired": "Cal el codi de verificació.",
+      "tokenInvalid": "El testimoni d'accés no és vàlid.",
+      "tenantNotAuthorized": "L'organització no està autoritzada.",
+      "locked": "Compte bloquejat temporalment per intents fallits.",
+      "passwordTooShort": "La contrasenya ha de tenir com a mínim 12 caràcters.",
+      "passwordTooWeak": "La contrasenya ha de combinar majúscules, minúscules i xifres.",
+      "passwordMismatch": "Les contrasenyes no coincideixen.",
+      "passwordReused": "La contrasenya nova ha de ser diferent de l'actual.",
+      "localNotAvailable": "Aquest compte no té accés local."
+    }
+  },
+  "admin": {
+    "title": "Administració",
+    "universities": "Universitats",
+    "centers": "Centres",
+    "tenants": "Tenants d'identitat",
+    "degrees": "Titulacions",
+    "academicYears": "Cursos acadèmics",
+    "groups": "Grups",
+    "spaces": "Espais",
+    "calendar": "Calendari acadèmic",
+    "users": "Usuaris",
+    "roles": "Rols",
+    "create": "Crea",
+    "edit": "Edita",
+    "delete": "Elimina",
+    "deleteConfirm": "Segur que vols eliminar «{{name}}»?",
+    "created": "Registre creat",
+    "updated": "Canvis desats",
+    "deleted": "Registre eliminat",
+    "searchPlaceholder": "Cerca…",
+    "noResults": "Cap resultat per a aquesta cerca",
+    "rowsPerPage": "Files per pàgina",
+    "pageOf": "Pàgina {{page}} de {{total}}",
+    "previousPage": "Pàgina anterior",
+    "nextPage": "Pàgina següent",
+    "sortBy": "Ordena per {{column}}",
+    "actions": "Accions",
+    "activate": "Activa",
+    "activated": "Compte activat",
+    "pendingUsers": "Comptes pendents d'activació"
+  },
+  "imports": {
+    "title": "Importació massiva",
+    "subtitle": "Carrega professorat o assignatures des d'un CSV o Excel",
+    "kind": "Tipus d'importació",
+    "kindTeachers": "Professorat",
+    "kindSubjects": "Assignatures",
+    "steps": {
+      "upload": "Fitxer",
+      "mapping": "Columnes",
+      "preview": "Revisió",
+      "confirm": "Confirmació"
+    },
+    "selectFile": "Tria un fitxer CSV o Excel",
+    "upload": "Puja el fitxer",
+    "uploaded": "Fitxer processat",
+    "detectedColumns": "Columnes detectades",
+    "mapColumn": "Columna del fitxer",
+    "unmapped": "Sense assignar",
+    "missingRequired": "Falten columnes obligatòries: {{fields}}",
+    "validate": "Valida les dades",
+    "dryRun": "Simulació: no s'escriurà res fins que ho confirmis.",
+    "apply": "Aplica la importació",
+    "applied": "Importació aplicada: {{count}} registres",
+    "cancel": "Cancel·la la importació",
+    "rowNumber": "Fila",
+    "rowStatus": "Estat",
+    "summary": {
+      "total": "Files llegides",
+      "valid": "Vàlides",
+      "invalid": "Amb errors",
+      "duplicates": "Duplicades"
+    },
+    "onlyValidApplied": "Només s'apliquen les files vàlides.",
+    "fields": {
+      "email": "Correu",
+      "firstName": "Nom",
+      "lastName": "Cognoms",
+      "category": "Categoria",
+      "dedication": "Dedicació",
+      "contractedHours": "Hores contractades",
+      "knowledgeArea": "Àrea de coneixement",
+      "code": "Codi",
+      "nameCa": "Nom (català)",
+      "nameEs": "Nom (castellà)",
+      "nameEn": "Nom (anglès)",
+      "degreeCode": "Codi de titulació",
+      "ects": "ECTS",
+      "year": "Curs",
+      "term": "Període",
+      "type": "Tipus",
+      "teachingLanguage": "Idioma de docència"
+    },
+    "errors": {
+      "invalidEmail": "El correu no té un format vàlid.",
+      "notANumber": "Ha de ser un número.",
+      "notAnInteger": "Ha de ser un número enter.",
+      "outOfRange": "El valor està fora de l'interval permès.",
+      "unknownValue": "El valor no és cap de les opcions acceptades.",
+      "unsupportedFile": "Format de fitxer no admès. Fes servir CSV o Excel.",
+      "emptyFile": "El fitxer no conté cap fila.",
+      "tooManyRows": "El fitxer supera el màxim de {{max}} files.",
+      "duplicateInFile": "Aquest valor apareix més d'una vegada al fitxer."
+    }
+  },
+  "calendarType": {
+    "holiday": "Festiu",
+    "non_teaching": "No lectiu",
+    "exam_period": "Període d'exàmens",
+    "term_start": "Inici de període",
+    "term_end": "Fi de període",
+    "event": "Esdeveniment"
+  },
+  "degreeLevel": {
+    "bachelor": "Grau",
+    "master": "Màster",
+    "doctorate": "Doctorat",
+    "own_degree": "Títol propi"
+  },
+  "subjectType": {
+    "basic": "Bàsica",
+    "compulsory": "Obligatòria",
+    "elective": "Optativa",
+    "practicum": "Pràctiques",
+    "final_project": "Treball final"
+  },
+  "groupType": {
+    "theory": "Teoria",
+    "seminar": "Seminari",
+    "lab": "Laboratori",
+    "practicum": "Pràctiques",
+    "tutoring": "Tutories"
+  },
+  "spaceType": {
+    "classroom": "Aula",
+    "seminar_room": "Sala de seminaris",
+    "computer_lab": "Aula d'informàtica",
+    "lab": "Laboratori",
+    "auditorium": "Auditori",
+    "other": "Altres"
+  },
+  "userStatus": {
+    "active": "Actiu",
+    "invited": "Convidat",
+    "pending_activation": "Pendent d'activació",
+    "suspended": "Suspès"
+  },
+  "academicYearStatus": {
+    "draft": "Esborrany",
+    "active": "Actiu",
+    "closed": "Tancat"
   }
 }

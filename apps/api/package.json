@@ -21,7 +21,14 @@
     "dotenv": "17.4.2",
     "fastify": "5.12.0",
     "pino": "10.3.1",
-    "zod": "4.4.3"
+    "zod": "4.4.3",
+    "@fastify/cookie": "11.1.2",
+    "@fastify/multipart": "10.1.1",
+    "csv-parse": "7.0.2",
+    "exceljs": "4.4.0",
+    "hash-wasm": "4.12.0",
+    "jose": "6.2.9",
+    "otpauth": "9.5.1"
   },
   "devDependencies": {
     "@types/node": "22.19.0",

@@ -57,7 +57,45 @@ enum Role {
 enum UserStatus {
   active
   invited
+  /// Created by JIT provisioning on first sign-in; cannot act until approved.
+  pending_activation
   suspended
+}
+
+enum AuthMethod {
+  entra
+  local
+}
+
+enum CalendarEntryType {
+  holiday
+  non_teaching
+  exam_period
+  term_start
+  term_end
+  event
+}
+
+enum ImportType {
+  teachers
+  subjects
+}
+
+enum ImportStatus {
+  uploaded
+  mapped
+  validated
+  applied
+  failed
+  cancelled
+}
+
+enum ImportRowStatus {
+  pending
+  valid
+  invalid
+  applied
+  skipped
 }
 
 enum TenantStatus {
@@ -371,6 +409,8 @@ model Center {
   settingProvenance      SettingProvenance[]
   aiInteractions         AiInteraction[]
   auditLog               AuditLog[]
+  calendarEntries        AcademicCalendarEntry[]
+  importBatches          ImportBatch[]
 
   @@unique([universityId, code])
   @@index([entraTenantId])
@@ -395,6 +435,8 @@ model AcademicYear {
   assignments      Assignment[]
   documents        Document[]
   settingsVersions CenterSettingsVersion[]
+  calendarEntries  AcademicCalendarEntry[]
+  importBatches    ImportBatch[]
 
   @@unique([centerId, name])
   @@index([centerId, status])
@@ -441,6 +483,10 @@ model User {
   aiInteractions      AiInteraction[]
   auditEntries        AuditLog[]
   appliedAppVersions  AppVersion[]            @relation("VersionApplier")
+  localCredential     LocalCredential?
+  authSessions        AuthSession[]
+  createdImports      ImportBatch[]           @relation("ImportCreator")
+  appliedImports      ImportBatch[]           @relation("ImportApplier")
 
   @@index([status])
   @@map("users")
@@ -1227,4 +1273,141 @@ model Job {
   @@index([status, runAt])
   @@index([type, status])
   @@map("jobs")
+}
+
+// ───────────────────────────────────────────────────────────────────────────────
+// Authentication (phase 1)
+// ───────────────────────────────────────────────────────────────────────────────
+
+/// Local credentials for the SUPERADMIN break-glass path: the platform must
+/// stay reachable when Entra ID is down or misconfigured. Nobody else gets a
+/// password — everyone signs in through SSO.
+model LocalCredential {
+  id                String    @id @default(uuid(7)) @db.Char(36)
+  userId            String    @unique @map("user_id") @db.Char(36)
+  /// argon2id, encoded with its parameters and salt.
+  passwordHash      String    @map("password_hash") @db.VarChar(255)
+  /// TOTP shared secret, AES-256-GCM encrypted at rest. Never plaintext.
+  totpSecretEnc     String?   @map("totp_secret_enc") @db.Text
+  totpConfirmedAt   DateTime? @map("totp_confirmed_at")
+  failedAttempts    Int       @default(0) @map("failed_attempts") @db.SmallInt
+  lockedUntil       DateTime? @map("locked_until")
+  passwordChangedAt DateTime  @default(now()) @map("password_changed_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("local_credentials")
+}
+
+/// Server-side sessions. The browser only holds an httpOnly, signed cookie with
+/// the session id, so a session can be revoked from the server — which a
+/// self-contained JWT in a cookie would not allow.
+model AuthSession {
+  id         String     @id @default(uuid(7)) @db.Char(36)
+  userId     String     @map("user_id") @db.Char(36)
+  method     AuthMethod
+  /// Entra tenant the token came from, kept for auditing. Null for local.
+  entraTid   String?    @map("entra_tid") @db.Char(36)
+  issuedAt   DateTime   @default(now()) @map("issued_at")
+  expiresAt  DateTime   @map("expires_at")
+  lastSeenAt DateTime   @default(now()) @map("last_seen_at")
+  revokedAt  DateTime?  @map("revoked_at")
+  userAgent  String?    @map("user_agent") @db.VarChar(400)
+  ip         String?    @db.VarChar(45)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@index([expiresAt])
+  @@map("auth_sessions")
+}
+
+// ───────────────────────────────────────────────────────────────────────────────
+// Academic calendar (phase 1)
+// ───────────────────────────────────────────────────────────────────────────────
+
+/// Holidays and non-teaching periods. A range is stored once, with dateTo.
+model AcademicCalendarEntry {
+  id             String            @id @default(uuid(7)) @db.Char(36)
+  centerId       String            @map("center_id") @db.Char(36)
+  academicYearId String            @map("academic_year_id") @db.Char(36)
+  type           CalendarEntryType
+  dateFrom       DateTime          @map("date_from") @db.Date
+  dateTo         DateTime          @map("date_to") @db.Date
+  nameCa         String            @map("name_ca") @db.VarChar(200)
+  nameEs         String            @map("name_es") @db.VarChar(200)
+  nameEn         String            @map("name_en") @db.VarChar(200)
+  /// False for holidays and closures: the planner skips those days.
+  isTeachingDay  Boolean           @default(false) @map("is_teaching_day")
+  createdAt      DateTime          @default(now()) @map("created_at")
+  updatedAt      DateTime          @updatedAt @map("updated_at")
+
+  center       Center       @relation(fields: [centerId], references: [id], onDelete: Cascade)
+  academicYear AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+
+  @@index([centerId, academicYearId, dateFrom])
+  @@index([centerId, type])
+  @@map("academic_calendar")
+}
+
+// ───────────────────────────────────────────────────────────────────────────────
+// Bulk imports (phase 1)
+// ───────────────────────────────────────────────────────────────────────────────
+
+/// One uploaded CSV/Excel file, from upload through column mapping and
+/// validation to the confirmed apply. Nothing is written to the business
+/// tables until the batch leaves dry-run.
+model ImportBatch {
+  id             String       @id @default(uuid(7)) @db.Char(36)
+  centerId       String       @map("center_id") @db.Char(36)
+  academicYearId String?      @map("academic_year_id") @db.Char(36)
+  type           ImportType
+  fileName       String       @map("file_name") @db.VarChar(255)
+  mime           String       @db.VarChar(150)
+  sizeBytes      Int          @map("size_bytes")
+  status         ImportStatus @default(uploaded)
+  /// Detected headers and the column → field mapping the user confirmed.
+  headersJson    Json?        @map("headers_json")
+  mappingJson    Json?        @map("mapping_json")
+  /// Counts per outcome, so the report survives after the rows are pruned.
+  summaryJson    Json?        @map("summary_json")
+  createdBy      String?      @map("created_by") @db.Char(36)
+  appliedBy      String?      @map("applied_by") @db.Char(36)
+  appliedAt      DateTime?    @map("applied_at")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  center       Center        @relation(fields: [centerId], references: [id], onDelete: Cascade)
+  academicYear AcademicYear? @relation(fields: [academicYearId], references: [id], onDelete: SetNull)
+  creator      User?         @relation("ImportCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+  applier      User?         @relation("ImportApplier", fields: [appliedBy], references: [id], onDelete: SetNull)
+
+  rows ImportRow[]
+
+  @@index([centerId, status])
+  @@index([centerId, type, createdAt])
+  @@map("import_batches")
+}
+
+model ImportRow {
+  id             String          @id @default(uuid(7)) @db.Char(36)
+  importBatchId  String          @map("import_batch_id") @db.Char(36)
+  centerId       String          @map("center_id") @db.Char(36)
+  rowNumber      Int             @map("row_number")
+  rawJson        Json            @map("raw_json")
+  normalizedJson Json?           @map("normalized_json")
+  status         ImportRowStatus @default(pending)
+  /// One entry per failed field: `{ field, messageKey, value }`.
+  errorsJson     Json?           @map("errors_json")
+  entityId       String?         @map("entity_id") @db.Char(36)
+  createdAt      DateTime        @default(now()) @map("created_at")
+
+  batch ImportBatch @relation(fields: [importBatchId], references: [id], onDelete: Cascade)
+
+  @@unique([importBatchId, rowNumber])
+  @@index([importBatchId, status])
+  @@index([centerId])
+  @@map("import_rows")
 }

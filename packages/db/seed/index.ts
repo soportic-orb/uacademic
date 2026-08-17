@@ -24,6 +24,7 @@ import {
 import { createPrismaClient } from '../src/client.js'
 import { ASSIGNMENTS, SESSION_SLOTS, SPACES, SUBJECTS, TEACHERS } from './data.js'
 import { seedId } from './ids.js'
+import { encryptSecret, generateTotpSecret, hashPassword } from './local-credentials.js'
 
 const prisma = createPrismaClient()
 
@@ -168,6 +169,44 @@ async function seedPlatformUsers() {
   for (const person of PLATFORM_USERS) {
     const user = await upsertUser(person.index, person)
     await upsertRole(person.index, user.id, person.role)
+
+    if (person.role === 'SUPERADMIN') await seedLocalCredential(user.id)
+  }
+}
+
+/**
+ * The break-glass credential: the platform must stay reachable when Entra ID
+ * is down. Only the superadmin gets one — everyone else signs in through SSO.
+ *
+ * The TOTP secret is only seeded when APP_ENCRYPTION_KEY is set, because it is
+ * stored encrypted and there is no sane fallback for that.
+ */
+async function seedLocalCredential(userId: string) {
+  const password = process.env.SEED_SUPERADMIN_PASSWORD ?? 'Superadmin-2026-demo'
+  const encryptionKey = process.env.APP_ENCRYPTION_KEY
+  const existing = await prisma.localCredential.findUnique({ where: { userId } })
+  if (existing) return
+
+  const totpSecret = encryptionKey ? generateTotpSecret() : null
+
+  await prisma.localCredential.create({
+    data: {
+      userId,
+      passwordHash: await hashPassword(password),
+      ...(totpSecret && encryptionKey
+        ? {
+            totpSecretEnc: encryptSecret(totpSecret, encryptionKey),
+            totpConfirmedAt: new Date(),
+          }
+        : {}),
+    },
+  })
+
+  console.log(`\nLocal superadmin credential created (password from SEED_SUPERADMIN_PASSWORD).`)
+  if (totpSecret) {
+    console.log(`  TOTP secret (demo only, enrol it in an authenticator): ${totpSecret}`)
+  } else {
+    console.log('  TOTP not enrolled: set APP_ENCRYPTION_KEY and re-seed to enable it.')
   }
 }
 

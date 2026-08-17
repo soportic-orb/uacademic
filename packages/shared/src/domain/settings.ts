@@ -69,6 +69,20 @@ export const formatSettingsSchema = z.object({
   decimalHours: z.boolean().default(true),
 })
 
+/**
+ * Just-in-time provisioning (R3/R9): whether a person who signs in from a
+ * registered tenant gets an account automatically, and under what conditions.
+ * Off by default — a center opts in deliberately.
+ */
+export const identitySettingsSchema = z.object({
+  jitProvisioning: z.boolean().default(false),
+  /** Empty means "any domain of the tenant this center is bound to". */
+  allowedEmailDomains: z.array(z.string().min(3)).default([]),
+  defaultRole: z.literal('TEACHER').default('TEACHER'),
+  /** When true, the account lands in `pending_activation` and must be approved. */
+  requireActivation: z.boolean().default(true),
+})
+
 export const centerSettingsSchema = z.object({
   // `prefault` (not `default`) so the nested defaults are actually applied:
   // in Zod 4 a plain default value is returned as-is, without being parsed.
@@ -77,11 +91,13 @@ export const centerSettingsSchema = z.object({
   workflow: workflowSettingsSchema.prefault({}),
   engine: engineSettingsSchema.prefault({}),
   formats: formatSettingsSchema.prefault({}),
+  identity: identitySettingsSchema.prefault({}),
 })
 
 export type CenterSettings = z.infer<typeof centerSettingsSchema>
 export type LoadSettings = z.infer<typeof loadSettingsSchema>
 export type ScheduleSettings = z.infer<typeof scheduleSettingsSchema>
+export type IdentitySettings = z.infer<typeof identitySettingsSchema>
 
 export const defaultCenterSettings: CenterSettings = centerSettingsSchema.parse({})
 

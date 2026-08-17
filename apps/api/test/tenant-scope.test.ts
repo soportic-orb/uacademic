@@ -88,14 +88,25 @@ describe('writes', () => {
     ).toThrow(TenantViolationError)
   })
 
-  it('filters updates and deletes by center', () => {
+  it('adds the center beside the unique key on update and delete', () => {
+    // Prisma requires the unique field at the top level of `where`; nesting it
+    // inside an `AND` is rejected outright, so the center goes next to it.
     expect(
       applyTenantScope('Subject', 'update', { where: { id: 'x' }, data: {} }, CENTER).args,
-    ).toEqual({ where: { AND: [{ id: 'x' }, { centerId: CENTER }] }, data: {} })
+    ).toEqual({ where: { id: 'x', centerId: CENTER }, data: {} })
 
+    expect(applyTenantScope('Subject', 'delete', { where: { id: 'x' } }, CENTER).args).toEqual({
+      where: { id: 'x', centerId: CENTER },
+    })
+  })
+
+  it('filters bulk updates and deletes by center', () => {
     expect(applyTenantScope('Subject', 'deleteMany', { where: { year: 1 } }, CENTER).args).toEqual({
       where: { AND: [{ year: 1 }, { centerId: CENTER }] },
     })
+    expect(
+      applyTenantScope('Subject', 'updateMany', { where: { year: 1 }, data: {} }, CENTER).args,
+    ).toEqual({ where: { AND: [{ year: 1 }, { centerId: CENTER }] }, data: {} })
   })
 
   it('scopes both halves of an upsert', () => {
@@ -106,7 +117,7 @@ describe('writes', () => {
       CENTER,
     )
     expect(scoped.args).toEqual({
-      where: { AND: [{ id: 'x' }, { centerId: CENTER }] },
+      where: { id: 'x', centerId: CENTER },
       create: { name: 'A', centerId: CENTER },
       update: { name: 'A' },
     })

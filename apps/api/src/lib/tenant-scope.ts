@@ -57,9 +57,17 @@ const READ_MANY_OPERATIONS = new Set([
   'count',
   'aggregate',
   'groupBy',
+  'updateMany',
+  'deleteMany',
 ])
 
-const WHERE_ONLY_OPERATIONS = new Set(['update', 'updateMany', 'delete', 'deleteMany'])
+/**
+ * `update`, `delete` and `upsert` target a single row, and Prisma requires the
+ * unique field to stay at the top level of `where` — nesting it inside an
+ * `AND` is rejected. The center goes in beside it instead, which Prisma
+ * accepts as an extra condition on the same row.
+ */
+const UNIQUE_WRITE_OPERATIONS = new Set(['update', 'delete'])
 
 const UNIQUE_READ_OPERATIONS = new Set(['findUnique', 'findUniqueOrThrow'])
 
@@ -81,6 +89,12 @@ type Args = Record<string, unknown>
 function mergeWhere(args: Args, centerId: string): Args {
   const where = args.where as Record<string, unknown> | undefined
   return { ...args, where: where ? { AND: [where, { centerId }] } : { centerId } }
+}
+
+/** Adds the center beside the unique key rather than around it. */
+function extendUniqueWhere(args: Args, centerId: string): Args {
+  const where = (args.where ?? {}) as Record<string, unknown>
+  return { ...args, where: { ...where, centerId } }
 }
 
 function scopeData(model: string, data: unknown, centerId: string): unknown {
@@ -117,8 +131,12 @@ export function applyTenantScope(
     return { args, verifyResultCenter: true }
   }
 
-  if (READ_MANY_OPERATIONS.has(operation) || WHERE_ONLY_OPERATIONS.has(operation)) {
+  if (READ_MANY_OPERATIONS.has(operation)) {
     return { args: mergeWhere(args, centerId), verifyResultCenter: false }
+  }
+
+  if (UNIQUE_WRITE_OPERATIONS.has(operation)) {
+    return { args: extendUniqueWhere(args, centerId), verifyResultCenter: false }
   }
 
   if (operation === 'create' || operation === 'createMany' || operation === 'createManyAndReturn') {
@@ -129,7 +147,7 @@ export function applyTenantScope(
   }
 
   if (operation === 'upsert') {
-    const scoped = mergeWhere(args, centerId)
+    const scoped = extendUniqueWhere(args, centerId)
     return {
       args: { ...scoped, create: scopeData(model, args.create, centerId) },
       verifyResultCenter: false,
