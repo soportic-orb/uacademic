@@ -1,7 +1,14 @@
 import { createBrowserRouter } from 'react-router'
 
 import { AppShell } from '../components/layout/app-shell'
+import { RequireSession } from '../auth/require-session'
+import { AdminIndexPage } from '../pages/admin-index'
+import { AdminResourcePage } from '../pages/admin-resource'
 import { DashboardPage } from '../pages/dashboard'
+import { LoginPage } from '../pages/login'
+import { ProfilePage } from '../pages/profile'
+import { UsersPage } from '../features/admin/users-page'
+import { ImportWizard } from '../features/imports/import-wizard'
 import { MyLoadPage } from '../pages/my-load'
 import {
   AssistantPage,
@@ -21,9 +28,14 @@ import { TeachersPage } from '../pages/teachers'
  * caller has no business there (R2/R3).
  */
 export const router = createBrowserRouter([
+  { path: '/login', element: <LoginPage /> },
   {
     path: '/',
-    element: <AppShell />,
+    element: (
+      <RequireSession>
+        <AppShell />
+      </RequireSession>
+    ),
     children: [
       { index: true, element: <DashboardPage /> },
       { path: 'my-load', element: <MyLoadPage /> },
@@ -35,6 +47,11 @@ export const router = createBrowserRouter([
       { path: 'documents', element: <DocumentsPage /> },
       { path: 'platform', element: <PlatformPage /> },
       { path: 'settings', element: <SettingsPage /> },
+      { path: 'profile', element: <ProfilePage /> },
+      { path: 'admin', element: <AdminIndexPage /> },
+      { path: 'admin/users', element: <UsersPage /> },
+      { path: 'admin/:resourceKey', element: <AdminResourcePage /> },
+      { path: 'imports', element: <ImportWizard /> },
       { path: '*', element: <NotFoundPage /> },
     ],
   },

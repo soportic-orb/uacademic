@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Outlet } from 'react-router'
 
-import { useCurrentUser } from '../../hooks/use-api'
+import { useSession } from '../../auth/session'
 import { useSessionStore } from '../../stores/session'
 import { CardSkeleton } from '../feedback/states'
 import { BottomNav } from './bottom-nav'
@@ -13,7 +13,7 @@ import { Sidebar } from './sidebar'
 
 export function AppShell() {
   const { t } = useTranslation()
-  const { data: user, isPending } = useCurrentUser()
+  const { user, isLoading: isPending } = useSession()
   const centerId = useSessionStore((state) => state.centerId)
   const [collapsed, setCollapsed] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)

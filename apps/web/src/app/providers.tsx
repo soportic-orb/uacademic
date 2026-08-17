@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { type ReactNode, useEffect, useState } from 'react'
 
+import { SessionProvider } from '../auth/session'
 import { Toaster } from '../components/feedback/toaster'
 import { ApiRequestError } from '../lib/api'
 import { useToastStore } from '../stores/toast'
@@ -61,10 +62,12 @@ export function AppProviders({ children }: { children: ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeSync>
-        {children}
-        <Toaster />
-      </ThemeSync>
+      <SessionProvider>
+        <ThemeSync>
+          {children}
+          <Toaster />
+        </ThemeSync>
+      </SessionProvider>
     </QueryClientProvider>
   )
 }

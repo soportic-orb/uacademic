@@ -7,7 +7,7 @@ import { expect, test } from '@playwright/test'
  */
 async function signInAs(page: Page, roleLabel: string) {
   await page.goto('/')
-  await page.getByLabel("Menú d'usuari").selectOption({ label: roleLabel })
+  await page.getByLabel('Usuari de demostració').selectOption({ label: roleLabel })
 }
 
 test.describe('teaching load', () => {

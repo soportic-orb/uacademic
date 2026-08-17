@@ -12,11 +12,20 @@ import { loadEnv } from '../src/config/env.js'
 import { encryptSecret } from '../src/lib/crypto.js'
 import { hashPassword } from '../src/lib/password.js'
 import { currentTotp, generateTotpSecret } from '../src/lib/totp.js'
-import { SEED, hasDatabase } from './helpers.js'
+import { SEED, hasDatabase, seedCenterId } from './helpers.js'
 
 const ENCRYPTION_KEY = 'a'.repeat(64)
 const PASSWORD = 'Superadmin-2026-test'
 const TEACHER_PASSWORD = 'Teacher-2026-test-pw'
+
+/**
+ * A superadmin of its own rather than the seeded one: this suite deliberately
+ * locks the account out, and the e2e run signs in with the seeded credential.
+ */
+const TEST_SUPERADMIN = {
+  id: '0198f0d2-8f2a-7000-8000-0a0000000001',
+  email: 'test.superadmin@demo.uacademic.test',
+}
 
 describe.skipIf(!hasDatabase)('local superadmin sign-in', () => {
   let app: FastifyInstance
@@ -43,8 +52,19 @@ describe.skipIf(!hasDatabase)('local superadmin sign-in', () => {
   })
 
   beforeEach(async () => {
-    const superadmin = await prisma.user.findUnique({ where: { email: SEED.superadminEmail } })
-    if (!superadmin) throw new Error('demo superadmin missing')
+    const centerId = await seedCenterId()
+    const superadmin = await prisma.user.upsert({
+      where: { id: TEST_SUPERADMIN.id },
+      create: {
+        id: TEST_SUPERADMIN.id,
+        email: TEST_SUPERADMIN.email,
+        firstName: 'Test',
+        lastName: 'Superadmin',
+        status: 'active',
+        centerRoles: { create: { centerId, role: 'SUPERADMIN' } },
+      },
+      update: { status: 'active' },
+    })
 
     totpSecret = generateTotpSecret()
     await prisma.localCredential.upsert({
@@ -70,7 +90,7 @@ describe.skipIf(!hasDatabase)('local superadmin sign-in', () => {
 
   it('signs in with password and a valid TOTP code', async () => {
     const response = await signIn({
-      email: SEED.superadminEmail,
+      email: TEST_SUPERADMIN.email,
       password: PASSWORD,
       totp: currentTotp(totpSecret),
     })
@@ -84,7 +104,7 @@ describe.skipIf(!hasDatabase)('local superadmin sign-in', () => {
   })
 
   it('refuses the right password without the second factor', async () => {
-    const response = await signIn({ email: SEED.superadminEmail, password: PASSWORD })
+    const response = await signIn({ email: TEST_SUPERADMIN.email, password: PASSWORD })
 
     expect(response.statusCode).toBe(401)
     expect(response.json().error.messageKey).toBe('auth.errors.totpRequired')
@@ -92,7 +112,7 @@ describe.skipIf(!hasDatabase)('local superadmin sign-in', () => {
 
   it('refuses a wrong TOTP code', async () => {
     const response = await signIn({
-      email: SEED.superadminEmail,
+      email: TEST_SUPERADMIN.email,
       password: PASSWORD,
       totp: '000000',
     })
@@ -103,7 +123,7 @@ describe.skipIf(!hasDatabase)('local superadmin sign-in', () => {
 
   it('gives the same answer for a wrong password and an unknown account', async () => {
     const wrongPassword = await signIn({
-      email: SEED.superadminEmail,
+      email: TEST_SUPERADMIN.email,
       password: 'not-the-password',
       totp: currentTotp(totpSecret),
     })
@@ -120,11 +140,11 @@ describe.skipIf(!hasDatabase)('local superadmin sign-in', () => {
 
   it('locks the account after repeated failures', async () => {
     for (let attempt = 0; attempt < 5; attempt += 1) {
-      await signIn({ email: SEED.superadminEmail, password: 'wrong', totp: '000000' })
+      await signIn({ email: TEST_SUPERADMIN.email, password: 'wrong', totp: '000000' })
     }
 
     const locked = await signIn({
-      email: SEED.superadminEmail,
+      email: TEST_SUPERADMIN.email,
       password: PASSWORD,
       totp: currentTotp(totpSecret),
     })
@@ -152,7 +172,7 @@ describe.skipIf(!hasDatabase)('local superadmin sign-in', () => {
   describe('password change', () => {
     it('rejects a weak password and keeps the old one working', async () => {
       const signedIn = await signIn({
-        email: SEED.superadminEmail,
+        email: TEST_SUPERADMIN.email,
         password: PASSWORD,
         totp: currentTotp(totpSecret),
       })
@@ -172,12 +192,12 @@ describe.skipIf(!hasDatabase)('local superadmin sign-in', () => {
 
     it('changes the password and revokes every other session', async () => {
       const firstDevice = await signIn({
-        email: SEED.superadminEmail,
+        email: TEST_SUPERADMIN.email,
         password: PASSWORD,
         totp: currentTotp(totpSecret),
       })
       const secondDevice = await signIn({
-        email: SEED.superadminEmail,
+        email: TEST_SUPERADMIN.email,
         password: PASSWORD,
         totp: currentTotp(totpSecret),
       })

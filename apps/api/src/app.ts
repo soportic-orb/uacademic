@@ -58,6 +58,9 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
   await app.register(cors, {
     origin: corsOrigins(env.WEB_ORIGIN),
     credentials: true,
+    // Spelled out: the browser preflight refuses anything not listed here, and
+    // the admin screens use PATCH and DELETE.
+    methods: ['GET', 'HEAD', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: [
       'content-type',
       'authorization',

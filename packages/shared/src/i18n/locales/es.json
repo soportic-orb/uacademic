@@ -197,7 +197,8 @@
     "tenantRequired": "Hay que indicar el centro.",
     "tenantMismatch": "El recurso pertenece a otro centro.",
     "unknownTenant": "La organización no está dada de alta.",
-    "serviceUnavailable": "El servicio no está disponible temporalmente."
+    "serviceUnavailable": "El servicio no está disponible temporalmente.",
+    "duplicate": "Ya existe un registro con estos valores."
   },
   "validation": {
     "required": "Este campo es obligatorio.",
@@ -312,7 +313,37 @@
     "actions": "Acciones",
     "activate": "Activar",
     "activated": "Cuenta activada",
-    "pendingUsers": "Cuentas pendientes de activación"
+    "pendingUsers": "Cuentas pendientes de activación",
+    "fields": {
+      "name": "Nombre",
+      "code": "Código",
+      "building": "Edificio",
+      "capacity": "Aforo",
+      "type": "Tipo",
+      "level": "Nivel",
+      "status": "Estado",
+      "logoUrl": "URL del logotipo",
+      "tenantId": "Identificador del tenant",
+      "issuer": "Emisor (iss)",
+      "timezone": "Zona horaria",
+      "locale": "Idioma por defecto",
+      "university": "Universidad",
+      "academicYear": "Curso académico",
+      "degree": "Titulación",
+      "subject": "Asignatura",
+      "startDate": "Fecha de inicio",
+      "endDate": "Fecha de fin",
+      "dateFrom": "Desde el",
+      "dateTo": "Hasta el",
+      "plannedHours": "Horas previstas",
+      "requiredSpaceType": "Tipo de espacio necesario",
+      "isTeachingDay": "Día lectivo",
+      "ects": "ECTS",
+      "year": "Curso",
+      "term": "Periodo",
+      "teachingLanguage": "Idioma de docencia",
+      "entraTenant": "Tenant de Entra ID"
+    }
   },
   "imports": {
     "title": "Importación masiva",

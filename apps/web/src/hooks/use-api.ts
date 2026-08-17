@@ -1,39 +1,23 @@
 import type {
   CenterLoadSummaryDto,
   CenterSettings,
-  CurrentUser,
   SubjectDto,
   TeacherLoadDto,
 } from '@uacademic/shared'
 import { useQuery } from '@tanstack/react-query'
-import { useEffect } from 'react'
 
 import { apiFetch } from '../lib/api'
 import { useSessionStore } from '../stores/session'
 
+/**
+ * The session travels in an httpOnly cookie, so the only thing a query key
+ * needs is the active center: switching centers must refetch, switching
+ * identity clears the whole cache on sign-out.
+ */
 function useRequestContext() {
   const mockUserEmail = useSessionStore((state) => state.mockUserEmail)
   const centerId = useSessionStore((state) => state.centerId)
   return { mockUserEmail, centerId }
-}
-
-export function useCurrentUser() {
-  const { mockUserEmail } = useRequestContext()
-  const setCenterId = useSessionStore((state) => state.setCenterId)
-  const centerId = useSessionStore((state) => state.centerId)
-
-  const query = useQuery({
-    queryKey: ['me', mockUserEmail],
-    queryFn: () => apiFetch<CurrentUser>('/api/v1/me', { mockUserEmail }),
-  })
-
-  // A user with a single center should never have to pick it.
-  const firstCenterId = query.data?.memberships[0]?.centerId
-  useEffect(() => {
-    if (!centerId && firstCenterId) setCenterId(firstCenterId)
-  }, [centerId, firstCenterId, setCenterId])
-
-  return query
 }
 
 export interface TeacherLoadResponse {
@@ -47,7 +31,7 @@ export function useTeacherLoad(enabled = true) {
 
   return useQuery({
     queryKey: ['teacher-load', context.mockUserEmail, context.centerId],
-    queryFn: () => apiFetch<TeacherLoadResponse>('/api/v1/teachers/load', context),
+    queryFn: () => apiFetch<TeacherLoadResponse>('/api/v1/teachers/load'),
     enabled: enabled && Boolean(context.centerId),
   })
 }
@@ -57,7 +41,7 @@ export function useOwnLoad(enabled = true) {
 
   return useQuery({
     queryKey: ['own-load', context.mockUserEmail, context.centerId],
-    queryFn: () => apiFetch<TeacherLoadDto>('/api/v1/teachers/me/load', context),
+    queryFn: () => apiFetch<TeacherLoadDto>('/api/v1/teachers/me/load'),
     enabled: enabled && Boolean(context.centerId),
   })
 }
@@ -67,7 +51,7 @@ export function useSubjects() {
 
   return useQuery({
     queryKey: ['subjects', context.mockUserEmail, context.centerId],
-    queryFn: () => apiFetch<{ items: SubjectDto[] }>('/api/v1/subjects', context),
+    queryFn: () => apiFetch<{ items: SubjectDto[] }>('/api/v1/subjects'),
     enabled: Boolean(context.centerId),
   })
 }
@@ -89,7 +73,7 @@ export function useCenterSettings() {
 
   return useQuery({
     queryKey: ['center-settings', context.mockUserEmail, context.centerId],
-    queryFn: () => apiFetch<CenterSettingsResponse>('/api/v1/centers/settings', context),
+    queryFn: () => apiFetch<CenterSettingsResponse>('/api/v1/centers/settings'),
     enabled: Boolean(context.centerId),
   })
 }

@@ -6,7 +6,9 @@ import {
   LayoutDashboard,
   MessageSquare,
   Settings,
+  Sliders,
   Sparkles,
+  Upload,
   User,
   Users,
 } from 'lucide-react'
@@ -82,6 +84,18 @@ export const NAV_ITEMS: NavItem[] = [
     path: '/documents',
     icon: FileText,
     roles: ['SUPERADMIN', 'CENTER_ADMIN', 'COORDINATOR', 'TEACHER'],
+  },
+  {
+    key: 'admin',
+    path: '/admin',
+    icon: Sliders,
+    roles: ['SUPERADMIN', 'CENTER_ADMIN', 'COORDINATOR'],
+  },
+  {
+    key: 'imports',
+    path: '/imports',
+    icon: Upload,
+    roles: ['CENTER_ADMIN'],
   },
   {
     key: 'platform',

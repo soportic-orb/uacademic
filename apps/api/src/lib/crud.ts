@@ -71,6 +71,22 @@ export interface CrudResource<Input extends z.ZodType> {
   ) => Promise<Record<string, unknown>> | Record<string, unknown>
 }
 
+/**
+ * A unique-constraint violation is a user mistake — two subjects with the same
+ * code — not a server fault. It deserves a 409 with a message someone can act
+ * on, rather than a 500 and a trace id.
+ */
+async function runWrite<T>(operation: () => Promise<T>): Promise<T> {
+  try {
+    return await operation()
+  } catch (error) {
+    const code = (error as { code?: string }).code
+    if (code === 'P2002') throw AppError.conflict('errors.duplicate')
+    if (code === 'P2003') throw AppError.validation([{ path: 'id', messageKey: 'errors.notFound' }])
+    throw error
+  }
+}
+
 function buildWhere(
   resource: CrudResource<z.ZodType>,
   query: Record<string, unknown>,
@@ -171,7 +187,7 @@ export function registerCrudRoutes<Input extends z.ZodType>(
       ? await resource.beforeWrite(input, { client, centerId })
       : (input as Record<string, unknown>)
 
-    const row = await delegate(client, resource.model).create({ data })
+    const row = await runWrite(() => delegate(client, resource.model).create({ data }))
 
     await writeAuditLog(prisma(), {
       centerId,
@@ -205,7 +221,7 @@ export function registerCrudRoutes<Input extends z.ZodType>(
       ? await resource.beforeWrite(input as z.infer<Input>, { client, centerId, id })
       : (input as Record<string, unknown>)
 
-    const after = await model.update({ where: { id }, data })
+    const after = await runWrite(() => model.update({ where: { id }, data }))
 
     await writeAuditLog(prisma(), {
       centerId,

@@ -207,7 +207,23 @@ async function authenticate(request: FastifyRequest, env: Env): Promise<RequestU
     const header = request.headers['x-mock-user']
     const email = typeof header === 'string' && header.length > 0 ? header : env.MOCK_USER_EMAIL
     if (!email) return null
-    return loadUserByEmail(email)
+
+    const user = await loadUserByEmail(email)
+    if (!user) return null
+
+    // A synthetic session so every route downstream — including
+    // `/auth/session`, which the web app calls on boot — behaves exactly as it
+    // does with a real cookie.
+    request.session = {
+      id: 'mock-session',
+      userId: user.userId,
+      method: 'local',
+      entraTid: null,
+      expiresAt: new Date(Date.now() + env.SESSION_TTL_HOURS * 3600_000),
+    }
+    request.microsoftAccount = null
+
+    return user
   }
 
   return null

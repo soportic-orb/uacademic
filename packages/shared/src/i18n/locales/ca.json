@@ -197,7 +197,8 @@
     "tenantRequired": "Cal indicar el centre.",
     "tenantMismatch": "El recurs pertany a un altre centre.",
     "unknownTenant": "L'organització no està donada d'alta.",
-    "serviceUnavailable": "El servei no està disponible temporalment."
+    "serviceUnavailable": "El servei no està disponible temporalment.",
+    "duplicate": "Ja existeix un registre amb aquests valors."
   },
   "validation": {
     "required": "Aquest camp és obligatori.",
@@ -312,7 +313,37 @@
     "actions": "Accions",
     "activate": "Activa",
     "activated": "Compte activat",
-    "pendingUsers": "Comptes pendents d'activació"
+    "pendingUsers": "Comptes pendents d'activació",
+    "fields": {
+      "name": "Nom",
+      "code": "Codi",
+      "building": "Edifici",
+      "capacity": "Aforament",
+      "type": "Tipus",
+      "level": "Nivell",
+      "status": "Estat",
+      "logoUrl": "URL del logotip",
+      "tenantId": "Identificador del tenant",
+      "issuer": "Emissor (iss)",
+      "timezone": "Zona horària",
+      "locale": "Idioma per defecte",
+      "university": "Universitat",
+      "academicYear": "Curs acadèmic",
+      "degree": "Titulació",
+      "subject": "Assignatura",
+      "startDate": "Data d'inici",
+      "endDate": "Data de fi",
+      "dateFrom": "Des del",
+      "dateTo": "Fins al",
+      "plannedHours": "Hores previstes",
+      "requiredSpaceType": "Tipus d'espai necessari",
+      "isTeachingDay": "Dia lectiu",
+      "ects": "ECTS",
+      "year": "Curs",
+      "term": "Període",
+      "teachingLanguage": "Idioma de docència",
+      "entraTenant": "Tenant d'Entra ID"
+    }
   },
   "imports": {
     "title": "Importació massiva",

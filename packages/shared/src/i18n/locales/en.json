@@ -197,7 +197,8 @@
     "tenantRequired": "A center must be specified.",
     "tenantMismatch": "The resource belongs to another center.",
     "unknownTenant": "That organization is not registered.",
-    "serviceUnavailable": "The service is temporarily unavailable."
+    "serviceUnavailable": "The service is temporarily unavailable.",
+    "duplicate": "A record with these values already exists."
   },
   "validation": {
     "required": "This field is required.",
@@ -312,7 +313,37 @@
     "actions": "Actions",
     "activate": "Activate",
     "activated": "Account activated",
-    "pendingUsers": "Accounts pending activation"
+    "pendingUsers": "Accounts pending activation",
+    "fields": {
+      "name": "Name",
+      "code": "Code",
+      "building": "Building",
+      "capacity": "Capacity",
+      "type": "Type",
+      "level": "Level",
+      "status": "Status",
+      "logoUrl": "Logo URL",
+      "tenantId": "Tenant identifier",
+      "issuer": "Issuer (iss)",
+      "timezone": "Time zone",
+      "locale": "Default language",
+      "university": "University",
+      "academicYear": "Academic year",
+      "degree": "Degree",
+      "subject": "Subject",
+      "startDate": "Start date",
+      "endDate": "End date",
+      "dateFrom": "From",
+      "dateTo": "To",
+      "plannedHours": "Planned hours",
+      "requiredSpaceType": "Required space type",
+      "isTeachingDay": "Teaching day",
+      "ects": "ECTS",
+      "year": "Year",
+      "term": "Term",
+      "teachingLanguage": "Teaching language",
+      "entraTenant": "Entra ID tenant"
+    }
   },
   "imports": {
     "title": "Bulk import",

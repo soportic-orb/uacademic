@@ -31,9 +31,13 @@ export default defineConfig({
       port: API_PORT,
       reuseExistingServer: !process.env.CI,
       env: {
-        NODE_ENV: 'production',
+        // Not `production`: that mode refuses AUTH_MODE=mock, which is exactly
+        // what the role-switching flows below rely on.
+        NODE_ENV: 'test',
         LOG_LEVEL: 'warn',
+        AUTH_MODE: process.env.AUTH_MODE ?? 'mock',
         WEB_ORIGIN: `http://127.0.0.1:${WEB_PORT}`,
+        SESSION_COOKIE_SECRET: 'e2e-session-secret-that-is-long-enough',
       },
       cwd: '../..',
     },

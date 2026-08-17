@@ -1,20 +1,27 @@
-import type { CurrentUser } from '@uacademic/shared'
-import { Bell, Menu, Search } from 'lucide-react'
+import type { SessionUser } from '@uacademic/shared'
+import { formatPersonName } from '@uacademic/shared'
+import { Bell, LogOut, Menu, Search, UserRound } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { Link } from 'react-router'
 
+import { useSession } from '../../auth/session'
 import { useToast } from '../../hooks/use-toast'
 import { DEMO_IDENTITIES, useSessionStore } from '../../stores/session'
 import { Button } from '../ui/button'
 
 export interface HeaderProps {
-  user: CurrentUser | undefined
+  user: SessionUser | undefined
   onOpenSearch: () => void
   onToggleSidebar: () => void
 }
 
+/** Development and e2e only; the API refuses this mode in production. */
+const MOCK_AUTH = import.meta.env.VITE_AUTH_MODE === 'mock'
+
 export function Header({ user, onOpenSearch, onToggleSidebar }: HeaderProps) {
   const { t } = useTranslation()
   const toast = useToast()
+  const { signOut } = useSession()
   const centerId = useSessionStore((state) => state.centerId)
   const setCenterId = useSessionStore((state) => state.setCenterId)
   const mockUserEmail = useSessionStore((state) => state.mockUserEmail)
@@ -81,24 +88,49 @@ export function Header({ user, onOpenSearch, onToggleSidebar }: HeaderProps) {
       </Button>
 
       {/*
-        Phase 0 identity switcher. It exists so role-based navigation can be
-        exercised before Entra ID lands; phase 1 replaces it with the real
-        user menu.
+        Phase 0 identity switcher, kept only for local development and the e2e
+        suite. In every other build the real signed-in user is shown.
       */}
-      <label className="flex items-center gap-2">
-        <span className="sr-only">{t('layout.userMenu')}</span>
-        <select
-          value={mockUserEmail}
-          onChange={(event) => setMockUserEmail(event.target.value)}
-          className="h-9 max-w-40 rounded-control border border-border bg-surface px-2 text-sm text-text md:max-w-56"
+      {MOCK_AUTH ? (
+        <label className="flex items-center gap-2">
+          <span className="sr-only">{t('layout.demoUser')}</span>
+          <select
+            value={mockUserEmail}
+            onChange={(event) => setMockUserEmail(event.target.value)}
+            className="h-9 max-w-40 rounded-control border border-border bg-surface px-2 text-sm text-text md:max-w-56"
+          >
+            {DEMO_IDENTITIES.map((identity) => (
+              <option key={identity.email} value={identity.email}>
+                {t(identity.labelKey)}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
+
+      <div className="flex items-center gap-1">
+        <Link
+          to="/profile"
+          className="flex h-9 items-center gap-2 rounded-control px-2 text-sm text-text hover:bg-surface-muted"
+          aria-label={t('layout.userMenu')}
         >
-          {DEMO_IDENTITIES.map((identity) => (
-            <option key={identity.email} value={identity.email}>
-              {t(identity.labelKey)}
-            </option>
-          ))}
-        </select>
-      </label>
+          <UserRound className="size-5" aria-hidden="true" />
+          <span className="hidden max-w-40 truncate md:inline">
+            {user ? formatPersonName(user.firstName, user.lastName) : ''}
+          </span>
+        </Link>
+
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label={t('auth.signOut')}
+          onClick={() => {
+            void signOut().then(() => toast.success('auth.signedOut'))
+          }}
+        >
+          <LogOut className="size-5" aria-hidden="true" />
+        </Button>
+      </div>
     </header>
   )
 }
