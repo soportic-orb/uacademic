@@ -1,0 +1,220 @@
+{
+  "common": {
+    "appName": "UAcademic",
+    "loading": "Loading…",
+    "save": "Save",
+    "cancel": "Cancel",
+    "retry": "Retry",
+    "close": "Close",
+    "search": "Search",
+    "confirm": "Confirm",
+    "back": "Back",
+    "next": "Next",
+    "yes": "Yes",
+    "no": "No",
+    "optional": "Optional",
+    "hours": "hours",
+    "hoursShort": "h",
+    "of": "of"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "planning": "Planning",
+    "subjects": "Subjects",
+    "teachers": "Teachers",
+    "myLoad": "My load",
+    "calendar": "Calendar",
+    "messages": "Messages",
+    "documents": "Documents",
+    "settings": "Settings",
+    "platform": "Platform",
+    "assistant": "AI assistant",
+    "profile": "Profile",
+    "more": "More"
+  },
+  "layout": {
+    "skipToContent": "Skip to main content",
+    "toggleSidebar": "Show or hide the sidebar",
+    "collapseSidebar": "Collapse the sidebar",
+    "expandSidebar": "Expand the sidebar",
+    "mainNavigation": "Main navigation",
+    "bottomNavigation": "Bottom navigation",
+    "userMenu": "User menu",
+    "notifications": "Notifications",
+    "notificationsEmpty": "You have no pending notifications",
+    "centerSelector": "Active center",
+    "globalSearch": "Global search",
+    "searchPlaceholder": "Search subjects, teachers or spaces",
+    "commandHint": "Press ⌘K to search",
+    "signOut": "Sign out",
+    "demoUser": "Demo user"
+  },
+  "theme": {
+    "label": "Appearance",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
+  "language": {
+    "label": "Language",
+    "ca": "Catalan",
+    "es": "Spanish",
+    "en": "English"
+  },
+  "roles": {
+    "SUPERADMIN": "Superadmin",
+    "CENTER_ADMIN": "Center administration",
+    "COORDINATOR": "Coordination",
+    "TEACHER": "Teaching staff"
+  },
+  "load": {
+    "title": "Teaching load",
+    "contracted": "Contracted hours",
+    "reductions": "Reductions",
+    "capacity": "Capacity",
+    "assigned": "Assigned hours",
+    "remaining": "Remaining hours",
+    "ratio": "Occupancy",
+    "trafficLightLabel": "Teaching load status",
+    "status": {
+      "under": "Under-load",
+      "optimal": "Optimal",
+      "limit": "At limit",
+      "over": "Overload"
+    },
+    "statusHint": {
+      "under": "Below 85% of the contracted capacity",
+      "optimal": "Between 85% and 100% of the contracted capacity",
+      "limit": "Between 100% and 110% of the contracted capacity",
+      "over": "Above 110% of the contracted capacity"
+    }
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "subtitle": "Teaching status across the center",
+    "teachersWithLoad": "Teachers with load",
+    "coverage": "Group coverage",
+    "openRequests": "Open requests",
+    "conflicts": "Detected conflicts",
+    "viewAll": "View all"
+  },
+  "teachers": {
+    "title": "Teachers",
+    "subtitle": "Contracted capacity and assigned load",
+    "name": "Name",
+    "category": "Category",
+    "dedication": "Dedication",
+    "contracted": "Contracted",
+    "assigned": "Assigned",
+    "status": "Status",
+    "empty": {
+      "title": "No teaching staff yet",
+      "description": "Import the center's teaching staff or add them manually to start distributing the load.",
+      "action": "Add teacher"
+    }
+  },
+  "subjects": {
+    "title": "Subjects",
+    "subtitle": "Teaching plan for the active year",
+    "code": "Code",
+    "name": "Name",
+    "ects": "ECTS",
+    "year": "Year",
+    "term": "Term",
+    "groups": "Groups",
+    "empty": {
+      "title": "No subjects registered",
+      "description": "Create the subjects for this year to plan groups and timetables.",
+      "action": "Create subject"
+    }
+  },
+  "planning": {
+    "title": "Planning",
+    "subtitle": "Timetables by version and academic year",
+    "empty": {
+      "title": "No schedule version",
+      "description": "Create a draft version to start placing sessions.",
+      "action": "Create version"
+    }
+  },
+  "messages": {
+    "title": "Messages",
+    "empty": {
+      "title": "No conversations",
+      "description": "Subject conversations will show up here.",
+      "action": "Start a conversation"
+    }
+  },
+  "documents": {
+    "title": "Documents",
+    "empty": {
+      "title": "No documents",
+      "description": "Upload the center's regulations so business rules can cite them.",
+      "action": "Upload document"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Personal preferences and center parameters",
+    "appearance": "Appearance",
+    "languageSection": "Interface language",
+    "provenanceHint": "Every center parameter can cite the regulatory document it came from."
+  },
+  "platform": {
+    "title": "Platform",
+    "subtitle": "Universities, centers and identity tenants"
+  },
+  "assistant": {
+    "title": "AI assistant",
+    "subtitle": "Proposals you review before anything is applied",
+    "restricted": "Only coordinators have access to the assistant."
+  },
+  "states": {
+    "loadingLabel": "Loading content",
+    "errorTitle": "Something went wrong",
+    "errorDescription": "We could not load this information.",
+    "retry": "Retry",
+    "emptyDefaultTitle": "Nothing here yet"
+  },
+  "toast": {
+    "dismiss": "Dismiss notification",
+    "region": "Notifications",
+    "languageChanged": "Language changed",
+    "themeChanged": "Appearance updated",
+    "comingSoon": "This part arrives in a later phase"
+  },
+  "errors": {
+    "generic": "An unexpected error occurred.",
+    "unauthorized": "You need to sign in.",
+    "forbidden": "You do not have permission for this action.",
+    "notFound": "We could not find the resource.",
+    "validation": "Some data is not valid.",
+    "conflict": "The action conflicts with the current state.",
+    "rateLimited": "Too many requests. Try again in a moment.",
+    "tenantRequired": "A center must be specified.",
+    "tenantMismatch": "The resource belongs to another center.",
+    "unknownTenant": "That organization is not registered.",
+    "serviceUnavailable": "The service is temporarily unavailable."
+  },
+  "validation": {
+    "required": "This field is required.",
+    "invalidTime": "Time must use the HH:MM format.",
+    "invalidUuid": "The identifier is not valid.",
+    "invalidRange": "The end time must be after the start time.",
+    "invalidWeekday": "The weekday must be between 1 (Monday) and 7 (Sunday).",
+    "min": "The minimum value is {{min}}.",
+    "max": "The maximum value is {{max}}."
+  },
+  "email": {
+    "greeting": "Hello {{name}}",
+    "signature": "The UAcademic team",
+    "changeRequestSubject": "New class change request",
+    "changeRequestBody": "{{requester}} requested a change to the {{subject}} session."
+  },
+  "push": {
+    "changeRequestTitle": "Change request",
+    "changeRequestBody": "{{requester}} proposes a change to {{subject}}.",
+    "scheduleUpdatedTitle": "Timetable updated",
+    "scheduleUpdatedBody": "A new version of the {{subject}} timetable has been published."
+  }
+}

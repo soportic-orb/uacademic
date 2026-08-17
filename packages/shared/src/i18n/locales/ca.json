@@ -1,0 +1,220 @@
+{
+  "common": {
+    "appName": "UAcademic",
+    "loading": "Carregant…",
+    "save": "Desa",
+    "cancel": "Cancel·la",
+    "retry": "Torna-ho a provar",
+    "close": "Tanca",
+    "search": "Cerca",
+    "confirm": "Confirma",
+    "back": "Enrere",
+    "next": "Següent",
+    "yes": "Sí",
+    "no": "No",
+    "optional": "Opcional",
+    "hours": "hores",
+    "hoursShort": "h",
+    "of": "de"
+  },
+  "nav": {
+    "dashboard": "Tauler",
+    "planning": "Planificació",
+    "subjects": "Assignatures",
+    "teachers": "Professorat",
+    "myLoad": "La meva càrrega",
+    "calendar": "Calendari",
+    "messages": "Missatges",
+    "documents": "Documents",
+    "settings": "Configuració",
+    "platform": "Plataforma",
+    "assistant": "Assistent IA",
+    "profile": "Perfil",
+    "more": "Més"
+  },
+  "layout": {
+    "skipToContent": "Ves al contingut principal",
+    "toggleSidebar": "Mostra o amaga el menú lateral",
+    "collapseSidebar": "Replega el menú lateral",
+    "expandSidebar": "Desplega el menú lateral",
+    "mainNavigation": "Navegació principal",
+    "bottomNavigation": "Navegació inferior",
+    "userMenu": "Menú d'usuari",
+    "notifications": "Notificacions",
+    "notificationsEmpty": "No tens notificacions pendents",
+    "centerSelector": "Centre actiu",
+    "globalSearch": "Cerca global",
+    "searchPlaceholder": "Cerca assignatures, professorat o espais",
+    "commandHint": "Prem ⌘K per cercar",
+    "signOut": "Tanca la sessió",
+    "demoUser": "Usuari de demostració"
+  },
+  "theme": {
+    "label": "Aparença",
+    "light": "Clar",
+    "dark": "Fosc",
+    "system": "Sistema"
+  },
+  "language": {
+    "label": "Idioma",
+    "ca": "Català",
+    "es": "Castellà",
+    "en": "Anglès"
+  },
+  "roles": {
+    "SUPERADMIN": "Superadministració",
+    "CENTER_ADMIN": "Administració del centre",
+    "COORDINATOR": "Coordinació",
+    "TEACHER": "Professorat"
+  },
+  "load": {
+    "title": "Càrrega docent",
+    "contracted": "Hores contractades",
+    "reductions": "Reduccions",
+    "capacity": "Capacitat",
+    "assigned": "Hores assignades",
+    "remaining": "Hores pendents",
+    "ratio": "Ocupació",
+    "trafficLightLabel": "Estat de la càrrega docent",
+    "status": {
+      "under": "Infracàrrega",
+      "optimal": "Òptima",
+      "limit": "Al límit",
+      "over": "Sobrecàrrega"
+    },
+    "statusHint": {
+      "under": "Per sota del 85 % de la capacitat contractada",
+      "optimal": "Entre el 85 % i el 100 % de la capacitat contractada",
+      "limit": "Entre el 100 % i el 110 % de la capacitat contractada",
+      "over": "Per sobre del 110 % de la capacitat contractada"
+    }
+  },
+  "dashboard": {
+    "title": "Tauler",
+    "subtitle": "Estat de la docència del centre",
+    "teachersWithLoad": "Professorat amb càrrega",
+    "coverage": "Cobertura de grups",
+    "openRequests": "Sol·licituds obertes",
+    "conflicts": "Conflictes detectats",
+    "viewAll": "Ho vull veure tot"
+  },
+  "teachers": {
+    "title": "Professorat",
+    "subtitle": "Capacitat contractada i càrrega assignada",
+    "name": "Nom",
+    "category": "Categoria",
+    "dedication": "Dedicació",
+    "contracted": "Contractades",
+    "assigned": "Assignades",
+    "status": "Estat",
+    "empty": {
+      "title": "Encara no hi ha professorat",
+      "description": "Importa el professorat del centre o afegeix-lo manualment per començar a repartir la càrrega.",
+      "action": "Afegeix professorat"
+    }
+  },
+  "subjects": {
+    "title": "Assignatures",
+    "subtitle": "Pla docent del curs actiu",
+    "code": "Codi",
+    "name": "Nom",
+    "ects": "ECTS",
+    "year": "Curs",
+    "term": "Període",
+    "groups": "Grups",
+    "empty": {
+      "title": "Cap assignatura donada d'alta",
+      "description": "Crea les assignatures del curs per poder planificar grups i horaris.",
+      "action": "Crea una assignatura"
+    }
+  },
+  "planning": {
+    "title": "Planificació",
+    "subtitle": "Horaris per versió i curs acadèmic",
+    "empty": {
+      "title": "Cap versió d'horari",
+      "description": "Crea una versió d'esborrany per començar a col·locar sessions.",
+      "action": "Crea una versió"
+    }
+  },
+  "messages": {
+    "title": "Missatges",
+    "empty": {
+      "title": "Cap conversa",
+      "description": "Les converses d'assignatura apareixeran aquí.",
+      "action": "Inicia una conversa"
+    }
+  },
+  "documents": {
+    "title": "Documents",
+    "empty": {
+      "title": "Cap document",
+      "description": "Puja la normativa del centre per poder-la citar des de les regles de negoci.",
+      "action": "Puja un document"
+    }
+  },
+  "settings": {
+    "title": "Configuració",
+    "subtitle": "Preferències personals i paràmetres del centre",
+    "appearance": "Aparença",
+    "languageSection": "Idioma de la interfície",
+    "provenanceHint": "Cada paràmetre del centre pot citar el document normatiu del qual prové."
+  },
+  "platform": {
+    "title": "Plataforma",
+    "subtitle": "Universitats, centres i tenants d'identitat"
+  },
+  "assistant": {
+    "title": "Assistent IA",
+    "subtitle": "Propostes revisables abans d'aplicar-se",
+    "restricted": "Només la coordinació té accés a l'assistent."
+  },
+  "states": {
+    "loadingLabel": "Carregant contingut",
+    "errorTitle": "Alguna cosa no ha anat bé",
+    "errorDescription": "No hem pogut carregar aquesta informació.",
+    "retry": "Torna-ho a provar",
+    "emptyDefaultTitle": "Encara no hi ha res aquí"
+  },
+  "toast": {
+    "dismiss": "Descarta l'avís",
+    "region": "Avisos",
+    "languageChanged": "Idioma canviat",
+    "themeChanged": "Aparença actualitzada",
+    "comingSoon": "Aquesta part arribarà en una fase posterior"
+  },
+  "errors": {
+    "generic": "Hi ha hagut un error inesperat.",
+    "unauthorized": "Cal iniciar la sessió.",
+    "forbidden": "No tens permisos per fer aquesta acció.",
+    "notFound": "No hem trobat el recurs.",
+    "validation": "Hi ha dades que no són vàlides.",
+    "conflict": "L'acció entra en conflicte amb l'estat actual.",
+    "rateLimited": "Massa peticions. Torna-ho a provar d'aquí a una estona.",
+    "tenantRequired": "Cal indicar el centre.",
+    "tenantMismatch": "El recurs pertany a un altre centre.",
+    "unknownTenant": "L'organització no està donada d'alta.",
+    "serviceUnavailable": "El servei no està disponible temporalment."
+  },
+  "validation": {
+    "required": "Aquest camp és obligatori.",
+    "invalidTime": "L'hora ha de tenir el format HH:MM.",
+    "invalidUuid": "L'identificador no és vàlid.",
+    "invalidRange": "L'hora final ha de ser posterior a la inicial.",
+    "invalidWeekday": "El dia de la setmana ha de ser entre 1 (dilluns) i 7 (diumenge).",
+    "min": "El valor mínim és {{min}}.",
+    "max": "El valor màxim és {{max}}."
+  },
+  "email": {
+    "greeting": "Hola, {{name}}",
+    "signature": "Equip d'UAcademic",
+    "changeRequestSubject": "Nova sol·licitud de canvi de classe",
+    "changeRequestBody": "{{requester}} ha demanat un canvi a la sessió de {{subject}}."
+  },
+  "push": {
+    "changeRequestTitle": "Sol·licitud de canvi",
+    "changeRequestBody": "{{requester}} proposa un canvi a {{subject}}.",
+    "scheduleUpdatedTitle": "Horari actualitzat",
+    "scheduleUpdatedBody": "S'ha publicat una versió nova de l'horari de {{subject}}."
+  }
+}

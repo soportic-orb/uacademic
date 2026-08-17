@@ -1,0 +1,37 @@
+{
+  "name": "uacademic",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "build": "pnpm -r --sequential build",
+    "build:packages": "pnpm --filter \"./packages/**\" --sequential build",
+    "dev": "pnpm build:packages && pnpm --parallel --filter \"./apps/**\" dev",
+    "dev:api": "pnpm build:packages && pnpm --filter @uacademic/api dev",
+    "dev:web": "pnpm build:packages && pnpm --filter @uacademic/web dev",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "pnpm -r --sequential typecheck",
+    "test": "pnpm -r --sequential test",
+    "test:e2e": "pnpm --filter @uacademic/web test:e2e",
+    "db:generate": "pnpm --filter @uacademic/db generate",
+    "db:migrate": "pnpm --filter @uacademic/db migrate",
+    "db:seed": "pnpm --filter @uacademic/db seed",
+    "db:reset": "pnpm --filter @uacademic/db reset"
+  },
+  "devDependencies": {
+    "@types/node": "22.19.0",
+    "@uacademic/eslint-config": "workspace:*",
+    "@uacademic/prettier-config": "workspace:*",
+    "eslint": "10.8.1",
+    "prettier": "3.9.6",
+    "typescript": "5.9.3"
+  },
+  "prettier": "@uacademic/prettier-config"
+}

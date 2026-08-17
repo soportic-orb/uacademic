@@ -19,7 +19,9 @@
 
 generator client {
   provider = "prisma-client"
-  output   = "../generated/prisma"
+  // Prisma 7 emits TypeScript, so the output lives inside src/ and is compiled
+  // together with the package. It is generated, never committed.
+  output   = "../src/generated/prisma"
   runtime  = "nodejs"
 }
 

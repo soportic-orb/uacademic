@@ -1,0 +1,220 @@
+{
+  "common": {
+    "appName": "UAcademic",
+    "loading": "Cargando…",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "retry": "Reintentar",
+    "close": "Cerrar",
+    "search": "Buscar",
+    "confirm": "Confirmar",
+    "back": "Atrás",
+    "next": "Siguiente",
+    "yes": "Sí",
+    "no": "No",
+    "optional": "Opcional",
+    "hours": "horas",
+    "hoursShort": "h",
+    "of": "de"
+  },
+  "nav": {
+    "dashboard": "Panel",
+    "planning": "Planificación",
+    "subjects": "Asignaturas",
+    "teachers": "Profesorado",
+    "myLoad": "Mi carga",
+    "calendar": "Calendario",
+    "messages": "Mensajes",
+    "documents": "Documentos",
+    "settings": "Configuración",
+    "platform": "Plataforma",
+    "assistant": "Asistente IA",
+    "profile": "Perfil",
+    "more": "Más"
+  },
+  "layout": {
+    "skipToContent": "Ir al contenido principal",
+    "toggleSidebar": "Mostrar u ocultar el menú lateral",
+    "collapseSidebar": "Plegar el menú lateral",
+    "expandSidebar": "Desplegar el menú lateral",
+    "mainNavigation": "Navegación principal",
+    "bottomNavigation": "Navegación inferior",
+    "userMenu": "Menú de usuario",
+    "notifications": "Notificaciones",
+    "notificationsEmpty": "No tienes notificaciones pendientes",
+    "centerSelector": "Centro activo",
+    "globalSearch": "Búsqueda global",
+    "searchPlaceholder": "Busca asignaturas, profesorado o espacios",
+    "commandHint": "Pulsa ⌘K para buscar",
+    "signOut": "Cerrar sesión",
+    "demoUser": "Usuario de demostración"
+  },
+  "theme": {
+    "label": "Apariencia",
+    "light": "Claro",
+    "dark": "Oscuro",
+    "system": "Sistema"
+  },
+  "language": {
+    "label": "Idioma",
+    "ca": "Catalán",
+    "es": "Castellano",
+    "en": "Inglés"
+  },
+  "roles": {
+    "SUPERADMIN": "Superadministración",
+    "CENTER_ADMIN": "Administración del centro",
+    "COORDINATOR": "Coordinación",
+    "TEACHER": "Profesorado"
+  },
+  "load": {
+    "title": "Carga docente",
+    "contracted": "Horas contratadas",
+    "reductions": "Reducciones",
+    "capacity": "Capacidad",
+    "assigned": "Horas asignadas",
+    "remaining": "Horas pendientes",
+    "ratio": "Ocupación",
+    "trafficLightLabel": "Estado de la carga docente",
+    "status": {
+      "under": "Infracarga",
+      "optimal": "Óptima",
+      "limit": "Al límite",
+      "over": "Sobrecarga"
+    },
+    "statusHint": {
+      "under": "Por debajo del 85 % de la capacidad contratada",
+      "optimal": "Entre el 85 % y el 100 % de la capacidad contratada",
+      "limit": "Entre el 100 % y el 110 % de la capacidad contratada",
+      "over": "Por encima del 110 % de la capacidad contratada"
+    }
+  },
+  "dashboard": {
+    "title": "Panel",
+    "subtitle": "Estado de la docencia del centro",
+    "teachersWithLoad": "Profesorado con carga",
+    "coverage": "Cobertura de grupos",
+    "openRequests": "Solicitudes abiertas",
+    "conflicts": "Conflictos detectados",
+    "viewAll": "Ver todo"
+  },
+  "teachers": {
+    "title": "Profesorado",
+    "subtitle": "Capacidad contratada y carga asignada",
+    "name": "Nombre",
+    "category": "Categoría",
+    "dedication": "Dedicación",
+    "contracted": "Contratadas",
+    "assigned": "Asignadas",
+    "status": "Estado",
+    "empty": {
+      "title": "Todavía no hay profesorado",
+      "description": "Importa el profesorado del centro o añádelo manualmente para empezar a repartir la carga.",
+      "action": "Añadir profesorado"
+    }
+  },
+  "subjects": {
+    "title": "Asignaturas",
+    "subtitle": "Plan docente del curso activo",
+    "code": "Código",
+    "name": "Nombre",
+    "ects": "ECTS",
+    "year": "Curso",
+    "term": "Periodo",
+    "groups": "Grupos",
+    "empty": {
+      "title": "Ninguna asignatura dada de alta",
+      "description": "Crea las asignaturas del curso para poder planificar grupos y horarios.",
+      "action": "Crear asignatura"
+    }
+  },
+  "planning": {
+    "title": "Planificación",
+    "subtitle": "Horarios por versión y curso académico",
+    "empty": {
+      "title": "Ninguna versión de horario",
+      "description": "Crea una versión en borrador para empezar a colocar sesiones.",
+      "action": "Crear versión"
+    }
+  },
+  "messages": {
+    "title": "Mensajes",
+    "empty": {
+      "title": "Ninguna conversación",
+      "description": "Las conversaciones de asignatura aparecerán aquí.",
+      "action": "Iniciar conversación"
+    }
+  },
+  "documents": {
+    "title": "Documentos",
+    "empty": {
+      "title": "Ningún documento",
+      "description": "Sube la normativa del centro para poder citarla desde las reglas de negocio.",
+      "action": "Subir documento"
+    }
+  },
+  "settings": {
+    "title": "Configuración",
+    "subtitle": "Preferencias personales y parámetros del centro",
+    "appearance": "Apariencia",
+    "languageSection": "Idioma de la interfaz",
+    "provenanceHint": "Cada parámetro del centro puede citar el documento normativo del que procede."
+  },
+  "platform": {
+    "title": "Plataforma",
+    "subtitle": "Universidades, centros y tenants de identidad"
+  },
+  "assistant": {
+    "title": "Asistente IA",
+    "subtitle": "Propuestas revisables antes de aplicarse",
+    "restricted": "Solo la coordinación tiene acceso al asistente."
+  },
+  "states": {
+    "loadingLabel": "Cargando contenido",
+    "errorTitle": "Algo ha ido mal",
+    "errorDescription": "No hemos podido cargar esta información.",
+    "retry": "Reintentar",
+    "emptyDefaultTitle": "Todavía no hay nada aquí"
+  },
+  "toast": {
+    "dismiss": "Descartar aviso",
+    "region": "Avisos",
+    "languageChanged": "Idioma cambiado",
+    "themeChanged": "Apariencia actualizada",
+    "comingSoon": "Esta parte llegará en una fase posterior"
+  },
+  "errors": {
+    "generic": "Se ha producido un error inesperado.",
+    "unauthorized": "Es necesario iniciar sesión.",
+    "forbidden": "No tienes permisos para esta acción.",
+    "notFound": "No hemos encontrado el recurso.",
+    "validation": "Hay datos que no son válidos.",
+    "conflict": "La acción entra en conflicto con el estado actual.",
+    "rateLimited": "Demasiadas peticiones. Inténtalo de nuevo en un momento.",
+    "tenantRequired": "Hay que indicar el centro.",
+    "tenantMismatch": "El recurso pertenece a otro centro.",
+    "unknownTenant": "La organización no está dada de alta.",
+    "serviceUnavailable": "El servicio no está disponible temporalmente."
+  },
+  "validation": {
+    "required": "Este campo es obligatorio.",
+    "invalidTime": "La hora debe tener el formato HH:MM.",
+    "invalidUuid": "El identificador no es válido.",
+    "invalidRange": "La hora final debe ser posterior a la inicial.",
+    "invalidWeekday": "El día de la semana debe estar entre 1 (lunes) y 7 (domingo).",
+    "min": "El valor mínimo es {{min}}.",
+    "max": "El valor máximo es {{max}}."
+  },
+  "email": {
+    "greeting": "Hola, {{name}}",
+    "signature": "Equipo de UAcademic",
+    "changeRequestSubject": "Nueva solicitud de cambio de clase",
+    "changeRequestBody": "{{requester}} ha pedido un cambio en la sesión de {{subject}}."
+  },
+  "push": {
+    "changeRequestTitle": "Solicitud de cambio",
+    "changeRequestBody": "{{requester}} propone un cambio en {{subject}}.",
+    "scheduleUpdatedTitle": "Horario actualizado",
+    "scheduleUpdatedBody": "Se ha publicado una nueva versión del horario de {{subject}}."
+  }
+}

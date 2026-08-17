@@ -1,0 +1,8 @@
+{
+  "extends": "@uacademic/tsconfig/node.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "outDir": "dist"
+  },
+  "include": ["src/**/*", "seed/**/*", "prisma.config.ts"]
+}
