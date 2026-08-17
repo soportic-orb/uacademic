@@ -147,7 +147,10 @@ describe.skipIf(!hasDatabase)('bulk import', () => {
 
     const rows = report.json().rows
     expect(rows.map((row: { rowNumber: number }) => row.rowNumber)).toEqual([4, 5, 6])
-    expect(rows[0].errors[0]).toMatchObject({ field: 'firstName', messageKey: 'validation.required' })
+    expect(rows[0].errors[0]).toMatchObject({
+      field: 'firstName',
+      messageKey: 'validation.required',
+    })
     expect(rows[1].errors[0]).toMatchObject({ field: 'email' })
     expect(rows[2].errors[0]).toMatchObject({ messageKey: 'imports.errors.duplicateInFile' })
   })

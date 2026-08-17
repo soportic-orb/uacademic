@@ -195,7 +195,11 @@ describe.skipIf(!hasDatabase)('Entra ID sign-in', () => {
     const cookie = signedIn.cookies.find((entry) => entry.name === SESSION_COOKIE)
     const header = { cookie: `${SESSION_COOKIE}=${cookie?.value ?? ''}` }
 
-    const session = await app.inject({ method: 'GET', url: '/api/v1/auth/session', headers: header })
+    const session = await app.inject({
+      method: 'GET',
+      url: '/api/v1/auth/session',
+      headers: header,
+    })
     expect(session.statusCode).toBe(200)
     expect(session.json().microsoftAccount.objectId).toBeDefined()
 
@@ -246,7 +250,6 @@ describe.skipIf(!hasDatabase)('Entra ID sign-in', () => {
           },
         },
       })
-
     })
 
     it('creates the account but keeps it out until someone activates it', async () => {
@@ -272,14 +275,10 @@ describe.skipIf(!hasDatabase)('Entra ID sign-in', () => {
       const user = await prisma.user.findUnique({ where: { email: NEWCOMER } })
       await prisma.user.update({ where: { id: user!.id }, data: { status: 'active' } })
 
-      const response = await signIn(
-        await mintToken({ oid: NEWCOMER_OID, email: NEWCOMER }),
-      )
+      const response = await signIn(await mintToken({ oid: NEWCOMER_OID, email: NEWCOMER }))
 
       expect(response.statusCode).toBe(200)
-      expect(response.json().memberships).toEqual([
-        expect.objectContaining({ role: 'TEACHER' }),
-      ])
+      expect(response.json().memberships).toEqual([expect.objectContaining({ role: 'TEACHER' })])
     })
 
     it('does not provision for a domain outside the policy', async () => {

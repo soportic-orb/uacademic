@@ -21,15 +21,10 @@ export interface RegisteredTenant {
 }
 
 export type TenantRejectionReason =
-  | 'missing_tid'
-  | 'missing_iss'
-  | 'unknown_tenant'
-  | 'suspended_tenant'
-  | 'issuer_mismatch'
+  'missing_tid' | 'missing_iss' | 'unknown_tenant' | 'suspended_tenant' | 'issuer_mismatch'
 
 export type TenantValidation =
-  | { ok: true; tenantId: string }
-  | { ok: false; reason: TenantRejectionReason }
+  { ok: true; tenantId: string } | { ok: false; reason: TenantRejectionReason }
 
 /** Issuers Microsoft publishes for a tenant: v2.0 endpoint and the v1 legacy one. */
 export function expectedIssuers(tenantId: string): string[] {

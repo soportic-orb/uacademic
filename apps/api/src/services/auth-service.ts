@@ -32,7 +32,10 @@ export async function loadRegisteredTenants(prisma: PrismaClient): Promise<Regis
   }))
 }
 
-async function jitCandidates(prisma: PrismaClient, tenantId: string): Promise<JitCandidateCenter[]> {
+async function jitCandidates(
+  prisma: PrismaClient,
+  tenantId: string,
+): Promise<JitCandidateCenter[]> {
   const centers = await prisma.center.findMany({
     where: { entraTenantId: tenantId },
     select: { id: true, entraTenantId: true, settingsJson: true },
@@ -147,7 +150,9 @@ export async function resolveEntraUser(
     ])
   }
 
-  const [firstName, ...rest] = (identity.displayName ?? identity.email.split('@')[0] ?? '').split(' ')
+  const [firstName, ...rest] = (identity.displayName ?? identity.email.split('@')[0] ?? '').split(
+    ' ',
+  )
   const created = await prisma.user.create({
     data: {
       entraOid: identity.objectId,

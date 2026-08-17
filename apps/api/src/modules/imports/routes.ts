@@ -44,7 +44,9 @@ export function registerImportRoutes(app: FastifyInstance, env: Env): void {
     const { centerId, db } = requireCenterScope(request)
     const user = requireUser(request)
 
-    const upload = await request.file({ limits: { fileSize: env.IMPORT_MAX_FILE_MB * 1024 * 1024 } })
+    const upload = await request.file({
+      limits: { fileSize: env.IMPORT_MAX_FILE_MB * 1024 * 1024 },
+    })
     if (!upload) throw AppError.badRequest('imports.errors.unsupportedFile')
 
     const fields = upload.fields as Record<string, { value?: unknown } | undefined>
@@ -138,75 +140,79 @@ export function registerImportRoutes(app: FastifyInstance, env: Env): void {
    * The dry run: validates every row and stores the outcome, without touching
    * a single business table.
    */
-  app.post('/api/v1/imports/:id/validate', { config: { roles: IMPORTER_ROLES } }, async (request) => {
-    const { db } = requireCenterScope(request)
-    const { id } = request.params as { id: string }
+  app.post(
+    '/api/v1/imports/:id/validate',
+    { config: { roles: IMPORTER_ROLES } },
+    async (request) => {
+      const { db } = requireCenterScope(request)
+      const { id } = request.params as { id: string }
 
-    const batch = await db.importBatch.findUnique({ where: { id } })
-    if (!batch) throw AppError.notFound()
-    if (batch.status === 'applied') throw AppError.conflict()
+      const batch = await db.importBatch.findUnique({ where: { id } })
+      if (!batch) throw AppError.notFound()
+      if (batch.status === 'applied') throw AppError.conflict()
 
-    const specs = fieldsFor(batch.type)
-    const mapping = (batch.mappingJson ?? {}) as ColumnMapping
-    const mappingCheck = validateMapping(mapping, specs)
-    if (!mappingCheck.ok) {
-      throw AppError.validation(
-        mappingCheck.missingRequired.map((field) => ({
-          path: field,
-          messageKey: 'validation.required',
-        })),
-      )
-    }
-
-    const rows = await db.importRow.findMany({
-      where: { importBatchId: id },
-      orderBy: { rowNumber: 'asc' },
-    })
-
-    const keyField = keyFieldFor(batch.type)
-    const seen = new Set<string>()
-    const validated: ValidatedRow[] = []
-
-    for (const row of rows) {
-      const cells = (row.rawJson ?? []) as string[]
-      const result = validateRow(row.rowNumber, cells, mapping, specs)
-
-      // A file that repeats the same teacher twice is a mistake worth naming.
-      const key = result.values[keyField]
-      if (typeof key === 'string') {
-        const normalized = key.toLowerCase()
-        if (seen.has(normalized)) {
-          result.errors.push({
-            field: keyField,
-            messageKey: 'imports.errors.duplicateInFile',
-            value: key,
-          })
-          result.status = 'invalid'
-        } else {
-          seen.add(normalized)
-        }
+      const specs = fieldsFor(batch.type)
+      const mapping = (batch.mappingJson ?? {}) as ColumnMapping
+      const mappingCheck = validateMapping(mapping, specs)
+      if (!mappingCheck.ok) {
+        throw AppError.validation(
+          mappingCheck.missingRequired.map((field) => ({
+            path: field,
+            messageKey: 'validation.required',
+          })),
+        )
       }
 
-      validated.push(result)
-
-      await db.importRow.update({
-        where: { id: row.id },
-        data: {
-          status: result.status,
-          normalizedJson: toJson(result.values),
-          errorsJson: toJson(result.errors),
-        },
+      const rows = await db.importRow.findMany({
+        where: { importBatchId: id },
+        orderBy: { rowNumber: 'asc' },
       })
-    }
 
-    const summary = summarizeRows(validated, keyField)
-    await db.importBatch.update({
-      where: { id },
-      data: { status: 'validated', summaryJson: toJson(summary) },
-    })
+      const keyField = keyFieldFor(batch.type)
+      const seen = new Set<string>()
+      const validated: ValidatedRow[] = []
 
-    return { id, summary, dryRun: true }
-  })
+      for (const row of rows) {
+        const cells = (row.rawJson ?? []) as string[]
+        const result = validateRow(row.rowNumber, cells, mapping, specs)
+
+        // A file that repeats the same teacher twice is a mistake worth naming.
+        const key = result.values[keyField]
+        if (typeof key === 'string') {
+          const normalized = key.toLowerCase()
+          if (seen.has(normalized)) {
+            result.errors.push({
+              field: keyField,
+              messageKey: 'imports.errors.duplicateInFile',
+              value: key,
+            })
+            result.status = 'invalid'
+          } else {
+            seen.add(normalized)
+          }
+        }
+
+        validated.push(result)
+
+        await db.importRow.update({
+          where: { id: row.id },
+          data: {
+            status: result.status,
+            normalizedJson: toJson(result.values),
+            errorsJson: toJson(result.errors),
+          },
+        })
+      }
+
+      const summary = summarizeRows(validated, keyField)
+      await db.importBatch.update({
+        where: { id },
+        data: { status: 'validated', summaryJson: toJson(summary) },
+      })
+
+      return { id, summary, dryRun: true }
+    },
+  )
 
   app.get('/api/v1/imports/:id', { config: { roles: IMPORTER_ROLES } }, async (request) => {
     const { db } = requireCenterScope(request)

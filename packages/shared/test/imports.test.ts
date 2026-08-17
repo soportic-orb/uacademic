@@ -129,7 +129,18 @@ describe('teacher rows', () => {
 })
 
 describe('subject rows', () => {
-  const headers = ['codi', 'nom ca', 'nombre es', 'name en', 'titulacio', 'ects', 'curs', 'periode', 'tipus', 'idioma']
+  const headers = [
+    'codi',
+    'nom ca',
+    'nombre es',
+    'name en',
+    'titulacio',
+    'ects',
+    'curs',
+    'periode',
+    'tipus',
+    'idioma',
+  ]
   const mapping = suggestMapping(headers, SUBJECT_IMPORT_FIELDS)
 
   it('maps the three names and the academic metadata', () => {
@@ -163,9 +174,7 @@ describe('subject rows', () => {
     )
 
     expect(row.status).toBe('invalid')
-    expect(row.errors).toEqual([
-      { field: 'nameEs', messageKey: 'validation.required', value: '' },
-    ])
+    expect(row.errors).toEqual([{ field: 'nameEs', messageKey: 'validation.required', value: '' }])
   })
 
   it('rejects a non-integer year', () => {
@@ -176,7 +185,10 @@ describe('subject rows', () => {
       SUBJECT_IMPORT_FIELDS,
     )
 
-    expect(row.errors[0]).toMatchObject({ field: 'year', messageKey: 'imports.errors.notAnInteger' })
+    expect(row.errors[0]).toMatchObject({
+      field: 'year',
+      messageKey: 'imports.errors.notAnInteger',
+    })
   })
 })
 

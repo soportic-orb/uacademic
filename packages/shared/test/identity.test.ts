@@ -73,7 +73,11 @@ describe('tenant validation', () => {
 
   it('honours a pinned issuer over the defaults', () => {
     const pinned: RegisteredTenant[] = [
-      { tenantId: OUR_TENANT, issuer: 'https://login.microsoftonline.com/custom/v2.0', status: 'active' },
+      {
+        tenantId: OUR_TENANT,
+        issuer: 'https://login.microsoftonline.com/custom/v2.0',
+        status: 'active',
+      },
     ]
     expect(validateTenantClaims(validClaims, pinned)).toEqual({
       ok: false,
@@ -104,9 +108,9 @@ describe('tenant validation', () => {
     })
 
     // Mixed casing between the two claims must still match the same tenant.
-    expect(validateTenantClaims({ ...validClaims, tid: OUR_TENANT.toUpperCase() }, TENANTS).ok).toBe(
-      true,
-    )
+    expect(
+      validateTenantClaims({ ...validClaims, tid: OUR_TENANT.toUpperCase() }, TENANTS).ok,
+    ).toBe(true)
   })
 })
 

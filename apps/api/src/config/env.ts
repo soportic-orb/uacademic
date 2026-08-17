@@ -51,7 +51,9 @@ const envSchema = z.object({
    * Microsoft organization, which is exactly why `tid` must be checked against
    * our registered tenants afterwards (R3).
    */
-  ENTRA_JWKS_URI: z.url().default('https://login.microsoftonline.com/organizations/discovery/v2.0/keys'),
+  ENTRA_JWKS_URI: z
+    .url()
+    .default('https://login.microsoftonline.com/organizations/discovery/v2.0/keys'),
   /** Our application (client) id — the expected `aud`. */
   ENTRA_CLIENT_ID: z.string().optional(),
   /** Extra accepted audiences, comma separated (e.g. `api://…`). */
@@ -92,12 +94,16 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
       throw new Error('SESSION_COOKIE_SECRET still holds its development default.')
     }
     if (!env.APP_ENCRYPTION_KEY) {
-      throw new Error('APP_ENCRYPTION_KEY is required in production: TOTP secrets are stored with it.')
+      throw new Error(
+        'APP_ENCRYPTION_KEY is required in production: TOTP secrets are stored with it.',
+      )
     }
   }
 
   if (env.AUTH_MODE === 'entra' && !env.ENTRA_CLIENT_ID) {
-    throw new Error('ENTRA_CLIENT_ID is required when AUTH_MODE=entra: it is the expected audience.')
+    throw new Error(
+      'ENTRA_CLIENT_ID is required when AUTH_MODE=entra: it is the expected audience.',
+    )
   }
 
   return env

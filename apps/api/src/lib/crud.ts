@@ -111,13 +111,9 @@ export function registerCrudRoutes<Input extends z.ZodType>(
   const base = `/api/v1/${resource.path}`
   type RouteConfig = { superadminOnly?: boolean; roles?: Role[] }
   const readConfig: RouteConfig =
-    resource.scope === 'platform'
-      ? { superadminOnly: true }
-      : { roles: [...resource.roles.read] }
+    resource.scope === 'platform' ? { superadminOnly: true } : { roles: [...resource.roles.read] }
   const writeConfig: RouteConfig =
-    resource.scope === 'platform'
-      ? { superadminOnly: true }
-      : { roles: [...resource.roles.write] }
+    resource.scope === 'platform' ? { superadminOnly: true } : { roles: [...resource.roles.write] }
 
   // Filters arrive as strings on the query string; each resource declares
   // which ones it accepts, so an arbitrary column can never be filtered on.

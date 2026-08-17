@@ -5,7 +5,13 @@
  */
 import { z } from 'zod'
 
-import { clockTimeSchema, decimalHoursSchema, isoDateSchema, roleSchema, uuidSchema } from './common.js'
+import {
+  clockTimeSchema,
+  decimalHoursSchema,
+  isoDateSchema,
+  roleSchema,
+  uuidSchema,
+} from './common.js'
 
 /** R1: names a user reads exist in the three languages, always. */
 export const trilingualNameSchema = z.object({
@@ -14,9 +20,14 @@ export const trilingualNameSchema = z.object({
   nameEn: z.string().trim().min(1).max(200),
 })
 
-const code = z.string().trim().min(1).max(32).regex(/^[A-Za-z0-9._-]+$/, {
-  message: 'validation.invalidCode',
-})
+const code = z
+  .string()
+  .trim()
+  .min(1)
+  .max(32)
+  .regex(/^[A-Za-z0-9._-]+$/, {
+    message: 'validation.invalidCode',
+  })
 
 export const universityInputSchema = z.object({
   name: z.string().trim().min(1).max(200),

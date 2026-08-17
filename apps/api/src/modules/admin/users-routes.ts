@@ -208,45 +208,49 @@ export function registerUserRoutes(app: FastifyInstance): void {
     },
   )
 
-  app.post('/api/v1/users/:id/roles', { config: { roles: CENTER_MANAGER_ROLES } }, async (request) => {
-    const { centerId } = requireCenterScope(request)
-    const actor = requireUser(request)
-    const { id } = request.params as { id: string }
-    const input = parseWith(userRoleInputSchema.omit({ userId: true }), request.body)
-    const client = prisma()
+  app.post(
+    '/api/v1/users/:id/roles',
+    { config: { roles: CENTER_MANAGER_ROLES } },
+    async (request) => {
+      const { centerId } = requireCenterScope(request)
+      const actor = requireUser(request)
+      const { id } = request.params as { id: string }
+      const input = parseWith(userRoleInputSchema.omit({ userId: true }), request.body)
+      const client = prisma()
 
-    // A center administrator cannot mint platform superadmins.
-    if (input.role === 'SUPERADMIN') throw AppError.forbidden()
-    await requireUserExists(id)
+      // A center administrator cannot mint platform superadmins.
+      if (input.role === 'SUPERADMIN') throw AppError.forbidden()
+      await requireUserExists(id)
 
-    const existing = await client.userCenterRole.findFirst({
-      where: { userId: id, centerId, role: input.role },
-    })
-    if (existing) throw AppError.conflict()
+      const existing = await client.userCenterRole.findFirst({
+        where: { userId: id, centerId, role: input.role },
+      })
+      if (existing) throw AppError.conflict()
 
-    const created = await client.userCenterRole.create({
-      data: {
-        userId: id,
+      const created = await client.userCenterRole.create({
+        data: {
+          userId: id,
+          centerId,
+          role: input.role,
+          ...(input.validFrom ? { validFrom: new Date(input.validFrom) } : {}),
+          ...(input.validTo ? { validTo: new Date(input.validTo) } : {}),
+        },
+      })
+
+      await writeAuditLog(client, {
         centerId,
-        role: input.role,
-        ...(input.validFrom ? { validFrom: new Date(input.validFrom) } : {}),
-        ...(input.validTo ? { validTo: new Date(input.validTo) } : {}),
-      },
-    })
+        userId: actor.userId,
+        entity: 'user_center_role',
+        entityId: created.id,
+        action: 'grant',
+        after: { userId: id, role: input.role },
+        source: 'user',
+        ip: request.ip,
+      })
 
-    await writeAuditLog(client, {
-      centerId,
-      userId: actor.userId,
-      entity: 'user_center_role',
-      entityId: created.id,
-      action: 'grant',
-      after: { userId: id, role: input.role },
-      source: 'user',
-      ip: request.ip,
-    })
-
-    return { id: created.id, role: created.role }
-  })
+      return { id: created.id, role: created.role }
+    },
+  )
 
   app.delete(
     '/api/v1/users/:id/roles/:roleId',

@@ -39,12 +39,14 @@ function normalizeHeader(header: string): string {
     .replace(/[^a-z0-9]/g, '')
 }
 
-const text = (max: number) => (raw: string): FieldParseResult => {
-  const value = raw.trim()
-  if (value.length === 0) return { ok: false, messageKey: 'validation.required' }
-  if (value.length > max) return { ok: false, messageKey: 'validation.max' }
-  return { ok: true, value }
-}
+const text =
+  (max: number) =>
+  (raw: string): FieldParseResult => {
+    const value = raw.trim()
+    if (value.length === 0) return { ok: false, messageKey: 'validation.required' }
+    if (value.length > max) return { ok: false, messageKey: 'validation.max' }
+    return { ok: true, value }
+  }
 
 const email = (raw: string): FieldParseResult => {
   const value = raw.trim().toLowerCase()
@@ -390,10 +392,7 @@ export interface ImportSummary {
  * Counts what a run would do. Duplicates are detected on the key field — the
  * same teacher twice in one file is an error worth surfacing before applying.
  */
-export function summarizeRows(
-  rows: readonly ValidatedRow[],
-  keyField: string,
-): ImportSummary {
+export function summarizeRows(rows: readonly ValidatedRow[], keyField: string): ImportSummary {
   const errorsByField: Record<string, number> = {}
   const seen = new Set<string>()
   let duplicates = 0
