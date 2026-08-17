@@ -60,11 +60,26 @@ pnpm dev                        # API on :3001, web on :5173
 The seed prints the teaching load it produced, so you can see straight away that the
 traffic light covers all four states.
 
-### Signing in during phase 0
+### Signing in
 
-Authentication is simulated until Microsoft Entra ID lands in phase 1. The web app has
-an identity switcher in the header with one demo account per role, and the API accepts
-an `x-mock-user: <email>` header:
+Sign-in is Microsoft Entra ID: MSAL in the browser (authorization code flow with PKCE)
+obtains an access token, the API validates it and returns an httpOnly session cookie.
+Set `VITE_ENTRA_CLIENT_ID` and `ENTRA_CLIENT_ID` to your app registration, and register
+your tenant under **Administration → Identity tenants** — a token whose `tid` is not in
+that table is refused with 403, which is what keeps every other Microsoft organization
+in the world out (R3).
+
+**Break-glass access.** The platform superadmin also has a local password (argon2id)
+with TOTP, so the product stays reachable when Entra ID does not. The seed creates it
+with the password from `SEED_SUPERADMIN_PASSWORD` (default `Superadmin-2026-demo`) for
+`ona.bertran@demo.uacademic.test`; TOTP is enrolled only when `APP_ENCRYPTION_KEY` is
+set, and the seed prints the secret once. Nobody else has a password: their organization
+owns it, so the profile screen shows the linked Microsoft account instead.
+
+**Local development without Microsoft.** Setting `AUTH_MODE=mock` (API) and
+`VITE_AUTH_MODE=mock` (web) brings back the phase 0 identity switcher, with one demo
+account per role and an `x-mock-user: <email>` header. The API refuses this mode when
+`NODE_ENV=production`.
 
 | Role           | Email                                 |
 | -------------- | ------------------------------------- |
@@ -75,6 +90,14 @@ an `x-mock-user: <email>` header:
 
 Roles are never read from a header or a token: they are resolved from
 `user_center_roles` on every request (R3).
+
+### Bulk import
+
+**Administration → Imports** loads teachers or subjects from CSV or Excel in four steps:
+upload, column mapping (proposed automatically, accents and three languages included),
+a dry run that reports every row it would reject and why, and finally the apply step,
+which writes only the rows the report approved. Re-running the same file updates
+existing records instead of duplicating them.
 
 ---
 
@@ -114,7 +137,22 @@ from an Expo app.
 
 ---
 
-## What phase 0 delivers
+## What phase 1 adds
+
+- Microsoft Entra ID authentication: JWKS signature check, audience, `tid` against the
+  registered tenants, `iss` against that tenant, `oid` as the identity — and roles still
+  read from the database.
+- Configurable JIT provisioning per center, landing new accounts in
+  `pending_activation` until someone approves them.
+- Server-side sessions behind an httpOnly, signed, SameSite=Lax cookie, revocable on
+  sign-out and on password change.
+- Break-glass superadmin path with argon2id and TOTP, plus lockout.
+- CRUD with server-side pagination, sorting, filtering and audit for universities,
+  centers, identity tenants, degrees, academic years, subjects, groups, spaces, the
+  academic calendar, users and roles.
+- Bulk import of teachers and subjects with column mapping and a dry run.
+
+## What phase 0 delivered
 
 - Monorepo, shared tooling and CI (lint, format, typecheck, tests, e2e).
 - Complete Prisma schema (40 models), initial migration and a demo seed whose timetable
@@ -131,11 +169,11 @@ from an Expo app.
 - API with strict multi-tenancy enforced in the data layer, audited cross-center access,
   localized errors, SSE with polling fallback and a MySQL-backed job queue.
 
-### Not in phase 0, by design
+### Not built yet, by design
 
-Microsoft Entra ID authentication, the drag & drop planner, the AI assistant, calendar
-synchronisation, messaging, document ingestion and OTA updates. The tables, the settings
-schema and the job types they need are already in place.
+The drag & drop planner, the AI assistant, calendar synchronisation, messaging, document
+ingestion and OTA updates. The tables, the settings schema and the job types they need
+are already in place.
 
 ---
 
@@ -146,3 +184,9 @@ from one center cannot read another center's data (R2), which is only meaningful
 a real database. CI starts a MySQL service, migrates and seeds it before running them.
 Unit tests — domain logic, i18n coverage, tenant scoping rules, toasts, navigation — run
 without any database.
+
+The Entra ID flow is tested without Microsoft: the suite generates an RSA key pair,
+serves the public half as a JWKS over localhost, and mints real RS256 tokens — including
+the ones an attacker would send (foreign tenant, mismatched issuer, wrong audience,
+expired, unsigned by the published key). The e2e suite drives the local superadmin
+sign-in through the real UI instead, since the Microsoft redirect cannot be automated.
