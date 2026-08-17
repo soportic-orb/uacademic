@@ -314,24 +314,52 @@ describe.skipIf(!hasDatabase)('teaching capacity', () => {
       expect(response.json().error.details[0].messageKey).toBe('validation.invalidRange')
     })
 
-    it('does not let a coordinator rewrite someone else’s availability', async () => {
-      const response = await app.inject({
-        method: 'PUT',
-        url: `/api/v1/teachers/${teacherProfileId}/availability`,
-        headers: asCoordinator(),
-        payload: { entries: [] },
-      })
-
-      // Reading is part of planning; writing is the teacher's own or the
-      // center admin's.
-      expect(response.statusCode).toBe(403)
-      const read = await app.inject({
+    it('lets a coordinator adjust a teacher’s week, since they plan with it', async () => {
+      const original = await app.inject({
         method: 'GET',
         url: `/api/v1/teachers/${teacherProfileId}/availability`,
         headers: asCoordinator(),
       })
-      expect(read.statusCode).toBe(200)
-      expect(read.json().editable).toBe(false)
+      expect(original.json().editable).toBe(true)
+      const before = original.json().entries
+
+      const saved = await app.inject({
+        method: 'PUT',
+        url: `/api/v1/teachers/${teacherProfileId}/availability`,
+        headers: asCoordinator(),
+        payload: {
+          entries: [{ weekday: 4, startTime: '10:00', endTime: '12:00', level: 'avoid' }],
+        },
+      })
+
+      expect(saved.statusCode).toBe(200)
+      expect(saved.json().hoursByLevel.avoid).toBe(2)
+
+      const restored = await app.inject({
+        method: 'PUT',
+        url: `/api/v1/teachers/${teacherProfileId}/availability`,
+        headers: asCoordinator(),
+        payload: { entries: before },
+      })
+      expect(restored.json().entries).toEqual(before)
+    })
+
+    it('keeps a teacher out of a colleague’s week', async () => {
+      const colleague = await prisma.teacherProfile.findFirst({
+        where: { centerId, NOT: { id: teacherProfileId } },
+        select: { id: true },
+      })
+
+      const response = await app.inject({
+        method: 'PUT',
+        url: `/api/v1/teachers/${colleague?.id}/availability`,
+        headers: asTeacher(),
+        payload: { entries: [] },
+      })
+
+      // Stopped before the write rule even applies: a plain teacher cannot
+      // read a colleague's profile in the first place.
+      expect(response.statusCode).toBe(403)
     })
 
     it('adds and removes a date exception', async () => {

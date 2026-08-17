@@ -46,13 +46,21 @@ test.describe('weekly availability', () => {
     ).toBeVisible()
   })
 
-  test('a coordinator can read a teacher’s week but not repaint it', async ({ page }) => {
+  test('a coordinator reaches a teacher’s week from the panel and can adjust it', async ({
+    page,
+  }) => {
     await asRole(page, 'Coordinació')
     await page.goto('/teachers')
 
     await page.getByRole('link', { name: 'Sergi Vila Rovira' }).click()
-    await expect(page.getByText('Només pots consultar aquesta disponibilitat.')).toBeVisible()
-    await expect(page.getByRole('button', { name: 'Desa la disponibilitat' })).toHaveCount(0)
+
+    const grid = page.getByRole('grid', { name: 'Graella de disponibilitat setmanal' })
+    await expect(grid).toBeVisible()
+    await expect(grid.getByRole('button').first()).toBeEnabled()
+    await expect(page.getByRole('button', { name: 'Desa la disponibilitat' })).toBeVisible()
+    // Reductions are the contract, not the timetable: those stay with the
+    // center administration.
+    await expect(page.getByRole('button', { name: 'Afegeix una reducció' })).toHaveCount(0)
   })
 })
 

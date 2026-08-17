@@ -164,6 +164,11 @@ that considers 95 % under-loaded gets its own colours without a code change.
   intervals before saving, so painting a morning writes one row, not sixteen.
 - **Date exceptions**: conferences, leave, sick leave. They only ever tighten the weekly
   pattern.
+
+  Availability and exceptions are written by the teacher, by coordination — which has to
+  make the timetable fit — and by the center administration. Reductions are the contract
+  rather than the timetable, so only the center administration records and approves them.
+
 - **Center load panel** (`/teachers`): every teacher with capacity, workload, ratio and
   traffic light, filtered by degree, category, load status and name. Filtering and
   sorting happen on the server, and the **Excel export** takes the same query string, so

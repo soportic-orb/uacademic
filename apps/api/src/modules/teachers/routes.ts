@@ -25,7 +25,7 @@ import { prisma } from '../../lib/prisma.js'
 import { parseWith } from '../../lib/validate.js'
 import {
   type TeacherContext,
-  canManageProfile,
+  canEditAvailability,
   loadRows,
   resolveTeacherProfileId,
   teacherContext,
@@ -329,7 +329,7 @@ function registerAvailabilityRoutes(app: FastifyInstance): void {
     ): Promise<AvailabilityResponseDto> => {
       const context = await teacherContext(request)
       const profileId = await resolveTeacherProfileId(context, request.params.id)
-      if (!(await canManageProfile(context, profileId))) throw AppError.forbidden()
+      if (!(await canEditAvailability(context, profileId))) throw AppError.forbidden()
 
       const input = parseWith(saveAvailabilitySchema, request.body)
       const before = await context.db.availability.findMany({
@@ -361,7 +361,7 @@ function registerAvailabilityRoutes(app: FastifyInstance): void {
     async (request: FastifyRequest<{ Params: { id: string } }>, reply) => {
       const context = await teacherContext(request)
       const profileId = await resolveTeacherProfileId(context, request.params.id)
-      if (!(await canManageProfile(context, profileId))) throw AppError.forbidden()
+      if (!(await canEditAvailability(context, profileId))) throw AppError.forbidden()
 
       const input = parseWith(availabilityExceptionInputSchema, request.body)
       const created = await context.db.availabilityException.create({
@@ -385,7 +385,7 @@ function registerAvailabilityRoutes(app: FastifyInstance): void {
     async (request: FastifyRequest<{ Params: { id: string; exceptionId: string } }>) => {
       const context = await teacherContext(request)
       const profileId = await resolveTeacherProfileId(context, request.params.id)
-      if (!(await canManageProfile(context, profileId))) throw AppError.forbidden()
+      if (!(await canEditAvailability(context, profileId))) throw AppError.forbidden()
 
       const before = await context.db.availabilityException.findFirst({
         where: { id: request.params.exceptionId, teacherProfileId: profileId },
@@ -449,7 +449,7 @@ async function availabilityResponse(
       weekdays: context.settings.schedule.workingWeekdays as Weekday[],
     },
     hoursByLevel: availabilityHoursByLevel(entries),
-    editable: await canManageProfile(context, teacherProfileId),
+    editable: await canEditAvailability(context, teacherProfileId),
   }
 }
 

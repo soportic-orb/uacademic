@@ -95,12 +95,17 @@ export async function resolveTeacherProfileId(
   return profile.id
 }
 
-/** True when the caller may change this profile's availability or reductions. */
-export async function canManageProfile(
+/**
+ * Who may repaint a week or record an absence: the teacher themselves, and the
+ * people who plan the center's teaching. Coordination adjusts availability
+ * because it is the side of the product that has to make the timetable fit —
+ * reductions stay with the center admin, since those change the contract.
+ */
+export async function canEditAvailability(
   context: TeacherContext,
   teacherProfileId: string,
 ): Promise<boolean> {
-  if (hasRole(context.user, context.centerId, ['CENTER_ADMIN'])) return true
+  if (hasRole(context.user, context.centerId, ['CENTER_ADMIN', 'COORDINATOR'])) return true
 
   const profile = await context.db.teacherProfile.findFirst({
     where: { id: teacherProfileId },
