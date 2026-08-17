@@ -12,11 +12,13 @@ import { registerErrorHandler } from './plugins/error-handler.js'
 import { registerAdminResources } from './modules/admin/resources.js'
 import { registerUserRoutes } from './modules/admin/users-routes.js'
 import { registerAuthRoutes } from './modules/auth/routes.js'
+import { registerCalendarRoutes } from './modules/calendar/routes.js'
 import { registerCenterRoutes } from './modules/centers/routes.js'
 import { registerImportRoutes } from './modules/imports/routes.js'
 import { registerEventRoutes } from './modules/events/routes.js'
 import { registerHealthRoutes } from './modules/health/routes.js'
 import { registerMeRoutes } from './modules/me/routes.js'
+import { registerPlannerRoutes } from './modules/planner/routes.js'
 import { registerSubjectRoutes } from './modules/subjects/routes.js'
 import { registerTeacherRoutes } from './modules/teachers/routes.js'
 
@@ -88,6 +90,8 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
   registerCenterRoutes(app)
   registerTeacherRoutes(app)
   registerSubjectRoutes(app)
+  registerPlannerRoutes(app, bus)
+  registerCalendarRoutes(app)
   registerEventRoutes(app, bus)
   registerAdminResources(app)
   registerUserRoutes(app)

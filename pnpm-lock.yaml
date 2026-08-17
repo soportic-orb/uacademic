@@ -73,6 +73,9 @@ importers:
       otpauth:
         specifier: 9.5.1
         version: 9.5.1
+      pdfkit:
+        specifier: 0.17.2
+        version: 0.17.2
       pino:
         specifier: 10.3.1
         version: 10.3.1
@@ -83,6 +86,9 @@ importers:
       "@types/node":
         specifier: 22.19.0
         version: 22.19.0
+      "@types/pdfkit":
+        specifier: ^0.17.6
+        version: 0.17.6
       "@uacademic/tsconfig":
         specifier: workspace:*
         version: link:../../tooling/tsconfig
@@ -104,6 +110,21 @@ importers:
       "@azure/msal-browser":
         specifier: 5.18.0
         version: 5.18.0
+      "@fullcalendar/core":
+        specifier: 6.1.19
+        version: 6.1.19
+      "@fullcalendar/daygrid":
+        specifier: 6.1.19
+        version: 6.1.19(@fullcalendar/core@6.1.19)
+      "@fullcalendar/list":
+        specifier: 6.1.19
+        version: 6.1.19(@fullcalendar/core@6.1.19)
+      "@fullcalendar/react":
+        specifier: 6.1.19
+        version: 6.1.19(@fullcalendar/core@6.1.19)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      "@fullcalendar/timegrid":
+        specifier: 6.1.19
+        version: 6.1.19(@fullcalendar/core@6.1.19)
       "@tanstack/react-query":
         specifier: 5.101.4
         version: 5.101.4(react@19.2.8)
@@ -1581,6 +1602,46 @@ packages:
         integrity: sha512-X7osJd4XSvMoejYrnJkSZYYjY1eNYoBqhjlzf1RakC2204qExFqZFTKj5+T7VuzA/iUI9Z3UoSqQRkB2HpG0oQ==,
       }
 
+  "@fullcalendar/core@6.1.19":
+    resolution:
+      {
+        integrity: sha512-z0aVlO5e4Wah6p6mouM0UEqtRf1MZZPt4mwzEyU6kusaNL+dlWQgAasF2cK23hwT4cmxkEmr4inULXgpyeExdQ==,
+      }
+
+  "@fullcalendar/daygrid@6.1.19":
+    resolution:
+      {
+        integrity: sha512-IAAfnMICnVWPjpT4zi87i3FEw0xxSza0avqY/HedKEz+l5MTBYvCDPOWDATpzXoLut3aACsjktIyw9thvIcRYQ==,
+      }
+    peerDependencies:
+      "@fullcalendar/core": ~6.1.19
+
+  "@fullcalendar/list@6.1.19":
+    resolution:
+      {
+        integrity: sha512-knZHpAVF0LbzZpSJSUmLUUzF0XlU/MRGK+Py2s0/mP93bCtno1k2L3XPs/kzh528hSjehwLm89RgKTSfW1P6cA==,
+      }
+    peerDependencies:
+      "@fullcalendar/core": ~6.1.19
+
+  "@fullcalendar/react@6.1.19":
+    resolution:
+      {
+        integrity: sha512-FP78vnyylaL/btZeHig8LQgfHgfwxLaIG6sKbNkzkPkKEACv11UyyBoTSkaavPsHtXvAkcTED1l7TOunAyPEnA==,
+      }
+    peerDependencies:
+      "@fullcalendar/core": ~6.1.19
+      react: ^16.7.0 || ^17 || ^18 || ^19
+      react-dom: ^16.7.0 || ^17 || ^18 || ^19
+
+  "@fullcalendar/timegrid@6.1.19":
+    resolution:
+      {
+        integrity: sha512-OuzpUueyO9wB5OZ8rs7TWIoqvu4v3yEqdDxZ2VcsMldCpYJRiOe7yHWKr4ap5Tb0fs7Rjbserc/b6Nt7ol6BRg==,
+      }
+    peerDependencies:
+      "@fullcalendar/core": ~6.1.19
+
   "@humanfs/core@0.19.2":
     resolution:
       {
@@ -2334,6 +2395,12 @@ packages:
         integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==,
       }
 
+  "@swc/helpers@0.5.23":
+    resolution:
+      {
+        integrity: sha512-5lSsMOTXURePglDfvuAQUqkGek9Hg2kksOYay2m0+XR++b2NWYL/4sWyuvVBIs8oKnJaxkdi9whaL/sqN13afw==,
+      }
+
   "@tailwindcss/node@4.3.3":
     resolution:
       {
@@ -2671,6 +2738,12 @@ packages:
     resolution:
       {
         integrity: sha512-Dh8vAsV36ig5wa9OX4pXvMc9D3Veibfw2wix0CUwYODLD8nkj9UsLjASr49nPg+2eKzxhBV+v7L8pXvT4e639Q==,
+      }
+
+  "@types/pdfkit@0.17.6":
+    resolution:
+      {
+        integrity: sha512-tIwzxk2uWKp0Cq9JIluQXJid77lYhF52EsIOwhsMF4iWLA6YneoBR1xVKYYdAysHuepUB0OX4tdwMiUDdGKmig==,
       }
 
   "@types/react-dom@19.2.4":
@@ -3155,6 +3228,13 @@ packages:
       }
     engines: { node: 18 || 20 || >=22 }
 
+  base64-js@0.0.8:
+    resolution:
+      {
+        integrity: sha512-3XSA2cR/h/73EzlXXdU6YNycmYI7+kicTxks4eJg2g39biHR84slg2+des+p7iHYhbRg/udIS4TD53WabcOUkw==,
+      }
+    engines: { node: ">= 0.4" }
+
   base64-js@1.5.1:
     resolution:
       {
@@ -3224,6 +3304,18 @@ packages:
         integrity: sha512-ScQ4IuvIEF1TMlP7Zt+vjJ//9zlPb2SDcxWxM3bk8s6t6GGdJ7KO1dCcTidOPJKePW30LE/2cT7wCyPho9/Wxg==,
       }
     engines: { node: 20 || >=22 }
+
+  brotli@1.3.3:
+    resolution:
+      {
+        integrity: sha512-oTKjJdShmDuGW94SyyaoQvAjf30dZaHnjJ8uAF+u2/vGJkJbJPJAT1gDiOJP5v1Zb6f9KEyW/1HpuaWIXtGHPg==,
+      }
+
+  browserify-zlib@0.2.0:
+    resolution:
+      {
+        integrity: sha512-Z942RysHXmJrhqk88FmKBVq/v5tqmSkDz7p54G/MGyjMnCFFnC79XWNbg+Vta8W6Wb2qtSZTSxIGkJrRpCFEiA==,
+      }
 
   browserslist@4.28.8:
     resolution:
@@ -3335,6 +3427,13 @@ packages:
         integrity: sha512-saHYOzhIQs6wy2sVxTM6bUDsQO4F50V9RQ22qBpEdCW+I+/Wmke2HOl6lS6dTpdxVhb88/I6+Hs+438c3lfUow==,
       }
 
+  clone@2.1.2:
+    resolution:
+      {
+        integrity: sha512-3Pe/CF1Nn94hyhIYpjtiLhdCoEoz0DqQ+988E9gmeEdQZlojxnOb74wctFyuwWQHzqyf9X7C7MG8juUpqBJT8w==,
+      }
+    engines: { node: ">=0.8" }
+
   clsx@2.1.1:
     resolution:
       {
@@ -3434,6 +3533,13 @@ packages:
         integrity: sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA==,
       }
     engines: { node: ">= 8" }
+
+  crypto-js@4.2.0:
+    resolution:
+      {
+        integrity: sha512-KALDyEYgpY+Rlob/iriUtjV6d5Eq+Y191A5g4UqLAi8CyGP9N1+FdVbkc1SxKc2r4YAYqG8JzO2KGL+AizD70Q==,
+      }
+    deprecated: Active development of CryptoJS has been discontinued. This library is no longer maintained.
 
   crypto-random-string@2.0.0:
     resolution:
@@ -3687,6 +3793,12 @@ packages:
         integrity: sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ==,
       }
     engines: { node: ">=8" }
+
+  dfa@1.2.0:
+    resolution:
+      {
+        integrity: sha512-ED3jP8saaweFTjeGX8HQPjeC1YYyZs98jGNZx6IiBvxW7JG5v492kamAQB3m2wop07CvU/RQmzcKr6bgcC5D/Q==,
+      }
 
   dom-accessibility-api@0.5.16:
     resolution:
@@ -4162,6 +4274,12 @@ packages:
     resolution:
       {
         integrity: sha512-5+ybhBZANEJxaH3X5evAFatUxLfEHSr7n6kYJ+1Qd0mUqr4eu9gIf6GDbWHf8RJijHrjjO8G+la14SlL2SeS1Q==,
+      }
+
+  fontkit@2.0.4:
+    resolution:
+      {
+        integrity: sha512-syetQadaUEDNdxdugga9CpEYVaQIxOwk7GlwZWWZ19//qW4zE5bknOKeMBDYAASwnpaSHKJITRLMF9m1fp3s6g==,
       }
 
   for-each@0.3.5:
@@ -4832,6 +4950,13 @@ packages:
       }
     engines: { node: ">=10" }
 
+  jpeg-exif@1.1.4:
+    resolution:
+      {
+        integrity: sha512-a+bKEcCjtuW5WTdgeXFzswSrdqi0jk4XlEtZlx5A94wCoBpFjfFTbo/Tra5SpNCl/YFZPvcV1dJc+TAYeg6ROQ==,
+      }
+    deprecated: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
+
   js-tokens@4.0.0:
     resolution:
       {
@@ -5193,6 +5318,12 @@ packages:
         integrity: sha512-WkUDrojuJs0xkgGf2udWxa3yGBRxPtxUkB79i6aCZLRgc7PM8fZe9TosfPDcvEpQZbuFASnHYmRLBLUbmLOIIA==,
       }
     engines: { node: ">= 12.0.0" }
+
+  linebreak@1.1.0:
+    resolution:
+      {
+        integrity: sha512-MHp03UImeVhB7XZtjd0E4n6+3xr5Dq/9xI/5FptGk5FrbDR3zagPa2DS6U8ks/3HjbKWG9Q1M2ufOzxV2qLYSQ==,
+      }
 
   listenercount@1.0.1:
     resolution:
@@ -5567,6 +5698,12 @@ packages:
         integrity: sha512-UEZIS3/by4OC8vL3P2dTXRETpebLI2NiI5vIrjaD/5UtrkFX/tNbwjTSRAGC/+7CAo2pIcBaRgWmcBBHcsaCIw==,
       }
 
+  pako@0.2.9:
+    resolution:
+      {
+        integrity: sha512-NUcwaKxUxWrZLpDG+z/xZaCgQITkA/Dv4V/T6bw7VON6l1Xz/VnrBqrYjZQ12TamKHzITTfOEIYUj48y2KXImA==,
+      }
+
   pako@1.0.11:
     resolution:
       {
@@ -5617,6 +5754,12 @@ packages:
     resolution:
       {
         integrity: sha512-WUjGcAqP1gQacoQe+OBJsFA7Ld4DyXuUIjZ5cc75cLHvJ7dtNsTugphxIADwspS+AraAUePCKrSVtPLFj/F88w==,
+      }
+
+  pdfkit@0.17.2:
+    resolution:
+      {
+        integrity: sha512-UnwF5fXy08f0dnp4jchFYAROKMNTaPqb/xgR8GtCzIcqoTnbOqtp3bwKvO4688oHI6vzEEs8Q6vqqEnC5IUELw==,
       }
 
   perfect-debounce@2.1.0:
@@ -5686,6 +5829,12 @@ packages:
     engines: { node: ">=20" }
     hasBin: true
 
+  png-js@1.1.0:
+    resolution:
+      {
+        integrity: sha512-PM/uYGzGdNSzqeOgly68+6wKQDL1SY0a/N+OEa/+br6LnHWOAJB0Npiamnodfq3jd2LS/i2fMeOKSAILjA+m5Q==,
+      }
+
   possible-typed-array-names@1.1.0:
     resolution:
       {
@@ -5706,6 +5855,12 @@ packages:
         integrity: sha512-Jtc2612XINuBjIl/QTWsV5UvE8UHuNblcO3vVADSrKsrc6RqGX6lOW1cEo3CM2v0XG4Nat8nI+YM7/f26VxXLw==,
       }
     engines: { node: ">=12" }
+
+  preact@10.12.1:
+    resolution:
+      {
+        integrity: sha512-l8386ixSsBdbreOAkqtrwqHwdvR35ID8c3rKPa8lCWuO86dBi32QWHV4vfsZK1utLLFMvw+Z5Ad4XLkZzchscg==,
+      }
 
   prelude-ls@1.2.1:
     resolution:
@@ -5987,6 +6142,12 @@ packages:
       }
     engines: { node: ">= 0.4" }
     hasBin: true
+
+  restructure@3.0.2:
+    resolution:
+      {
+        integrity: sha512-gSfoiOEA0VPE6Tukkrr7I0RBdE0s7H1eFCDBk05l1KIQT1UIKNc5JZy6jdyW6eYH3aR3g5b3PuL77rq0hvwtAw==,
+      }
 
   ret@0.5.0:
     resolution:
@@ -6468,6 +6629,12 @@ packages:
       }
     engines: { node: ">=20" }
 
+  tiny-inflate@1.0.3:
+    resolution:
+      {
+        integrity: sha512-pkY1fj1cKHb2seWDy0B16HeWyczlJA9/WW3u3c4z/NiWDsO3DOU5D7nhTLE9CF0yXv/QZFY7sEJmj24dK+Rrqw==,
+      }
+
   tinybench@2.9.0:
     resolution:
       {
@@ -6550,6 +6717,12 @@ packages:
     engines: { node: ">=18.12" }
     peerDependencies:
       typescript: ">=4.8.4"
+
+  tslib@2.8.1:
+    resolution:
+      {
+        integrity: sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==,
+      }
 
   tsx@4.23.12:
     resolution:
@@ -6666,12 +6839,24 @@ packages:
       }
     engines: { node: ">=4" }
 
+  unicode-properties@1.4.1:
+    resolution:
+      {
+        integrity: sha512-CLjCCLQ6UuMxWnbIylkisbRj31qxHPAurvena/0iwSVbQ2G1VY5/HjV0IRabOEbDHlzZlRdCrD4NhB0JtU40Pg==,
+      }
+
   unicode-property-aliases-ecmascript@2.2.0:
     resolution:
       {
         integrity: sha512-hpbDzxUY9BFwX+UeBnxv3Sh1q7HFxj48DTmXchNgRa46lO8uj3/1iEn3MiNUYTg1g9ctIqXCCERn8gYZhHC5lQ==,
       }
     engines: { node: ">=4" }
+
+  unicode-trie@2.0.0:
+    resolution:
+      {
+        integrity: sha512-x7bc76x0bm4prf1VLg79uhAzKw8DVboClSN5VxJuQ+LKDOVEW9CdH+VY7SP+vX7xCYQqzzgQpFqz15zeLvAtZQ==,
+      }
 
   unique-string@2.0.0:
     resolution:
@@ -8040,6 +8225,29 @@ snapshots:
       ip-address: 10.5.0
       toad-cache: 3.7.4
 
+  "@fullcalendar/core@6.1.19":
+    dependencies:
+      preact: 10.12.1
+
+  "@fullcalendar/daygrid@6.1.19(@fullcalendar/core@6.1.19)":
+    dependencies:
+      "@fullcalendar/core": 6.1.19
+
+  "@fullcalendar/list@6.1.19(@fullcalendar/core@6.1.19)":
+    dependencies:
+      "@fullcalendar/core": 6.1.19
+
+  "@fullcalendar/react@6.1.19(@fullcalendar/core@6.1.19)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)":
+    dependencies:
+      "@fullcalendar/core": 6.1.19
+      react: 19.2.8
+      react-dom: 19.2.8(react@19.2.8)
+
+  "@fullcalendar/timegrid@6.1.19(@fullcalendar/core@6.1.19)":
+    dependencies:
+      "@fullcalendar/core": 6.1.19
+      "@fullcalendar/daygrid": 6.1.19(@fullcalendar/core@6.1.19)
+
   "@humanfs/core@0.19.2":
     dependencies:
       "@humanfs/types": 0.15.0
@@ -8419,6 +8627,10 @@ snapshots:
 
   "@standard-schema/spec@1.1.0": {}
 
+  "@swc/helpers@0.5.23":
+    dependencies:
+      tslib: 2.8.1
+
   "@tailwindcss/node@4.3.3":
     dependencies:
       "@jridgewell/remapping": 2.3.5
@@ -8596,6 +8808,10 @@ snapshots:
   "@types/node@24.13.3":
     dependencies:
       undici-types: 7.18.2
+
+  "@types/pdfkit@0.17.6":
+    dependencies:
+      "@types/node": 22.19.0
 
   "@types/react-dom@19.2.4(@types/react@19.2.18)":
     dependencies:
@@ -8998,6 +9214,8 @@ snapshots:
 
   balanced-match@4.0.4: {}
 
+  base64-js@0.0.8: {}
+
   base64-js@1.5.1: {}
 
   baseline-browser-mapping@2.11.14: {}
@@ -9035,6 +9253,14 @@ snapshots:
   brace-expansion@5.0.9:
     dependencies:
       balanced-match: 4.0.4
+
+  brotli@1.3.3:
+    dependencies:
+      base64-js: 1.5.1
+
+  browserify-zlib@0.2.0:
+    dependencies:
+      pako: 1.0.11
 
   browserslist@4.28.8:
     dependencies:
@@ -9107,6 +9333,8 @@ snapshots:
 
   classnames@2.5.1: {}
 
+  clone@2.1.2: {}
+
   clsx@2.1.1: {}
 
   colorette@2.0.20: {}
@@ -9150,6 +9378,8 @@ snapshots:
       path-key: 3.1.1
       shebang-command: 2.0.0
       which: 2.0.2
+
+  crypto-js@4.2.0: {}
 
   crypto-random-string@2.0.0: {}
 
@@ -9278,6 +9508,8 @@ snapshots:
   destr@2.0.5: {}
 
   detect-libc@2.1.2: {}
+
+  dfa@1.2.0: {}
 
   dom-accessibility-api@0.5.16: {}
 
@@ -9676,6 +9908,18 @@ snapshots:
 
   flatted@3.4.4: {}
 
+  fontkit@2.0.4:
+    dependencies:
+      "@swc/helpers": 0.5.23
+      brotli: 1.3.3
+      clone: 2.1.2
+      dfa: 1.2.0
+      fast-deep-equal: 3.1.3
+      restructure: 3.0.2
+      tiny-inflate: 1.0.3
+      unicode-properties: 1.4.1
+      unicode-trie: 2.0.0
+
   for-each@0.3.5:
     dependencies:
       is-callable: 1.2.7
@@ -10033,6 +10277,8 @@ snapshots:
 
   joycon@3.1.1: {}
 
+  jpeg-exif@1.1.4: {}
+
   js-tokens@4.0.0: {}
 
   jsdom@30.0.1(@noble/hashes@2.2.0):
@@ -10228,6 +10474,11 @@ snapshots:
       lightningcss-win32-arm64-msvc: 1.33.0
       lightningcss-win32-x64-msvc: 1.33.0
 
+  linebreak@1.1.0:
+    dependencies:
+      base64-js: 0.0.8
+      unicode-trie: 2.0.0
+
   listenercount@1.0.1: {}
 
   locate-path@6.0.0:
@@ -10413,6 +10664,8 @@ snapshots:
 
   package-json-from-dist@1.0.1: {}
 
+  pako@0.2.9: {}
+
   pako@1.0.11: {}
 
   parse5@8.0.1:
@@ -10433,6 +10686,14 @@ snapshots:
       minipass: 7.1.3
 
   pathe@2.0.3: {}
+
+  pdfkit@0.17.2:
+    dependencies:
+      crypto-js: 4.2.0
+      fontkit: 2.0.4
+      jpeg-exif: 1.1.4
+      linebreak: 1.1.0
+      png-js: 1.1.0
 
   perfect-debounce@2.1.0: {}
 
@@ -10490,6 +10751,10 @@ snapshots:
     optionalDependencies:
       fsevents: 2.3.2
 
+  png-js@1.1.0:
+    dependencies:
+      browserify-zlib: 0.2.0
+
   possible-typed-array-names@1.1.0: {}
 
   postcss@8.5.26:
@@ -10499,6 +10764,8 @@ snapshots:
       source-map-js: 1.2.1
 
   postgres@3.4.7: {}
+
+  preact@10.12.1: {}
 
   prelude-ls@1.2.1: {}
 
@@ -10671,6 +10938,8 @@ snapshots:
       is-core-module: 2.16.2
       path-parse: 1.0.7
       supports-preserve-symlinks-flag: 1.0.0
+
+  restructure@3.0.2: {}
 
   ret@0.5.0: {}
 
@@ -10993,6 +11262,8 @@ snapshots:
     dependencies:
       real-require: 1.0.0
 
+  tiny-inflate@1.0.3: {}
+
   tinybench@2.9.0: {}
 
   tinyexec@1.3.0: {}
@@ -11027,6 +11298,8 @@ snapshots:
   ts-api-utils@2.5.0(typescript@5.9.3):
     dependencies:
       typescript: 5.9.3
+
+  tslib@2.8.1: {}
 
   tsx@4.23.12:
     dependencies:
@@ -11108,7 +11381,17 @@ snapshots:
 
   unicode-match-property-value-ecmascript@2.2.1: {}
 
+  unicode-properties@1.4.1:
+    dependencies:
+      base64-js: 1.5.1
+      unicode-trie: 2.0.0
+
   unicode-property-aliases-ecmascript@2.2.0: {}
+
+  unicode-trie@2.0.0:
+    dependencies:
+      pako: 0.2.9
+      tiny-inflate: 1.0.3
 
   unique-string@2.0.0:
     dependencies:

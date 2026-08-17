@@ -28,6 +28,7 @@ export type EntityKind =
   | 'document'
   | 'settingsVersion'
   | 'provenance'
+  | 'calendarEntry'
 
 const ENTITY_CODES: Record<EntityKind, number> = {
   university: 1,
@@ -50,6 +51,7 @@ const ENTITY_CODES: Record<EntityKind, number> = {
   document: 18,
   settingsVersion: 19,
   provenance: 20,
+  calendarEntry: 21,
 }
 
 export function seedId(kind: EntityKind, index: number): string {

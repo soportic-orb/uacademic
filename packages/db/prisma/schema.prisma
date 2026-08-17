@@ -579,16 +579,19 @@ model SubjectCoordinator {
 }
 
 model Group {
-  id                String     @id @default(uuid(7)) @db.Char(36)
-  centerId          String     @map("center_id") @db.Char(36)
-  subjectId         String     @map("subject_id") @db.Char(36)
-  type              GroupType
-  code              String     @db.VarChar(32)
-  plannedHours      Decimal    @map("planned_hours") @db.Decimal(6, 2)
-  capacity          Int?       @db.SmallInt
-  requiredSpaceType SpaceType? @map("required_space_type")
-  createdAt         DateTime   @default(now()) @map("created_at")
-  updatedAt         DateTime   @updatedAt @map("updated_at")
+  id                    String     @id @default(uuid(7)) @db.Char(36)
+  centerId              String     @map("center_id") @db.Char(36)
+  subjectId             String     @map("subject_id") @db.Char(36)
+  type                  GroupType
+  code                  String     @db.VarChar(32)
+  plannedHours          Decimal    @map("planned_hours") @db.Decimal(6, 2)
+  capacity              Int?       @db.SmallInt
+  requiredSpaceType     SpaceType? @map("required_space_type")
+  /// Equipment the room must have for this group, e.g. ["workstations"].
+  /// A hard constraint of the planner (phase 3).
+  requiredEquipmentJson Json?      @map("required_equipment_json")
+  createdAt             DateTime   @default(now()) @map("created_at")
+  updatedAt             DateTime   @updatedAt @map("updated_at")
 
   center  Center  @relation(fields: [centerId], references: [id], onDelete: Cascade)
   subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
@@ -744,6 +747,10 @@ model ScheduleVersion {
   status          ScheduleVersionStatus @default(draft)
   publishedAt     DateTime?             @map("published_at")
   publishedBy     String?               @map("published_by") @db.Char(36)
+  /// Sessions frozen at publication, with the names a person needs to read
+  /// them. The diff of the next publication is computed against this, so a
+  /// later edit of a row can never rewrite what people were told.
+  snapshotJson    Json?                 @map("snapshot_json")
   parentVersionId String?               @map("parent_version_id") @db.Char(36)
   createdAt       DateTime              @default(now()) @map("created_at")
   updatedAt       DateTime              @updatedAt @map("updated_at")

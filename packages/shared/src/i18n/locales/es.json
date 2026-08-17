@@ -25,7 +25,16 @@
     "export": "Exportar",
     "total": "Total",
     "none": "Ninguno",
-    "discard": "Descartar"
+    "discard": "Descartar",
+    "undo": "Deshacer",
+    "redo": "Rehacer",
+    "download": "Descargar",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "generate": "Generar",
+    "stop": "Detener",
+    "from": "De",
+    "to": "A"
   },
   "nav": {
     "dashboard": "Panel",
@@ -325,13 +334,17 @@
     "greeting": "Hola, {{name}}",
     "signature": "Equipo de UAcademic",
     "changeRequestSubject": "Nueva solicitud de cambio de clase",
-    "changeRequestBody": "{{requester}} ha pedido un cambio en la sesión de {{subject}}."
+    "changeRequestBody": "{{requester}} ha pedido un cambio en la sesión de {{subject}}.",
+    "scheduleChangedSubject": "Cambios en tu horario",
+    "scheduleChangedBody": "Se ha publicado la versión {{version}} del horario con {{count}} cambio(s) que te afectan."
   },
   "push": {
     "changeRequestTitle": "Solicitud de cambio",
     "changeRequestBody": "{{requester}} propone un cambio en {{subject}}.",
     "scheduleUpdatedTitle": "Horario actualizado",
-    "scheduleUpdatedBody": "Se ha publicado una nueva versión del horario de {{subject}}."
+    "scheduleUpdatedBody": "Se ha publicado una nueva versión del horario de {{subject}}.",
+    "scheduleChangedTitle": "Cambios en tu horario",
+    "scheduleChangedBody": "{{count}} cambio(s) a partir de la versión {{version}}."
   },
   "teacherCategory": {
     "full_professor": "Catedrático/a",
@@ -607,5 +620,186 @@
     "5": "vie.",
     "6": "sáb.",
     "7": "dom."
+  },
+  "planner": {
+    "title": "Planificador",
+    "subtitle": "Coloca las sesiones de la semana y valídalas al vuelo",
+    "legendTitle": "Qué significa cada color",
+    "pending": "Grupos pendientes",
+    "pendingEmpty": "Todas las sesiones están colocadas.",
+    "placedOf": "{{placed}} de {{total}} sesiones colocadas",
+    "unassignedTeacher": "Sin docente",
+    "unassignedSpace": "Sin aula",
+    "gridLabel": "Rejilla semanal de planificación",
+    "cellLabel": "{{weekday}} a las {{start}}",
+    "sessionLabel": "{{group}}, {{weekday}} de {{start}} a {{end}}",
+    "pickSession": "Selecciona la sesión {{group}}",
+    "moveHere": "Mueve {{group}} a {{weekday}} a las {{start}}",
+    "keyboardTitle": "Con el teclado",
+    "keyboardHint": "Tabula hasta una sesión, pulsa Espacio para cogerla, muévete con las flechas y pulsa Espacio de nuevo para soltarla. Escape cancela el movimiento.",
+    "holding": "Has cogido {{group}}. Flechas para mover, Espacio para soltar.",
+    "dropped": "{{group}} colocada el {{weekday}} a las {{start}}",
+    "dropRejected": "No se puede colocar aquí: {{reason}}",
+    "cancelled": "Movimiento cancelado",
+    "unsaved": "Tienes cambios sin guardar",
+    "save": "Guardar el borrador",
+    "saved": "Borrador guardado",
+    "readOnly": "Esta versión está publicada: solo se puede consultar.",
+    "status": {
+      "valid": "Válido",
+      "warning": "Penaliza",
+      "blocked": "Imposible"
+    },
+    "statusHint": {
+      "valid": "Ninguna restricción afectada",
+      "warning": "Se puede hacer, pero empeora la calidad",
+      "blocked": "Rompe una restricción dura"
+    },
+    "summary": {
+      "placed": "Colocadas",
+      "pending": "Pendientes",
+      "blocked": "Conflictos",
+      "warnings": "Penalizaciones",
+      "outOfRange": "Docentes fuera de rango",
+      "cost": "Coste"
+    },
+    "hard": {
+      "teacherOverlap": "El docente ya tiene otra clase en esta franja ({{minutes}} min de solapamiento).",
+      "spaceOverlap": "El aula {{name}} ya está ocupada en esta franja.",
+      "groupOverlap": "El grupo {{name}} ya tiene otra clase en esta franja.",
+      "teacherUnavailable": "El docente ha marcado de {{start}} a {{end}} como no disponible.",
+      "teacherCapacity": "Se superaría la capacidad contratada: {{scheduled}} h sobre un máximo de {{ceiling}} h semanales.",
+      "spaceCapacity": "El aula {{space}} tiene {{capacity}} plazas y el grupo necesita {{students}}.",
+      "spaceEquipment": "El aula {{space}} no tiene el equipamiento necesario: {{equipment}}."
+    },
+    "soft": {
+      "avoidSlot": "Franja marcada como \"mejor evitar\" por el docente ({{start}}–{{end}}).",
+      "teacherGaps": "{{hours}} h de hueco entre clases.",
+      "singleSessionDay": "Un día con una sola sesión.",
+      "buildingChange": "{{changes}} cambio(s) de edificio entre clases consecutivas.",
+      "consecutiveHours": "{{hours}} h por encima del máximo de {{limit}} h seguidas.",
+      "weeklySpread": "Las sesiones de {{group}} se concentran en {{days}} día(s)."
+    },
+    "sacrifice": {
+      "avoidSlot": "{{amount}} h en franjas que los docentes preferirían evitar.",
+      "teacherGaps": "{{amount}} h de huecos entre clases, en {{count}} día(s).",
+      "singleSessionDay": "{{count}} día(s) con una sola sesión.",
+      "buildingChange": "{{amount}} cambio(s) de edificio entre clases consecutivas.",
+      "consecutiveHours": "{{amount}} h por encima del máximo de clases seguidas.",
+      "weeklySpread": "{{count}} grupo(s) con las sesiones concentradas en pocos días."
+    },
+    "change": {
+      "added": "Nueva sesión de {{group}} ({{weekday}} a las {{start}}).",
+      "removed": "Se elimina la sesión de {{group}} ({{weekday}} a las {{start}}).",
+      "slot": "{{group}} pasa del {{previousWeekday}} a las {{previousStart}} al {{weekday}} a las {{start}}.",
+      "teacher": "{{group}} pasa de {{previousTeacher}} a {{teacher}}.",
+      "space": "{{group}} cambia de {{previousSpace}} a {{space}}."
+    },
+    "version": {
+      "title": "Versiones del horario",
+      "current": "Versión activa",
+      "create": "Nueva versión",
+      "createFrom": "Duplicar esta versión",
+      "name": "Nombre de la versión",
+      "namePlaceholder": "Por ejemplo: Propuesta segunda semana",
+      "status": {
+        "draft": "Borrador",
+        "in_review": "En revisión",
+        "published": "Publicada",
+        "archived": "Archivada"
+      },
+      "statusHint": {
+        "draft": "Nadie recibe notificaciones mientras es un borrador",
+        "in_review": "Pendiente de validación antes de publicar",
+        "published": "Es el horario vigente",
+        "archived": "Sustituida por una versión posterior"
+      },
+      "sendToReview": "Enviar a revisión",
+      "backToDraft": "Volver al borrador",
+      "publish": "Publicar",
+      "archive": "Archivar",
+      "publishedAt": "Publicada el {{date}} por {{name}}",
+      "publishConfirm": "Al publicar, se avisará a cada docente solo de los cambios que le afectan. ¿Quieres continuar?",
+      "publishedToast": "Versión publicada: {{teachers}} docente(s) avisados",
+      "draftToast": "Los borradores no notifican a nadie",
+      "errors": {
+        "invalidTransition": "Este cambio de estado no es posible.",
+        "reviewRequired": "Este centro exige pasar por revisión antes de publicar.",
+        "blockingViolations": "Hay conflictos sin resolver: no se puede publicar.",
+        "notEditable": "Esta versión ya no se puede modificar."
+      }
+    },
+    "compare": {
+      "title": "Comparar versiones",
+      "subtitle": "Qué cambia entre dos versiones del horario",
+      "base": "Versión base",
+      "target": "Versión comparada",
+      "noChanges": "No hay ninguna diferencia entre las dos versiones.",
+      "byTeacher": "Por docente",
+      "allChanges": "Todos los cambios",
+      "summary": {
+        "added": "Añadidas",
+        "removed": "Eliminadas",
+        "changed": "Modificadas",
+        "unchanged": "Sin cambios",
+        "teachers": "Docentes afectados"
+      }
+    },
+    "generate": {
+      "title": "Generación automática",
+      "subtitle": "Construcción voraz y mejora por recocido simulado",
+      "run": "Generar propuestas",
+      "running": "Generando…",
+      "progress": "{{percent}} % · {{placed}} sesiones colocadas",
+      "cancel": "Detener la generación",
+      "cancelled": "Generación detenida",
+      "failed": "No hemos podido generar ninguna propuesta",
+      "proposals": "Propuestas",
+      "proposal": "Propuesta {{number}}",
+      "cost": "Coste {{cost}}",
+      "unplaced": "{{count}} sesión(es) sin colocar",
+      "allPlaced": "Todas las sesiones colocadas",
+      "sacrifices": "Qué sacrifica esta propuesta",
+      "noSacrifices": "No sacrifica ninguna restricción blanda.",
+      "apply": "Aplicar al borrador",
+      "applied": "Propuesta aplicada al borrador",
+      "timedOut": "Se ha agotado el tiempo: te mostramos la mejor propuesta encontrada."
+    }
+  },
+  "calendar": {
+    "title": "Mi calendario",
+    "subtitle": "Tus clases, como las ves tú",
+    "views": {
+      "day": "Día",
+      "week": "Semana",
+      "month": "Mes",
+      "agenda": "Agenda"
+    },
+    "today": "Hoy",
+    "previous": "Anterior",
+    "next": "Siguiente",
+    "filterSubject": "Asignatura",
+    "allSubjects": "Todas las asignaturas",
+    "empty": "No hay clases en este periodo.",
+    "session": "{{group}} · {{start}}–{{end}}",
+    "subscribe": {
+      "title": "Suscríbete desde tu calendario",
+      "description": "Pega esta dirección en Outlook, Google Calendar o Apple Calendar y tu horario se actualizará solo.",
+      "create": "Generar la dirección",
+      "url": "Dirección de suscripción",
+      "copy": "Copiar la dirección",
+      "copied": "Dirección copiada",
+      "revoke": "Revocar",
+      "revoked": "Dirección revocada",
+      "revokeConfirm": "Si la revocas, los calendarios suscritos dejarán de recibir el horario. ¿Quieres continuar?",
+      "warning": "Quien tenga esta dirección puede ver tu horario. No la compartas.",
+      "none": "Todavía no has generado ninguna dirección."
+    },
+    "export": {
+      "pdf": "Exportar a PDF",
+      "excel": "Exportar a Excel",
+      "done": "Archivo descargado",
+      "failed": "No hemos podido generar el archivo"
+    }
   }
 }

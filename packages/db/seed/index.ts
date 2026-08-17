@@ -33,6 +33,10 @@ const TENANT_ID = seedId('tenant', 1)
 const CENTER_ID = seedId('center', 1)
 const ACADEMIC_YEAR_ID = seedId('academicYear', 1)
 const SCHEDULE_VERSION_ID = seedId('scheduleVersion', 1)
+const DRAFT_VERSION_ID = seedId('scheduleVersion', 2)
+
+/** The demo center teaches by semester; see the center's settings. */
+const TEACHING_WEEKS = 15
 
 const YEAR_START = new Date('2026-09-14T00:00:00.000Z')
 const YEAR_END = new Date('2027-07-31T00:00:00.000Z')
@@ -83,10 +87,29 @@ async function seedOrganization() {
       localeDefault: 'ca',
       settingsJson: {
         ...defaultCenterSettings,
-        schedule: { ...defaultCenterSettings.schedule, dayEnd: '20:00' },
+        // The demo center teaches by semester and its timetable places one
+        // weekly session per group, so a "teaching week" here is a semester's
+        // 15 weeks. It is what turns annual contracted hours into the weekly
+        // ceiling the planner enforces (R9).
+        schedule: {
+          ...defaultCenterSettings.schedule,
+          dayEnd: '20:00',
+          teachingWeeks: TEACHING_WEEKS,
+        },
       },
     },
-    update: {},
+    // Settings are refreshed on re-seed: a demo database created by an earlier
+    // phase must pick up the parameters the current one relies on.
+    update: {
+      settingsJson: {
+        ...defaultCenterSettings,
+        schedule: {
+          ...defaultCenterSettings.schedule,
+          dayEnd: '20:00',
+          teachingWeeks: TEACHING_WEEKS,
+        },
+      },
+    },
   })
 
   await prisma.academicYear.upsert({
@@ -393,8 +416,12 @@ async function seedSubjects(
           plannedHours: group.plannedHours,
           capacity: group.capacity,
           requiredSpaceType: group.requiredSpaceType,
+          requiredEquipmentJson: [...(group.requiredEquipment ?? [])],
         },
-        update: { plannedHours: group.plannedHours },
+        update: {
+          plannedHours: group.plannedHours,
+          requiredEquipmentJson: [...(group.requiredEquipment ?? [])],
+        },
       })
       groupByKey.set(`${subject.code}#${group.code}`, {
         id: groupId,
@@ -473,22 +500,34 @@ interface PlacementInput {
 
 /**
  * Places one weekly session per group: first pass honouring the teacher's
- * availability, second pass ignoring it so a demo timetable is always complete.
- * Every candidate is checked with the shared conflict detector.
+ * availability, second pass ignoring it so a demo timetable is as complete as
+ * the contracts allow. Every candidate is checked with the shared conflict
+ * detector and against the weekly ceiling the planner enforces, so the demo
+ * week is legal by construction — a group that does not fit shows up in the
+ * planner's "pending" column, which is exactly where it belongs.
  */
 function allocateSessions(
   placements: PlacementInput[],
   spaces: { id: string; type: string }[],
   availabilityByTeacher: Map<number, AvailabilityEntry[]>,
+  weeklyCeilingMinutes: Map<number, number>,
 ): { sessions: SessionLike[]; unplaced: PlacementInput[]; outsideAvailability: string[] } {
   const sessions: SessionLike[] = []
   const unplaced: PlacementInput[] = []
   const outsideAvailability: string[] = []
+  const bookedMinutes = new Map<number, number>()
 
   for (const placement of placements) {
     const dates = TERM_DATES[placement.term] ?? TERM_DATES.annual!
     const candidateSpaces = spaces.filter((space) => space.type === placement.requiredSpaceType)
     const availability = availabilityByTeacher.get(placement.teacherIndex) ?? []
+
+    const slotMinutes = 120
+    const ceiling = weeklyCeilingMinutes.get(placement.teacherIndex) ?? Infinity
+    if ((bookedMinutes.get(placement.teacherIndex) ?? 0) + slotMinutes > ceiling) {
+      unplaced.push(placement)
+      continue
+    }
 
     let placed = false
     for (const respectAvailability of [true, false]) {
@@ -522,6 +561,10 @@ function allocateSessions(
             if (findConflictsFor(candidate, sessions).length > 0) continue
 
             sessions.push(candidate)
+            bookedMinutes.set(
+              placement.teacherIndex,
+              (bookedMinutes.get(placement.teacherIndex) ?? 0) + slotMinutes,
+            )
             if (!respectAvailability) outsideAvailability.push(candidate.id)
             placed = true
             break
@@ -548,9 +591,12 @@ async function seedSchedule(
       centerId: CENTER_ID,
       academicYearId: ACADEMIC_YEAR_ID,
       name: 'Versió inicial 2026-2027',
-      status: 'draft',
+      status: 'published',
+      publishedAt: new Date('2026-09-01T09:00:00.000Z'),
     },
-    update: {},
+    // Re-seeding an older database has to move it to `published` too, or the
+    // comparator would have nothing published to compare against.
+    update: { status: 'published', publishedAt: new Date('2026-09-01T09:00:00.000Z') },
   })
 
   // One session per group, taught by whoever holds the largest lecture
@@ -597,10 +643,21 @@ async function seedSchedule(
     ]),
   )
 
+  // The same ceiling the planner applies: annual capacity spread over the
+  // center's teaching weeks, times the overload the center tolerates (R9).
+  const weeklyCeilingMinutes = new Map<number, number>(
+    TEACHERS.map((teacher) => {
+      const capacity = teacher.contractedHours - (teacher.reduction?.hours ?? 0)
+      const weekly = (capacity / TEACHING_WEEKS) * 60
+      return [teacher.index, weekly * (defaultCenterSettings.load.maxOverloadPercent / 100)]
+    }),
+  )
+
   const { sessions, unplaced, outsideAvailability } = allocateSessions(
     placements,
     spaces,
     availabilityByTeacher,
+    weeklyCeilingMinutes,
   )
 
   const conflicts = detectSessionConflicts(sessions)
@@ -626,11 +683,275 @@ async function seedSchedule(
         dateTo: session.dateTo,
         recurrence: 'weekly',
       },
-      update: {},
+      // The allocation is recomputed on every run, so an existing row is
+      // rewritten rather than left describing an older week.
+      update: {
+        groupId: session.groupId!,
+        teacherProfileId: session.teacherProfileId,
+        spaceId: session.spaceId,
+        weekday: session.weekday,
+        startTime: session.startTime,
+        endTime: session.endTime,
+        dateFrom: session.dateFrom,
+        dateTo: session.dateTo,
+      },
     })
   }
 
+  // Re-seeding a database produced by an earlier phase must not leave behind
+  // sessions this run no longer places: the seed describes the whole week.
+  await prisma.classSession.deleteMany({
+    where: {
+      scheduleVersionId: SCHEDULE_VERSION_ID,
+      id: { notIn: sessions.map((_, position) => seedId('session', position + 1)) },
+    },
+  })
+
+  await snapshotPublishedVersion()
+  await seedDraftVersion(sessions.length)
+
   return { placed: sessions.length, unplaced, outsideAvailability }
+}
+
+/**
+ * The published version keeps a frozen copy of its sessions, with the names a
+ * person needs to read them. The next publication diffs against this, so a
+ * later edit can never rewrite what teachers were already told.
+ */
+async function snapshotPublishedVersion() {
+  const rows = await prisma.classSession.findMany({
+    where: { scheduleVersionId: SCHEDULE_VERSION_ID },
+    include: {
+      group: { select: { code: true, subject: { select: { code: true, nameCa: true } } } },
+      teacherProfile: { select: { user: { select: { firstName: true, lastName: true } } } },
+      space: { select: { name: true } },
+    },
+  })
+
+  await prisma.scheduleVersion.update({
+    where: { id: SCHEDULE_VERSION_ID },
+    data: {
+      snapshotJson: rows.map((row) => ({
+        id: row.id,
+        groupId: row.groupId,
+        groupCode: row.group.code,
+        subjectCode: row.group.subject.code,
+        subjectName: row.group.subject.nameCa,
+        teacherProfileId: row.teacherProfileId,
+        teacherName: row.teacherProfile
+          ? `${row.teacherProfile.user.firstName} ${row.teacherProfile.user.lastName}`
+          : null,
+        spaceId: row.spaceId,
+        spaceName: row.space?.name ?? null,
+        weekday: row.weekday,
+        startTime: row.startTime,
+        endTime: row.endTime,
+        recurrence: row.recurrence,
+      })),
+    },
+  })
+}
+
+/**
+ * A draft derived from the published version, with two deliberate differences
+ * so the comparator and the publication diff have something real to show.
+ * Both changes are checked against the conflict detector before being written.
+ */
+async function seedDraftVersion(publishedCount: number) {
+  await prisma.scheduleVersion.upsert({
+    where: { id: DRAFT_VERSION_ID },
+    create: {
+      id: DRAFT_VERSION_ID,
+      centerId: CENTER_ID,
+      academicYearId: ACADEMIC_YEAR_ID,
+      name: 'Proposta de revisió',
+      status: 'draft',
+      parentVersionId: SCHEDULE_VERSION_ID,
+    },
+    update: {},
+  })
+
+  const published = await prisma.classSession.findMany({
+    where: { scheduleVersionId: SCHEDULE_VERSION_ID },
+    orderBy: { id: 'asc' },
+  })
+
+  await prisma.classSession.deleteMany({
+    where: {
+      scheduleVersionId: DRAFT_VERSION_ID,
+      id: {
+        notIn: published.map((_, position) => seedId('session', publishedCount + position + 1)),
+      },
+    },
+  })
+
+  const copies: SessionLike[] = published.map((row, position) => ({
+    id: seedId('session', publishedCount + position + 1),
+    groupId: row.groupId,
+    teacherProfileId: row.teacherProfileId,
+    spaceId: row.spaceId,
+    weekday: row.weekday as Weekday,
+    startTime: row.startTime,
+    endTime: row.endTime,
+    dateFrom: row.dateFrom,
+    dateTo: row.dateTo,
+    recurrence: 'weekly',
+  }))
+
+  // Difference 1: move the first session to another slot of the same day.
+  const moved = copies[0]
+  if (moved) {
+    const alternative = SESSION_SLOTS.find((slot) => slot.startTime !== moved.startTime)
+    if (alternative) {
+      const candidate = { ...moved, startTime: alternative.startTime, endTime: alternative.endTime }
+      const rest = copies.filter((session) => session.id !== moved.id)
+      if (findConflictsFor(candidate, rest).length === 0) {
+        moved.startTime = candidate.startTime
+        moved.endTime = candidate.endTime
+      }
+    }
+  }
+
+  // Difference 2: put a later session in a different room.
+  const relocated = copies.find((session) => session.spaceId && session.id !== copies[0]?.id)
+  if (relocated) {
+    const otherSpace = SPACES.map((space) => seedId('space', space.index)).find(
+      (id) => id !== relocated.spaceId,
+    )
+    if (otherSpace) {
+      const candidate = { ...relocated, spaceId: otherSpace }
+      const rest = copies.filter((session) => session.id !== relocated.id)
+      if (findConflictsFor(candidate, rest).length === 0) relocated.spaceId = otherSpace
+    }
+  }
+
+  const conflicts = detectSessionConflicts(copies)
+  if (conflicts.length > 0) {
+    throw new Error(`Seed draft has ${conflicts.length} conflicts; refusing to write.`)
+  }
+
+  for (const session of copies) {
+    await prisma.classSession.upsert({
+      where: { id: session.id },
+      create: {
+        id: session.id,
+        centerId: CENTER_ID,
+        scheduleVersionId: DRAFT_VERSION_ID,
+        groupId: session.groupId!,
+        teacherProfileId: session.teacherProfileId ?? null,
+        spaceId: session.spaceId ?? null,
+        weekday: session.weekday,
+        startTime: session.startTime,
+        endTime: session.endTime,
+        dateFrom: session.dateFrom,
+        dateTo: session.dateTo,
+        recurrence: 'weekly',
+      },
+      update: {
+        groupId: session.groupId!,
+        teacherProfileId: session.teacherProfileId ?? null,
+        spaceId: session.spaceId ?? null,
+        weekday: session.weekday,
+        startTime: session.startTime,
+        endTime: session.endTime,
+      },
+    })
+  }
+}
+
+/**
+ * The academic calendar: the two term boundaries the planner reads to know
+ * when a group's classes run, and the closures the calendar views and the ICS
+ * feed skip.
+ */
+async function seedAcademicCalendar() {
+  const entries = [
+    {
+      type: 'term_start' as const,
+      from: TERM_DATES.t1!.from,
+      to: TERM_DATES.t1!.from,
+      nameCa: 'Inici del primer semestre',
+      nameEs: 'Inicio del primer semestre',
+      nameEn: 'First semester starts',
+      isTeachingDay: true,
+    },
+    {
+      type: 'term_end' as const,
+      from: TERM_DATES.t1!.to,
+      to: TERM_DATES.t1!.to,
+      nameCa: 'Fi del primer semestre',
+      nameEs: 'Fin del primer semestre',
+      nameEn: 'First semester ends',
+      isTeachingDay: true,
+    },
+    {
+      type: 'term_start' as const,
+      from: TERM_DATES.t2!.from,
+      to: TERM_DATES.t2!.from,
+      nameCa: 'Inici del segon semestre',
+      nameEs: 'Inicio del segundo semestre',
+      nameEn: 'Second semester starts',
+      isTeachingDay: true,
+    },
+    {
+      type: 'term_end' as const,
+      from: TERM_DATES.t2!.to,
+      to: TERM_DATES.t2!.to,
+      nameCa: 'Fi del segon semestre',
+      nameEs: 'Fin del segundo semestre',
+      nameEn: 'Second semester ends',
+      isTeachingDay: true,
+    },
+    {
+      type: 'holiday' as const,
+      from: new Date('2026-10-12T00:00:00.000Z'),
+      to: new Date('2026-10-12T00:00:00.000Z'),
+      nameCa: 'Festa Nacional',
+      nameEs: 'Fiesta Nacional',
+      nameEn: 'National holiday',
+      isTeachingDay: false,
+    },
+    {
+      type: 'holiday' as const,
+      from: new Date('2026-12-08T00:00:00.000Z'),
+      to: new Date('2026-12-08T00:00:00.000Z'),
+      nameCa: 'La Immaculada',
+      nameEs: 'La Inmaculada',
+      nameEn: 'Immaculate Conception',
+      isTeachingDay: false,
+    },
+    {
+      type: 'non_teaching' as const,
+      from: new Date('2026-12-21T00:00:00.000Z'),
+      to: new Date('2027-01-07T00:00:00.000Z'),
+      nameCa: 'Vacances de Nadal',
+      nameEs: 'Vacaciones de Navidad',
+      nameEn: 'Christmas break',
+      isTeachingDay: false,
+    },
+  ]
+
+  for (const [position, entry] of entries.entries()) {
+    const id = seedId('calendarEntry', position + 1)
+    await prisma.academicCalendarEntry.upsert({
+      where: { id },
+      create: {
+        id,
+        centerId: CENTER_ID,
+        academicYearId: ACADEMIC_YEAR_ID,
+        type: entry.type,
+        dateFrom: entry.from,
+        dateTo: entry.to,
+        nameCa: entry.nameCa,
+        nameEs: entry.nameEs,
+        nameEn: entry.nameEn,
+        isTeachingDay: entry.isTeachingDay,
+      },
+      update: { dateFrom: entry.from, dateTo: entry.to, isTeachingDay: entry.isTeachingDay },
+    })
+  }
+
+  return entries.length
 }
 
 /**
@@ -674,7 +995,15 @@ async function seedSettingsProvenance() {
       academicYearId: ACADEMIC_YEAR_ID,
       settingsJson: {
         ...defaultCenterSettings,
-        schedule: { ...defaultCenterSettings.schedule, dayEnd: '20:00' },
+        // The demo center teaches by semester and its timetable places one
+        // weekly session per group, so a "teaching week" here is a semester's
+        // 15 weeks. It is what turns annual contracted hours into the weekly
+        // ceiling the planner enforces (R9).
+        schedule: {
+          ...defaultCenterSettings.schedule,
+          dayEnd: '20:00',
+          teachingWeeks: TEACHING_WEEKS,
+        },
       },
       source: 'manual',
       sourceDocumentId: documentId,
@@ -765,12 +1094,14 @@ async function main() {
   const { groupByKey } = await seedSubjects(degreeByCode, profileByIndex)
   const spaces = await seedSpaces()
   await seedAssignments(groupByKey, profileByIndex)
+  const calendarEntries = await seedAcademicCalendar()
   const schedule = await seedSchedule(groupByKey, profileByIndex, spaces)
   await seedSettingsProvenance()
 
   console.log(
     `\nSeeded: 1 university · 1 center · 1 academic year · ${SUBJECTS.length} subjects · ` +
-      `${TEACHERS.length} teachers · ${SPACES.length} spaces · ${ASSIGNMENTS.length} assignments`,
+      `${TEACHERS.length} teachers · ${SPACES.length} spaces · ${ASSIGNMENTS.length} assignments · ` +
+      `${calendarEntries} calendar entries`,
   )
   console.log(
     `Timetable: ${schedule.placed} sessions placed, ${schedule.unplaced.length} unplaced, ` +

@@ -61,7 +61,8 @@ describe('parameter keys and provenance', () => {
   it('exposes every parameter as a dot path', () => {
     expect(SETTING_PARAM_KEYS).toContain('load.thresholds.underBelow')
     expect(SETTING_PARAM_KEYS).toContain('schedule.maxConsecutiveHours')
-    expect(SETTING_PARAM_KEYS).toContain('engine.weights.availabilityPreference')
+    expect(SETTING_PARAM_KEYS).toContain('engine.weights.avoidSlot')
+    expect(SETTING_PARAM_KEYS).toContain('schedule.teachingWeeks')
     expect(SETTING_PARAM_KEYS).toContain('workflow.coordinatorApprovesChanges')
   })
 

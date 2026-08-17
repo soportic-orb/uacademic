@@ -196,6 +196,8 @@ export interface SubjectSeed {
     plannedHours: number
     capacity: number
     requiredSpaceType: 'classroom' | 'seminar_room' | 'computer_lab' | 'lab' | 'auditorium'
+    /// Equipment the room must have. A hard constraint of the planner.
+    requiredEquipment?: readonly string[]
   }[]
 }
 
@@ -203,7 +205,15 @@ const theory = (code: string, capacity = 60) =>
   ({ code, type: 'theory', plannedHours: 45, capacity, requiredSpaceType: 'classroom' }) as const
 
 const lab = (code: string, capacity = 25) =>
-  ({ code, type: 'lab', plannedHours: 22.5, capacity, requiredSpaceType: 'computer_lab' }) as const
+  ({
+    code,
+    type: 'lab',
+    plannedHours: 22.5,
+    capacity,
+    requiredSpaceType: 'computer_lab',
+    // The lab groups need workstations, which only the computer room has.
+    requiredEquipment: ['workstations'],
+  }) as const
 
 export const SUBJECTS: SubjectSeed[] = [
   {

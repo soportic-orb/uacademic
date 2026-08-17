@@ -28,10 +28,6 @@ function PlaceholderPage({ namespace }: { namespace: 'planning' | 'messages' | '
   )
 }
 
-export function PlanningPage() {
-  return <PlaceholderPage namespace="planning" />
-}
-
 export function MessagesPage() {
   return <PlaceholderPage namespace="messages" />
 }

@@ -137,6 +137,56 @@ reuses it from an Expo app.
 
 ---
 
+## What phase 3 adds
+
+Planning: the part that turns a load model into a timetable.
+
+**Versions.** A schedule lives in a version that moves `draft → in review →
+published`. Working in a draft notifies nobody — that is the whole point of the
+workflow. Publishing freezes the sessions into a snapshot, diffs them against the
+version that was live, archives it, and writes one notification per affected
+teacher carrying **only their own changes**. A version with an unresolved hard
+conflict cannot be published at all, and the comparator shows the same diff, per
+teacher, before anyone commits to it.
+
+**The constraint engine** (`packages/shared`, exhaustively unit-tested):
+
+| Hard — these block                   | Soft — these penalise, with per-center weights |
+| ------------------------------------ | ---------------------------------------------- |
+| Same teacher in two places           | Slots the teacher marked "better avoided"      |
+| Same room twice                      | Gaps between a teacher's classes               |
+| Same group twice                     | Days with a single session                     |
+| A slot marked unavailable            | Changing building between consecutive classes  |
+| Beyond the contracted weekly ceiling | Teaching past the consecutive-hours limit      |
+| Room too small / missing equipment   | A group's sessions bunched into few days       |
+
+Weights live in `centers.settings_json` under `engine.weights`; a weight of zero
+switches a rule off. Hard constraints are never traded away — not by the weights,
+not by the solver's temperature.
+
+**Automatic generation.** A greedy construction that always places the most
+constrained group first, then simulated annealing over four moves (move a session,
+swap two, reassign the teacher, change the room). It runs in a `worker_thread`
+with a 60 s ceiling so the API keeps serving, reports progress over SSE (with a
+polling fallback, since a shared host may not hold a stream open), and returns the
+three best proposals — each with a plain-language account of which soft constraints
+it sacrificed, assembled from the i18n catalogs so it reads in all three languages.
+
+**The visual planner.** A weekly grid with the pending groups in a side column and
+a status bar of the whole plan (placed, pending, conflicts, penalties, teachers out
+of range). Cells are painted as you drag — green, amber with the reason in the
+tooltip, red when impossible — by running the very same pure engine in the browser,
+so there is no round trip per cell; the server still recomputes on every write.
+Dragging has an exact keyboard equivalent (R8): Space picks a class up, the arrows
+move it, Space drops it, Escape cancels. Undo and redo send the inverse call rather
+than pretending locally.
+
+**The teacher's calendar.** Day, week, month and agenda over the published
+timetable, filterable by subject, with holidays already removed. It can be
+subscribed to from Outlook, Google Calendar or Apple Calendar through a personal
+ICS address — stored as a SHA-256 hash, revocable in one click — and exported to
+PDF or Excel.
+
 ## What phase 2 adds
 
 The core of the product: matching contracted capacity with the workload that has to

@@ -39,6 +39,11 @@ export const scheduleSettingsSchema = z.object({
   maxConsecutiveHours: z.number().min(1).max(12).default(4),
   maxDailyHours: z.number().min(1).max(14).default(8),
   workingWeekdays: z.array(z.number().int().min(1).max(7)).min(1).default([1, 2, 3, 4, 5]),
+  /**
+   * Teaching weeks in the year. The planner reasons about a typical week, so
+   * this is what turns annual contracted hours into a weekly ceiling.
+   */
+  teachingWeeks: z.number().int().min(1).max(52).default(30),
 })
 
 export const workflowSettingsSchema = z.object({
@@ -48,18 +53,33 @@ export const workflowSettingsSchema = z.object({
   autoNotifyAffectedTeachers: z.boolean().default(true),
 })
 
-/** Weights of the schedule engine. Higher means the criterion pulls harder. */
+/**
+ * Weights of the schedule engine: one per soft constraint, so a center that
+ * cares more about avoiding gaps than about buildings just raises a number.
+ * Higher means the criterion pulls harder; zero switches it off.
+ */
 export const engineSettingsSchema = z.object({
   weights: z
     .object({
-      availabilityPreference: z.number().min(0).max(10).default(5),
-      compactness: z.number().min(0).max(10).default(3),
-      spaceFit: z.number().min(0).max(10).default(2),
-      loadBalance: z.number().min(0).max(10).default(4),
-      teacherContinuity: z.number().min(0).max(10).default(3),
+      /** Using a slot the teacher marked "better avoided". */
+      avoidSlot: z.number().min(0).max(10).default(5),
+      /** Idle hours between two classes of the same teacher on one day. */
+      teacherGaps: z.number().min(0).max(10).default(4),
+      /** A day where a teacher comes in for a single session. */
+      singleSessionDay: z.number().min(0).max(10).default(3),
+      /** Moving building between consecutive sessions. */
+      buildingChange: z.number().min(0).max(10).default(2),
+      /** Teaching beyond `schedule.maxConsecutiveHours` without a break. */
+      consecutiveHours: z.number().min(0).max(10).default(4),
+      /** A group's sessions bunched into few days instead of spread out. */
+      weeklySpread: z.number().min(0).max(10).default(2),
     })
     .prefault({}),
   allowAvoidSlots: z.boolean().default(true),
+  /** Seconds the automatic generation may run before returning its best. */
+  timeBudgetSeconds: z.number().int().min(5).max(300).default(60),
+  /** How many proposals the generator returns. */
+  proposals: z.number().int().min(1).max(5).default(3),
 })
 
 export const formatSettingsSchema = z.object({

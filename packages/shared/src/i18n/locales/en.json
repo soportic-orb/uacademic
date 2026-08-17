@@ -25,7 +25,16 @@
     "export": "Export",
     "total": "Total",
     "none": "None",
-    "discard": "Discard"
+    "discard": "Discard",
+    "undo": "Undo",
+    "redo": "Redo",
+    "download": "Download",
+    "copy": "Copy",
+    "copied": "Copied",
+    "generate": "Generate",
+    "stop": "Stop",
+    "from": "From",
+    "to": "To"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -325,13 +334,17 @@
     "greeting": "Hello {{name}}",
     "signature": "The UAcademic team",
     "changeRequestSubject": "New class change request",
-    "changeRequestBody": "{{requester}} requested a change to the {{subject}} session."
+    "changeRequestBody": "{{requester}} requested a change to the {{subject}} session.",
+    "scheduleChangedSubject": "Changes to your timetable",
+    "scheduleChangedBody": "Version {{version}} of the timetable has been published with {{count}} change(s) that affect you."
   },
   "push": {
     "changeRequestTitle": "Change request",
     "changeRequestBody": "{{requester}} proposes a change to {{subject}}.",
     "scheduleUpdatedTitle": "Timetable updated",
-    "scheduleUpdatedBody": "A new version of the {{subject}} timetable has been published."
+    "scheduleUpdatedBody": "A new version of the {{subject}} timetable has been published.",
+    "scheduleChangedTitle": "Changes to your timetable",
+    "scheduleChangedBody": "{{count}} change(s) from version {{version}}."
   },
   "teacherCategory": {
     "full_professor": "Full professor",
@@ -607,5 +620,186 @@
     "5": "Fri",
     "6": "Sat",
     "7": "Sun"
+  },
+  "planner": {
+    "title": "Planner",
+    "subtitle": "Place the week’s sessions and validate them as you go",
+    "legendTitle": "What each colour means",
+    "pending": "Pending groups",
+    "pendingEmpty": "Every session is placed.",
+    "placedOf": "{{placed}} of {{total}} sessions placed",
+    "unassignedTeacher": "No teacher",
+    "unassignedSpace": "No room",
+    "gridLabel": "Weekly planning grid",
+    "cellLabel": "{{weekday}} at {{start}}",
+    "sessionLabel": "{{group}}, {{weekday}} from {{start}} to {{end}}",
+    "pickSession": "Select the {{group}} session",
+    "moveHere": "Move {{group}} to {{weekday}} at {{start}}",
+    "keyboardTitle": "Using the keyboard",
+    "keyboardHint": "Tab to a session, press Space to pick it up, move with the arrow keys and press Space again to drop it. Escape cancels the move.",
+    "holding": "Holding {{group}}. Arrows to move, Space to drop.",
+    "dropped": "{{group}} placed on {{weekday}} at {{start}}",
+    "dropRejected": "It cannot go here: {{reason}}",
+    "cancelled": "Move cancelled",
+    "unsaved": "You have unsaved changes",
+    "save": "Save the draft",
+    "saved": "Draft saved",
+    "readOnly": "This version is published: it can only be read.",
+    "status": {
+      "valid": "Valid",
+      "warning": "Penalised",
+      "blocked": "Impossible"
+    },
+    "statusHint": {
+      "valid": "No constraint affected",
+      "warning": "Allowed, but it makes the week worse",
+      "blocked": "Breaks a hard constraint"
+    },
+    "summary": {
+      "placed": "Placed",
+      "pending": "Pending",
+      "blocked": "Conflicts",
+      "warnings": "Penalties",
+      "outOfRange": "Teachers out of range",
+      "cost": "Cost"
+    },
+    "hard": {
+      "teacherOverlap": "The teacher already has another class in this slot ({{minutes}} min overlap).",
+      "spaceOverlap": "Room {{name}} is already taken in this slot.",
+      "groupOverlap": "Group {{name}} already has another class in this slot.",
+      "teacherUnavailable": "The teacher marked {{start}}–{{end}} as unavailable.",
+      "teacherCapacity": "It would exceed the contracted capacity: {{scheduled}} h against a {{ceiling}} h weekly ceiling.",
+      "spaceCapacity": "Room {{space}} seats {{capacity}} and the group needs {{students}}.",
+      "spaceEquipment": "Room {{space}} lacks the required equipment: {{equipment}}."
+    },
+    "soft": {
+      "avoidSlot": "A slot the teacher marked “better avoided” ({{start}}–{{end}}).",
+      "teacherGaps": "{{hours}} h of gaps between classes.",
+      "singleSessionDay": "A day with a single session.",
+      "buildingChange": "{{changes}} building change(s) between consecutive classes.",
+      "consecutiveHours": "{{hours}} h beyond the {{limit}} h limit without a break.",
+      "weeklySpread": "{{group}} sessions are bunched into {{days}} day(s)."
+    },
+    "sacrifice": {
+      "avoidSlot": "{{amount}} h in slots teachers would rather avoid.",
+      "teacherGaps": "{{amount}} h of gaps between classes, across {{count}} day(s).",
+      "singleSessionDay": "{{count}} day(s) with a single session.",
+      "buildingChange": "{{amount}} building change(s) between consecutive classes.",
+      "consecutiveHours": "{{amount}} h beyond the consecutive-teaching limit.",
+      "weeklySpread": "{{count}} group(s) with their sessions bunched into few days."
+    },
+    "change": {
+      "added": "New {{group}} session ({{weekday}} at {{start}}).",
+      "removed": "The {{group}} session is dropped ({{weekday}} at {{start}}).",
+      "slot": "{{group}} moves from {{previousWeekday}} at {{previousStart}} to {{weekday}} at {{start}}.",
+      "teacher": "{{group}} moves from {{previousTeacher}} to {{teacher}}.",
+      "space": "{{group}} moves from {{previousSpace}} to {{space}}."
+    },
+    "version": {
+      "title": "Schedule versions",
+      "current": "Active version",
+      "create": "New version",
+      "createFrom": "Duplicate this version",
+      "name": "Version name",
+      "namePlaceholder": "For example: Second-week proposal",
+      "status": {
+        "draft": "Draft",
+        "in_review": "In review",
+        "published": "Published",
+        "archived": "Archived"
+      },
+      "statusHint": {
+        "draft": "Nobody is notified while it is a draft",
+        "in_review": "Waiting for validation before publication",
+        "published": "This is the live timetable",
+        "archived": "Superseded by a later version"
+      },
+      "sendToReview": "Send to review",
+      "backToDraft": "Back to draft",
+      "publish": "Publish",
+      "archive": "Archive",
+      "publishedAt": "Published on {{date}} by {{name}}",
+      "publishConfirm": "Publishing tells each teacher only about the changes that affect them. Continue?",
+      "publishedToast": "Version published: {{teachers}} teacher(s) notified",
+      "draftToast": "Drafts notify nobody",
+      "errors": {
+        "invalidTransition": "That status change is not possible.",
+        "reviewRequired": "This center requires the review step before publishing.",
+        "blockingViolations": "There are unresolved conflicts: it cannot be published.",
+        "notEditable": "This version can no longer be modified."
+      }
+    },
+    "compare": {
+      "title": "Compare versions",
+      "subtitle": "What changes between two versions of the timetable",
+      "base": "Base version",
+      "target": "Compared version",
+      "noChanges": "The two versions are identical.",
+      "byTeacher": "By teacher",
+      "allChanges": "All changes",
+      "summary": {
+        "added": "Added",
+        "removed": "Removed",
+        "changed": "Changed",
+        "unchanged": "Unchanged",
+        "teachers": "Teachers affected"
+      }
+    },
+    "generate": {
+      "title": "Automatic generation",
+      "subtitle": "Greedy construction and simulated-annealing improvement",
+      "run": "Generate proposals",
+      "running": "Generating…",
+      "progress": "{{percent}} % · {{placed}} sessions placed",
+      "cancel": "Stop the run",
+      "cancelled": "Generation stopped",
+      "failed": "We could not generate any proposal",
+      "proposals": "Proposals",
+      "proposal": "Proposal {{number}}",
+      "cost": "Cost {{cost}}",
+      "unplaced": "{{count}} session(s) left unplaced",
+      "allPlaced": "Every session placed",
+      "sacrifices": "What this proposal gives up",
+      "noSacrifices": "It gives up no soft constraint.",
+      "apply": "Apply to the draft",
+      "applied": "Proposal applied to the draft",
+      "timedOut": "Time ran out: this is the best proposal found."
+    }
+  },
+  "calendar": {
+    "title": "My calendar",
+    "subtitle": "Your classes, the way you read them",
+    "views": {
+      "day": "Day",
+      "week": "Week",
+      "month": "Month",
+      "agenda": "Agenda"
+    },
+    "today": "Today",
+    "previous": "Previous",
+    "next": "Next",
+    "filterSubject": "Subject",
+    "allSubjects": "All subjects",
+    "empty": "No classes in this period.",
+    "session": "{{group}} · {{start}}–{{end}}",
+    "subscribe": {
+      "title": "Subscribe from your own calendar",
+      "description": "Paste this address into Outlook, Google Calendar or Apple Calendar and your timetable keeps itself up to date.",
+      "create": "Generate the address",
+      "url": "Subscription address",
+      "copy": "Copy the address",
+      "copied": "Address copied",
+      "revoke": "Revoke",
+      "revoked": "Address revoked",
+      "revokeConfirm": "Revoking it stops every subscribed calendar from receiving your timetable. Continue?",
+      "warning": "Anyone holding this address can see your timetable. Do not share it.",
+      "none": "You have not generated an address yet."
+    },
+    "export": {
+      "pdf": "Export to PDF",
+      "excel": "Export to Excel",
+      "done": "File downloaded",
+      "failed": "We could not generate the file"
+    }
   }
 }

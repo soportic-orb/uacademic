@@ -25,7 +25,16 @@
     "export": "Exporta",
     "total": "Total",
     "none": "Cap",
-    "discard": "Descarta"
+    "discard": "Descarta",
+    "undo": "Desfés",
+    "redo": "Refés",
+    "download": "Descarrega",
+    "copy": "Copia",
+    "copied": "Copiat",
+    "generate": "Genera",
+    "stop": "Atura",
+    "from": "De",
+    "to": "A"
   },
   "nav": {
     "dashboard": "Tauler",
@@ -325,13 +334,17 @@
     "greeting": "Hola, {{name}}",
     "signature": "Equip d'UAcademic",
     "changeRequestSubject": "Nova sol·licitud de canvi de classe",
-    "changeRequestBody": "{{requester}} ha demanat un canvi a la sessió de {{subject}}."
+    "changeRequestBody": "{{requester}} ha demanat un canvi a la sessió de {{subject}}.",
+    "scheduleChangedSubject": "Canvis al teu horari",
+    "scheduleChangedBody": "S'ha publicat la versió {{version}} de l'horari amb {{count}} canvi(s) que t'afecten."
   },
   "push": {
     "changeRequestTitle": "Sol·licitud de canvi",
     "changeRequestBody": "{{requester}} proposa un canvi a {{subject}}.",
     "scheduleUpdatedTitle": "Horari actualitzat",
-    "scheduleUpdatedBody": "S'ha publicat una versió nova de l'horari de {{subject}}."
+    "scheduleUpdatedBody": "S'ha publicat una versió nova de l'horari de {{subject}}.",
+    "scheduleChangedTitle": "Canvis al teu horari",
+    "scheduleChangedBody": "{{count}} canvi(s) a partir de la versió {{version}}."
   },
   "teacherCategory": {
     "full_professor": "Catedràtic/a",
@@ -607,5 +620,186 @@
     "5": "dv.",
     "6": "ds.",
     "7": "dg."
+  },
+  "planner": {
+    "title": "Planificador",
+    "subtitle": "Col·loca les sessions de la setmana i valida-les al vol",
+    "legendTitle": "Què vol dir cada color",
+    "pending": "Grups pendents",
+    "pendingEmpty": "Totes les sessions estan col·locades.",
+    "placedOf": "{{placed}} de {{total}} sessions col·locades",
+    "unassignedTeacher": "Sense docent",
+    "unassignedSpace": "Sense aula",
+    "gridLabel": "Graella setmanal de planificació",
+    "cellLabel": "{{weekday}} a les {{start}}",
+    "sessionLabel": "{{group}}, {{weekday}} de {{start}} a {{end}}",
+    "pickSession": "Selecciona la sessió {{group}}",
+    "moveHere": "Mou {{group}} a {{weekday}} a les {{start}}",
+    "keyboardTitle": "Amb el teclat",
+    "keyboardHint": "Tabula fins a una sessió, prem Espai per agafar-la, mou-te amb les fletxes i torna a prémer Espai per deixar-la. Escapada cancel·la el moviment.",
+    "holding": "Has agafat {{group}}. Fletxes per moure, Espai per deixar-la.",
+    "dropped": "{{group}} col·locada {{weekday}} a les {{start}}",
+    "dropRejected": "No es pot col·locar aquí: {{reason}}",
+    "cancelled": "Moviment cancel·lat",
+    "unsaved": "Tens canvis sense desar",
+    "save": "Desa l'esborrany",
+    "saved": "Esborrany desat",
+    "readOnly": "Aquesta versió està publicada: només es pot consultar.",
+    "status": {
+      "valid": "Vàlid",
+      "warning": "Penalitza",
+      "blocked": "Impossible"
+    },
+    "statusHint": {
+      "valid": "Cap restricció afectada",
+      "warning": "Es pot fer, però empitjora la qualitat",
+      "blocked": "Trenca una restricció dura"
+    },
+    "summary": {
+      "placed": "Col·locades",
+      "pending": "Pendents",
+      "blocked": "Conflictes",
+      "warnings": "Penalitzacions",
+      "outOfRange": "Docents fora de rang",
+      "cost": "Cost"
+    },
+    "hard": {
+      "teacherOverlap": "El docent ja té una altra classe en aquesta franja ({{minutes}} min de solapament).",
+      "spaceOverlap": "L'aula {{name}} ja està ocupada en aquesta franja.",
+      "groupOverlap": "El grup {{name}} ja té una altra classe en aquesta franja.",
+      "teacherUnavailable": "El docent ha marcat de {{start}} a {{end}} com a no disponible.",
+      "teacherCapacity": "Se superaria la capacitat contractada: {{scheduled}} h sobre un màxim de {{ceiling}} h setmanals.",
+      "spaceCapacity": "L'aula {{space}} té {{capacity}} places i el grup en necessita {{students}}.",
+      "spaceEquipment": "L'aula {{space}} no té l'equipament necessari: {{equipment}}."
+    },
+    "soft": {
+      "avoidSlot": "Franja marcada com a \"millor evitar\" pel docent ({{start}}–{{end}}).",
+      "teacherGaps": "{{hours}} h de forat entre classes.",
+      "singleSessionDay": "Un dia amb una sola sessió.",
+      "buildingChange": "{{changes}} canvi(s) d'edifici entre classes consecutives.",
+      "consecutiveHours": "{{hours}} h per sobre del màxim de {{limit}} h seguides.",
+      "weeklySpread": "Les sessions de {{group}} es concentren en {{days}} dia(es)."
+    },
+    "sacrifice": {
+      "avoidSlot": "{{amount}} h en franges que els docents preferirien evitar.",
+      "teacherGaps": "{{amount}} h de forats entre classes, en {{count}} dia(es).",
+      "singleSessionDay": "{{count}} dia(es) amb una sola sessió.",
+      "buildingChange": "{{amount}} canvi(s) d'edifici entre classes consecutives.",
+      "consecutiveHours": "{{amount}} h per sobre del màxim de classes seguides.",
+      "weeklySpread": "{{count}} grup(s) amb les sessions concentrades en pocs dies."
+    },
+    "change": {
+      "added": "Nova sessió de {{group}} ({{weekday}} a les {{start}}).",
+      "removed": "S'elimina la sessió de {{group}} ({{weekday}} a les {{start}}).",
+      "slot": "{{group}} passa de {{previousWeekday}} a les {{previousStart}} a {{weekday}} a les {{start}}.",
+      "teacher": "{{group}} passa de {{previousTeacher}} a {{teacher}}.",
+      "space": "{{group}} canvia de {{previousSpace}} a {{space}}."
+    },
+    "version": {
+      "title": "Versions de l'horari",
+      "current": "Versió activa",
+      "create": "Nova versió",
+      "createFrom": "Duplica aquesta versió",
+      "name": "Nom de la versió",
+      "namePlaceholder": "Per exemple: Proposta segona setmana",
+      "status": {
+        "draft": "Esborrany",
+        "in_review": "En revisió",
+        "published": "Publicada",
+        "archived": "Arxivada"
+      },
+      "statusHint": {
+        "draft": "Ningú rep notificacions mentre és un esborrany",
+        "in_review": "Pendent de validació abans de publicar",
+        "published": "És l'horari vigent",
+        "archived": "Substituïda per una versió posterior"
+      },
+      "sendToReview": "Envia a revisió",
+      "backToDraft": "Torna a l'esborrany",
+      "publish": "Publica",
+      "archive": "Arxiva",
+      "publishedAt": "Publicada el {{date}} per {{name}}",
+      "publishConfirm": "En publicar, s'avisarà cada docent només dels canvis que l'afecten. Vols continuar?",
+      "publishedToast": "Versió publicada: {{teachers}} docent(s) avisats",
+      "draftToast": "Els esborranys no notifiquen ningú",
+      "errors": {
+        "invalidTransition": "Aquest canvi d'estat no és possible.",
+        "reviewRequired": "Aquest centre exigeix passar per revisió abans de publicar.",
+        "blockingViolations": "Hi ha conflictes sense resoldre: no es pot publicar.",
+        "notEditable": "Aquesta versió ja no es pot modificar."
+      }
+    },
+    "compare": {
+      "title": "Compara versions",
+      "subtitle": "Què canvia entre dues versions de l'horari",
+      "base": "Versió base",
+      "target": "Versió comparada",
+      "noChanges": "No hi ha cap diferència entre les dues versions.",
+      "byTeacher": "Per docent",
+      "allChanges": "Tots els canvis",
+      "summary": {
+        "added": "Afegides",
+        "removed": "Eliminades",
+        "changed": "Modificades",
+        "unchanged": "Sense canvis",
+        "teachers": "Docents afectats"
+      }
+    },
+    "generate": {
+      "title": "Generació automàtica",
+      "subtitle": "Construcció voraç i millora per recuita simulada",
+      "run": "Genera propostes",
+      "running": "Generant…",
+      "progress": "{{percent}} % · {{placed}} sessions col·locades",
+      "cancel": "Atura la generació",
+      "cancelled": "Generació aturada",
+      "failed": "No hem pogut generar cap proposta",
+      "proposals": "Propostes",
+      "proposal": "Proposta {{number}}",
+      "cost": "Cost {{cost}}",
+      "unplaced": "{{count}} sessió(ns) sense col·locar",
+      "allPlaced": "Totes les sessions col·locades",
+      "sacrifices": "Què sacrifica aquesta proposta",
+      "noSacrifices": "No sacrifica cap restricció blanda.",
+      "apply": "Aplica a l'esborrany",
+      "applied": "Proposta aplicada a l'esborrany",
+      "timedOut": "S'ha esgotat el temps: et mostrem la millor proposta trobada."
+    }
+  },
+  "calendar": {
+    "title": "El meu calendari",
+    "subtitle": "Les teves classes, com les veus tu",
+    "views": {
+      "day": "Dia",
+      "week": "Setmana",
+      "month": "Mes",
+      "agenda": "Agenda"
+    },
+    "today": "Avui",
+    "previous": "Anterior",
+    "next": "Següent",
+    "filterSubject": "Assignatura",
+    "allSubjects": "Totes les assignatures",
+    "empty": "No hi ha classes en aquest període.",
+    "session": "{{group}} · {{start}}–{{end}}",
+    "subscribe": {
+      "title": "Subscriu-te des del teu calendari",
+      "description": "Enganxa aquesta adreça a Outlook, Google Calendar o Apple Calendar i el teu horari s'actualitzarà sol.",
+      "create": "Genera l'adreça",
+      "url": "Adreça de subscripció",
+      "copy": "Copia l'adreça",
+      "copied": "Adreça copiada",
+      "revoke": "Revoca",
+      "revoked": "Adreça revocada",
+      "revokeConfirm": "Si la revoques, els calendaris que hi estiguin subscrits deixaran de rebre l'horari. Vols continuar?",
+      "warning": "Qui tingui aquesta adreça pot veure el teu horari. No la comparteixis.",
+      "none": "Encara no has generat cap adreça."
+    },
+    "export": {
+      "pdf": "Exporta a PDF",
+      "excel": "Exporta a Excel",
+      "done": "Fitxer descarregat",
+      "failed": "No hem pogut generar el fitxer"
+    }
   }
 }

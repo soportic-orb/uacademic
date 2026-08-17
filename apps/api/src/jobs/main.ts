@@ -22,6 +22,11 @@ const worker = new JobWorker(
     'push.send': async (payload) => {
       logger.info({ payload }, 'push.send is not implemented yet')
     },
+    // Queued when a schedule version is published: the in-app notification is
+    // written inside the request, the email and the push are delivered here.
+    'notification.deliver': async (payload) => {
+      logger.info({ payload }, 'notification.deliver: email and push arrive in a later phase')
+    },
   },
   {
     workerId: `${process.env.pm_id ?? '0'}@${process.pid}`,

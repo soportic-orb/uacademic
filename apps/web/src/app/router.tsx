@@ -4,6 +4,7 @@ import { AppShell } from '../components/layout/app-shell'
 import { RequireSession } from '../auth/require-session'
 import { AdminIndexPage } from '../pages/admin-index'
 import { AdminResourcePage } from '../pages/admin-resource'
+import { CalendarPage } from '../pages/calendar'
 import { DashboardPage } from '../pages/dashboard'
 import { LoginPage } from '../pages/login'
 import { ProfilePage } from '../pages/profile'
@@ -15,9 +16,9 @@ import {
   DocumentsPage,
   MessagesPage,
   NotFoundPage,
-  PlanningPage,
   PlatformPage,
 } from '../pages/placeholders'
+import { PlanningPage } from '../pages/planning'
 import { SettingsPage } from '../pages/settings'
 import { SubjectsPage } from '../pages/subjects'
 import { TeacherDetailPage } from '../pages/teacher-detail'
@@ -41,6 +42,7 @@ export const router = createBrowserRouter([
       { index: true, element: <DashboardPage /> },
       { path: 'my-load', element: <MyLoadPage /> },
       { path: 'planning', element: <PlanningPage /> },
+      { path: 'calendar', element: <CalendarPage /> },
       { path: 'teachers', element: <TeachersPage /> },
       { path: 'teachers/:id', element: <TeacherDetailPage /> },
       { path: 'subjects', element: <SubjectsPage /> },

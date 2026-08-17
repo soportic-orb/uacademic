@@ -66,6 +66,12 @@ export const NAV_ITEMS: NavItem[] = [
     mobile: true,
   },
   {
+    key: 'calendar',
+    path: '/calendar',
+    icon: CalendarDays,
+    roles: ['CENTER_ADMIN', 'COORDINATOR', 'TEACHER'],
+  },
+  {
     key: 'subjects',
     path: '/subjects',
     icon: BookOpen,
