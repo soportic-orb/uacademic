@@ -39,7 +39,9 @@ describe('center settings', () => {
   it('rejects invalid values instead of silently defaulting', () => {
     expect(centerSettingsSchema.safeParse({ schedule: { dayStart: '8:00' } }).success).toBe(false)
     expect(centerSettingsSchema.safeParse({ schedule: { slotMinutes: 4 } }).success).toBe(false)
-    expect(centerSettingsSchema.safeParse({ schedule: { workingWeekdays: [] } }).success).toBe(false)
+    expect(centerSettingsSchema.safeParse({ schedule: { workingWeekdays: [] } }).success).toBe(
+      false,
+    )
     expect(centerSettingsSchema.safeParse({ formats: { timeFormat: '48h' } }).success).toBe(false)
   })
 
@@ -73,7 +75,9 @@ describe('parameter keys and provenance', () => {
 
   it('reads a single parameter by key', () => {
     expect(getSettingValue(defaultCenterSettings, 'schedule.slotMinutes')).toBe(30)
-    expect(getSettingValue(defaultCenterSettings, 'schedule.workingWeekdays')).toEqual([1, 2, 3, 4, 5])
+    expect(getSettingValue(defaultCenterSettings, 'schedule.workingWeekdays')).toEqual([
+      1, 2, 3, 4, 5,
+    ])
     expect(getSettingValue(defaultCenterSettings, 'nope')).toBeUndefined()
   })
 

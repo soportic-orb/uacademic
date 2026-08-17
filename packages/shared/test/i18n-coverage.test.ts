@@ -54,7 +54,9 @@ describe('i18n catalog coverage', () => {
   it.each(SUPPORTED_LOCALES)('%s uses the same interpolation placeholders', (locale) => {
     const placeholdersOf = (catalog: Catalog, key: string): string[] => {
       const value = entries(catalog).find(([path]) => path === key)?.[1]
-      return typeof value === 'string' ? [...value.matchAll(/\{\{(\w+)\}\}/g)].map((m) => m[1]!).sort() : []
+      return typeof value === 'string'
+        ? [...value.matchAll(/\{\{(\w+)\}\}/g)].map((m) => m[1]!).sort()
+        : []
     }
 
     const mismatched = reference.filter((key) => {
@@ -90,9 +92,9 @@ describe('catalog lookup outside i18next', () => {
   it('resolves keys and interpolates parameters', () => {
     expect(translate('es', 'errors.forbidden')).toBe('No tienes permisos para esta acción.')
     expect(translate('en', 'email.greeting', { name: 'Mar' })).toBe('Hello Mar')
-    expect(translate('ca', 'push.changeRequestBody', { requester: 'Anna', subject: 'Física' })).toBe(
-      'Anna proposa un canvi a Física.',
-    )
+    expect(
+      translate('ca', 'push.changeRequestBody', { requester: 'Anna', subject: 'Física' }),
+    ).toBe('Anna proposa un canvi a Física.')
   })
 
   it('returns the key itself when it does not exist', () => {

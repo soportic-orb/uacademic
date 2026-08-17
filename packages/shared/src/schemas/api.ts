@@ -31,9 +31,7 @@ export const apiErrorSchema = z.object({
     messageKey: z.string(),
     /** Message already resolved in the caller's locale, for convenience. */
     message: z.string(),
-    details: z
-      .array(z.object({ path: z.string(), messageKey: z.string() }))
-      .optional(),
+    details: z.array(z.object({ path: z.string(), messageKey: z.string() })).optional(),
     traceId: z.string(),
   }),
 })

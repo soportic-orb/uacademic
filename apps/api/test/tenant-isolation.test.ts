@@ -6,7 +6,14 @@ import { disconnectPrisma } from '@uacademic/db'
 import type { FastifyInstance } from 'fastify'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
-import { FOREIGN, SEED, createTestApp, ensureForeignCenter, hasDatabase, seedCenterId } from './helpers.js'
+import {
+  FOREIGN,
+  SEED,
+  createTestApp,
+  ensureForeignCenter,
+  hasDatabase,
+  seedCenterId,
+} from './helpers.js'
 
 describe.skipIf(!hasDatabase)('cross-center access', () => {
   let app: FastifyInstance

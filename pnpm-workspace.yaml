@@ -1,9 +1,9 @@
 packages:
-  - 'apps/*'
-  - 'packages/*'
-  - 'tooling/*'
+  - "apps/*"
+  - "packages/*"
+  - "tooling/*"
 
 onlyBuiltDependencies:
-  - '@tailwindcss/oxide'
+  - "@tailwindcss/oxide"
   - esbuild
   - prisma

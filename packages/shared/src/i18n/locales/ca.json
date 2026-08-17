@@ -158,7 +158,8 @@
     "subtitle": "Preferències personals i paràmetres del centre",
     "appearance": "Aparença",
     "languageSection": "Idioma de la interfície",
-    "provenanceHint": "Cada paràmetre del centre pot citar el document normatiu del qual prové."
+    "provenanceHint": "Cada paràmetre del centre pot citar el document normatiu del qual prové.",
+    "provenanceTitle": "Procedència dels paràmetres"
   },
   "platform": {
     "title": "Plataforma",
@@ -216,5 +217,25 @@
     "changeRequestBody": "{{requester}} proposa un canvi a {{subject}}.",
     "scheduleUpdatedTitle": "Horari actualitzat",
     "scheduleUpdatedBody": "S'ha publicat una versió nova de l'horari de {{subject}}."
+  },
+  "teacherCategory": {
+    "full_professor": "Catedràtic/a",
+    "associate_professor": "Professorat agregat",
+    "assistant_professor": "Professorat lector",
+    "lecturer": "Professorat col·laborador",
+    "adjunct": "Professorat associat",
+    "visiting": "Professorat visitant",
+    "external": "Professorat extern"
+  },
+  "dedication": {
+    "full_time": "Temps complet",
+    "part_time": "Temps parcial",
+    "hourly": "Per hores"
+  },
+  "term": {
+    "t1": "1r semestre",
+    "t2": "2n semestre",
+    "t3": "3r període",
+    "annual": "Anual"
   }
 }

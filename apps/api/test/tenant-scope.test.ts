@@ -89,8 +89,9 @@ describe('writes', () => {
   })
 
   it('filters updates and deletes by center', () => {
-    expect(applyTenantScope('Subject', 'update', { where: { id: 'x' }, data: {} }, CENTER).args)
-      .toEqual({ where: { AND: [{ id: 'x' }, { centerId: CENTER }] }, data: {} })
+    expect(
+      applyTenantScope('Subject', 'update', { where: { id: 'x' }, data: {} }, CENTER).args,
+    ).toEqual({ where: { AND: [{ id: 'x' }, { centerId: CENTER }] }, data: {} })
 
     expect(applyTenantScope('Subject', 'deleteMany', { where: { year: 1 } }, CENTER).args).toEqual({
       where: { AND: [{ year: 1 }, { centerId: CENTER }] },

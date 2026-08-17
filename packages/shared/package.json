@@ -12,7 +12,9 @@
     },
     "./i18n/locales/*.json": "./dist/i18n/locales/*.json"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json && node scripts/copy-assets.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",

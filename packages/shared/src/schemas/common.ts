@@ -10,9 +10,7 @@ import { SUPPORTED_LOCALES } from '../i18n/index.js'
 
 export const uuidSchema = z.uuid({ message: 'validation.invalidUuid' })
 
-export const clockTimeSchema = z
-  .string()
-  .refine(isClockTime, { message: 'validation.invalidTime' })
+export const clockTimeSchema = z.string().refine(isClockTime, { message: 'validation.invalidTime' })
 
 export const weekdaySchema = z.union([
   z.literal(1),

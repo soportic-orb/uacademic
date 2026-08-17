@@ -158,7 +158,8 @@
     "subtitle": "Personal preferences and center parameters",
     "appearance": "Appearance",
     "languageSection": "Interface language",
-    "provenanceHint": "Every center parameter can cite the regulatory document it came from."
+    "provenanceHint": "Every center parameter can cite the regulatory document it came from.",
+    "provenanceTitle": "Parameter provenance"
   },
   "platform": {
     "title": "Platform",
@@ -216,5 +217,25 @@
     "changeRequestBody": "{{requester}} proposes a change to {{subject}}.",
     "scheduleUpdatedTitle": "Timetable updated",
     "scheduleUpdatedBody": "A new version of the {{subject}} timetable has been published."
+  },
+  "teacherCategory": {
+    "full_professor": "Full professor",
+    "associate_professor": "Associate professor",
+    "assistant_professor": "Assistant professor",
+    "lecturer": "Lecturer",
+    "adjunct": "Adjunct",
+    "visiting": "Visiting",
+    "external": "External"
+  },
+  "dedication": {
+    "full_time": "Full time",
+    "part_time": "Part time",
+    "hourly": "Hourly"
+  },
+  "term": {
+    "t1": "1st term",
+    "t2": "2nd term",
+    "t3": "3rd term",
+    "annual": "Full year"
   }
 }

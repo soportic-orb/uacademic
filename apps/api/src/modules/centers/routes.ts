@@ -33,9 +33,7 @@ export function registerCenterRoutes(app: FastifyInstance): void {
     const isSuper = user.memberships.some((membership) => membership.role === 'SUPERADMIN')
 
     const centers = await prisma().center.findMany({
-      where: isSuper
-        ? {}
-        : { id: { in: [...new Set(user.memberships.map((m) => m.centerId))] } },
+      where: isSuper ? {} : { id: { in: [...new Set(user.memberships.map((m) => m.centerId))] } },
       orderBy: { name: 'asc' },
     })
 

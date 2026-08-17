@@ -123,7 +123,9 @@ export class JobWorker {
         lockedBy: null,
         lastError: message.slice(0, 2000),
         // Exponential backoff: a failing mail server should not be hammered.
-        runAt: exhausted ? undefined : new Date(Date.now() + this.#options.retryBaseMs * 2 ** attempts),
+        runAt: exhausted
+          ? undefined
+          : new Date(Date.now() + this.#options.retryBaseMs * 2 ** attempts),
       },
     })
 

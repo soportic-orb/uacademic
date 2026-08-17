@@ -17,12 +17,12 @@ else (calendar, messaging, profile, documents) exists to support that core.
 
 ### Roles
 
-| Role | Scope | Responsibilities |
-| --- | --- | --- |
-| `SUPERADMIN` | Platform-wide (only role that crosses centers) | Universities and centers, Microsoft Entra ID tenants, coordinator users, OTA updates, metrics |
-| `CENTER_ADMIN` | One center | Subjects, degrees, spaces, users, academic calendar, imports, business parameters |
-| `COORDINATOR` | One or more subjects | Assigns teachers, plans schedules, approves class changes. **Only role with access to the AI assistant** |
-| `TEACHER` | Self | Own classes and subjects, own load (contracted vs assigned hours), proposes class changes, chat, profile and availability |
+| Role           | Scope                                          | Responsibilities                                                                                                          |
+| -------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `SUPERADMIN`   | Platform-wide (only role that crosses centers) | Universities and centers, Microsoft Entra ID tenants, coordinator users, OTA updates, metrics                             |
+| `CENTER_ADMIN` | One center                                     | Subjects, degrees, spaces, users, academic calendar, imports, business parameters                                         |
+| `COORDINATOR`  | One or more subjects                           | Assigns teachers, plans schedules, approves class changes. **Only role with access to the AI assistant**                  |
+| `TEACHER`      | Self                                           | Own classes and subjects, own load (contracted vs assigned hours), proposes class changes, chat, profile and availability |
 
 A user may hold **different roles in different centers**. Roles live in
 `user_center_roles`, never in a token.
@@ -33,12 +33,12 @@ A user may hold **different roles in different centers**. Roles live in
 
 pnpm workspaces monorepo:
 
-| Package | Contents |
-| --- | --- |
-| `apps/web` | React 19 + TypeScript + Vite + Tailwind + shadcn/ui, TanStack Query (server state) + Zustand (UI state), react-router v7, react-hook-form + Zod, FullCalendar, i18next, vite-plugin-pwa |
-| `apps/api` | Node 22 + Fastify + TypeScript + Prisma + MySQL 8, Zod validation, Pino logs, Nodemailer, web-push |
+| Package           | Contents                                                                                                                                                                                      |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/web`        | React 19 + TypeScript + Vite + Tailwind + shadcn/ui, TanStack Query (server state) + Zustand (UI state), react-router v7, react-hook-form + Zod, FullCalendar, i18next, vite-plugin-pwa       |
+| `apps/api`        | Node 22 + Fastify + TypeScript + Prisma + MySQL 8, Zod validation, Pino logs, Nodemailer, web-push                                                                                            |
 | `packages/shared` | Types, Zod schemas, i18n catalogs and **all pure domain logic** (capacity computation, conflict detection, validations). No DOM and no Node dependencies — phase 2 reuses it from an Expo app |
-| `packages/db` | Prisma schema, migrations and seeds |
+| `packages/db`     | Prisma schema, migrations and seeds                                                                                                                                                           |
 
 ### Deployment constraints — these drive technical decisions
 
@@ -156,12 +156,12 @@ Semantic colors: success `#15803D`, warning `#B45309`, danger `#B91C1C`.
 
 Always with an icon and text in addition to color:
 
-| Range | Meaning | Color |
-| --- | --- | --- |
-| `< 85%` | under-load | blue |
-| `85–100%` | optimal | green |
-| `100–110%` | at limit | amber |
-| `> 110%` | overload | red |
+| Range      | Meaning    | Color |
+| ---------- | ---------- | ----- |
+| `< 85%`    | under-load | blue  |
+| `85–100%`  | optimal    | green |
+| `100–110%` | at limit   | amber |
+| `> 110%`   | overload   | red   |
 
 ### Typography and spacing
 

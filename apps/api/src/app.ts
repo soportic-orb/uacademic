@@ -29,7 +29,12 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
       // Never log an identity or a token: the trace id is enough to correlate.
       redact: ['req.headers.authorization', 'req.headers.cookie', 'req.headers["x-mock-user"]'],
       ...(env.NODE_ENV === 'development'
-        ? { transport: { target: 'pino-pretty', options: { translateTime: 'HH:MM:ss', ignore: 'pid,hostname' } } }
+        ? {
+            transport: {
+              target: 'pino-pretty',
+              options: { translateTime: 'HH:MM:ss', ignore: 'pid,hostname' },
+            },
+          }
         : {}),
     },
     trustProxy: true,

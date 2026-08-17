@@ -158,7 +158,8 @@
     "subtitle": "Preferencias personales y parámetros del centro",
     "appearance": "Apariencia",
     "languageSection": "Idioma de la interfaz",
-    "provenanceHint": "Cada parámetro del centro puede citar el documento normativo del que procede."
+    "provenanceHint": "Cada parámetro del centro puede citar el documento normativo del que procede.",
+    "provenanceTitle": "Procedencia de los parámetros"
   },
   "platform": {
     "title": "Plataforma",
@@ -216,5 +217,25 @@
     "changeRequestBody": "{{requester}} propone un cambio en {{subject}}.",
     "scheduleUpdatedTitle": "Horario actualizado",
     "scheduleUpdatedBody": "Se ha publicado una nueva versión del horario de {{subject}}."
+  },
+  "teacherCategory": {
+    "full_professor": "Catedrático/a",
+    "associate_professor": "Profesorado agregado",
+    "assistant_professor": "Profesorado lector",
+    "lecturer": "Profesorado colaborador",
+    "adjunct": "Profesorado asociado",
+    "visiting": "Profesorado visitante",
+    "external": "Profesorado externo"
+  },
+  "dedication": {
+    "full_time": "Tiempo completo",
+    "part_time": "Tiempo parcial",
+    "hourly": "Por horas"
+  },
+  "term": {
+    "t1": "1.er semestre",
+    "t2": "2.º semestre",
+    "t3": "3.er periodo",
+    "annual": "Anual"
   }
 }

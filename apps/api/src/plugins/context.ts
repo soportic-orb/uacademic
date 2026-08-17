@@ -1,5 +1,10 @@
 import type { AppLocale, Principal, Role } from '@uacademic/shared'
-import { CENTER_HEADER, CROSS_CENTER_HEADER, canAccessCenter, isSuperadmin } from '@uacademic/shared'
+import {
+  CENTER_HEADER,
+  CROSS_CENTER_HEADER,
+  canAccessCenter,
+  isSuperadmin,
+} from '@uacademic/shared'
 import { DEFAULT_LOCALE, parseAcceptLanguage, resolveLocale } from '@uacademic/shared'
 import type { FastifyInstance, FastifyRequest } from 'fastify'
 

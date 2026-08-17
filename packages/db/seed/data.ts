@@ -300,7 +300,7 @@ export const SUBJECTS: SubjectSeed[] = [
     index: 7,
     degreeCode: 'GCD',
     code: 'APR301',
-    nameCa: "Aprenentatge Automàtic",
+    nameCa: 'Aprenentatge Automàtic',
     nameEs: 'Aprendizaje Automático',
     nameEn: 'Machine Learning',
     ects: 6,
@@ -354,7 +354,13 @@ export const ASSIGNMENTS: AssignmentSeed[] = [
 
   { teacherIndex: 2, subjectCode: 'PRO102', groupCode: 'T1', hours: 45, concept: 'lecture' },
   { teacherIndex: 2, subjectCode: 'PRO102', groupCode: 'L1', hours: 22.5, concept: 'lecture' },
-  { teacherIndex: 2, subjectCode: 'TFG401', groupCode: 'TU1', hours: 12.5, concept: 'coordination' },
+  {
+    teacherIndex: 2,
+    subjectCode: 'TFG401',
+    groupCode: 'TU1',
+    hours: 12.5,
+    concept: 'coordination',
+  },
 
   { teacherIndex: 3, subjectCode: 'ALG201', groupCode: 'T1', hours: 45, concept: 'lecture' },
   { teacherIndex: 3, subjectCode: 'ALG201', groupCode: 'T2', hours: 45, concept: 'lecture' },
@@ -383,7 +389,13 @@ export const ASSIGNMENTS: AssignmentSeed[] = [
   { teacherIndex: 10, subjectCode: 'APR301', groupCode: 'L1', hours: 15, concept: 'lecture' },
 
   { teacherIndex: 11, subjectCode: 'EST101', groupCode: 'L1', hours: 22.5, concept: 'lecture' },
-  { teacherIndex: 11, subjectCode: 'EST101', groupCode: 'L1', hours: 12.5, concept: 'coordination' },
+  {
+    teacherIndex: 11,
+    subjectCode: 'EST101',
+    groupCode: 'L1',
+    hours: 12.5,
+    concept: 'coordination',
+  },
   { teacherIndex: 11, subjectCode: 'TFG401', groupCode: 'TU1', hours: 25, concept: 'tfg' },
 
   { teacherIndex: 12, subjectCode: 'FIS101', groupCode: 'L2', hours: 22.5, concept: 'lecture' },

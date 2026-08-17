@@ -26,7 +26,11 @@ export function formatHours(locale: AppLocale, hours: number): string {
   }).format(hours)
 }
 
-export function formatPercent(locale: AppLocale, percent: number | null, fractionDigits = 0): string {
+export function formatPercent(
+  locale: AppLocale,
+  percent: number | null,
+  fractionDigits = 0,
+): string {
   if (percent === null) return '—'
   return new Intl.NumberFormat(localeTag(locale), {
     style: 'percent',

@@ -137,12 +137,9 @@ export function applyTenantScope(
   }
 
   // Fail closed: an operation nobody scoped is an operation nobody audited.
-  throw new AppError(
-    500,
-    'INTERNAL_ERROR',
-    'errors.generic',
-    [{ path: model, messageKey: `Unscoped operation "${operation}" on a tenant model` }],
-  )
+  throw new AppError(500, 'INTERNAL_ERROR', 'errors.generic', [
+    { path: model, messageKey: `Unscoped operation "${operation}" on a tenant model` },
+  ])
 }
 
 /** Drops rows that belong to another center. Used after `findUnique`. */

@@ -1,0 +1,100 @@
+/**
+ * Design tokens (CLAUDE.md §4).
+ *
+ * Two layers: the raw corporate scale, which never changes, and the semantic
+ * tokens components actually use. Dark mode is not an inversion — it remaps
+ * the semantic layer and lightens the primary so contrast stays AA over the
+ * dark surface (R8).
+ */
+
+:root {
+  /* Corporate scale, #0072CE at 500 */
+  --primary-50: #eaf4fc;
+  --primary-100: #d0e7fa;
+  --primary-200: #a3cff5;
+  --primary-300: #6fb2ee;
+  --primary-400: #2e90e0;
+  --primary-500: #0072ce;
+  --primary-600: #005ca8;
+  --primary-700: #004782;
+  --primary-800: #00335c;
+  --primary-900: #001f38;
+
+  /* Semantic status colors */
+  --success: #15803d;
+  --warning: #b45309;
+  --danger: #b91c1c;
+  --info: var(--primary-500);
+
+  /* Teaching-load traffic light: always paired with an icon and a label */
+  --load-under: var(--primary-500);
+  --load-optimal: #15803d;
+  --load-limit: #b45309;
+  --load-over: #b91c1c;
+  --load-under-surface: var(--primary-50);
+  --load-optimal-surface: #dcfce7;
+  --load-limit-surface: #fef3c7;
+  --load-over-surface: #fee2e2;
+
+  /* Light theme surfaces */
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-muted: #f1f5f9;
+  --border: #e2e8f0;
+  --border-strong: #cbd5e1;
+  --text: #0f172a;
+  --text-muted: #475569;
+  --text-inverted: #ffffff;
+
+  --primary: var(--primary-500);
+  --primary-hover: var(--primary-600);
+  --primary-surface: var(--primary-50);
+  --primary-contrast: #ffffff;
+  --ring: var(--primary-500);
+
+  /* 8px grid */
+  --radius-card: 12px;
+  --radius-control: 8px;
+
+  /* Visual weight lives in the border, not in the shadow */
+  --shadow-sm: 0 1px 2px 0 rgb(15 23 42 / 0.04);
+  --shadow-md: 0 2px 8px -2px rgb(15 23 42 / 0.08);
+  --shadow-overlay: 0 8px 24px -8px rgb(15 23 42 / 0.16);
+}
+
+.dark {
+  --bg: #0f172a;
+  --surface: #111c33;
+  --surface-raised: #16233d;
+  --surface-muted: #1c2b47;
+  --border: #24344f;
+  --border-strong: #33465f;
+  --text: #f1f5f9;
+  --text-muted: #a8b6c8;
+  --text-inverted: #0f172a;
+
+  /* Lightened so it keeps AA contrast on #0F172A */
+  --primary: #3d9be0;
+  --primary-hover: #6fb2ee;
+  --primary-surface: #102a44;
+  --primary-contrast: #04121f;
+  --ring: #6fb2ee;
+
+  --success: #4ade80;
+  --warning: #fbbf24;
+  --danger: #f87171;
+
+  --load-under: #6fb2ee;
+  --load-optimal: #4ade80;
+  --load-limit: #fbbf24;
+  --load-over: #f87171;
+  --load-under-surface: #102a44;
+  --load-optimal-surface: #0d2e1d;
+  --load-limit-surface: #33270a;
+  --load-over-surface: #3a1414;
+
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+  --shadow-md: 0 2px 8px -2px rgb(0 0 0 / 0.45);
+  --shadow-overlay: 0 8px 24px -8px rgb(0 0 0 / 0.6);
+}

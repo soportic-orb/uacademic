@@ -58,7 +58,11 @@ function normalize(error: unknown): AppError {
   return AppError.internal()
 }
 
-function toBody(error: AppError, traceId: string, locale: Parameters<typeof translate>[0]): ApiError {
+function toBody(
+  error: AppError,
+  traceId: string,
+  locale: Parameters<typeof translate>[0],
+): ApiError {
   return {
     error: {
       code: error.code,

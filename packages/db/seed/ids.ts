@@ -54,11 +54,5 @@ const ENTITY_CODES: Record<EntityKind, number> = {
 
 export function seedId(kind: EntityKind, index: number): string {
   const node = (ENTITY_CODES[kind] * 100_000_000 + index).toString(16).padStart(12, '0')
-  return [
-    TIMESTAMP_HEX.slice(0, 8),
-    TIMESTAMP_HEX.slice(8, 12),
-    '7000',
-    '8000',
-    node,
-  ].join('-')
+  return [TIMESTAMP_HEX.slice(0, 8), TIMESTAMP_HEX.slice(8, 12), '7000', '8000', node].join('-')
 }

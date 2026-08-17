@@ -288,9 +288,15 @@ async function seedTeachers() {
   return profileByIndex
 }
 
-async function seedSubjects(degreeByCode: Map<string, string>, profileByIndex: Map<number, string>) {
+async function seedSubjects(
+  degreeByCode: Map<string, string>,
+  profileByIndex: Map<number, string>,
+) {
   const subjectByCode = new Map<string, string>()
-  const groupByKey = new Map<string, { id: string; plannedHours: number; requiredSpaceType: string }>()
+  const groupByKey = new Map<
+    string,
+    { id: string; plannedHours: number; requiredSpaceType: string }
+  >()
 
   for (const subject of SUBJECTS) {
     const subjectId = seedId('subject', subject.index)

@@ -32,9 +32,9 @@ describe('effective availability', () => {
     expect(
       effectiveAvailability({ weekday: 1, start: '13:00', end: '15:00' }, MONDAY_MORNING),
     ).toBe('unavailable')
-    expect(effectiveAvailability({ weekday: 3, start: '09:00', end: '10:00' }, MONDAY_MORNING)).toBe(
-      'unavailable',
-    )
+    expect(
+      effectiveAvailability({ weekday: 3, start: '09:00', end: '10:00' }, MONDAY_MORNING),
+    ).toBe('unavailable')
   })
 
   it('honours an explicit fallback for centers that opt into open availability', () => {

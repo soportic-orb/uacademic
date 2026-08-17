@@ -60,7 +60,9 @@ describe.skipIf(!hasDatabase)('API surface', () => {
     expect(body.teachers).toHaveLength(12)
     expect(body.summary.byStatus).toEqual({ under: 3, optimal: 5, limit: 2, over: 2 })
 
-    const overloaded = body.teachers.find((teacher: { status: string }) => teacher.status === 'over')
+    const overloaded = body.teachers.find(
+      (teacher: { status: string }) => teacher.status === 'over',
+    )
     expect(overloaded.ratioPercent).toBeGreaterThan(110)
   })
 

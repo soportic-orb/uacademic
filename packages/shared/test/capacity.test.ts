@@ -118,8 +118,14 @@ describe('group coverage', () => {
 describe('center summary', () => {
   it('aggregates capacity, assignment and the traffic-light census', () => {
     const summary = summarizeLoads([
-      computeTeacherLoad({ contractedHours: 100, assignments: [{ concept: 'lecture', hours: 50 }] }),
-      computeTeacherLoad({ contractedHours: 100, assignments: [{ concept: 'lecture', hours: 95 }] }),
+      computeTeacherLoad({
+        contractedHours: 100,
+        assignments: [{ concept: 'lecture', hours: 50 }],
+      }),
+      computeTeacherLoad({
+        contractedHours: 100,
+        assignments: [{ concept: 'lecture', hours: 95 }],
+      }),
       computeTeacherLoad({
         contractedHours: 100,
         assignments: [{ concept: 'lecture', hours: 130 }],

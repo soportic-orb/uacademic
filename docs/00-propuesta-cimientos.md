@@ -102,13 +102,13 @@ Notas:
 40 modelos, 34 enums. Todas las tablas de tu modelo de datos están, más una añadida
 (`entra_tenants`). Convenciones ya reflejadas en el CLAUDE.md:
 
-| Decisión | Valor | Motivo |
-| --- | --- | --- |
-| PK | `CHAR(36)` UUIDv7 | Opaco hacia fuera, pero ordenado en el tiempo: InnoDB inserta al final del índice agrupado en lugar de fragmentar páginas como haría un UUIDv4 |
-| Horas de reloj | `CHAR(5)` `"HH:MM"` | Comparables y ordenables en SQL, sin trampas de zona horaria; el dominio las pasa a minutos |
-| `weekday` | `TINYINT` ISO (1 = lunes) | Coincide con "la semana empieza en lunes" |
-| Horas de carga | `DECIMAL(6,2)` | Nunca float en algo que se compara contra un contrato |
-| Nombres | Modelos PascalCase → tablas `snake_case` | El SQL queda idéntico a tu especificación |
+| Decisión       | Valor                                    | Motivo                                                                                                                                         |
+| -------------- | ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| PK             | `CHAR(36)` UUIDv7                        | Opaco hacia fuera, pero ordenado en el tiempo: InnoDB inserta al final del índice agrupado en lugar de fragmentar páginas como haría un UUIDv4 |
+| Horas de reloj | `CHAR(5)` `"HH:MM"`                      | Comparables y ordenables en SQL, sin trampas de zona horaria; el dominio las pasa a minutos                                                    |
+| `weekday`      | `TINYINT` ISO (1 = lunes)                | Coincide con "la semana empieza en lunes"                                                                                                      |
+| Horas de carga | `DECIMAL(6,2)`                           | Nunca float en algo que se compara contra un contrato                                                                                          |
+| Nombres        | Modelos PascalCase → tablas `snake_case` | El SQL queda idéntico a tu especificación                                                                                                      |
 
 ### Índices críticos (los cuatro que pediste, más los derivados)
 

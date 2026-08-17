@@ -111,7 +111,11 @@ export function flattenSettings(
       out[path] = value as (string | number)[]
     } else if (value !== null && typeof value === 'object') {
       Object.assign(out, flattenSettings(value as Record<string, unknown>, path))
-    } else if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    } else if (
+      typeof value === 'string' ||
+      typeof value === 'number' ||
+      typeof value === 'boolean'
+    ) {
       out[path] = value
     }
   }

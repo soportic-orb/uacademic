@@ -116,7 +116,9 @@ function atUtcMidnight(date: Date): number {
 
 /** Date ranges are inclusive on both ends, unlike time intervals. */
 export function dateRangesOverlap(a: DateRange, b: DateRange): boolean {
-  return atUtcMidnight(a.from) <= atUtcMidnight(b.to) && atUtcMidnight(b.from) <= atUtcMidnight(a.to)
+  return (
+    atUtcMidnight(a.from) <= atUtcMidnight(b.to) && atUtcMidnight(b.from) <= atUtcMidnight(a.to)
+  )
 }
 
 /** ISO weekday of a date: 1 = Monday … 7 = Sunday (the week starts on Monday). */
