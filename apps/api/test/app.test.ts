@@ -57,13 +57,23 @@ describe.skipIf(!hasDatabase)('API surface', () => {
 
     expect(response.statusCode).toBe(200)
     const body = response.json()
-    expect(body.teachers).toHaveLength(12)
-    expect(body.summary.byStatus).toEqual({ under: 3, optimal: 5, limit: 2, over: 2 })
 
-    const overloaded = body.teachers.find(
-      (teacher: { status: string }) => teacher.status === 'over',
+    // Asserted on the seeded people rather than on a census: the import tests
+    // and the e2e suite add teachers to the same database, so a total would
+    // depend on what ran before.
+    const seeded = (lastName: string) =>
+      body.teachers.find((teacher: { lastName: string }) => teacher.lastName === lastName)
+
+    expect(body.teachers.length).toBeGreaterThanOrEqual(12)
+    expect(seeded('Mestre Pons')).toMatchObject({ status: 'over', ratioPercent: 116.67 })
+    expect(seeded('Puig Serra')).toMatchObject({ status: 'optimal', ratioPercent: 90 })
+    expect(seeded('Vila Rovira')).toMatchObject({ status: 'under' })
+    expect(seeded('Torres Gil')).toMatchObject({ status: 'limit' })
+
+    // Every state of the traffic light is represented in the demo data.
+    expect(new Set(body.teachers.map((teacher: { status: string }) => teacher.status))).toEqual(
+      new Set(['under', 'optimal', 'limit', 'over']),
     )
-    expect(overloaded.ratioPercent).toBeGreaterThan(110)
   })
 
   it('hides the full teacher list from a plain teacher', async () => {
