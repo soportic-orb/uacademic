@@ -1046,7 +1046,16 @@ async function seedSettingsProvenance() {
         section: record.section,
         quote: record.quote,
       },
-      update: {},
+      // Re-seeding repairs the citation: a provenance row that lost its
+      // document points at nothing, and a rule nobody can trace back to an
+      // article is not explainable (R9).
+      update: {
+        settingsVersionId,
+        documentId,
+        page: record.page,
+        section: record.section,
+        quote: record.quote,
+      },
     })
   }
 }

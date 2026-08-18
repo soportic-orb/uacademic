@@ -47,6 +47,21 @@ export function formatNumber(
   return new Intl.NumberFormat(localeTag(locale), options).format(value)
 }
 
+/**
+ * Storage figures. Quotas are discussed in megabytes — nobody negotiates a
+ * document library in bytes — so that is the unit on screen.
+ */
+export function formatBytes(locale: AppLocale, bytes: number): string {
+  const megabytes = bytes / (1024 * 1024)
+
+  return new Intl.NumberFormat(localeTag(locale), {
+    style: 'unit',
+    unit: 'megabyte',
+    unitDisplay: 'short',
+    maximumFractionDigits: megabytes < 10 ? 1 : 0,
+  }).format(megabytes)
+}
+
 export function formatDate(
   locale: AppLocale,
   date: Date,

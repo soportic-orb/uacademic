@@ -6,6 +6,7 @@
  * Events over a POST, so it is read with `fetch` and a stream reader rather
  * than `EventSource`, which cannot POST and cannot carry our headers.
  */
+import type { Citation } from '@uacademic/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { currentLocale } from '../../i18n'
@@ -44,9 +45,22 @@ export interface AssistantStatus {
   }
 }
 
+export interface DocumentSource {
+  documentId: string
+  title: string
+  scope: string
+}
+
 export type AiStreamEvent =
   | { type: 'text'; text: string }
   | { type: 'tool'; name: string; kind: 'read' | 'write' }
+  | {
+      type: 'documents'
+      /** Whole documents in the prompt, or the fragments retrieval picked. */
+      strategy: 'none' | 'injected' | 'retrieved'
+      items: DocumentSource[]
+    }
+  | { type: 'citations'; items: Citation[] }
   | { type: 'proposal'; proposalId: string; proposal: AiProposal }
   | { type: 'usage'; tokensIn: number; tokensOut: number; budgetPercent: number }
   | { type: 'done'; messageId: string; conversationId: string }
@@ -94,7 +108,13 @@ export interface ConversationDetail {
   id: string
   title: string | null
   subjectId: string | null
-  messages: { id: string; role: 'user' | 'assistant'; content: string; createdAt: string }[]
+  messages: {
+    id: string
+    role: 'user' | 'assistant'
+    content: string
+    citations: Citation[]
+    createdAt: string
+  }[]
   proposals: {
     id: string
     tool: string

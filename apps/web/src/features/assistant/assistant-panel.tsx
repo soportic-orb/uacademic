@@ -10,6 +10,7 @@
  * month's budget is spent, the panel says so and stops. Nothing else on the
  * screen changes: the platform is fully usable by hand, always.
  */
+import type { Citation } from '@uacademic/shared'
 import { Bot, Loader2, Send, Sparkles, X } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -18,8 +19,10 @@ import { Button } from '../../components/ui/button'
 import { useToast } from '../../hooks/use-toast'
 import { ApiRequestError } from '../../lib/api'
 import { ProposalCard } from './proposal-card'
+import { SourceChips } from './source-chips'
 import {
   type AiProposal,
+  type DocumentSource,
   askAssistant,
   useAssistantStatus,
   useConversation,
@@ -37,6 +40,9 @@ export interface AssistantPanelProps {
 interface Turn {
   role: 'user' | 'assistant'
   text: string
+  /** Documents the answer was given, and the places in them it cited. */
+  documents?: DocumentSource[]
+  citations?: Citation[]
   proposals?: {
     id: string
     proposal: AiProposal
@@ -83,6 +89,7 @@ export function AssistantPanel({ open, onClose, subjectId, subjectCode }: Assist
     const replayed: Turn[] = (conversation.messages ?? []).map((message) => ({
       role: message.role,
       text: message.content,
+      citations: message.citations ?? [],
     }))
 
     const proposals = (conversation.proposals ?? []).map((proposal) => ({
@@ -121,6 +128,19 @@ export function AssistantPanel({ open, onClose, subjectId, subjectCode }: Assist
           }
 
           if (event.type === 'tool') setActiveTool(event.name)
+
+          if (event.type === 'documents' || event.type === 'citations') {
+            const { type } = event
+            setTurns((current) => {
+              const next = [...current]
+              const last = next.at(-1)
+              if (last?.role === 'assistant') {
+                if (type === 'documents') last.documents = event.items
+                else last.citations = event.items
+              }
+              return next
+            })
+          }
 
           if (event.type === 'proposal') {
             setTurns((current) => {
@@ -245,6 +265,10 @@ export function AssistantPanel({ open, onClose, subjectId, subjectCode }: Assist
                 >
                   <p className="whitespace-pre-wrap">{turn.text}</p>
                 </div>
+
+                {turn.role === 'assistant' ? (
+                  <SourceChips documents={turn.documents ?? []} citations={turn.citations ?? []} />
+                ) : null}
 
                 {turn.proposals?.map((entry) => (
                   <div key={entry.id} className="mt-2">

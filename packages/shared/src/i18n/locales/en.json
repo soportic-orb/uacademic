@@ -303,11 +303,100 @@
   },
   "documents": {
     "title": "Documents",
-    "empty": {
-      "title": "No documents",
-      "description": "Upload the center's regulations so business rules can cite them.",
-      "action": "Upload document"
-    }
+    "subtitle": "The regulations and guides the assistant works from",
+    "upload": "Upload a document",
+    "uploaded": "Document uploaded",
+    "updated": "Document updated",
+    "deleted": "Document deleted",
+    "empty": "No documents yet.",
+    "noStudentData": "These documents are normative and organisational. Do not upload student lists, records or any personal data about students.",
+    "fields": {
+      "title": "Title",
+      "type": "Type",
+      "scope": "Scope",
+      "scopeId": "Which degree or subject",
+      "academicYear": "Academic year",
+      "language": "Language",
+      "validFrom": "In force from",
+      "validTo": "In force until",
+      "visibility": "Visibility",
+      "file": "File",
+      "validity": "Validity",
+      "status": "Status"
+    },
+    "scope": {
+      "university": "University",
+      "center": "Center",
+      "degree": "Degree",
+      "subject": "Subject"
+    },
+    "type": {
+      "regulation": "Regulation",
+      "teaching_plan": "Teaching plan",
+      "agreement": "Agreement",
+      "guide": "Course guide",
+      "minutes": "Minutes",
+      "other": "Other"
+    },
+    "visibility": {
+      "ai_only": "Assistant only",
+      "center": "Also visible to teachers"
+    },
+    "status": {
+      "uploaded": "Pending",
+      "processing": "Processing",
+      "indexed": "Ready",
+      "failed": "Error",
+      "archived": "Archived"
+    },
+    "validity": {
+      "all": "All",
+      "current": "In force",
+      "expired": "Expired"
+    },
+    "expired": "Expired",
+    "expiringSoon": "Expires soon",
+    "quota": "{{used}} of {{total}} used",
+    "pages": "{{count}} pages",
+    "fragments": "{{count}} fragments",
+    "reprocess": "Process again",
+    "reprocessed": "Queued for processing again",
+    "runOcr": "Read it with the AI",
+    "ocr": {
+      "title": "This PDF is a scan",
+      "description": "It has no text layer, so it has to be read with the AI’s vision. It is {{pages}} pages and will cost about {{tokens}} tokens.",
+      "confirm": "Read and index it",
+      "disabled": "Reading with the AI is switched off for this center.",
+      "tooLong": "This document is longer than the {{max}} pages allowed for AI reading."
+    },
+    "viewer": {
+      "title": "Viewer",
+      "openFile": "Open the original file",
+      "fragment": "Cited fragment"
+    },
+    "precedence": {
+      "moreSpecific": "{{winner}} prevails over {{loser}}: its scope is more specific.",
+      "newer": "{{winner}} prevails over {{loser}}: it is more recent."
+    },
+    "sources": "Sources consulted",
+    "citation": "Source",
+    "errors": {
+      "unsupportedType": "That file type is not accepted. Upload a PDF, DOCX, XLSX, MD or TXT.",
+      "mismatchedType": "The file’s contents do not match its extension.",
+      "tooLarge": "The file is larger than the maximum allowed.",
+      "quotaExceeded": "This center has used up its document storage quota.",
+      "duplicate": "This file has already been uploaded.",
+      "needsOcr": "This PDF is a scan: it has to be read with the AI to be indexed.",
+      "ocrDisabled": "Reading with the AI is switched off for this center.",
+      "ocrTooLong": "The document has too many pages to read with the AI.",
+      "ocrUnavailable": "The AI is not configured on this installation.",
+      "ocrEmpty": "The AI could not extract any text from this document.",
+      "corruptFile": "The file could not be read: it may be damaged.",
+      "emptyDocument": "The document contains no text.",
+      "processingFailed": "The document could not be processed."
+    },
+    "actions": "Actions",
+    "deleteConfirm": "Delete “{{title}}”? The assistant will stop taking it into account."
   },
   "settings": {
     "title": "Settings",

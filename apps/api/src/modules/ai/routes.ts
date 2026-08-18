@@ -13,6 +13,7 @@ import type { FastifyInstance, FastifyRequest } from 'fastify'
 import { z } from 'zod'
 
 import { writeAuditLog } from '../../lib/audit.js'
+import { toJson } from '../../lib/json.js'
 import { AppError } from '../../lib/errors.js'
 import { prisma } from '../../lib/prisma.js'
 import { parseWith } from '../../lib/validate.js'
@@ -96,6 +97,7 @@ export function registerAiRoutes(app: FastifyInstance): void {
           id: message.id,
           role: message.role,
           content: message.content,
+          citations: (message.citationsJson ?? []) as unknown[],
           createdAt: message.createdAt.toISOString(),
         })),
         proposals: conversation.proposals.map((proposal) => ({
@@ -173,6 +175,9 @@ export function registerAiRoutes(app: FastifyInstance): void {
             content: result.answer,
             tokensIn: result.tokensIn,
             tokensOut: result.tokensOut,
+            // Kept with the message so reopening the conversation still shows
+            // what the answer rested on.
+            citationsJson: toJson(result.citations),
           },
         }),
         prisma().aiConversation.update({
@@ -187,6 +192,7 @@ export function registerAiRoutes(app: FastifyInstance): void {
         question: input.question,
         answer: result.answer,
         tools,
+        documents: result.documents,
         tokensIn: result.tokensIn,
         tokensOut: result.tokensOut,
       })

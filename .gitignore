@@ -16,3 +16,6 @@ test-results/
 .DS_Store
 *.log
 packages/db/src/generated/
+
+# Uploaded files live outside the repo in production; locally they land here.
+var/

@@ -303,11 +303,100 @@
   },
   "documents": {
     "title": "Documents",
-    "empty": {
-      "title": "Cap document",
-      "description": "Puja la normativa del centre per poder-la citar des de les regles de negoci.",
-      "action": "Puja un document"
-    }
+    "subtitle": "Normativa i guies que l’assistent té presents",
+    "upload": "Puja un document",
+    "uploaded": "Document pujat",
+    "updated": "Document actualitzat",
+    "deleted": "Document eliminat",
+    "empty": "Encara no hi ha cap document.",
+    "noStudentData": "Aquests documents són normatius i organitzatius. No pugis llistats d’alumnes, expedients ni cap dada personal d’estudiants.",
+    "fields": {
+      "title": "Títol",
+      "type": "Tipus",
+      "scope": "Àmbit",
+      "scopeId": "A quina titulació o assignatura",
+      "academicYear": "Curs acadèmic",
+      "language": "Idioma",
+      "validFrom": "Vigent des de",
+      "validTo": "Vigent fins a",
+      "visibility": "Visibilitat",
+      "file": "Fitxer",
+      "validity": "Vigència",
+      "status": "Estat"
+    },
+    "scope": {
+      "university": "Universitat",
+      "center": "Centre",
+      "degree": "Titulació",
+      "subject": "Assignatura"
+    },
+    "type": {
+      "regulation": "Normativa",
+      "teaching_plan": "Pla docent",
+      "agreement": "Conveni",
+      "guide": "Guia docent",
+      "minutes": "Acta",
+      "other": "Altres"
+    },
+    "visibility": {
+      "ai_only": "Només per a l’assistent",
+      "center": "Visible també per al professorat"
+    },
+    "status": {
+      "uploaded": "Pendent",
+      "processing": "Processant",
+      "indexed": "Llest",
+      "failed": "Error",
+      "archived": "Arxivat"
+    },
+    "validity": {
+      "all": "Tots",
+      "current": "Vigents",
+      "expired": "Caducats"
+    },
+    "expired": "Caducat",
+    "expiringSoon": "Caduca aviat",
+    "quota": "{{used}} de {{total}} utilitzats",
+    "pages": "{{count}} pàgines",
+    "fragments": "{{count}} fragments",
+    "reprocess": "Torna a processar",
+    "reprocessed": "Enviat a processar de nou",
+    "runOcr": "Llegeix-lo amb la IA",
+    "ocr": {
+      "title": "Aquest PDF és escanejat",
+      "description": "No té capa de text, així que cal llegir-lo amb la visió de la IA. Té {{pages}} pàgines i costarà uns {{tokens}} tokens.",
+      "confirm": "Llegeix-lo i indexa’l",
+      "disabled": "La lectura amb IA està desactivada en aquest centre.",
+      "tooLong": "Aquest document supera el màxim de {{max}} pàgines per a la lectura amb IA."
+    },
+    "viewer": {
+      "title": "Visor",
+      "openFile": "Obre el fitxer original",
+      "fragment": "Fragment citat"
+    },
+    "precedence": {
+      "moreSpecific": "{{winner}} preval sobre {{loser}} perquè és d’un àmbit més específic.",
+      "newer": "{{winner}} preval sobre {{loser}} perquè és més recent."
+    },
+    "sources": "Fonts consultades",
+    "citation": "Font",
+    "errors": {
+      "unsupportedType": "Aquest tipus de fitxer no s’admet. Puja un PDF, DOCX, XLSX, MD o TXT.",
+      "mismatchedType": "El contingut del fitxer no coincideix amb la seva extensió.",
+      "tooLarge": "El fitxer supera la mida màxima permesa.",
+      "quotaExceeded": "El centre ha exhaurit la quota d’emmagatzematge de documents.",
+      "duplicate": "Aquest fitxer ja està pujat.",
+      "needsOcr": "Aquest PDF és escanejat: cal llegir-lo amb la IA per indexar-lo.",
+      "ocrDisabled": "La lectura amb IA està desactivada en aquest centre.",
+      "ocrTooLong": "El document té massa pàgines per llegir-lo amb la IA.",
+      "ocrUnavailable": "La IA no està configurada en aquesta instal·lació.",
+      "ocrEmpty": "La IA no ha pogut extreure text d’aquest document.",
+      "corruptFile": "No s’ha pogut llegir el fitxer: pot estar malmès.",
+      "emptyDocument": "El document no conté text.",
+      "processingFailed": "No s’ha pogut processar el document."
+    },
+    "actions": "Accions",
+    "deleteConfirm": "Segur que vols eliminar «{{title}}»? L’assistent deixarà de tenir-lo en compte."
   },
   "settings": {
     "title": "Configuració",

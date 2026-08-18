@@ -307,6 +307,8 @@ enum DocumentVisibility {
   center
   coordinators
   admins
+  /// Read by the assistant only: no repository entry, nobody browses it.
+  ai_only
 }
 
 enum DocumentStatus {
@@ -1175,6 +1177,16 @@ model Document {
   sizeBytes      BigInt             @map("size_bytes")
   checksum       String             @db.Char(64)
   status         DocumentStatus     @default(uploaded)
+  /// Why processing failed, in words a person can act on — never a stack.
+  errorKey       String?            @map("error_key") @db.VarChar(100)
+  errorDetail    String?            @map("error_detail") @db.Text
+  pageCount      Int?               @map("page_count") @db.SmallInt
+  chunkCount     Int?               @map("chunk_count") @db.SmallInt
+  tokenCount     Int?               @map("token_count")
+  /// `text_layer` or `vision`: a scanned PDF costs money to read, and the
+  /// record says which documents did.
+  extractedWith  String?            @map("extracted_with") @db.VarChar(30)
+  processedAt    DateTime?          @map("processed_at")
   uploadedBy     String?            @map("uploaded_by") @db.Char(36)
   createdAt      DateTime           @default(now()) @map("created_at")
   updatedAt      DateTime           @updatedAt @map("updated_at")
@@ -1343,6 +1355,9 @@ model AiMessage {
   content        String      @db.Text
   /// Tool calls and their results, as the transcript replays them.
   blocksJson     Json?       @map("blocks_json")
+  /// The documents this answer rested on, so a reopened conversation still
+  /// shows what it was citing (phase 5B).
+  citationsJson  Json?       @map("citations_json")
   tokensIn       Int?        @map("tokens_in")
   tokensOut      Int?        @map("tokens_out")
   createdAt      DateTime    @default(now()) @map("created_at")

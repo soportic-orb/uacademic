@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  formatBytes,
   formatHours,
   formatPercent,
   formatTime,
@@ -20,6 +21,13 @@ describe('hour and percentage formatting', () => {
     expect(formatPercent('en', null)).toBe('—')
     expect(formatPercent('en', 91.67)).toBe('92%')
     expect(formatPercent('en', 91.67, 1)).toBe('91.7%')
+  })
+})
+
+describe('storage figures', () => {
+  it('speaks in megabytes, because that is how a quota is discussed', () => {
+    expect(formatBytes('en', 2.5 * 1024 * 1024)).toBe('2.5 MB')
+    expect(formatBytes('en', 512 * 1024 * 1024)).toBe('512 MB')
   })
 })
 

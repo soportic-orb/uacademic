@@ -1,39 +1,6 @@
 import { useTranslation } from 'react-i18next'
 
 import { EmptyState } from '../components/feedback/states'
-import { useToast } from '../hooks/use-toast'
-
-/**
- * Screens whose feature lands in a later phase. They still ship their empty
- * state with a suggested action, because "blank page" is not a state.
- */
-function PlaceholderPage({ namespace }: { namespace: 'planning' | 'messages' | 'documents' }) {
-  const { t } = useTranslation()
-  const toast = useToast()
-
-  return (
-    <div className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold text-text">{t(`${namespace}.title`)}</h1>
-      </header>
-
-      <EmptyState
-        title={t(`${namespace}.empty.title`)}
-        description={t(`${namespace}.empty.description`)}
-        actionLabel={t(`${namespace}.empty.action`)}
-        onAction={() => toast.info('toast.comingSoon')}
-      />
-    </div>
-  )
-}
-
-export function MessagesPage() {
-  return <PlaceholderPage namespace="messages" />
-}
-
-export function DocumentsPage() {
-  return <PlaceholderPage namespace="documents" />
-}
 
 export function PlatformPage() {
   const { t } = useTranslation()

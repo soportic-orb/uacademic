@@ -303,11 +303,100 @@
   },
   "documents": {
     "title": "Documentos",
-    "empty": {
-      "title": "Ningún documento",
-      "description": "Sube la normativa del centro para poder citarla desde las reglas de negocio.",
-      "action": "Subir documento"
-    }
+    "subtitle": "Normativa y guías que el asistente tiene presentes",
+    "upload": "Sube un documento",
+    "uploaded": "Documento subido",
+    "updated": "Documento actualizado",
+    "deleted": "Documento eliminado",
+    "empty": "Todavía no hay ningún documento.",
+    "noStudentData": "Estos documentos son normativos y organizativos. No subas listados de alumnos, expedientes ni ningún dato personal de estudiantes.",
+    "fields": {
+      "title": "Título",
+      "type": "Tipo",
+      "scope": "Ámbito",
+      "scopeId": "De qué titulación o asignatura",
+      "academicYear": "Curso académico",
+      "language": "Idioma",
+      "validFrom": "Vigente desde",
+      "validTo": "Vigente hasta",
+      "visibility": "Visibilidad",
+      "file": "Archivo",
+      "validity": "Vigencia",
+      "status": "Estado"
+    },
+    "scope": {
+      "university": "Universidad",
+      "center": "Centro",
+      "degree": "Titulación",
+      "subject": "Asignatura"
+    },
+    "type": {
+      "regulation": "Normativa",
+      "teaching_plan": "Plan docente",
+      "agreement": "Convenio",
+      "guide": "Guía docente",
+      "minutes": "Acta",
+      "other": "Otros"
+    },
+    "visibility": {
+      "ai_only": "Solo para el asistente",
+      "center": "Visible también para el profesorado"
+    },
+    "status": {
+      "uploaded": "Pendiente",
+      "processing": "Procesando",
+      "indexed": "Listo",
+      "failed": "Error",
+      "archived": "Archivado"
+    },
+    "validity": {
+      "all": "Todos",
+      "current": "Vigentes",
+      "expired": "Caducados"
+    },
+    "expired": "Caducado",
+    "expiringSoon": "Caduca pronto",
+    "quota": "{{used}} de {{total}} utilizados",
+    "pages": "{{count}} páginas",
+    "fragments": "{{count}} fragmentos",
+    "reprocess": "Volver a procesar",
+    "reprocessed": "Enviado a procesar de nuevo",
+    "runOcr": "Léelo con la IA",
+    "ocr": {
+      "title": "Este PDF está escaneado",
+      "description": "No tiene capa de texto, así que hay que leerlo con la visión de la IA. Tiene {{pages}} páginas y costará unos {{tokens}} tokens.",
+      "confirm": "Léelo e indéxalo",
+      "disabled": "La lectura con IA está desactivada en este centro.",
+      "tooLong": "Este documento supera el máximo de {{max}} páginas para la lectura con IA."
+    },
+    "viewer": {
+      "title": "Visor",
+      "openFile": "Abrir el archivo original",
+      "fragment": "Fragmento citado"
+    },
+    "precedence": {
+      "moreSpecific": "{{winner}} prevalece sobre {{loser}} porque es de un ámbito más específico.",
+      "newer": "{{winner}} prevalece sobre {{loser}} porque es más reciente."
+    },
+    "sources": "Fuentes consultadas",
+    "citation": "Fuente",
+    "errors": {
+      "unsupportedType": "Este tipo de archivo no se admite. Sube un PDF, DOCX, XLSX, MD o TXT.",
+      "mismatchedType": "El contenido del archivo no coincide con su extensión.",
+      "tooLarge": "El archivo supera el tamaño máximo permitido.",
+      "quotaExceeded": "El centro ha agotado la cuota de almacenamiento de documentos.",
+      "duplicate": "Este archivo ya está subido.",
+      "needsOcr": "Este PDF está escaneado: hay que leerlo con la IA para indexarlo.",
+      "ocrDisabled": "La lectura con IA está desactivada en este centro.",
+      "ocrTooLong": "El documento tiene demasiadas páginas para leerlo con la IA.",
+      "ocrUnavailable": "La IA no está configurada en esta instalación.",
+      "ocrEmpty": "La IA no ha podido extraer texto de este documento.",
+      "corruptFile": "No se ha podido leer el archivo: puede estar dañado.",
+      "emptyDocument": "El documento no contiene texto.",
+      "processingFailed": "No se ha podido procesar el documento."
+    },
+    "actions": "Acciones",
+    "deleteConfirm": "¿Seguro que quieres eliminar «{{title}}»? El asistente dejará de tenerlo en cuenta."
   },
   "settings": {
     "title": "Configuración",

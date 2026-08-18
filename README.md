@@ -216,6 +216,80 @@ These five questions work end to end:
 | "Three teachers are overloaded, rebalance the load"           | `rebalance_workload` moves whole assignments to colleagues with competence and headroom              |
 | "Why can I not put this class on Tuesday at 10?"              | `list_conflicts` evaluates the hypothetical placement with the same engine the planner drags against |
 
+## What phase 5B adds
+
+The documents the assistant is allowed to read — and, above all, until when.
+
+**Metadata is not paperwork.** Every document carries a scope, a type, an
+academic year, a language, a validity window and a visibility. The validity is
+the point: a teaching plan from 2024-25 that nobody retired would keep
+answering questions about 2026-27, so retrieval filters by what is in force on
+the day of the question, and the library shows expiry as a badge rather than as
+a date buried in a detail pane.
+
+**Who may file what** follows who answers for it: the university framework is a
+SUPERADMIN's, a center's criteria are its administration's, a degree's are too,
+and a subject's teaching plan belongs to whoever actually coordinates _that_
+subject — not to any coordinator. Documents filed as `ai_only` never appear in a
+teacher's repository, not in the list and not by guessing the address.
+
+**Files never get a URL.** They are written under `UACADEMIC_UPLOAD_DIR`,
+outside the webroot, and served only through `/api/v1/documents/:id/file` once
+the role and the tenant have been checked — with the read written to the audit
+log and `cache-control: private, no-store` on the way out. What a file _is_ is
+decided by its first bytes, never by its extension, and a SHA-256 checksum
+rejects the same document uploaded twice under two names. Size limit and
+per-center quota are center settings.
+
+**Processing runs in the worker**, never in the request: PDF through unpdf,
+DOCX through mammoth, XLSX through SheetJS, Markdown and text directly. Status
+moves `uploaded → processing → indexed | failed`, and a failure says what
+happened in the reader's language — "this PDF is scanned" — not a stack trace.
+
+**A scanned PDF is offered to the model's vision**, with the estimate on screen
+before the question is put — how many pages, roughly how many tokens — because
+it costs money per page. A center can switch it off entirely and cap the page
+count. (We send the PDF as a `document` block rather than rasterizing it
+ourselves: same outcome, and no native image toolchain on a shared Plesk host.)
+
+**Context is hybrid, and the simple half is the default.** When the relevant
+documents fit inside the injection budget — 150 000 tokens by default — they are
+sent whole, with an Anthropic cache breakpoint so the same corpus is not paid
+for twice: simpler and more faithful than any chunking. Only above that does
+retrieval start — brute-force cosine over Float32 embeddings held in an LRU
+cache per center, fused by reciprocal rank with a MySQL FULLTEXT search, because
+normative questions carry exact terms ("article 14", "240 hores", "professorat
+associat") that a vector alone loses. There is no vector database and no Redis:
+MySQL 8 and Node are the whole machine.
+
+**Embeddings are pluggable.** With nothing configured the worker uses a local
+hashed representation — no network, no dependency, enough for a small library.
+Point `UACADEMIC_EMBEDDING_MODEL_PATH` at a multilingual-e5-small ONNX model
+(with `onnxruntime-node` and `@huggingface/transformers` installed on the
+server) for real local semantics, or `UACADEMIC_EMBEDDING_API_URL` at an
+OpenAI-compatible endpoint if a center accepts sending text to a third party.
+
+**How the assistant is required to use them**
+
+- **It cites, or it says it does not know.** Every claim taken from a document
+  carries the title and the page or section, rendered as a chip that opens the
+  viewer on the exact fragment. Nothing is inferred from silence.
+- **Precedence is said out loud**: subject beats degree beats center beats
+  university, and among equals the most recent in force wins. When two documents
+  genuinely contradict each other, the assistant reports the contradiction
+  instead of quietly picking a side.
+- **Tenant isolation has no exceptions**, and neither do the academic-year and
+  validity filters.
+- **No student data.** The warning is the first thing on the upload form, not
+  fine print under the button.
+- **Everything is audited**: who uploaded, who read the file, and which
+  documents fed each answer — `documents_used_json` in `ai_interactions`, plus
+  the citations stored with the message, so a conversation reopened next week
+  still shows its sources.
+
+Parameter extraction from these documents is phase 5C, and is deliberately not
+here.
+
 ## What phase 4B adds
 
 Getting the timetable out of UAcademic, so a teacher never has to open it to

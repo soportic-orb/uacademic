@@ -91,6 +91,35 @@ export const notificationSettingsSchema = z.object({
 })
 
 /**
+ * The document library the assistant reads from (R9): how much a center may
+ * store, how a file is cut up, and how much of it is handed to the model
+ * whole before retrieval takes over.
+ */
+export const documentSettingsSchema = z.object({
+  /** Total storage one center may use, in megabytes. */
+  quotaMb: z.number().int().min(1).max(100_000).default(2_000),
+  maxFileMb: z.number().int().min(1).max(200).default(25),
+  chunkTokens: z.number().int().min(200).max(4_000).default(800),
+  chunkOverlapTokens: z.number().int().min(0).max(1_000).default(100),
+  /**
+   * Below this many tokens the relevant documents go into the context whole,
+   * with prompt caching, instead of being retrieved in fragments. A teaching
+   * plan is 15-30 pages; retrieval is for the day a center has hundreds.
+   */
+  injectionTokenBudget: z.number().int().min(10_000).max(900_000).default(150_000),
+  /** How many fragments a retrieval hands to the model when it does run. */
+  retrievalChunks: z.number().int().min(3).max(50).default(12),
+  /** Days ahead the UI starts warning that a document is about to expire. */
+  expiryWarningDays: z.number().int().min(1).max(365).default(45),
+  /**
+   * Whether a scanned PDF may be read with the model's vision. It costs real
+   * money per page, so the center opts in and the person is told first.
+   */
+  allowVisionOcr: z.boolean().default(true),
+  visionOcrMaxPages: z.number().int().min(1).max(200).default(40),
+})
+
+/**
  * The assistant (R5, R9). Off until a center turns it on, capped by a token
  * budget it cannot exceed, and warning before it gets there rather than after.
  */
@@ -168,6 +197,7 @@ export const centerSettingsSchema = z.object({
   notifications: notificationSettingsSchema.prefault({}),
   calendar: calendarSettingsSchema.prefault({}),
   ai: aiSettingsSchema.prefault({}),
+  documents: documentSettingsSchema.prefault({}),
 })
 
 export type CenterSettings = z.infer<typeof centerSettingsSchema>
@@ -176,6 +206,7 @@ export type ScheduleSettings = z.infer<typeof scheduleSettingsSchema>
 export type IdentitySettings = z.infer<typeof identitySettingsSchema>
 export type CalendarSettings = z.infer<typeof calendarSettingsSchema>
 export type AiSettings = z.infer<typeof aiSettingsSchema>
+export type DocumentSettings = z.infer<typeof documentSettingsSchema>
 export type NotificationSettings = z.infer<typeof notificationSettingsSchema>
 
 export const defaultCenterSettings: CenterSettings = centerSettingsSchema.parse({})

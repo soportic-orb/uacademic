@@ -119,6 +119,17 @@ const envSchema = z.object({
   ANTHROPIC_API_KEY: z.string().optional(),
   ANTHROPIC_MODEL: z.string().default('claude-opus-5'),
 
+  /**
+   * Embeddings for the document library (phase 5B). With none of these set the
+   * hashed fallback is used and the hybrid search leans on the full-text half:
+   * weaker, but installed everywhere and with nothing leaving the host.
+   */
+  EMBEDDING_MODEL_PATH: z.string().optional(),
+  EMBEDDING_API_URL: z.string().optional(),
+  EMBEDDING_API_KEY: z.string().optional(),
+  EMBEDDING_MODEL: z.string().default('multilingual-e5-small'),
+  EMBEDDING_DIMENSIONS: z.coerce.number().int().min(64).max(4_096).default(512),
+
   /** Message attachments live on disk; there is no object storage on the host. */
   UPLOAD_DIR: z.string().default('./var/uploads'),
 

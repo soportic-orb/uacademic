@@ -15,6 +15,7 @@ import type Anthropic from '@anthropic-ai/sdk'
 import {
   AI_TOOLS,
   type AiProposal,
+  type Citation,
   budgetStatus,
   isWriteTool,
   minimizeForModel,
@@ -24,6 +25,7 @@ import { z } from 'zod'
 import { toJson } from '../../lib/json.js'
 import { prisma } from '../../lib/prisma.js'
 import { anthropic, assistantAvailable, assistantModel } from './client.js'
+import { buildDocumentContext, extractCitations } from './documents.js'
 import type { AiContext } from './context.js'
 import { systemPrompt } from './context.js'
 import { readTools } from './tools/read.js'
@@ -32,6 +34,12 @@ import { writeTools } from './tools/write.js'
 export type AiStreamEvent =
   | { type: 'text'; text: string }
   | { type: 'tool'; name: string; kind: 'read' | 'write' }
+  | {
+      type: 'documents'
+      strategy: 'none' | 'injected' | 'retrieved'
+      items: { documentId: string; title: string; scope: string }[]
+    }
+  | { type: 'citations'; items: Citation[] }
   | { type: 'proposal'; proposalId: string; proposal: AiProposal }
   | { type: 'usage'; tokensIn: number; tokensOut: number; budgetPercent: number }
   | { type: 'done'; messageId: string; conversationId: string }
@@ -59,6 +67,9 @@ export interface AskResult {
   tokensIn: number
   tokensOut: number
   proposals: string[]
+  /** The documents that actually fed this answer (R4: `documents_used_json`). */
+  documents: { documentId: string; title: string; scope: string; chunkIds: string[] }[]
+  citations: Citation[]
 }
 
 /** Tokens this center has spent since the first of the month. */
@@ -107,6 +118,21 @@ export async function ask(input: AskInput): Promise<AskResult> {
     throw new Error('AI budget exceeded')
   }
 
+  // The center's own documents, either whole (with a cache breakpoint) or
+  // retrieved, depending on how much of them there is.
+  const documents = await buildDocumentContext(context, input.question)
+  if (documents.used.length > 0) {
+    emit({
+      type: 'documents',
+      strategy: documents.strategy,
+      items: documents.used.map((entry) => ({
+        documentId: entry.documentId,
+        title: entry.title,
+        scope: entry.scope,
+      })),
+    })
+  }
+
   const history = await prisma().aiMessage.findMany({
     where: { conversationId: input.conversationId },
     orderBy: { createdAt: 'asc' },
@@ -114,6 +140,9 @@ export async function ask(input: AskInput): Promise<AskResult> {
   })
 
   const messages: Anthropic.MessageParam[] = [
+    // The documents lead, and stay byte-identical between questions about the
+    // same subject: that prefix is what the cache is keyed on.
+    ...(documents.blocks.length > 0 ? [{ role: 'user' as const, content: documents.blocks }] : []),
     ...history.map((message) => ({
       role: message.role === 'assistant' ? ('assistant' as const) : ('user' as const),
       content: message.content,
@@ -228,7 +257,17 @@ export async function ask(input: AskInput): Promise<AskResult> {
     messages.push({ role: 'user', content: results })
   }
 
-  return { answer, tokensIn, tokensOut, proposals }
+  const citations = extractCitations(answer, documents.used)
+  if (citations.length > 0) emit({ type: 'citations', items: citations })
+
+  return {
+    answer,
+    tokensIn,
+    tokensOut,
+    proposals,
+    documents: documents.used,
+    citations,
+  }
 }
 
 /**
@@ -241,6 +280,7 @@ export async function recordInteraction(input: {
   question: string
   answer: string
   tools: string[]
+  documents?: { documentId: string; title: string; chunkIds: string[] }[]
   tokensIn: number
   tokensOut: number
 }): Promise<void> {
@@ -251,6 +291,9 @@ export async function recordInteraction(input: {
       prompt: input.question.slice(0, 5_000),
       response: input.answer.slice(0, 20_000),
       toolsUsedJson: toJson(input.tools),
+      // R4/phase 5B: which documents fed this answer, by id and by fragment,
+      // so a normative answer can be reconstructed a year later.
+      documentsUsedJson: toJson(input.documents ?? []),
       tokensIn: input.tokensIn,
       tokensOut: input.tokensOut,
       actionExecuted: false,

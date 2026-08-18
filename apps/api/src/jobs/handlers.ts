@@ -23,6 +23,8 @@ import type { Logger } from 'pino'
 import { toJson } from '../lib/json.js'
 import { type ConnectionRow, pullBusy, syncConnection } from '../services/calendar/sync.js'
 import { purgeExpiredTombstones } from '../services/calendar/tombstones.js'
+import { indexDocument } from '../services/documents/index-service.js'
+import { invalidateVectorCache } from '../services/documents/retrieval.js'
 import { sendMail } from '../services/mailer.js'
 import { sendPush } from '../services/push.js'
 import type { JobHandler } from './worker.js'
@@ -243,6 +245,24 @@ export function buildJobHandlers(client: PrismaClient, logger: Logger): Record<s
         const result = await pullBusy(client, connection as ConnectionRow)
         logger.info({ provider: connection.provider, ...result }, 'calendar.busy.pull')
       }
+    },
+
+    /**
+     * A document, from a file to something the assistant can cite. It runs in
+     * the worker because a 25 MB scan is not an HTTP request's business, and
+     * because reading one with the model's vision takes minutes.
+     */
+    'documents.index': async (payload) => {
+      const job = payload as { documentId: string; useOcr?: boolean }
+      const result = await indexDocument(client, job.documentId, { useOcr: job.useOcr })
+
+      const document = await client.document.findUnique({
+        where: { id: job.documentId },
+        select: { centerId: true },
+      })
+      if (document) invalidateVectorCache(document.centerId)
+
+      logger.info({ documentId: job.documentId, ...result }, 'documents.index')
     },
 
     /**
