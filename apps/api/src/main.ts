@@ -25,7 +25,15 @@ if (!state.installed) {
   const host = process.env.UACADEMIC_HOST ?? '0.0.0.0'
   const port = Number(process.env.UACADEMIC_PORT ?? 3001)
 
-  await installer.listen({ host, port })
+  try {
+    await installer.listen({ host, port })
+  } catch (error) {
+    // A port already taken, or one this account may not bind. Said plainly:
+    // under a process manager the alternative is an unhandled rejection in a
+    // log nobody reads, with the manager reporting the app as running.
+    installer.log.error({ err: error, host, port }, 'the installer could not listen')
+    process.exit(1)
+  }
 
   installer.log.warn(
     { envFile: state.envFile, tokenFile: tokenPath() },
