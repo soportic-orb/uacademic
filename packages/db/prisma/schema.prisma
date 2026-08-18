@@ -324,6 +324,12 @@ enum SettingsSource {
   ai_extraction
 }
 
+enum ExtractionConfidence {
+  high
+  medium
+  low
+}
+
 enum ExtractionStatus {
   pending
   accepted
@@ -389,16 +395,22 @@ model EntraTenant {
 }
 
 model Center {
-  id            String   @id @default(uuid(7)) @db.Char(36)
-  universityId  String   @map("university_id") @db.Char(36)
-  name          String   @db.VarChar(200)
-  code          String   @db.VarChar(32)
-  entraTenantId String?  @map("entra_tenant_id") @db.Char(36)
-  timezone      String   @default("Europe/Madrid") @db.VarChar(64)
-  localeDefault Locale   @default(ca) @map("locale_default")
-  settingsJson  Json?    @map("settings_json")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  id                String   @id @default(uuid(7)) @db.Char(36)
+  universityId      String   @map("university_id") @db.Char(36)
+  name              String   @db.VarChar(200)
+  code              String   @db.VarChar(32)
+  entraTenantId     String?  @map("entra_tenant_id") @db.Char(36)
+  timezone          String   @default("Europe/Madrid") @db.VarChar(64)
+  localeDefault     Locale   @default(ca) @map("locale_default")
+  /// Materialisation of the settings version currently in force. It is only
+  /// ever written by publishing a version (phase 5C): the configuration is
+  /// resolved from `center_settings_versions`, never mutated in place.
+  settingsJson      Json?    @map("settings_json")
+  /// The version this materialisation came from. Null on a center that has
+  /// never published one, which then falls back to the JSON above.
+  settingsVersionId String?  @map("settings_version_id") @db.Char(36)
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
 
   university  University   @relation(fields: [universityId], references: [id], onDelete: Restrict)
   entraTenant EntraTenant? @relation(fields: [entraTenantId], references: [tenantId], onDelete: SetNull)
@@ -430,6 +442,7 @@ model Center {
   documentChunks         DocumentChunk[]
   settingsVersions       CenterSettingsVersion[]
   settingExtractions     SettingExtraction[]
+  settingExtractionRuns  SettingExtractionRun[]
   settingProvenance      SettingProvenance[]
   aiInteractions         AiInteraction[]
   auditLog               AuditLog[]
@@ -489,36 +502,37 @@ model User {
   createdAt    DateTime        @default(now()) @map("created_at")
   updatedAt    DateTime        @updatedAt @map("updated_at")
 
-  centerRoles         UserCenterRole[]
-  coordinatedSubjects SubjectCoordinator[]
-  teacherProfiles     TeacherProfile[]
-  approvedReductions  TeacherReduction[]      @relation("ReductionApprover")
-  publishedVersions   ScheduleVersion[]       @relation("SchedulePublisher")
-  requestedChanges    ChangeRequest[]         @relation("ChangeRequester")
-  targetedChanges     ChangeRequest[]         @relation("ChangeTarget")
-  resolvedChanges     ChangeRequest[]         @relation("ChangeResolver")
-  conversationMembers ConversationMember[]
-  messages            Message[]
-  notifications       Notification[]
-  notificationPrefs   NotificationPref[]
-  pushSubscriptions   PushSubscription[]
-  calendarFeedTokens  CalendarFeedToken[]
-  calendarConnections CalendarConnection[]
-  calendarTombstones  CalendarTombstone[]
-  consents            ConsentRecord[]
-  aiConversations     AiConversation[]
-  aiProposals         AiProposal[]           @relation("ProposalAuthor")
-  resolvedProposals   AiProposal[]           @relation("ProposalResolver")
-  uploadedDocuments   Document[]              @relation("DocumentUploader")
-  approvedSettings    CenterSettingsVersion[] @relation("SettingsApprover")
-  resolvedExtractions SettingExtraction[]     @relation("ExtractionResolver")
-  aiInteractions      AiInteraction[]
-  auditEntries        AuditLog[]
-  appliedAppVersions  AppVersion[]            @relation("VersionApplier")
-  localCredential     LocalCredential?
-  authSessions        AuthSession[]
-  createdImports      ImportBatch[]           @relation("ImportCreator")
-  appliedImports      ImportBatch[]           @relation("ImportApplier")
+  centerRoles          UserCenterRole[]
+  coordinatedSubjects  SubjectCoordinator[]
+  teacherProfiles      TeacherProfile[]
+  approvedReductions   TeacherReduction[]      @relation("ReductionApprover")
+  publishedVersions    ScheduleVersion[]       @relation("SchedulePublisher")
+  requestedChanges     ChangeRequest[]         @relation("ChangeRequester")
+  targetedChanges      ChangeRequest[]         @relation("ChangeTarget")
+  resolvedChanges      ChangeRequest[]         @relation("ChangeResolver")
+  conversationMembers  ConversationMember[]
+  messages             Message[]
+  notifications        Notification[]
+  notificationPrefs    NotificationPref[]
+  pushSubscriptions    PushSubscription[]
+  calendarFeedTokens   CalendarFeedToken[]
+  calendarConnections  CalendarConnection[]
+  calendarTombstones   CalendarTombstone[]
+  consents             ConsentRecord[]
+  aiConversations      AiConversation[]
+  aiProposals          AiProposal[]            @relation("ProposalAuthor")
+  resolvedProposals    AiProposal[]            @relation("ProposalResolver")
+  uploadedDocuments    Document[]              @relation("DocumentUploader")
+  approvedSettings     CenterSettingsVersion[] @relation("SettingsApprover")
+  resolvedExtractions  SettingExtraction[]     @relation("ExtractionResolver")
+  requestedExtractions SettingExtractionRun[]  @relation("ExtractionRequester")
+  aiInteractions       AiInteraction[]
+  auditEntries         AuditLog[]
+  appliedAppVersions   AppVersion[]            @relation("VersionApplier")
+  localCredential      LocalCredential?
+  authSessions         AuthSession[]
+  createdImports       ImportBatch[]           @relation("ImportCreator")
+  appliedImports       ImportBatch[]           @relation("ImportApplier")
 
   @@index([status])
   @@map("users")
@@ -584,11 +598,11 @@ model Subject {
   academicYear AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
   degree       Degree       @relation(fields: [degreeId], references: [id], onDelete: Restrict)
 
-  coordinators  SubjectCoordinator[]
+  coordinators    SubjectCoordinator[]
   aiConversations AiConversation[]
-  groups        Group[]
-  skills        TeacherSkill[]
-  conversations Conversation[]
+  groups          Group[]
+  skills          TeacherSkill[]
+  conversations   Conversation[]
 
   @@unique([centerId, academicYearId, code])
   @@index([centerId, academicYearId])
@@ -1197,6 +1211,7 @@ model Document {
 
   chunks           DocumentChunk[]
   extractions      SettingExtraction[]
+  extractionRuns   SettingExtractionRun[]
   settingsVersions CenterSettingsVersion[]
   provenance       SettingProvenance[]
 
@@ -1254,30 +1269,65 @@ model CenterSettingsVersion {
 /// One proposed parameter value extracted from a regulatory document by the AI.
 /// R5: nothing is applied until a human resolves it.
 model SettingExtraction {
-  id                String           @id @default(uuid(7)) @db.Char(36)
-  centerId          String           @map("center_id") @db.Char(36)
-  documentId        String           @map("document_id") @db.Char(36)
-  block             String           @db.VarChar(100)
-  paramKey          String           @map("param_key") @db.VarChar(150)
-  proposedValueJson Json             @map("proposed_value_json")
-  unit              String?          @db.VarChar(50)
-  currentValueJson  Json?            @map("current_value_json")
-  confidence        Decimal          @db.Decimal(3, 2)
-  citationJson      Json?            @map("citation_json")
-  reasoning         String?          @db.Text
-  status            ExtractionStatus @default(pending)
-  resolvedValueJson Json?            @map("resolved_value_json")
-  resolvedBy        String?          @map("resolved_by") @db.Char(36)
-  resolvedAt        DateTime?        @map("resolved_at")
-  createdAt         DateTime         @default(now()) @map("created_at")
+  id                String               @id @default(uuid(7)) @db.Char(36)
+  centerId          String               @map("center_id") @db.Char(36)
+  runId             String               @map("run_id") @db.Char(36)
+  documentId        String               @map("document_id") @db.Char(36)
+  block             String               @db.VarChar(100)
+  paramKey          String               @map("param_key") @db.VarChar(150)
+  /// Null when the document does not state the parameter: a `not_found` row
+  /// keeps its place in the run so the wizard can list what is still manual.
+  proposedValueJson Json?                @map("proposed_value_json")
+  unit              String?              @db.VarChar(50)
+  currentValueJson  Json?                @map("current_value_json")
+  /// Derived from whether the quote is literal and unique in the document —
+  /// never from the model's own estimate of itself (phase 5C).
+  confidence        ExtractionConfidence @default(low)
+  citationJson      Json?                @map("citation_json")
+  reasoning         String?              @db.Text
+  /// The "except when…" of the article, kept even when it cannot be modelled.
+  exceptionNote     String?              @map("exception_note") @db.Text
+  /// Somebody set this parameter by hand: this is a proposed change, and it
+  /// never overwrites their decision on its own.
+  manualOverride    Boolean              @default(false) @map("manual_override")
+  status            ExtractionStatus     @default(pending)
+  resolvedValueJson Json?                @map("resolved_value_json")
+  resolvedBy        String?              @map("resolved_by") @db.Char(36)
+  resolvedAt        DateTime?            @map("resolved_at")
+  createdAt         DateTime             @default(now()) @map("created_at")
 
-  center   Center   @relation(fields: [centerId], references: [id], onDelete: Cascade)
-  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  resolver User?    @relation("ExtractionResolver", fields: [resolvedBy], references: [id], onDelete: SetNull)
+  center   Center               @relation(fields: [centerId], references: [id], onDelete: Cascade)
+  run      SettingExtractionRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  document Document             @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  resolver User?                @relation("ExtractionResolver", fields: [resolvedBy], references: [id], onDelete: SetNull)
 
   @@index([centerId, status])
   @@index([documentId, paramKey])
+  @@index([runId, block])
   @@map("setting_extractions")
+}
+
+/// One reading of one document: eight blocks, each its own job, so a failure
+/// costs a block rather than the whole regulation.
+model SettingExtractionRun {
+  id          String    @id @default(uuid(7)) @db.Char(36)
+  centerId    String    @map("center_id") @db.Char(36)
+  documentId  String    @map("document_id") @db.Char(36)
+  requestedBy String?   @map("requested_by") @db.Char(36)
+  /// Per-block state: pending | running | ready | failed, with its error key.
+  blocksJson  Json      @map("blocks_json")
+  /// Set when the administrator applies the run; a run is applied once.
+  appliedAt   DateTime? @map("applied_at")
+  appliedBy   String?   @map("applied_by") @db.Char(36)
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  center      Center              @relation(fields: [centerId], references: [id], onDelete: Cascade)
+  document    Document            @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  requester   User?               @relation("ExtractionRequester", fields: [requestedBy], references: [id], onDelete: SetNull)
+  extractions SettingExtraction[]
+
+  @@index([centerId, createdAt])
+  @@map("setting_extraction_runs")
 }
 
 /// Backs the "why does this rule exist?" link next to every constraint.
@@ -1337,10 +1387,10 @@ model AiConversation {
   lastMessageAt DateTime @default(now()) @map("last_message_at")
   createdAt     DateTime @default(now()) @map("created_at")
 
-  center   Center      @relation(fields: [centerId], references: [id], onDelete: Cascade)
-  user     User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  subject  Subject?    @relation(fields: [subjectId], references: [id], onDelete: SetNull)
-  messages AiMessage[]
+  center    Center       @relation(fields: [centerId], references: [id], onDelete: Cascade)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subject   Subject?     @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  messages  AiMessage[]
   proposals AiProposal[]
 
   @@index([userId, lastMessageAt])
@@ -1349,18 +1399,18 @@ model AiConversation {
 }
 
 model AiMessage {
-  id             String      @id @default(uuid(7)) @db.Char(36)
-  conversationId String      @map("conversation_id") @db.Char(36)
+  id             String   @id @default(uuid(7)) @db.Char(36)
+  conversationId String   @map("conversation_id") @db.Char(36)
   role           AiRole
-  content        String      @db.Text
+  content        String   @db.Text
   /// Tool calls and their results, as the transcript replays them.
-  blocksJson     Json?       @map("blocks_json")
+  blocksJson     Json?    @map("blocks_json")
   /// The documents this answer rested on, so a reopened conversation still
   /// shows what it was citing (phase 5B).
-  citationsJson  Json?       @map("citations_json")
-  tokensIn       Int?        @map("tokens_in")
-  tokensOut      Int?        @map("tokens_out")
-  createdAt      DateTime    @default(now()) @map("created_at")
+  citationsJson  Json?    @map("citations_json")
+  tokensIn       Int?     @map("tokens_in")
+  tokensOut      Int?     @map("tokens_out")
+  createdAt      DateTime @default(now()) @map("created_at")
 
   conversation AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 

@@ -1,9 +1,10 @@
-import { type CenterSettings, parseCenterSettings } from '@uacademic/shared'
+import type { CenterSettings } from '@uacademic/shared'
 import type { FastifyInstance } from 'fastify'
 
 import { AppError } from '../../lib/errors.js'
 import { prisma } from '../../lib/prisma.js'
 import { requireCenterScope, requireUser } from '../../plugins/context.js'
+import { currentSettings, currentVersionId } from '../../services/settings/versions.js'
 
 interface CenterDto {
   id: string
@@ -19,6 +20,7 @@ interface SettingsDto {
   /** R9: where each parameter comes from, so a blocking rule can be explained. */
   provenance: {
     paramKey: string
+    documentId: string | null
     documentTitle: string | null
     page: number | null
     section: string | null
@@ -54,16 +56,23 @@ export function registerCenterRoutes(app: FastifyInstance): void {
     const center = await prisma().center.findUnique({ where: { id: centerId } })
     if (!center) throw AppError.notFound()
 
-    const provenance = await db.settingProvenance.findMany({
-      include: { document: { select: { title: true } } },
-      orderBy: { paramKey: 'asc' },
-    })
+    // Only the version in force: a center that has published three of them
+    // has three sets of citations, and the older two explain last year.
+    const versionId = await currentVersionId(prisma(), centerId)
+    const provenance = versionId
+      ? await db.settingProvenance.findMany({
+          where: { settingsVersionId: versionId },
+          include: { document: { select: { title: true } } },
+          orderBy: { paramKey: 'asc' },
+        })
+      : []
 
     return {
       centerId,
-      settings: parseCenterSettings(center.settingsJson),
+      settings: await currentSettings(prisma(), centerId),
       provenance: provenance.map((record) => ({
         paramKey: record.paramKey,
+        documentId: record.documentId,
         documentTitle: record.document?.title ?? null,
         page: record.page,
         section: record.section,

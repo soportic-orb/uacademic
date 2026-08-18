@@ -216,6 +216,74 @@ These five questions work end to end:
 | "Three teachers are overloaded, rebalance the load"           | `rebalance_workload` moves whole assignments to colleagues with competence and headroom              |
 | "Why can I not put this class on Tuesday at 10?"              | `list_conflicts` evaluates the hypothetical placement with the same engine the planner drags against |
 
+## What phase 5C adds
+
+The center's own regulation, read into its configuration — with the article
+behind every parameter.
+
+**The point is the walk backwards.** Six months after setup, the planner
+refuses an assignment because it "exceeds the contracted capacity". The
+coordinator clicks the refusal, and gets: which parameter says so, what it is
+set to, and the quote from _their_ regulation that put that number there — one
+more click and the document opens at that page with the paragraph highlighted.
+Everything else in this phase exists to keep that chain unbroken, and it is
+stored in `setting_provenance`, version by version.
+
+**The catalogue** is what the assistant looks for and what the interface shows:
+capacity and commitment, contractual categories, recognised reductions, the
+four cuts of the load traffic light, timetable rules, what else counts as
+teaching, the shape of the academic year, and the process deadlines. Categories
+and reductions are collections, not enums — "Asociado 6+6" exists in one
+university and not in the next, and a center that cannot name its own staff
+would have to lie about them.
+
+**How the reading works.** The document goes into the context **whole**, with a
+cache breakpoint: a table of categories only means something next to the
+paragraph that introduces it, and this is the case injection exists for, not
+retrieval. It runs **one call per block** — eight independent, retriable jobs —
+because a single call covering forty parameters is worse at all of them. The
+answer is forced through a tool schema and validated again with Zod on arrival;
+whatever does not validate is dropped in silence.
+
+**The five rules that make it safe to use**
+
+1. **Nothing is applied on its own**, however confident the reading.
+   Confirmation is per parameter, and it writes a new settings version.
+2. **No citation, no proposal.** The quote is checked against the indexed text
+   of the document. A quote that is not there means the proposal is discarded —
+   whatever produced it, it is not a reading of this regulation. A parameter
+   with no support comes back as `not_found`, keeps its default, and ends up on
+   the "still to configure by hand" list. Inventing a plausible number would be
+   the worst possible failure here: it would look right.
+3. **Contradictions are shown, not resolved.** Two articles, two values, two
+   citations, and a person chooses.
+4. **Exceptions travel as a note.** Almost every rule has its "except when…",
+   and it is attached to the parameter even when it cannot be modelled.
+5. **A parameter edited by hand is never overwritten.** A later reading
+   proposes a change to it, and the bulk accept will not touch it.
+
+**Confidence is derived, not self-reported.** The model is not a reliable judge
+of its own certainty, so the level comes from the evidence: the quote appears
+in the document exactly once (high), more than once (medium — the citation does
+not point anywhere in particular), or only its opening survives (low). Anything
+else is not shown at all.
+
+**Configuration is a history.** Every change writes a row in
+`center_settings_versions` with its source (`manual` or `ai_extraction`), the
+document it came from and who approved it; `centers.settings_json` is the
+materialisation of the version in force, written only by publishing one. That
+is what makes "under which rules was last year's timetable generated?"
+answerable, and what turns a new edition of a regulation into a short diff to
+review rather than a form to fill in again.
+
+**The wizard** walks one block per screen. Each row shows the parameter by its
+plain-language name — never `capacity.maxTeachingHoursYear` — with an editable
+value, what the confidence actually means, the citation folded away until it is
+wanted, and accept / edit / reject. "Accept every high-confidence row of this
+block" is one click that deliberately skips contradictions and hand-edited
+parameters. The last screen says what was applied, what was refused, and what
+is still waiting for a human, with a link to each pending field.
+
 ## What phase 5B adds
 
 The documents the assistant is allowed to read — and, above all, until when.

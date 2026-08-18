@@ -16,6 +16,7 @@ import { registerAbsenceRoutes } from './modules/absences/routes.js'
 import { registerAuditRoutes } from './modules/audit/routes.js'
 import { registerAiRoutes } from './modules/ai/routes.js'
 import { registerDocumentRoutes } from './modules/documents/routes.js'
+import { registerSettingsRoutes } from './modules/settings/routes.js'
 import { registerCalendarRoutes } from './modules/calendar/routes.js'
 import { registerChangeRoutes } from './modules/changes/routes.js'
 import { registerMessagingRoutes } from './modules/messaging/routes.js'
@@ -109,6 +110,7 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
   registerAuditRoutes(app)
   registerAiRoutes(app)
   registerDocumentRoutes(app)
+  registerSettingsRoutes(app)
   registerEventRoutes(app, bus)
   registerAdminResources(app)
   registerUserRoutes(app)

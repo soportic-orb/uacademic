@@ -16,6 +16,7 @@ import { useTranslation } from 'react-i18next'
 import { Button } from '../../components/ui/button'
 import { Card, CardBody, CardHeader } from '../../components/ui/card'
 import { useToast } from '../../hooks/use-toast'
+import { WhyThisRule } from '../settings/why-this-rule'
 import { ApiRequestError } from '../../lib/api'
 import { cn } from '../../lib/cn'
 import {
@@ -62,6 +63,14 @@ export function PlannerGrid({
   const [held, setHeld] = useState<HeldSession | null>(null)
   const [cursor, setCursor] = useState({ day: 0, slot: 0 })
   const [announcement, setAnnouncement] = useState('')
+  /**
+   * The last refusal, kept on screen. A toast says what happened; this says
+   * why, and links to the article of the center's regulation behind it.
+   */
+  const [blocked, setBlocked] = useState<{
+    messageKey: string
+    params: Record<string, string | number>
+  } | null>(null)
 
   const geometry = useMemo(() => gridGeometry(version), [version])
   const engine = useMemo(() => buildScheduleContext(context), [context])
@@ -87,6 +96,7 @@ export function PlannerGrid({
 
     if (evaluation?.status === 'blocked') {
       const reason = evaluation.violations[0]
+      setBlocked(reason ? { messageKey: reason.messageKey, params: reason.params } : null)
       setAnnouncement(
         t('planner.dropRejected', {
           reason: reason ? t(reason.messageKey, reason.params) : '',
@@ -417,6 +427,16 @@ export function PlannerGrid({
             <p aria-live="polite" className="sr-only">
               {announcement}
             </p>
+
+            {blocked ? (
+              <div
+                role="alert"
+                className="rounded-control border border-danger/30 bg-danger/10 p-3 text-sm text-text"
+              >
+                <p className="text-danger">{t(blocked.messageKey, blocked.params)}</p>
+                <WhyThisRule messageKey={blocked.messageKey} />
+              </div>
+            ) : null}
 
             <p className="text-xs text-text-muted">
               <span className="font-medium text-text">{t('planner.keyboardTitle')}: </span>

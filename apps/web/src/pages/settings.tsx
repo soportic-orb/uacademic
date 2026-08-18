@@ -1,11 +1,15 @@
 import { SUPPORTED_LOCALES } from '@uacademic/shared'
 import type { AppLocale } from '@uacademic/shared'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { CardSkeleton, ErrorState } from '../components/feedback/states'
+import { useRoles } from '../app/use-roles'
 import { Card, CardBody, CardHeader } from '../components/ui/card'
 import { Button } from '../components/ui/button'
-import { useCenterSettings } from '../hooks/use-api'
+import { ExtractionCard } from '../features/settings/extraction-card'
+import { ExtractionWizard } from '../features/settings/extraction-wizard'
+import { ParametersCard } from '../features/settings/parameters-card'
+import { VersionsCard } from '../features/settings/versions-card'
 import { useToast } from '../hooks/use-toast'
 import { changeLocale, currentLocale } from '../i18n'
 import { type ThemePreference, useThemeStore } from '../stores/theme'
@@ -15,10 +19,15 @@ const THEMES: ThemePreference[] = ['light', 'dark', 'system']
 export function SettingsPage() {
   const { t } = useTranslation()
   const toast = useToast()
+  const roles = useRoles()
   const preference = useThemeStore((state) => state.preference)
   const setPreference = useThemeStore((state) => state.setPreference)
-  const settings = useCenterSettings()
   const locale = currentLocale()
+  const [runId, setRunId] = useState<string | null>(null)
+
+  // Reading a regulation into the configuration is the administration's job:
+  // it is their center's rules, and their signature on every parameter.
+  const administers = roles.some((role) => ['SUPERADMIN', 'CENTER_ADMIN'].includes(role))
 
   return (
     <div className="space-y-6">
@@ -68,41 +77,24 @@ export function SettingsPage() {
         </CardBody>
       </Card>
 
-      <Card className="max-w-3xl">
-        <CardHeader
-          title={t('settings.provenanceTitle')}
-          description={t('settings.provenanceHint')}
-        />
-        <CardBody>
-          {settings.isPending ? (
-            <CardSkeleton />
-          ) : settings.isError ? (
-            <ErrorState onRetry={() => void settings.refetch()} />
+      {administers ? (
+        <div className="space-y-6">
+          {runId ? (
+            <ExtractionWizard runId={runId} onFinished={() => setRunId(null)} />
           ) : (
-            <dl className="divide-y divide-border">
-              {settings.data.provenance.map((record) => (
-                <div key={record.paramKey} className="py-3">
-                  <dt className="font-mono text-sm text-text">{record.paramKey}</dt>
-                  <dd className="mt-1 text-sm text-text-muted">
-                    {record.quote ? <q>{record.quote}</q> : null}
-                    {record.documentTitle ? (
-                      <span className="mt-1 block text-xs">
-                        {[
-                          record.documentTitle,
-                          record.section,
-                          record.page ? `p. ${record.page}` : null,
-                        ]
-                          .filter(Boolean)
-                          .join(' · ')}
-                      </span>
-                    ) : null}
-                  </dd>
-                </div>
-              ))}
-            </dl>
+            <ExtractionCard onOpenRun={setRunId} />
           )}
-        </CardBody>
-      </Card>
+
+          <VersionsCard />
+
+          <div>
+            <h2 className="text-lg font-semibold text-text">{t('settings.provenanceTitle')}</h2>
+            <p className="mt-1 text-sm text-text-muted">{t('settings.provenanceHint')}</p>
+          </div>
+
+          <ParametersCard />
+        </div>
+      ) : null}
     </div>
   )
 }

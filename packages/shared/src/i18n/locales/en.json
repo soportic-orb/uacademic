@@ -404,7 +404,298 @@
     "appearance": "Appearance",
     "languageSection": "Interface language",
     "provenanceHint": "Every center parameter can cite the regulatory document it came from.",
-    "provenanceTitle": "Parameter provenance"
+    "provenanceTitle": "Parameter provenance",
+    "params": {
+      "capacity.maxTeachingHoursYear": {
+        "label": "Maximum teaching hours per year",
+        "help": "The ceiling of class hours one person may be assigned in a year."
+      },
+      "capacity.referenceFullTimeHours": {
+        "label": "Hours of a full-time commitment",
+        "help": "What \"full time\" means in this center, before any reduction."
+      },
+      "capacity.minTeachingHoursYear": {
+        "label": "Minimum teaching hours per year",
+        "help": "Below this, a contract counts as under-used."
+      },
+      "capacity.creditToHours": {
+        "label": "Hours per ECTS credit",
+        "help": "How many teaching hours one credit is worth when computing load."
+      },
+      "capacity.hoursPerGroupType.theory": {
+        "label": "Lecture hour factor",
+        "help": "What an hour of lecture counts for. 1 means hour for hour."
+      },
+      "capacity.hoursPerGroupType.seminar": {
+        "label": "Seminar hour factor",
+        "help": "What an hour of seminar counts for, next to a lecture hour."
+      },
+      "capacity.hoursPerGroupType.lab": {
+        "label": "Laboratory hour factor",
+        "help": "Many centers count an hour of lab for more than one hour."
+      },
+      "capacity.hoursPerGroupType.practicum": {
+        "label": "Practicum hour factor",
+        "help": "What an hour of practicum counts for within the load."
+      },
+      "capacity.hoursPerGroupType.tutoring": {
+        "label": "Tutoring hour factor",
+        "help": "What an hour of group tutoring counts for."
+      },
+      "categories": {
+        "label": "Contractual categories",
+        "help": "The center’s own staff categories, with their capacity and teaching ceiling, under the names the center uses."
+      },
+      "reductions": {
+        "label": "Recognised reductions",
+        "help": "The catalogue of reductions: reason, hours, cap, whether they stack and who approves them."
+      },
+      "load.thresholds.underBelow": {
+        "label": "Under-load below this %",
+        "help": "The first cut of the traffic light: below it, the load counts as under-used."
+      },
+      "load.thresholds.optimalUpTo": {
+        "label": "Optimal up to this %",
+        "help": "The second cut: the green band ends here."
+      },
+      "load.thresholds.limitUpTo": {
+        "label": "At the limit up to this %",
+        "help": "The third cut: above it, the load counts as overload."
+      },
+      "load.maxOverloadPercent": {
+        "label": "Hard overload ceiling",
+        "help": "The planner refuses any assignment beyond this percentage."
+      },
+      "schedule.defaultSessionMinutes": {
+        "label": "Standard session length",
+        "help": "How many minutes a class runs when nothing says otherwise."
+      },
+      "schedule.dayStart": {
+        "label": "Center opening time",
+        "help": "The earliest hour teaching may be scheduled."
+      },
+      "schedule.dayEnd": {
+        "label": "Center closing time",
+        "help": "The latest hour a class may end."
+      },
+      "schedule.minBreakMinutes": {
+        "label": "Minimum break between sessions",
+        "help": "Time that must stay free between two consecutive classes of the same person."
+      },
+      "schedule.maxConsecutiveHours": {
+        "label": "Maximum consecutive hours",
+        "help": "How many class hours one person may teach without a break."
+      },
+      "schedule.maxDailyHours": {
+        "label": "Maximum hours in a day",
+        "help": "One person’s teaching ceiling for a single day."
+      },
+      "schedule.maxWeeklyDays": {
+        "label": "Maximum days per week",
+        "help": "How many different days one person may be asked to come in."
+      },
+      "schedule.buildingTransferMinutes": {
+        "label": "Building transfer margin",
+        "help": "Minutes allowed for walking between buildings between two classes."
+      },
+      "schedule.workingWeekdays": {
+        "label": "Teaching days of the week",
+        "help": "The days the center schedules teaching on."
+      },
+      "schedule.teachingWeeks": {
+        "label": "Teaching weeks in the year",
+        "help": "What turns annual hours into the weekly ceiling the planner enforces."
+      },
+      "workload.tfgHoursPerStudent": {
+        "label": "Hours per final-year project",
+        "help": "Hours counted for each bachelor’s final project supervised."
+      },
+      "workload.tfgMaxHours": {
+        "label": "Cap on final-year project hours",
+        "help": "The most that may be counted for supervising final projects in a year."
+      },
+      "workload.tfmHoursPerStudent": {
+        "label": "Hours per master’s thesis",
+        "help": "Hours counted for each master’s thesis supervised."
+      },
+      "workload.tfmMaxHours": {
+        "label": "Cap on master’s thesis hours",
+        "help": "The most that may be counted for supervising theses in a year."
+      },
+      "workload.weeklyTutoringHours": {
+        "label": "Weekly tutoring hours",
+        "help": "Tutoring hours a full-time commitment owes each week."
+      },
+      "workload.tutoringProportionalToDedication": {
+        "label": "Tutoring scales with dedication",
+        "help": "Whether part-time dedication reduces tutoring hours proportionally."
+      },
+      "workload.degreeCoordinationHours": {
+        "label": "Hours for coordinating a degree",
+        "help": "What is counted for whoever coordinates a degree."
+      },
+      "workload.subjectCoordinationHours": {
+        "label": "Hours for coordinating a subject",
+        "help": "What is counted for whoever coordinates a subject."
+      },
+      "workload.externalPracticeHoursPerStudent": {
+        "label": "Hours per external placement",
+        "help": "Hours for each student supervised on placement."
+      },
+      "workload.externalPracticeMaxHours": {
+        "label": "Cap on placement hours",
+        "help": "The most that may be counted for placement supervision in a year."
+      },
+      "academicCalendar.firstSemesterStart": {
+        "label": "First semester starts",
+        "help": "The first teaching day of the semester."
+      },
+      "academicCalendar.firstSemesterEnd": {
+        "label": "First semester ends",
+        "help": "The last teaching day of the semester."
+      },
+      "academicCalendar.secondSemesterStart": {
+        "label": "Second semester starts",
+        "help": "The first teaching day of the second semester."
+      },
+      "academicCalendar.secondSemesterEnd": {
+        "label": "Second semester ends",
+        "help": "The last teaching day of the second semester."
+      },
+      "academicCalendar.examPeriods": {
+        "label": "Exam periods",
+        "help": "The date ranges set aside for assessment."
+      },
+      "academicCalendar.holidays": {
+        "label": "Holidays",
+        "help": "The days with no teaching."
+      },
+      "workflow.podPublicationDate": {
+        "label": "Teaching plan publication date",
+        "help": "The date the teaching plan has to be published by."
+      },
+      "workflow.changeRequestNoticeDays": {
+        "label": "Minimum notice for a class change",
+        "help": "How many days ahead a change has to be requested."
+      },
+      "workflow.coordinatorApprovesChanges": {
+        "label": "Coordination’s approval is binding",
+        "help": "When it is not, coordination is only informed and the change goes through."
+      }
+    },
+    "blocks": {
+      "A": {
+        "label": "Capacity and commitment",
+        "help": "The hours a full-time commitment owes, and how they are counted."
+      },
+      "B": {
+        "label": "Contractual categories",
+        "help": "The center’s own staff figures, names and limits included."
+      },
+      "C": {
+        "label": "Reductions",
+        "help": "What takes hours off, and who has to approve it."
+      },
+      "D": {
+        "label": "Load traffic light",
+        "help": "The four cuts that decide each teacher’s colour."
+      },
+      "E": {
+        "label": "Timetable rules",
+        "help": "Windows, breaks and daily limits of the timetable."
+      },
+      "F": {
+        "label": "What else counts",
+        "help": "What counts as teaching besides classes."
+      },
+      "G": {
+        "label": "Academic calendar",
+        "help": "Semesters, exams and holidays of the year."
+      },
+      "H": {
+        "label": "Process rules",
+        "help": "Deadlines, and who has to approve what."
+      }
+    },
+    "extraction": {
+      "title": "Read the regulation",
+      "subtitle": "The assistant proposes the center’s parameters with the quote behind each one. Nothing is applied until you confirm it.",
+      "start": "Read this document",
+      "startHint": "Pick a regulation document that has been indexed.",
+      "started": "The document is being read",
+      "running": "Reading the block…",
+      "noRuns": "No regulation has been read yet.",
+      "runOf": "Reading of {{document}}",
+      "blockState": {
+        "pending": "Queued",
+        "running": "Reading",
+        "ready": "Ready",
+        "failed": "Failed"
+      },
+      "confidence": {
+        "label": "Confidence",
+        "high": "Literal quote, found once",
+        "medium": "The quote appears more than once",
+        "low": "Partial quote: check it"
+      },
+      "proposed": "Proposed value",
+      "current": "Current value",
+      "unchanged": "Matches the current value",
+      "manualOverride": "This parameter was edited by hand: the reading only proposes a change to it.",
+      "conflict": "Two articles disagree. Pick one.",
+      "exception": "Exception stated in the rule",
+      "reasoning": "Reading notes",
+      "showCitation": "Show the quote",
+      "hideCitation": "Hide the quote",
+      "openViewer": "Open the document at this point",
+      "accept": "Accept",
+      "edit": "Edit",
+      "reject": "Reject",
+      "acceptAllHigh": "Accept every high-confidence row of this block",
+      "accepted": "Accepted",
+      "edited": "Edited",
+      "rejected": "Rejected",
+      "resolved": "Decision saved",
+      "acceptedCount": "{{count}} parameters accepted",
+      "apply": "Apply the configuration",
+      "applied": "Configuration applied",
+      "summary": {
+        "title": "Summary",
+        "applied": "Applied",
+        "rejected": "Rejected",
+        "pending": "Still to configure by hand",
+        "none": "Nothing in this list.",
+        "configure": "Configure it"
+      },
+      "notFound": {
+        "absent": "The document says nothing about this parameter.",
+        "noCitation": "No supporting text was found, and without a citation there is no proposal.",
+        "noValue": "The document mentions it but gives no figure."
+      },
+      "errors": {
+        "documentNotIndexed": "This document has not been indexed yet.",
+        "failed": "This block could not be read. Try again."
+      }
+    },
+    "versions": {
+      "title": "Configuration history",
+      "hint": "Every change leaves a version, so the rules a timetable was generated under can still be read.",
+      "current": "In force",
+      "source": {
+        "manual": "Edited by hand",
+        "ai_extraction": "Read from the regulation"
+      },
+      "approvedBy": "Approved by {{name}}",
+      "changes": "Changes against the configuration in force",
+      "noChanges": "No difference from the configuration in force."
+    },
+    "why": {
+      "label": "Why does this rule apply?",
+      "from": "It comes from the parameter “{{param}}”",
+      "value": "Current value: {{value}}",
+      "noSource": "This parameter comes from no regulation: it is a default, or the center’s own decision.",
+      "open": "Open the regulation"
+    }
   },
   "platform": {
     "title": "Platform",

@@ -404,7 +404,298 @@
     "appearance": "Aparença",
     "languageSection": "Idioma de la interfície",
     "provenanceHint": "Cada paràmetre del centre pot citar el document normatiu del qual prové.",
-    "provenanceTitle": "Procedència dels paràmetres"
+    "provenanceTitle": "Procedència dels paràmetres",
+    "params": {
+      "capacity.maxTeachingHoursYear": {
+        "label": "Hores lectives màximes a l’any",
+        "help": "El sostre d’hores de classe que una persona pot tenir assignades en un curs."
+      },
+      "capacity.referenceFullTimeHours": {
+        "label": "Hores d’una dedicació completa",
+        "help": "Què vol dir “temps complet” en aquest centre, abans de cap reducció."
+      },
+      "capacity.minTeachingHoursYear": {
+        "label": "Hores lectives mínimes a l’any",
+        "help": "Per sota d’aquest valor es considera que un contracte està infrautilitzat."
+      },
+      "capacity.creditToHours": {
+        "label": "Hores per crèdit ECTS",
+        "help": "Quantes hores de docència val un crèdit quan es calcula la càrrega."
+      },
+      "capacity.hoursPerGroupType.theory": {
+        "label": "Factor de les classes de teoria",
+        "help": "Quant compta una hora de teoria. 1 vol dir una hora per hora."
+      },
+      "capacity.hoursPerGroupType.seminar": {
+        "label": "Factor dels seminaris",
+        "help": "Quant compta una hora de seminari respecte d’una de teoria."
+      },
+      "capacity.hoursPerGroupType.lab": {
+        "label": "Factor del laboratori",
+        "help": "Molts centres compten una hora de laboratori per més d’una hora."
+      },
+      "capacity.hoursPerGroupType.practicum": {
+        "label": "Factor de les pràctiques",
+        "help": "Quant compta una hora de pràctiques dins la càrrega."
+      },
+      "capacity.hoursPerGroupType.tutoring": {
+        "label": "Factor de la tutorització",
+        "help": "Quant compta una hora de tutorització de grup."
+      },
+      "categories": {
+        "label": "Categories contractuals",
+        "help": "Les figures del centre amb la seva capacitat i el seu màxim lectiu, amb els noms que fa servir el centre."
+      },
+      "reductions": {
+        "label": "Reduccions reconegudes",
+        "help": "Catàleg de reduccions: motiu, hores, topall, si s’acumulen i qui les aprova."
+      },
+      "load.thresholds.underBelow": {
+        "label": "Per sota d’aquest % la càrrega és baixa",
+        "help": "El primer tall del semàfor: fins aquí es considera càrrega infrautilitzada."
+      },
+      "load.thresholds.optimalUpTo": {
+        "label": "Fins a aquest % la càrrega és òptima",
+        "help": "El segon tall: la franja verda acaba aquí."
+      },
+      "load.thresholds.limitUpTo": {
+        "label": "Fins a aquest % la càrrega és al límit",
+        "help": "El tercer tall: per sobre, es considera sobrecàrrega."
+      },
+      "load.maxOverloadPercent": {
+        "label": "Sobrecàrrega màxima permesa",
+        "help": "El planificador rebutja qualsevol assignació que passi d’aquest percentatge."
+      },
+      "schedule.defaultSessionMinutes": {
+        "label": "Durada estàndard d’una sessió",
+        "help": "Quants minuts dura una classe quan no es diu el contrari."
+      },
+      "schedule.dayStart": {
+        "label": "Hora d’obertura del centre",
+        "help": "La primera hora a la qual es pot programar docència."
+      },
+      "schedule.dayEnd": {
+        "label": "Hora de tancament del centre",
+        "help": "L’última hora a la qual pot acabar una classe."
+      },
+      "schedule.minBreakMinutes": {
+        "label": "Descans mínim entre sessions",
+        "help": "Temps que ha de quedar lliure entre dues classes seguides d’una mateixa persona."
+      },
+      "schedule.maxConsecutiveHours": {
+        "label": "Hores seguides màximes",
+        "help": "Quantes hores de classe pot fer una persona sense descansar."
+      },
+      "schedule.maxDailyHours": {
+        "label": "Hores màximes en un dia",
+        "help": "El sostre de docència d’una persona en una jornada."
+      },
+      "schedule.maxWeeklyDays": {
+        "label": "Dies màxims per setmana",
+        "help": "Quants dies diferents se li pot demanar a una persona que vingui."
+      },
+      "schedule.buildingTransferMinutes": {
+        "label": "Marge per canviar d’edifici",
+        "help": "Minuts que es reserven per desplaçar-se entre edificis entre dues classes."
+      },
+      "schedule.workingWeekdays": {
+        "label": "Dies lectius de la setmana",
+        "help": "Els dies en què el centre programa docència."
+      },
+      "schedule.teachingWeeks": {
+        "label": "Setmanes lectives del curs",
+        "help": "El que converteix les hores anuals en el sostre setmanal que aplica el planificador."
+      },
+      "workload.tfgHoursPerStudent": {
+        "label": "Hores per TFG dirigit",
+        "help": "Hores que es computen per cada treball final de grau dirigit."
+      },
+      "workload.tfgMaxHours": {
+        "label": "Topall d’hores per TFG",
+        "help": "Màxim que es pot computar per direcció de TFG en un curs."
+      },
+      "workload.tfmHoursPerStudent": {
+        "label": "Hores per TFM dirigit",
+        "help": "Hores que es computen per cada treball final de màster dirigit."
+      },
+      "workload.tfmMaxHours": {
+        "label": "Topall d’hores per TFM",
+        "help": "Màxim que es pot computar per direcció de TFM en un curs."
+      },
+      "workload.weeklyTutoringHours": {
+        "label": "Hores de tutoria a la setmana",
+        "help": "Tutories que deu una dedicació completa cada setmana."
+      },
+      "workload.tutoringProportionalToDedication": {
+        "label": "Les tutories baixen amb la dedicació",
+        "help": "Si una dedicació parcial fa menys hores de tutoria, en proporció."
+      },
+      "workload.degreeCoordinationHours": {
+        "label": "Hores per coordinar una titulació",
+        "help": "El que es computa a qui coordina un grau o un màster."
+      },
+      "workload.subjectCoordinationHours": {
+        "label": "Hores per coordinar una assignatura",
+        "help": "El que es computa a qui coordina una assignatura."
+      },
+      "workload.externalPracticeHoursPerStudent": {
+        "label": "Hores per tutoritzar pràctiques externes",
+        "help": "Hores per cada estudiant tutoritzat a l’empresa."
+      },
+      "workload.externalPracticeMaxHours": {
+        "label": "Topall de pràctiques externes",
+        "help": "Màxim que es pot computar per tutoria de pràctiques en un curs."
+      },
+      "academicCalendar.firstSemesterStart": {
+        "label": "Inici del primer semestre",
+        "help": "El primer dia de docència del semestre."
+      },
+      "academicCalendar.firstSemesterEnd": {
+        "label": "Fi del primer semestre",
+        "help": "L’últim dia de docència del semestre."
+      },
+      "academicCalendar.secondSemesterStart": {
+        "label": "Inici del segon semestre",
+        "help": "El primer dia de docència del segon semestre."
+      },
+      "academicCalendar.secondSemesterEnd": {
+        "label": "Fi del segon semestre",
+        "help": "L’últim dia de docència del segon semestre."
+      },
+      "academicCalendar.examPeriods": {
+        "label": "Períodes d’exàmens",
+        "help": "Les franges de dates reservades a avaluació."
+      },
+      "academicCalendar.holidays": {
+        "label": "Festius",
+        "help": "Els dies en què no hi ha docència."
+      },
+      "workflow.podPublicationDate": {
+        "label": "Data de publicació del POD",
+        "help": "La data en què el pla docent s’ha de fer públic."
+      },
+      "workflow.changeRequestNoticeDays": {
+        "label": "Preavís mínim per canviar una classe",
+        "help": "Dies d’antelació amb què s’ha de demanar un canvi."
+      },
+      "workflow.coordinatorApprovesChanges": {
+        "label": "L’aprovació de coordinació és vinculant",
+        "help": "Si no ho és, la coordinació només queda informada i el canvi tira endavant."
+      }
+    },
+    "blocks": {
+      "A": {
+        "label": "Capacitat i encàrrec",
+        "help": "Les hores que deu una dedicació completa i com es compten."
+      },
+      "B": {
+        "label": "Categories contractuals",
+        "help": "Les figures del centre, amb els noms i els límits propis."
+      },
+      "C": {
+        "label": "Reduccions",
+        "help": "Què descompta hores i qui ho ha d’aprovar."
+      },
+      "D": {
+        "label": "Semàfor de càrrega",
+        "help": "Els quatre talls que decideixen el color de cada docent."
+      },
+      "E": {
+        "label": "Regles d’horari",
+        "help": "Franges, descansos i límits diaris del quadre horari."
+      },
+      "F": {
+        "label": "Conceptes computables",
+        "help": "Què compta com a docència a més de les classes."
+      },
+      "G": {
+        "label": "Calendari acadèmic",
+        "help": "Semestres, exàmens i festius del curs."
+      },
+      "H": {
+        "label": "Regles de procés",
+        "help": "Terminis i qui ha d’aprovar què."
+      }
+    },
+    "extraction": {
+      "title": "Llegeix la normativa",
+      "subtitle": "L’assistent proposa els paràmetres del centre amb la cita que els justifica. No s’aplica res fins que ho confirmes.",
+      "start": "Llegeix aquest document",
+      "startHint": "Tria un document de normativa ja indexat.",
+      "started": "S’està llegint el document",
+      "running": "Llegint el bloc…",
+      "noRuns": "Encara no s’ha llegit cap normativa.",
+      "runOf": "Lectura de {{document}}",
+      "blockState": {
+        "pending": "A la cua",
+        "running": "Llegint",
+        "ready": "Llest",
+        "failed": "Ha fallat"
+      },
+      "confidence": {
+        "label": "Confiança",
+        "high": "Cita literal i única",
+        "medium": "La cita apareix més d’un cop",
+        "low": "Cita parcial: revisa-la"
+      },
+      "proposed": "Valor proposat",
+      "current": "Valor actual",
+      "unchanged": "Coincideix amb el valor actual",
+      "manualOverride": "Aquest paràmetre es va editar a mà: la lectura només el proposa com a canvi.",
+      "conflict": "Dos articles diuen coses diferents. Tria’n un.",
+      "exception": "Excepció recollida a la norma",
+      "reasoning": "Notes de la lectura",
+      "showCitation": "Mostra la cita",
+      "hideCitation": "Amaga la cita",
+      "openViewer": "Obre el document en aquest punt",
+      "accept": "Accepta",
+      "edit": "Edita",
+      "reject": "Rebutja",
+      "acceptAllHigh": "Accepta els de confiança alta d’aquest bloc",
+      "accepted": "Acceptat",
+      "edited": "Editat",
+      "rejected": "Rebutjat",
+      "resolved": "Decisió desada",
+      "acceptedCount": "S’han acceptat {{count}} paràmetres",
+      "apply": "Aplica la configuració",
+      "applied": "Configuració aplicada",
+      "summary": {
+        "title": "Resum",
+        "applied": "Aplicats",
+        "rejected": "Rebutjats",
+        "pending": "Pendents de configurar a mà",
+        "none": "Res en aquesta llista.",
+        "configure": "Configura’l"
+      },
+      "notFound": {
+        "absent": "El document no diu res d’aquest paràmetre.",
+        "noCitation": "No s’ha trobat cap text que ho justifiqui, i sense cita no hi ha proposta.",
+        "noValue": "El document en parla però no dona cap valor concret."
+      },
+      "errors": {
+        "documentNotIndexed": "Aquest document encara no està indexat.",
+        "failed": "No s’ha pogut llegir aquest bloc. Torna-ho a provar."
+      }
+    },
+    "versions": {
+      "title": "Historial de configuració",
+      "hint": "Cada canvi deixa una versió: així es pot saber sota quines regles es va generar un horari.",
+      "current": "Vigent",
+      "source": {
+        "manual": "Editada a mà",
+        "ai_extraction": "Llegida de la normativa"
+      },
+      "approvedBy": "Aprovada per {{name}}",
+      "changes": "Canvis respecte de la configuració vigent",
+      "noChanges": "Cap diferència amb la configuració vigent."
+    },
+    "why": {
+      "label": "Per què s’aplica aquesta regla?",
+      "from": "Ve del paràmetre «{{param}}»",
+      "value": "Valor actual: {{value}}",
+      "noSource": "Aquest paràmetre no ve de cap normativa: és un valor per defecte o una decisió del centre.",
+      "open": "Obre la normativa"
+    }
   },
   "platform": {
     "title": "Plataforma",

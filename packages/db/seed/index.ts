@@ -1032,6 +1032,13 @@ async function seedSettingsProvenance() {
     },
   ]
 
+  // The center runs on this version: settings are resolved from a version,
+  // and `centers.settings_json` is its materialisation (phase 5C).
+  await prisma.center.update({
+    where: { id: CENTER_ID },
+    data: { settingsVersionId },
+  })
+
   for (const record of provenance) {
     const id = seedId('provenance', record.index)
     await prisma.settingProvenance.upsert({

@@ -4,6 +4,7 @@
  */
 import { describe, expect, it } from 'vitest'
 
+import { SETTING_PARAMS, paramHelpKey, paramLabelKey } from '../src/domain/setting-params.js'
 import { SUPPORTED_LOCALES, catalogs, resolveLocale, translate } from '../src/i18n/index.js'
 import { parseAcceptLanguage } from '../src/i18n/index.js'
 
@@ -35,6 +36,21 @@ const keysByLocale = Object.fromEntries(
 
 describe('i18n catalog coverage', () => {
   const reference = keysByLocale.ca
+
+  /**
+   * Phase 5C: the wizard shows a parameter by its plain-language name, never
+   * as `capacity.maxTeachingHoursYear`. A parameter without a name in some
+   * language would be shown as its dot path to somebody confirming a rule.
+   */
+  it.each(SUPPORTED_LOCALES)('%s names every configurable parameter in words', (locale) => {
+    const missing = SETTING_PARAMS.flatMap((param) =>
+      [paramLabelKey(param.key), paramHelpKey(param.key)].filter(
+        (key) => !keysByLocale[locale].includes(key),
+      ),
+    )
+
+    expect(missing).toEqual([])
+  })
 
   it.each(SUPPORTED_LOCALES)('%s has exactly the same keys as the reference catalog', (locale) => {
     const missing = reference.filter((key) => !keysByLocale[locale].includes(key))

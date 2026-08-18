@@ -10,6 +10,7 @@
 import type { PrismaClient } from '@uacademic/db'
 import {
   type AppLocale,
+  type ExtractionBlock,
   type NotificationEvent,
   buildDigest,
   eventDefinition,
@@ -26,6 +27,7 @@ import { purgeExpiredTombstones } from '../services/calendar/tombstones.js'
 import { indexDocument } from '../services/documents/index-service.js'
 import { invalidateVectorCache } from '../services/documents/retrieval.js'
 import { sendMail } from '../services/mailer.js'
+import { runExtractionBlock } from '../services/settings/extraction-run.js'
 import { sendPush } from '../services/push.js'
 import type { JobHandler } from './worker.js'
 
@@ -263,6 +265,20 @@ export function buildJobHandlers(client: PrismaClient, logger: Logger): Record<s
       if (document) invalidateVectorCache(document.centerId)
 
       logger.info({ documentId: job.documentId, ...result }, 'documents.index')
+    },
+
+    /**
+     * One block of one regulation, read into proposals.
+     *
+     * A block at a time, each retriable on its own: a model that returns
+     * nothing usable for the categories should not cost the center the eight
+     * parameters of the capacity block that came back fine.
+     */
+    'settings.extract': async (payload) => {
+      const job = payload as { runId: string; block: ExtractionBlock }
+      const result = await runExtractionBlock(client, job.runId, job.block)
+
+      logger.info({ runId: job.runId, block: job.block, ...result }, 'settings.extract')
     },
 
     /**

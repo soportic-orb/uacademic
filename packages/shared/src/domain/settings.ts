@@ -16,6 +16,9 @@ const clockTime = z.string().refine(isClockTime, {
 
 const percentage = z.number().min(0).max(500)
 
+/** Calendar dates travel as `YYYY-MM-DD`: no timezone, no ambiguity. */
+const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Expected a YYYY-MM-DD date')
+
 export const loadSettingsSchema = z.object({
   thresholds: z
     .object({
@@ -29,6 +32,137 @@ export const loadSettingsSchema = z.object({
   countReductionsInCapacity: z.boolean().default(true),
 })
 
+/**
+ * Block A — capacity and teaching commitment.
+ *
+ * The numbers a center's teaching-regulation document opens with: how many
+ * hours a full-time teacher owes in a year, what a credit is worth in hours,
+ * and whether an hour of laboratory counts the same as an hour of lecture.
+ * Every one of them is different in every center, which is exactly why they
+ * are here and not in the code (R9).
+ */
+export const capacitySettingsSchema = z.object({
+  /** The ceiling a teaching plan may not exceed for one person, per year. */
+  maxTeachingHoursYear: z.number().min(0).max(2_000).default(240),
+  /** What "full time" means here, before reductions. */
+  referenceFullTimeHours: z.number().min(0).max(2_000).default(240),
+  /** A floor some centers set: below it, a contract is under-used. */
+  minTeachingHoursYear: z.number().min(0).max(2_000).default(0),
+  /** Hours of teaching one ECTS credit is worth. */
+  creditToHours: z.number().min(0).max(100).default(10),
+  /**
+   * Multipliers per kind of group: an hour in a lab often counts for more
+   * than an hour of lecture, and some centers count seminars for less.
+   */
+  hoursPerGroupType: z
+    .object({
+      theory: z.number().min(0).max(5).default(1),
+      seminar: z.number().min(0).max(5).default(1),
+      lab: z.number().min(0).max(5).default(1),
+      practicum: z.number().min(0).max(5).default(1),
+      tutoring: z.number().min(0).max(5).default(1),
+    })
+    .prefault({}),
+})
+
+/**
+ * Block B — contractual categories.
+ *
+ * A collection, never an enum: "Asociado 6+6" exists in one university and
+ * not in the next, and a center that cannot name its own categories would
+ * have to lie about its staff. `mapsTo` links a local denomination to the
+ * platform's category so capacity computations still know what they hold.
+ */
+export const teacherCategorySettingSchema = z.object({
+  code: z.string().min(1).max(50),
+  label: z.string().min(1).max(120),
+  /** Contracted teaching capacity of the category, per year. */
+  baseCapacityHours: z.number().min(0).max(2_000),
+  /** Legal ceiling for the category, which may be lower than the general one. */
+  maxTeachingHours: z.number().min(0).max(2_000),
+  mapsTo: z
+    .enum([
+      'full_professor',
+      'associate_professor',
+      'assistant_professor',
+      'lecturer',
+      'adjunct',
+      'visiting',
+      'external',
+    ])
+    .nullable()
+    .default(null),
+  notes: z.string().max(500).nullable().default(null),
+})
+
+/**
+ * Block C — recognised reductions.
+ *
+ * Each one says how much it is worth, whether it stacks with others and who
+ * has to approve it, because "coordination gives you 60 hours" is only true
+ * until it meets the cap or another reduction.
+ */
+export const reductionSettingSchema = z.object({
+  code: z.string().min(1).max(50),
+  label: z.string().min(1).max(120),
+  /** Hours it takes off the commitment. Null when expressed in credits. */
+  hours: z.number().min(0).max(2_000).nullable().default(null),
+  credits: z.number().min(0).max(200).nullable().default(null),
+  /** Ceiling for this reduction, however many times it is granted. */
+  maxHours: z.number().min(0).max(2_000).nullable().default(null),
+  stackable: z.boolean().default(true),
+  approvedBy: z
+    .enum(['department', 'faculty', 'coordination', 'union', 'rectorate', 'other'])
+    .default('other'),
+  notes: z.string().max(500).nullable().default(null),
+})
+
+/**
+ * Block F — what else counts as teaching commitment.
+ *
+ * Directing a final project, holding tutoring hours or coordinating a degree
+ * are work, and a center that computes only lecture hours under-counts half
+ * its staff.
+ */
+export const workloadSettingsSchema = z.object({
+  tfgHoursPerStudent: z.number().min(0).max(100).default(10),
+  tfgMaxHours: z.number().min(0).max(500).default(60),
+  tfmHoursPerStudent: z.number().min(0).max(100).default(15),
+  tfmMaxHours: z.number().min(0).max(500).default(60),
+  /** Tutoring owed per week by a full-time teacher. */
+  weeklyTutoringHours: z.number().min(0).max(40).default(6),
+  /** Whether part-time dedication scales the tutoring hours down. */
+  tutoringProportionalToDedication: z.boolean().default(true),
+  degreeCoordinationHours: z.number().min(0).max(500).default(60),
+  subjectCoordinationHours: z.number().min(0).max(500).default(20),
+  externalPracticeHoursPerStudent: z.number().min(0).max(100).default(3),
+  externalPracticeMaxHours: z.number().min(0).max(500).default(60),
+})
+
+/**
+ * Block G — the shape of the academic year.
+ *
+ * The operational calendar lives in `academic_calendar`; what a regulation
+ * fixes is the frame — when each semester runs, when exams are, which days
+ * nobody teaches — and that frame is what the planner reasons against.
+ */
+export const academicCalendarSettingsSchema = z.object({
+  firstSemesterStart: isoDate.nullable().default(null),
+  firstSemesterEnd: isoDate.nullable().default(null),
+  secondSemesterStart: isoDate.nullable().default(null),
+  secondSemesterEnd: isoDate.nullable().default(null),
+  examPeriods: z
+    .array(
+      z.object({
+        label: z.string().min(1).max(120),
+        from: isoDate,
+        to: isoDate,
+      }),
+    )
+    .default([]),
+  holidays: z.array(z.object({ label: z.string().min(1).max(120), date: isoDate })).default([]),
+})
+
 export const scheduleSettingsSchema = z.object({
   dayStart: clockTime.default('08:00'),
   dayEnd: clockTime.default('21:00'),
@@ -38,6 +172,10 @@ export const scheduleSettingsSchema = z.object({
   minBreakMinutes: z.number().int().min(0).max(240).default(30),
   maxConsecutiveHours: z.number().min(1).max(12).default(4),
   maxDailyHours: z.number().min(1).max(14).default(8),
+  /** Days a teacher may be asked to come in, in one week. */
+  maxWeeklyDays: z.number().int().min(1).max(7).default(5),
+  /** Minutes allowed for walking between buildings between two sessions. */
+  buildingTransferMinutes: z.number().int().min(0).max(180).default(20),
   workingWeekdays: z.array(z.number().int().min(1).max(7)).min(1).default([1, 2, 3, 4, 5]),
   /**
    * Teaching weeks in the year. The planner reasons about a typical week, so
@@ -47,8 +185,13 @@ export const scheduleSettingsSchema = z.object({
 })
 
 export const workflowSettingsSchema = z.object({
-  /** False means coordination is only informed: the approval step is skipped. */
+  /**
+   * Whether coordination's approval is binding. False means coordination is
+   * only informed: the approval step is skipped and the change goes through.
+   */
   coordinatorApprovesChanges: z.boolean().default(true),
+  /** Date the teaching plan must be published by, when a regulation fixes one. */
+  podPublicationDate: isoDate.nullable().default(null),
   teacherCanProposeSwap: z.boolean().default(true),
   changeRequestNoticeDays: z.number().int().min(0).max(90).default(7),
   /** Hours before an unanswered change request expires. Zero disables it. */
@@ -188,8 +331,14 @@ export const identitySettingsSchema = z.object({
 export const centerSettingsSchema = z.object({
   // `prefault` (not `default`) so the nested defaults are actually applied:
   // in Zod 4 a plain default value is returned as-is, without being parsed.
+  capacity: capacitySettingsSchema.prefault({}),
+  /** Local denominations, so a center never has to rename its own staff. */
+  categories: z.array(teacherCategorySettingSchema).default([]),
+  reductions: z.array(reductionSettingSchema).default([]),
   load: loadSettingsSchema.prefault({}),
   schedule: scheduleSettingsSchema.prefault({}),
+  workload: workloadSettingsSchema.prefault({}),
+  academicCalendar: academicCalendarSettingsSchema.prefault({}),
   workflow: workflowSettingsSchema.prefault({}),
   engine: engineSettingsSchema.prefault({}),
   formats: formatSettingsSchema.prefault({}),
@@ -201,6 +350,11 @@ export const centerSettingsSchema = z.object({
 })
 
 export type CenterSettings = z.infer<typeof centerSettingsSchema>
+export type CapacitySettings = z.infer<typeof capacitySettingsSchema>
+export type TeacherCategorySetting = z.infer<typeof teacherCategorySettingSchema>
+export type ReductionSetting = z.infer<typeof reductionSettingSchema>
+export type WorkloadSettings = z.infer<typeof workloadSettingsSchema>
+export type AcademicCalendarSettings = z.infer<typeof academicCalendarSettingsSchema>
 export type LoadSettings = z.infer<typeof loadSettingsSchema>
 export type ScheduleSettings = z.infer<typeof scheduleSettingsSchema>
 export type IdentitySettings = z.infer<typeof identitySettingsSchema>
@@ -234,7 +388,12 @@ export function flattenSettings(
   for (const [key, value] of Object.entries(settings)) {
     const path = prefix ? `${prefix}.${key}` : key
     if (Array.isArray(value)) {
-      out[path] = value as (string | number)[]
+      // Collections — the categories, the reductions, the exam periods — are
+      // parameters in their own right and are handled whole, not flattened
+      // into `categories.0.maxTeachingHours`. Only scalar lists land here.
+      if (value.every((entry) => typeof entry === 'string' || typeof entry === 'number')) {
+        out[path] = value as (string | number)[]
+      }
     } else if (value !== null && typeof value === 'object') {
       Object.assign(out, flattenSettings(value as Record<string, unknown>, path))
     } else if (

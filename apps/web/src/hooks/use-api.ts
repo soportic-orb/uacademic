@@ -61,6 +61,7 @@ export interface CenterSettingsResponse {
   settings: CenterSettings
   provenance: {
     paramKey: string
+    documentId: string | null
     documentTitle: string | null
     page: number | null
     section: string | null

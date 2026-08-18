@@ -15,6 +15,7 @@ import { CardSkeleton, ErrorState } from '../../components/feedback/states'
 import { Button } from '../../components/ui/button'
 import { Card, CardBody, CardHeader } from '../../components/ui/card'
 import { useToast } from '../../hooks/use-toast'
+import { WhyThisRule } from '../settings/why-this-rule'
 import { currentLocale } from '../../i18n'
 import { ApiRequestError } from '../../lib/api'
 import { type ChangeRequestDto, useChange, useTransition } from '../collaboration/queries'
@@ -80,6 +81,9 @@ function Conflicts({ violations }: { violations: Violation[] }) {
         {violations.map((violation, index) => (
           <li key={`${violation.messageKey}-${index}`}>
             {t(violation.messageKey, violation.params)}
+            {/* And, for a rule that comes from the center's regulation, the
+                article that imposes it. */}
+            <WhyThisRule messageKey={violation.messageKey} />
           </li>
         ))}
       </ul>

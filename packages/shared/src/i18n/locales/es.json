@@ -404,7 +404,298 @@
     "appearance": "Apariencia",
     "languageSection": "Idioma de la interfaz",
     "provenanceHint": "Cada parámetro del centro puede citar el documento normativo del que procede.",
-    "provenanceTitle": "Procedencia de los parámetros"
+    "provenanceTitle": "Procedencia de los parámetros",
+    "params": {
+      "capacity.maxTeachingHoursYear": {
+        "label": "Horas lectivas máximas al año",
+        "help": "El techo de horas de clase que una persona puede tener asignadas en un curso."
+      },
+      "capacity.referenceFullTimeHours": {
+        "label": "Horas de una dedicación completa",
+        "help": "Qué significa “tiempo completo” en este centro, antes de cualquier reducción."
+      },
+      "capacity.minTeachingHoursYear": {
+        "label": "Horas lectivas mínimas al año",
+        "help": "Por debajo de este valor se considera que un contrato está infrautilizado."
+      },
+      "capacity.creditToHours": {
+        "label": "Horas por crédito ECTS",
+        "help": "Cuántas horas de docencia vale un crédito al calcular la carga."
+      },
+      "capacity.hoursPerGroupType.theory": {
+        "label": "Factor de las clases de teoría",
+        "help": "Cuánto cuenta una hora de teoría. 1 significa una hora por hora."
+      },
+      "capacity.hoursPerGroupType.seminar": {
+        "label": "Factor de los seminarios",
+        "help": "Cuánto cuenta una hora de seminario respecto a una de teoría."
+      },
+      "capacity.hoursPerGroupType.lab": {
+        "label": "Factor del laboratorio",
+        "help": "Muchos centros cuentan una hora de laboratorio por más de una hora."
+      },
+      "capacity.hoursPerGroupType.practicum": {
+        "label": "Factor de las prácticas",
+        "help": "Cuánto cuenta una hora de prácticas dentro de la carga."
+      },
+      "capacity.hoursPerGroupType.tutoring": {
+        "label": "Factor de la tutorización",
+        "help": "Cuánto cuenta una hora de tutorización de grupo."
+      },
+      "categories": {
+        "label": "Categorías contractuales",
+        "help": "Las figuras del centro con su capacidad y su máximo lectivo, con los nombres que usa el centro."
+      },
+      "reductions": {
+        "label": "Reducciones reconocidas",
+        "help": "Catálogo de reducciones: motivo, horas, tope, si se acumulan y quién las aprueba."
+      },
+      "load.thresholds.underBelow": {
+        "label": "Por debajo de este % la carga es baja",
+        "help": "El primer corte del semáforo: hasta aquí se considera carga infrautilizada."
+      },
+      "load.thresholds.optimalUpTo": {
+        "label": "Hasta este % la carga es óptima",
+        "help": "El segundo corte: la franja verde acaba aquí."
+      },
+      "load.thresholds.limitUpTo": {
+        "label": "Hasta este % la carga está al límite",
+        "help": "El tercer corte: por encima, se considera sobrecarga."
+      },
+      "load.maxOverloadPercent": {
+        "label": "Sobrecarga máxima permitida",
+        "help": "El planificador rechaza cualquier asignación que pase de este porcentaje."
+      },
+      "schedule.defaultSessionMinutes": {
+        "label": "Duración estándar de una sesión",
+        "help": "Cuántos minutos dura una clase cuando no se dice lo contrario."
+      },
+      "schedule.dayStart": {
+        "label": "Hora de apertura del centro",
+        "help": "La primera hora a la que se puede programar docencia."
+      },
+      "schedule.dayEnd": {
+        "label": "Hora de cierre del centro",
+        "help": "La última hora a la que puede terminar una clase."
+      },
+      "schedule.minBreakMinutes": {
+        "label": "Descanso mínimo entre sesiones",
+        "help": "Tiempo que debe quedar libre entre dos clases seguidas de una misma persona."
+      },
+      "schedule.maxConsecutiveHours": {
+        "label": "Horas seguidas máximas",
+        "help": "Cuántas horas de clase puede dar una persona sin descansar."
+      },
+      "schedule.maxDailyHours": {
+        "label": "Horas máximas en un día",
+        "help": "El techo de docencia de una persona en una jornada."
+      },
+      "schedule.maxWeeklyDays": {
+        "label": "Días máximos por semana",
+        "help": "Cuántos días distintos se le puede pedir a una persona que venga."
+      },
+      "schedule.buildingTransferMinutes": {
+        "label": "Margen para cambiar de edificio",
+        "help": "Minutos que se reservan para desplazarse entre edificios entre dos clases."
+      },
+      "schedule.workingWeekdays": {
+        "label": "Días lectivos de la semana",
+        "help": "Los días en que el centro programa docencia."
+      },
+      "schedule.teachingWeeks": {
+        "label": "Semanas lectivas del curso",
+        "help": "Lo que convierte las horas anuales en el techo semanal que aplica el planificador."
+      },
+      "workload.tfgHoursPerStudent": {
+        "label": "Horas por TFG dirigido",
+        "help": "Horas que se computan por cada trabajo de fin de grado dirigido."
+      },
+      "workload.tfgMaxHours": {
+        "label": "Tope de horas por TFG",
+        "help": "Máximo que se puede computar por dirección de TFG en un curso."
+      },
+      "workload.tfmHoursPerStudent": {
+        "label": "Horas por TFM dirigido",
+        "help": "Horas que se computan por cada trabajo de fin de máster dirigido."
+      },
+      "workload.tfmMaxHours": {
+        "label": "Tope de horas por TFM",
+        "help": "Máximo que se puede computar por dirección de TFM en un curso."
+      },
+      "workload.weeklyTutoringHours": {
+        "label": "Horas de tutoría a la semana",
+        "help": "Tutorías que debe una dedicación completa cada semana."
+      },
+      "workload.tutoringProportionalToDedication": {
+        "label": "Las tutorías bajan con la dedicación",
+        "help": "Si una dedicación parcial hace menos horas de tutoría, en proporción."
+      },
+      "workload.degreeCoordinationHours": {
+        "label": "Horas por coordinar una titulación",
+        "help": "Lo que se computa a quien coordina un grado o un máster."
+      },
+      "workload.subjectCoordinationHours": {
+        "label": "Horas por coordinar una asignatura",
+        "help": "Lo que se computa a quien coordina una asignatura."
+      },
+      "workload.externalPracticeHoursPerStudent": {
+        "label": "Horas por tutorizar prácticas externas",
+        "help": "Horas por cada estudiante tutorizado en la empresa."
+      },
+      "workload.externalPracticeMaxHours": {
+        "label": "Tope de prácticas externas",
+        "help": "Máximo que se puede computar por tutoría de prácticas en un curso."
+      },
+      "academicCalendar.firstSemesterStart": {
+        "label": "Inicio del primer semestre",
+        "help": "El primer día de docencia del semestre."
+      },
+      "academicCalendar.firstSemesterEnd": {
+        "label": "Fin del primer semestre",
+        "help": "El último día de docencia del semestre."
+      },
+      "academicCalendar.secondSemesterStart": {
+        "label": "Inicio del segundo semestre",
+        "help": "El primer día de docencia del segundo semestre."
+      },
+      "academicCalendar.secondSemesterEnd": {
+        "label": "Fin del segundo semestre",
+        "help": "El último día de docencia del segundo semestre."
+      },
+      "academicCalendar.examPeriods": {
+        "label": "Periodos de exámenes",
+        "help": "Las franjas de fechas reservadas a evaluación."
+      },
+      "academicCalendar.holidays": {
+        "label": "Festivos",
+        "help": "Los días en que no hay docencia."
+      },
+      "workflow.podPublicationDate": {
+        "label": "Fecha de publicación del POD",
+        "help": "La fecha en que el plan docente debe hacerse público."
+      },
+      "workflow.changeRequestNoticeDays": {
+        "label": "Preaviso mínimo para cambiar una clase",
+        "help": "Días de antelación con que debe pedirse un cambio."
+      },
+      "workflow.coordinatorApprovesChanges": {
+        "label": "La aprobación de coordinación es vinculante",
+        "help": "Si no lo es, la coordinación solo queda informada y el cambio sigue adelante."
+      }
+    },
+    "blocks": {
+      "A": {
+        "label": "Capacidad y encargo",
+        "help": "Las horas que debe una dedicación completa y cómo se cuentan."
+      },
+      "B": {
+        "label": "Categorías contractuales",
+        "help": "Las figuras del centro, con los nombres y los límites propios."
+      },
+      "C": {
+        "label": "Reducciones",
+        "help": "Qué descuenta horas y quién debe aprobarlo."
+      },
+      "D": {
+        "label": "Semáforo de carga",
+        "help": "Los cuatro cortes que deciden el color de cada docente."
+      },
+      "E": {
+        "label": "Reglas de horario",
+        "help": "Franjas, descansos y límites diarios del cuadro horario."
+      },
+      "F": {
+        "label": "Conceptos computables",
+        "help": "Qué cuenta como docencia además de las clases."
+      },
+      "G": {
+        "label": "Calendario académico",
+        "help": "Semestres, exámenes y festivos del curso."
+      },
+      "H": {
+        "label": "Reglas de proceso",
+        "help": "Plazos y quién debe aprobar qué."
+      }
+    },
+    "extraction": {
+      "title": "Lee la normativa",
+      "subtitle": "El asistente propone los parámetros del centro con la cita que los justifica. No se aplica nada hasta que lo confirmas.",
+      "start": "Lee este documento",
+      "startHint": "Elige un documento de normativa ya indexado.",
+      "started": "Se está leyendo el documento",
+      "running": "Leyendo el bloque…",
+      "noRuns": "Todavía no se ha leído ninguna normativa.",
+      "runOf": "Lectura de {{document}}",
+      "blockState": {
+        "pending": "En cola",
+        "running": "Leyendo",
+        "ready": "Listo",
+        "failed": "Ha fallado"
+      },
+      "confidence": {
+        "label": "Confianza",
+        "high": "Cita literal y única",
+        "medium": "La cita aparece más de una vez",
+        "low": "Cita parcial: revísala"
+      },
+      "proposed": "Valor propuesto",
+      "current": "Valor actual",
+      "unchanged": "Coincide con el valor actual",
+      "manualOverride": "Este parámetro se editó a mano: la lectura solo lo propone como cambio.",
+      "conflict": "Dos artículos dicen cosas distintas. Elige uno.",
+      "exception": "Excepción recogida en la norma",
+      "reasoning": "Notas de la lectura",
+      "showCitation": "Muestra la cita",
+      "hideCitation": "Oculta la cita",
+      "openViewer": "Abre el documento en este punto",
+      "accept": "Acepta",
+      "edit": "Edita",
+      "reject": "Rechaza",
+      "acceptAllHigh": "Acepta los de confianza alta de este bloque",
+      "accepted": "Aceptado",
+      "edited": "Editado",
+      "rejected": "Rechazado",
+      "resolved": "Decisión guardada",
+      "acceptedCount": "Se han aceptado {{count}} parámetros",
+      "apply": "Aplica la configuración",
+      "applied": "Configuración aplicada",
+      "summary": {
+        "title": "Resumen",
+        "applied": "Aplicados",
+        "rejected": "Rechazados",
+        "pending": "Pendientes de configurar a mano",
+        "none": "Nada en esta lista.",
+        "configure": "Configúralo"
+      },
+      "notFound": {
+        "absent": "El documento no dice nada de este parámetro.",
+        "noCitation": "No se ha encontrado ningún texto que lo justifique, y sin cita no hay propuesta.",
+        "noValue": "El documento habla de ello pero no da ningún valor concreto."
+      },
+      "errors": {
+        "documentNotIndexed": "Este documento todavía no está indexado.",
+        "failed": "No se ha podido leer este bloque. Inténtalo de nuevo."
+      }
+    },
+    "versions": {
+      "title": "Historial de configuración",
+      "hint": "Cada cambio deja una versión: así se puede saber bajo qué reglas se generó un horario.",
+      "current": "Vigente",
+      "source": {
+        "manual": "Editada a mano",
+        "ai_extraction": "Leída de la normativa"
+      },
+      "approvedBy": "Aprobada por {{name}}",
+      "changes": "Cambios respecto a la configuración vigente",
+      "noChanges": "Ninguna diferencia con la configuración vigente."
+    },
+    "why": {
+      "label": "¿Por qué se aplica esta regla?",
+      "from": "Viene del parámetro «{{param}}»",
+      "value": "Valor actual: {{value}}",
+      "noSource": "Este parámetro no viene de ninguna normativa: es un valor por defecto o una decisión del centro.",
+      "open": "Abre la normativa"
+    }
   },
   "platform": {
     "title": "Plataforma",
