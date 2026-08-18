@@ -196,6 +196,19 @@ pm2 start /var/www/uacademic/current/ecosystem.config.cjs
 pm2 save && pm2 startup
 ```
 
+**Deploying from a checkout instead**, which is how a first installation
+usually goes, is three commands and the middle one is not optional:
+
+```bash
+git pull
+pnpm install --frozen-lockfile    # a pull can bring a new dependency
+pnpm build
+pm2 restart uacademic --update-env
+```
+
+Skipping the install fails the build rather than the boot — `noEmitOnError` is
+set, so a build that does not compile leaves the previous one running.
+
 ---
 
 ## 7. Nginx

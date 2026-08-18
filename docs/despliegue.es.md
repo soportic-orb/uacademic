@@ -198,6 +198,20 @@ pm2 start /var/www/uacademic/current/ecosystem.config.cjs
 pm2 save && pm2 startup
 ```
 
+**Desplegar desde un checkout**, que es como suele ir una primera instalación,
+son tres órdenes y la de en medio no es opcional:
+
+```bash
+git pull
+pnpm install --frozen-lockfile    # un pull puede traer una dependencia nueva
+pnpm build
+pm2 restart uacademic --update-env
+```
+
+Saltarse la instalación hace fallar la construcción, no el arranque:
+`noEmitOnError` está puesto, así que una construcción que no compila deja la
+anterior funcionando.
+
 ---
 
 ## 7. Nginx

@@ -196,6 +196,20 @@ pm2 start /var/www/uacademic/current/ecosystem.config.cjs
 pm2 save && pm2 startup
 ```
 
+**Desplegar des d'un checkout**, que és com sol anar una primera instal·lació,
+són tres ordres i la del mig no és opcional:
+
+```bash
+git pull
+pnpm install --frozen-lockfile    # un pull pot portar una dependència nova
+pnpm build
+pm2 restart uacademic --update-env
+```
+
+Saltar-se la instal·lació fa fallar la construcció, no l'arrencada:
+`noEmitOnError` està posat, així que una construcció que no compila deixa
+l'anterior funcionant.
+
 ---
 
 ## 7. Nginx

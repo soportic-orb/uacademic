@@ -20,6 +20,12 @@
     "noUnusedParameters": true,
     "exactOptionalPropertyTypes": false,
 
+    // A build that failed must not leave output behind. Without this, `tsc`
+    // emits JavaScript for the files it could compile, so a broken build
+    // replaces a working `dist/` with code that throws at its first import —
+    // and a process manager restarts that forever while the site answers 502.
+    "noEmitOnError": true,
+
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
