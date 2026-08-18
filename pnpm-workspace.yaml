@@ -3,7 +3,12 @@ packages:
   - "packages/*"
   - "tooling/*"
 
+# Postinstall scripts we do run. `@prisma/engines` fetches the schema engine:
+# without it the CLI downloads the binary the first time a migration runs,
+# which on a fresh server is in the middle of the web installer — a network
+# problem is far easier to act on at `pnpm install` than at step two of four.
 onlyBuiltDependencies:
   - "@tailwindcss/oxide"
+  - "@prisma/engines"
   - esbuild
   - prisma
