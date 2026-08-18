@@ -199,8 +199,13 @@ suggested action) and error (with retry) states.
 - **IDs**: UUIDv7 (`CHAR(36)`), time-ordered for InnoDB index locality.
 - **Naming**: Prisma models are PascalCase and map to `snake_case` tables; fields are
   camelCase and map to `snake_case` columns.
-- **Crypto**: calendar tokens encrypted at rest with AES-256-GCM using an app key from
-  the environment. Never plaintext in the database.
+- **Crypto**: never plaintext in the database, and the primitive follows what the
+  secret is for. Secrets we have to **read back** — the OAuth access and refresh
+  tokens of `calendar_connections`, the TOTP seed — are encrypted with AES-256-GCM
+  using an app key from the environment. Secrets we only have to **recognise** —
+  the ICS feed token, which is a bearer capability in a URL — are stored as a
+  SHA-256 hash (hence the `CHAR(64)` column): a database dump then yields no
+  working calendar URL, and revoking one is a single row.
 
 ---
 
