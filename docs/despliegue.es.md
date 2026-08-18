@@ -263,7 +263,45 @@ de tenants registrados y responde 403 si no está. Da de alta cada tenant desde
 
 ---
 
-## 12. Comprobaciones después de desplegar
+## 12. Cuando el navegador dice 502
+
+Nginx está en marcha y detrás no responde nadie. Casi siempre es una de estas
+tres cosas, en este orden:
+
+```bash
+pm2 status                          # ¿la API está en marcha?
+pm2 logs uacademic --lines 50       # si se reinicia en bucle, por qué
+curl -fsS http://127.0.0.1:3001/health
+ss -ltnp | grep 3001                # quién escucha, si es que hay alguien
+```
+
+**`pm2 status` vacío o en `errored`.** Los procesos no se han arrancado nunca, o
+han muerto. Arráncalos desde la raíz del repositorio:
+
+```bash
+cd /var/www/uacademic/current
+pm2 start ecosystem.config.cjs && pm2 save
+```
+
+**`/health` responde y el navegador sigue dando 502.** Nginx está haciendo
+`proxy_pass` a otro sitio. Comprueba que el puerto que aparece ahí es el mismo
+en el que escucha la API (3001, salvo que `UACADEMIC_PORT` diga otra cosa): en
+CloudPanel es el puerto del proxy inverso del sitio; en Plesk, las «Additional
+nginx directives».
+
+**`/health` responde `{"status":"setup"}`.** Eso es correcto antes de instalar:
+la API está en modo instalación y sólo sirve `/health` y `/api/v1/install/*`.
+La página `/install` es un fichero estático que sirve Nginx desde
+`current/apps/web/dist` — si ese directorio está vacío, `pnpm build` no se ha
+ejecutado o no ha terminado.
+
+Una API que muere al arrancar escribe el motivo en
+`shared/logs/api.error.log`, en una línea, diciendo qué variable o qué fichero
+falta.
+
+---
+
+## 13. Comprobaciones después de desplegar
 
 ```bash
 curl -fsS https://uacademic.ejemplo.edu/health

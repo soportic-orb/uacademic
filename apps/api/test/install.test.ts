@@ -99,6 +99,17 @@ describe('the installer', () => {
       // the token an operator has already copied.
       expect(await ensureInstallToken()).toBe(token)
     })
+
+    it('hands every cluster worker the same token', async () => {
+      // PM2 starts the API with two instances, which boot together and each
+      // ask for a token. If they generated one apiece, one worker would print
+      // a token that opens nothing and the operator would copy it half the
+      // time.
+      const tokens = await Promise.all(Array.from({ length: 8 }, () => ensureInstallToken()))
+
+      expect(new Set(tokens).size).toBe(1)
+      expect(tokens[0]).toBe((await readFile(join(directory, 'install.token'), 'utf8')).trim())
+    })
   })
 
   describe('once it is installed', () => {

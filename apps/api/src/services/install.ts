@@ -109,23 +109,47 @@ export function tokenPath(source: NodeJS.ProcessEnv = process.env): string {
 }
 
 /**
- * Creates the token if there is none, and returns it for the log. Called once
- * at boot, only while the platform is uninstalled.
+ * Creates the token if there is none, and returns it for the log. Called at
+ * boot, only while the platform is uninstalled.
+ *
+ * Written with an exclusive create rather than a plain one, because PM2 runs
+ * the API as a cluster: two workers boot at the same moment, both find no
+ * file, and a last-write-wins would leave one of them printing a token that no
+ * longer opens anything — with the operator copying whichever line their eye
+ * landed on. Whoever loses the race reads the winner's token and prints that.
  */
 export async function ensureInstallToken(source: NodeJS.ProcessEnv = process.env): Promise<string> {
   const path = tokenPath(source)
 
-  if (existsSync(path)) {
-    const existing = (await readFile(path, 'utf8')).trim()
-    if (existing.length >= 16) return existing
-  }
+  const existing = await readToken(path)
+  if (existing) return existing
 
   const token = randomBytes(24).toString('base64url')
   await mkdir(dirname(path), { recursive: true })
-  await writeFile(path, `${token}\n`, { mode: 0o600 })
+
+  try {
+    await writeFile(path, `${token}\n`, { mode: 0o600, flag: 'wx' })
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error
+
+    // Another worker got there first. Its token is the real one.
+    const winner = await readToken(path)
+    if (winner) return winner
+    // An empty file means an installation already ran and spent the token;
+    // there is nothing to hand back.
+    return ''
+  }
+
   await chmod(path, 0o600).catch(() => undefined)
 
   return token
+}
+
+async function readToken(path: string): Promise<string | undefined> {
+  if (!existsSync(path)) return undefined
+
+  const contents = (await readFile(path, 'utf8')).trim()
+  return contents.length >= 16 ? contents : undefined
 }
 
 export async function tokenMatches(

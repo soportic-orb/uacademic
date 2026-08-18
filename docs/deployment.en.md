@@ -258,7 +258,44 @@ tenant under **Administration → Tenants** before anybody signs in.
 
 ---
 
-## 12. Checks after deploying
+## 12. When the browser says 502
+
+Nginx is up and nothing is answering behind it. It is almost always one of
+three things, in this order:
+
+```bash
+pm2 status                          # is the API running at all?
+pm2 logs uacademic --lines 50       # if it restarts in a loop, why
+curl -fsS http://127.0.0.1:3001/health
+ss -ltnp | grep 3001                # who is listening, if anybody
+```
+
+**`pm2 status` empty or `errored`.** The processes were never started, or they
+died. Start them from the repository root:
+
+```bash
+cd /var/www/uacademic/current
+pm2 start ecosystem.config.cjs && pm2 save
+```
+
+**`/health` answers but the browser still says 502.** Nginx is proxying
+somewhere else. Check that `proxy_pass` names the same port the API is
+listening on (3001 unless `UACADEMIC_PORT` says otherwise) — in CloudPanel
+that is the site's reverse-proxy port, in Plesk the "Additional nginx
+directives".
+
+**`/health` answers `{"status":"setup"}`.** That is correct before installing:
+the API is in setup mode and only serves `/health` and `/api/v1/install/*`.
+The `/install` page itself is a static file served by Nginx from
+`current/apps/web/dist` — if that directory is empty, `pnpm build` has not run
+or has not finished.
+
+An API that exits at boot writes the reason in
+`shared/logs/api.error.log`, one line, naming the variable or the file.
+
+---
+
+## 13. Checks after deploying
 
 ```bash
 curl -fsS https://uacademic.example.edu/health
