@@ -15,18 +15,18 @@ import listPlugin from '@fullcalendar/list'
 import FullCalendar from '@fullcalendar/react'
 import timeGridPlugin from '@fullcalendar/timegrid'
 import { useQuery } from '@tanstack/react-query'
-import { Download, FileText } from 'lucide-react'
+import { CalendarSync, Download, FileText } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Link } from 'react-router'
 
 import { CardSkeleton, EmptyState, ErrorState } from '../../components/feedback/states'
 import { Button } from '../../components/ui/button'
-import { Card, CardBody } from '../../components/ui/card'
+import { Card, CardBody, CardHeader } from '../../components/ui/card'
 import { useToast } from '../../hooks/use-toast'
 import { currentLocale } from '../../i18n'
 import { ApiRequestError, apiDownload, apiFetch } from '../../lib/api'
 import { useSessionStore } from '../../stores/session'
-import { FeedSubscription } from './feed-subscription'
 
 interface CalendarEvent {
   sessionId: string
@@ -217,7 +217,26 @@ export function CalendarView() {
         </CardBody>
       </Card>
 
-      <FeedSubscription />
+      {/*
+        Subscribing, and the two API-based connections, live on one screen:
+        choosing between them means comparing how fast each one delivers, and
+        that comparison only makes sense side by side.
+      */}
+      <Card>
+        <CardHeader
+          title={t('connections.title')}
+          description={t('connections.subtitle')}
+          action={
+            <Link
+              to="/connections"
+              className="inline-flex h-10 items-center gap-2 rounded-control border border-border px-4 text-sm text-text hover:bg-surface-muted"
+            >
+              <CalendarSync className="size-4" aria-hidden="true" />
+              {t('calendar.subscribe.title')}
+            </Link>
+          }
+        />
+      </Card>
     </div>
   )
 }

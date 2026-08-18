@@ -5,6 +5,7 @@ import {
   CalendarClock,
   CalendarDays,
   CalendarOff,
+  CalendarSync,
   FileText,
   Repeat,
   ScrollText,
@@ -107,6 +108,12 @@ export const NAV_ITEMS: NavItem[] = [
     icon: MessageSquare,
     roles: ['CENTER_ADMIN', 'COORDINATOR', 'TEACHER'],
     mobile: true,
+  },
+  {
+    key: 'connections',
+    path: '/connections',
+    icon: CalendarSync,
+    roles: ['CENTER_ADMIN', 'COORDINATOR', 'TEACHER'],
   },
   {
     key: 'notifications',

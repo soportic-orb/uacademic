@@ -42,6 +42,12 @@ export default defineConfig({
         // few minutes, and the rate limiter counts per IP. The production
         // default would throttle the run, not a real user.
         RATE_LIMIT_MAX: '5000',
+        // The suite decides which calendar providers exist, rather than
+        // inheriting whatever credentials happen to be in the shell.
+        ENTRA_CLIENT_SECRET: '',
+        GOOGLE_CLIENT_ID: '',
+        GOOGLE_CLIENT_SECRET: '',
+        APP_ENCRYPTION_KEY: 'a'.repeat(64),
       },
       cwd: '../..',
     },

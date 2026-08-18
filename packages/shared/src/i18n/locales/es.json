@@ -64,7 +64,8 @@
     "changes": "Cambios de clase",
     "absences": "Ausencias",
     "notifications": "Notificaciones",
-    "audit": "Auditoría"
+    "audit": "Auditoría",
+    "connections": "Conexiones de calendario"
   },
   "layout": {
     "skipToContent": "Ir al contenido principal",
@@ -1077,6 +1078,95 @@
         "title": "Carga por encima del límite",
         "body": "Tu carga asignada supera la capacidad contratada."
       }
+    },
+    "calendar": {
+      "disconnected": {
+        "title": "Hay que volver a conectar el calendario",
+        "body": "La conexión con {{provider}} ha dejado de funcionar. Vuelve a activarla desde Conexiones de calendario."
+      },
+      "restored": {
+        "title": "Clase restaurada en tu calendario",
+        "body": "Hemos vuelto a poner {{count}} clase(s) en tu calendario: el horario oficial es el de UAcademic."
+      }
+    }
+  },
+  "connections": {
+    "title": "Conexiones de calendario",
+    "subtitle": "Para que no tengas que entrar en UAcademic para saber cuándo das clase",
+    "levels": {
+      "ics": "Suscripción ICS",
+      "icsHint": "Funciona en todas partes. El cliente decide cuándo actualiza.",
+      "microsoft": "Microsoft 365 (Outlook)",
+      "microsoftHint": "Recomendado: ya entras con la cuenta de Microsoft.",
+      "google": "Google Calendar",
+      "googleHint": "Escritura directa, sin la espera de las suscripciones."
+    },
+    "status": {
+      "active": "Conectado",
+      "error": "Con errores",
+      "revoked": "Hay que volver a conectar",
+      "expired": "Caducado",
+      "disconnected": "Sin conectar"
+    },
+    "connect": "Conectar",
+    "reconnect": "Volver a conectar",
+    "disconnect": "Desconectar",
+    "disconnectRemote": "Desconectar y borrar el calendario remoto",
+    "disconnected": "Conexión eliminada",
+    "connected": "Calendario conectado",
+    "syncNow": "Sincronizar ahora",
+    "syncQueued": "Sincronización en cola",
+    "lastSync": "Última sincronización",
+    "never": "Nunca",
+    "notConfigured": "Este proveedor no está configurado en esta instalación.",
+    "dedicatedCalendar": "Calendario dedicado",
+    "dedicatedCalendarHint": "Creamos un calendario propio, \"UAcademic – [Centro]\". Nunca escribimos en tu calendario personal, y puedes ocultarlo, cambiarle el color o borrarlo sin consecuencias.",
+    "sourceOfTruth": "La fuente de verdad es UAcademic: si borras una clase en tu calendario, la restauramos en la siguiente sincronización y te avisamos.",
+    "latency": {
+      "title": "Cuánto tarda en verse un cambio",
+      "immediate": "Casi inmediato",
+      "range": "Entre {{min}} y {{max}}",
+      "clientControlled": "Lo decide el cliente de calendario, no nosotros.",
+      "minutes": "{{count}} min",
+      "hours": "{{count}} h"
+    },
+    "busy": {
+      "title": "Leer mi disponibilidad ocupada",
+      "description": "Leemos solo el inicio y el fin de tus eventos, nunca el título ni el contenido, y los usamos para que el motor de horarios evite esas franjas.",
+      "retention": "Se guardan {{days}} días y no conservamos histórico.",
+      "consent": "Autorizo la lectura de mi disponibilidad ocupada",
+      "enabled": "Lectura de disponibilidad activada",
+      "disabled": "Lectura de disponibilidad desactivada",
+      "repeats": "Solo tenemos en cuenta los compromisos que se repiten."
+    },
+    "apple": {
+      "title": "Apple e iCloud",
+      "body": "iCloud no tiene API pública de calendario y nunca te pediremos una contraseña de aplicación. Usa la suscripción ICS (en Apple Calendar se actualiza cada hora o menos) o, si tienes la cuenta de Microsoft en el dispositivo, conecta Microsoft 365: las clases aparecerán en la app Calendario nativa."
+    },
+    "feed": {
+      "title": "Suscripción ICS",
+      "filters": "Qué incluye el feed",
+      "academicYear": "Curso académico",
+      "subject": "Asignatura",
+      "includeColleagues": "Incluir clases de otros docentes de mis asignaturas",
+      "saved": "Filtros guardados",
+      "instructions": "Cómo suscribirse",
+      "googleWarning": "Google Calendar vuelve a leer las suscripciones cada 8-24 horas y no se puede forzar. Para cambios de última hora, conecta Google Calendar con el botón de arriba.",
+      "steps": {
+        "apple": "Calendario → Archivo → Nueva suscripción de calendario → pega la dirección → Actualizar: cada hora.",
+        "google": "Google Calendar → Otros calendarios → + → Desde URL → pega la dirección.",
+        "outlook": "Outlook → Calendario → Añadir calendario → Suscribirse desde la web → pega la dirección.",
+        "thunderbird": "Thunderbird → Calendario nuevo → En la red → iCalendar (ICS) → pega la dirección."
+      }
+    },
+    "errors": {
+      "notConfigured": "Este proveedor de calendario no está configurado.",
+      "connectFailed": "No se ha podido completar la conexión."
+    },
+    "clients": {
+      "apple": "Apple",
+      "outlook": "Outlook",
+      "google": "Google"
     }
   }
 }

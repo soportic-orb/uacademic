@@ -58,6 +58,27 @@ export const workflowSettingsSchema = z.object({
   autoNotifyAffectedTeachers: z.boolean().default(true),
 })
 
+/**
+ * How a class reads once it has left UAcademic: in an ICS subscription, in
+ * Outlook, in Google Calendar. Templates rather than hardcoded strings because
+ * every center names its groups differently (R9).
+ */
+export const calendarSettingsSchema = z.object({
+  /** Title of a calendar event. Placeholders in `CALENDAR_TEMPLATE_KEYS`. */
+  summaryTemplate: z.string().min(1).max(200).default('{{subjectCode}} {{groupCode}}'),
+  locationTemplate: z.string().max(200).default('{{building}} · {{spaceName}}'),
+  /** Hint clients honour when deciding how often to re-read the feed. */
+  feedRefreshMinutes: z.number().int().min(5).max(1440).default(60),
+  /** Whether a feed shows the other teachers of the subjects one teaches. */
+  feedIncludeColleagues: z.boolean().default(false),
+  /** How long a cancelled class keeps being announced as cancelled. */
+  tombstoneDays: z.number().int().min(1).max(365).default(60),
+  /** Retention of imported free/busy time. Short on purpose: no history. */
+  busyRetentionDays: z.number().int().min(1).max(90).default(21),
+  /** Weeks a personal commitment has to repeat before the planner avoids it. */
+  busyMinOccurrences: z.number().int().min(1).max(10).default(2),
+})
+
 /** Notification policy of the center; each user narrows it further (R9). */
 export const notificationSettingsSchema = z.object({
   /** Whether low-priority events may be collected into one daily email. */
@@ -129,12 +150,15 @@ export const centerSettingsSchema = z.object({
   formats: formatSettingsSchema.prefault({}),
   identity: identitySettingsSchema.prefault({}),
   notifications: notificationSettingsSchema.prefault({}),
+  calendar: calendarSettingsSchema.prefault({}),
 })
 
 export type CenterSettings = z.infer<typeof centerSettingsSchema>
 export type LoadSettings = z.infer<typeof loadSettingsSchema>
 export type ScheduleSettings = z.infer<typeof scheduleSettingsSchema>
 export type IdentitySettings = z.infer<typeof identitySettingsSchema>
+export type CalendarSettings = z.infer<typeof calendarSettingsSchema>
+export type NotificationSettings = z.infer<typeof notificationSettingsSchema>
 
 export const defaultCenterSettings: CenterSettings = centerSettingsSchema.parse({})
 

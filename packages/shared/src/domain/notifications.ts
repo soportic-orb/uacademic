@@ -31,6 +31,8 @@ export type NotificationEvent =
   | 'message.received'
   | 'message.announcement'
   | 'load.overCapacity'
+  | 'calendar.disconnected'
+  | 'calendar.restored'
 
 export interface EventDefinition {
   event: NotificationEvent
@@ -137,6 +139,30 @@ export const NOTIFICATION_EVENTS: readonly EventDefinition[] = [
     defaults: ['inApp'],
     titleKey: 'notify.load.overCapacity.title',
     bodyKey: 'notify.load.overCapacity.body',
+  },
+  /**
+   * A connected calendar stopped accepting us. Nothing will reach that phone
+   * again until the person reconnects, so this is not a low-priority notice.
+   */
+  {
+    event: 'calendar.disconnected',
+    priority: 'high',
+    defaults: ['inApp', 'push', 'email'],
+    mandatory: ['inApp'],
+    titleKey: 'notify.calendar.disconnected.title',
+    bodyKey: 'notify.calendar.disconnected.body',
+  },
+  /**
+   * A class the teacher deleted from their own calendar and we put back —
+   * UAcademic is the source of truth, and saying so is what keeps that from
+   * feeling like a haunting.
+   */
+  {
+    event: 'calendar.restored',
+    priority: 'normal',
+    defaults: ['inApp'],
+    titleKey: 'notify.calendar.restored.title',
+    bodyKey: 'notify.calendar.restored.body',
   },
 ]
 

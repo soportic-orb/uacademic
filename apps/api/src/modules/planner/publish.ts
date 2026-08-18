@@ -16,6 +16,7 @@ import {
   type ScheduleDiff,
   type SessionSnapshot,
   diffSchedules,
+  parseCenterSettings,
   translate,
 } from '@uacademic/shared'
 import type { PrismaClient } from '@uacademic/db'
@@ -23,6 +24,12 @@ import type { PrismaClient } from '@uacademic/db'
 import { writeAuditLog } from '../../lib/audit.js'
 import { toJson } from '../../lib/json.js'
 import { type RealtimeTransport, userChannel } from '../../lib/realtime.js'
+import {
+  clearTombstones,
+  recordTombstones,
+  tombstonesFromDiff,
+} from '../../services/calendar/tombstones.js'
+import { enqueueCalendarSync } from '../../services/calendar/sync.js'
 
 export interface PublishInput {
   client: PrismaClient
@@ -98,6 +105,7 @@ export async function publishVersion(input: PublishInput): Promise<PublishResult
   }
 
   const notified = await notifyTeachers(input, diff)
+  await propagateToCalendars(input, diff)
 
   await writeAuditLog(input.client, {
     centerId: input.centerId,
@@ -118,6 +126,50 @@ export async function publishVersion(input: PublishInput): Promise<PublishResult
   })
 
   return { diff, notified, previousVersionId: previous?.id ?? null }
+}
+
+/**
+ * The same publication, seen from outside UAcademic.
+ *
+ * A class that disappeared from somebody's week has to be *announced* as
+ * cancelled — a subscription cannot guess — and every connected provider
+ * calendar is brought back in line through the queue, one job per person.
+ */
+async function propagateToCalendars(input: PublishInput, diff: ScheduleDiff): Promise<void> {
+  const center = await input.client.center.findUnique({ where: { id: input.centerId } })
+  const settings = parseCenterSettings(center?.settingsJson).calendar
+
+  const tombstones = await tombstonesFromDiff(input.client, input.centerId, diff)
+  await recordTombstones(input.client, tombstones, settings.tombstoneDays)
+
+  const profileIds = [
+    ...new Set(
+      [
+        ...diff.byTeacher.map((entry) => entry.teacherProfileId),
+        ...input.sessions.map((session) => session.teacherProfileId),
+      ].filter((id): id is string => Boolean(id)),
+    ),
+  ]
+  const profiles = await input.client.teacherProfile.findMany({
+    where: { id: { in: profileIds } },
+    select: { id: true, userId: true },
+  })
+
+  // A class that is live again for the person who teaches it is no longer
+  // cancelled *for them* — while it may still be cancelled for whoever lost it.
+  await clearTombstones(
+    input.client,
+    input.sessions.flatMap((session) => {
+      const profile = profiles.find((row) => row.id === session.teacherProfileId)
+      return profile ? [{ userId: profile.userId, sessionId: session.id }] : []
+    }),
+  )
+
+  await enqueueCalendarSync(
+    input.client,
+    [...profiles.map((profile) => profile.userId), ...tombstones.map((entry) => entry.userId)],
+    { reason: 'publish' },
+  )
 }
 
 /**

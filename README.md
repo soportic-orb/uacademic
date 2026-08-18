@@ -137,6 +137,93 @@ reuses it from an Expo app.
 
 ---
 
+## What phase 4B adds
+
+Getting the timetable out of UAcademic, so a teacher never has to open it to
+find out when they teach. Three levels, because every provider allows something
+different — and one fact drives the whole design:
+
+> **An ICS feed is pull, not push.** The client decides when to download and the
+> publisher cannot hurry it. Apple Calendar refreshes about hourly (down to five
+> minutes if the user sets it), Outlook every 1–4 hours, Google Calendar every
+> 8–24 hours **with no setting and no manual refresh**. For a room change
+> announced the same morning, a subscription is not enough. Hence the hybrid.
+
+**Level 1 — the ICS subscription** (everybody, on by default, no configuration).
+An opaque per-user token in the URL, revocable and regenerable, with no personal
+data in the path; the endpoint takes no session and carries its own, much
+tighter rate limit. Each class is a `VEVENT` with a stable `UID`, a `SEQUENCE`
+that grows with every edit, `RRULE` for the weekly recurrence and `EXDATE` for
+the holidays. A class that stops existing is **not** dropped — it keeps being
+published as `STATUS:CANCELLED` until every client has had time to read it,
+because a subscription can only remove what it is told about. The feed carries a
+complete `VTIMEZONE` (so a weekly class stays at the same local hour across the
+March and October changes), `X-WR-CALNAME` and `X-PUBLISHED-TTL`. Titles and
+locations come from per-center templates, the description links straight back to
+the session, and the feed can be filtered by academic year, by subject and by
+whether it includes colleagues teaching the same subjects — changing any of that
+never changes the address. The screen gives step-by-step instructions for Apple,
+Google, Outlook and Thunderbird, and states each one's real refresh window.
+
+**Level 2 — Microsoft Graph** (recommended: the login is already Entra ID). The
+`Calendars.ReadWrite` scope is consented to **separately** from signing in — the
+teacher switches it on in their profile, it is never bundled into the login. We
+create a dedicated calendar, `UAcademic – <Center>`, and never write into the
+default one: it can be hidden, recoloured or deleted with no side effects, and
+disconnecting is a single delete. `calendar_event_map` holds the
+session ↔ event mapping plus a signature, so a republication only rewrites what
+actually changed.
+
+**Level 3 — Google Calendar** (opt-in). Our own OAuth client, a dedicated
+secondary calendar, the same mapping, and incremental reads with `syncToken`.
+
+**Apple / iCloud.** There is no public iCloud calendar API, and CalDAV would mean
+asking people for app-specific passwords — fragile, and not something to ask
+for. It is not implemented. Apple users get level 1 (which Apple Calendar
+refreshes hourly or faster) or level 2 if their Microsoft account is on the
+device, in which case the classes show up in the native Calendar app. The UI says
+exactly that and promises nothing more.
+
+**Reverse synchronisation** (opt-in, separately consented). Reads **only** busy
+time from the personal calendar — start and end, never titles or content — and
+feeds it into the schedule engine as "better avoided". Only commitments that
+repeat count, so a one-off appointment does not reshape a term; that is the case
+this exists for, the associate lecturer with a standing external meeting. Stored
+in `external_busy_slots` with short retention and no history, and withdrawing
+consent deletes what was read.
+
+**The synchronisation engine.** One-directional by default: UAcademic is the
+source of truth, so a class deleted on somebody's phone is put back on the next
+run and they are told. Publishing or changing a schedule enqueues work in the
+`jobs` table through an outbox, one job per person rather than one per session,
+with retries and exponential backoff. A `401`, `403` or `410` means the consent
+is gone: the connection is parked, the person is asked to reconnect, and nothing
+is retried in a loop. Disconnecting offers to delete the remote calendar with
+it. Access and refresh tokens are AES-256-GCM encrypted at rest with a key from
+the environment, and consents are versioned, recorded and audited.
+
+**The connections screen** (in the profile) shows every provider's state, its
+last synchronisation, connect/disconnect, the ICS address with its filters, and
+an honest latency indicator per method.
+
+### Preparing Google (start early)
+
+Google's verification for the Calendar scopes takes **weeks**, so open the
+process at the start of the phase, not at the end. What to prepare:
+
+| What              | Value                                                                                                                                                                                 |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Scopes requested  | `https://www.googleapis.com/auth/calendar` (create the dedicated calendar and its events), `https://www.googleapis.com/auth/calendar.readonly` (busy time, only for users who opt in) |
+| OAuth client type | Web application                                                                                                                                                                       |
+| Redirect URI      | `<API_PUBLIC_URL>/api/v1/calendar/connections/google/callback`                                                                                                                        |
+| Consent screen    | Published, with the homepage, the privacy policy and the terms on a verified domain                                                                                                   |
+| Demo video        | The full consent flow and what each scope is used for, as Google asks                                                                                                                 |
+| Justification     | Both scopes are sensitive: explain the dedicated calendar and that reads are free/busy only                                                                                           |
+
+Until it is verified, the client works for test users added to the consent
+screen. With no `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` configured the
+provider simply reports itself unavailable and the ICS feed carries on.
+
 ## What phase 4 adds
 
 Collaboration: what happens to a timetable after it is published.

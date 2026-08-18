@@ -7,6 +7,7 @@ import { AdminIndexPage } from '../pages/admin-index'
 import { AuditPage } from '../pages/audit'
 import { CalendarPage } from '../pages/calendar'
 import { ChangesPage } from '../pages/changes'
+import { ConnectionsPage } from '../pages/connections'
 import { AdminResourcePage } from '../pages/admin-resource'
 import { DashboardPage } from '../pages/dashboard'
 import { LoginPage } from '../pages/login'
@@ -53,6 +54,7 @@ export const router = createBrowserRouter([
       { path: 'messages', element: <MessagesPage /> },
       { path: 'messages/:id', element: <MessagesPage /> },
       { path: 'notifications', element: <NotificationsPage /> },
+      { path: 'connections', element: <ConnectionsPage /> },
       { path: 'audit', element: <AuditPage /> },
       { path: 'documents', element: <DocumentsPage /> },
       { path: 'platform', element: <PlatformPage /> },

@@ -408,6 +408,7 @@ model Center {
   conversations          Conversation[]
   messages               Message[]
   notifications          Notification[]
+  calendarTombstones     CalendarTombstone[]
   documents              Document[]
   documentChunks         DocumentChunk[]
   settingsVersions       CenterSettingsVersion[]
@@ -486,6 +487,8 @@ model User {
   pushSubscriptions   PushSubscription[]
   calendarFeedTokens  CalendarFeedToken[]
   calendarConnections CalendarConnection[]
+  calendarTombstones  CalendarTombstone[]
+  consents            ConsentRecord[]
   uploadedDocuments   Document[]              @relation("DocumentUploader")
   approvedSettings    CenterSettingsVersion[] @relation("SettingsApprover")
   resolvedExtractions SettingExtraction[]     @relation("ExtractionResolver")
@@ -1035,6 +1038,15 @@ model CalendarConnection {
   lastSyncAt         DateTime?        @map("last_sync_at")
   lastError          String?          @map("last_error") @db.Text
   consentAt          DateTime?        @map("consent_at")
+  /// Version of the consent wording the person actually agreed to (RGPD).
+  consentVersion     Int              @default(0) @map("consent_version")
+  /// Name of the dedicated calendar created on the provider.
+  calendarName       String?          @map("calendar_name") @db.VarChar(255)
+  /// Reading free/busy back is a separate opt-in from writing classes out.
+  busySyncEnabled    Boolean          @default(false) @map("busy_sync_enabled")
+  /// Provider cursor for incremental reads (Graph deltaLink, Google syncToken).
+  syncToken          String?          @map("sync_token") @db.Text
+  lastBusySyncAt     DateTime?        @map("last_busy_sync_at")
   createdAt          DateTime         @default(now()) @map("created_at")
   updatedAt          DateTime         @updatedAt @map("updated_at")
 
@@ -1080,6 +1092,47 @@ model ExternalBusySlot {
   @@index([teacherProfileId, startAt])
   @@index([connectionId])
   @@map("external_busy_slots")
+}
+
+/// A class that stopped existing, kept just long enough to be *announced* as
+/// cancelled. A subscription can only remove an event it is told about, so a
+/// deleted session leaves a tombstone behind until every client has seen it.
+model CalendarTombstone {
+  id          String   @id @default(uuid(7)) @db.Char(36)
+  centerId    String   @map("center_id") @db.Char(36)
+  userId      String   @map("user_id") @db.Char(36)
+  sessionId   String   @map("session_id") @db.Char(36)
+  /// Last known shape of the event: summary, weekday, times, term dates.
+  payloadJson Json     @map("payload_json")
+  reason      String?  @db.VarChar(100)
+  cancelledAt DateTime @default(now()) @map("cancelled_at")
+  expiresAt   DateTime @map("expires_at")
+
+  center Center @relation(fields: [centerId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, sessionId])
+  @@index([userId, expiresAt])
+  @@index([centerId])
+  @@map("calendar_tombstones")
+}
+
+/// What somebody agreed to, and under which wording. Versioned and never
+/// edited: withdrawing consent closes the record, it does not erase it (RGPD).
+model ConsentRecord {
+  id          String    @id @default(uuid(7)) @db.Char(36)
+  userId      String    @map("user_id") @db.Char(36)
+  scope       String    @db.VarChar(100)
+  version     Int
+  grantedAt   DateTime  @default(now()) @map("granted_at")
+  revokedAt   DateTime? @map("revoked_at")
+  ip          String?   @db.VarChar(64)
+  detailsJson Json?     @map("details_json")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, scope])
+  @@map("consent_records")
 }
 
 // ───────────────────────────────────────────────────────────────────────────────

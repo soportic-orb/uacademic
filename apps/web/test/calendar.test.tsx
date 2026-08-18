@@ -6,7 +6,7 @@ import { MemoryRouter } from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { CalendarView } from '../src/features/calendar/calendar-view'
-import { FeedSubscription } from '../src/features/calendar/feed-subscription'
+import { FeedCard } from '../src/features/connections/feed-card'
 import { useSessionStore } from '../src/stores/session'
 
 function wrap(children: ReactNode) {
@@ -38,6 +38,12 @@ const SESSIONS = {
       spaceName: 'Aula 1.1',
     },
   ],
+}
+
+const LATENCY = {
+  apple: { minMinutes: 5, maxMinutes: 60, clientControlled: true },
+  outlook: { minMinutes: 60, maxMinutes: 240, clientControlled: true },
+  google: { minMinutes: 480, maxMinutes: 1440, clientControlled: true },
 }
 
 describe('the teacher calendar', () => {
@@ -139,7 +145,20 @@ describe('the subscription address', () => {
       } as Response),
     )
 
-    render(wrap(<FeedSubscription />))
+    render(
+      wrap(
+        <FeedCard
+          feed={{
+            active: false,
+            id: null,
+            createdAt: null,
+            lastFetchedAt: null,
+            filters: {},
+            latency: LATENCY,
+          }}
+        />,
+      ),
+    )
     expect(screen.getByText(/Qui tingui aquesta adreça/)).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: /Genera l'adreça/ }))
@@ -160,7 +179,20 @@ describe('the subscription address', () => {
       } as Response),
     )
 
-    render(wrap(<FeedSubscription />))
+    render(
+      wrap(
+        <FeedCard
+          feed={{
+            active: true,
+            id: 'feed-1',
+            createdAt: null,
+            lastFetchedAt: null,
+            filters: {},
+            latency: LATENCY,
+          }}
+        />,
+      ),
+    )
     await user.click(await screen.findByRole('button', { name: 'Revoca' }))
 
     await waitFor(() => {

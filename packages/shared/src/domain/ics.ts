@@ -19,12 +19,26 @@ export interface IcsSession {
   summary: string
   description?: string
   location?: string
+  /** Deep link back into UAcademic, emitted as `URL:`. */
+  url?: string
   weekday: Weekday
   startTime: ClockTime
   endTime: ClockTime
   dateFrom: Date
   dateTo: Date
   recurrence: Recurrence
+  /**
+   * Revision of this event. A client only accepts an update whose SEQUENCE is
+   * higher than the one it holds, so this has to grow with every edit —
+   * `sequenceFor(updatedAt)` derives it from the row itself.
+   */
+  sequence?: number
+  /**
+   * `cancelled` keeps the event in the feed as a tombstone. Dropping a VEVENT
+   * silently leaves the class sitting in everybody's calendar forever: the
+   * client can only remove what it is told to remove.
+   */
+  status?: 'confirmed' | 'cancelled'
 }
 
 export interface IcsOptions {
@@ -37,6 +51,8 @@ export interface IcsOptions {
   now?: Date
   /** Refresh hint honoured by most clients. */
   refreshMinutes?: number
+  /** Year the VTIMEZONE transitions are anchored on. Defaults to the stamp's. */
+  referenceYear?: number
 }
 
 const ICS_WEEKDAYS: Record<Weekday, string> = {
@@ -94,6 +110,134 @@ function utcStamp(date: Date): string {
 /** Local date-time as clients read it together with `TZID=`. */
 function localStamp(date: Date, time: ClockTime): string {
   return `${dateStamp(date)}T${time.replace(':', '')}00`
+}
+
+/**
+ * Offset of a zone at an instant, in minutes east of UTC.
+ *
+ * Read from `Intl` rather than from a table: the runtime already ships the
+ * zone database, and a table in here would be one more thing to keep in step
+ * with reality twice a year.
+ */
+export function zoneOffsetMinutes(timezone: string, date: Date): number {
+  const formatted = new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone,
+    timeZoneName: 'longOffset',
+  })
+    .formatToParts(date)
+    .find((part) => part.type === 'timeZoneName')?.value
+
+  // "GMT" alone means UTC; otherwise "GMT+01:00" / "GMT-03:30".
+  const match = /GMT([+-])(\d{2}):?(\d{2})?/.exec(formatted ?? '')
+  if (!match) return 0
+
+  const sign = match[1] === '-' ? -1 : 1
+  return sign * (Number(match[2]) * 60 + Number(match[3] ?? '0'))
+}
+
+function offsetStamp(minutes: number): string {
+  const sign = minutes < 0 ? '-' : '+'
+  const absolute = Math.abs(minutes)
+  return `${sign}${pad(Math.floor(absolute / 60))}${pad(absolute % 60)}`
+}
+
+/**
+ * Zones that switch on the European Union rule: last Sunday of March and of
+ * October, both at 01:00 UTC. Everything the product targets is in here; any
+ * other zone with a summer time we cannot describe falls back to UTC stamps.
+ */
+function usesEuropeanDstRule(timezone: string): boolean {
+  const NO_DST_EUROPE = [
+    'Europe/Moscow',
+    'Europe/Minsk',
+    'Europe/Istanbul',
+    'Europe/Kaliningrad',
+    'Europe/Volgograd',
+    'Europe/Saratov',
+    'Europe/Samara',
+    'Europe/Astrakhan',
+    'Europe/Kirov',
+    'Europe/Ulyanovsk',
+  ]
+  if (NO_DST_EUROPE.includes(timezone)) return false
+
+  return (
+    timezone.startsWith('Europe/') ||
+    ['Atlantic/Canary', 'Atlantic/Madeira', 'Atlantic/Azores'].includes(timezone)
+  )
+}
+
+/** Local wall-clock time of a transition that happens at 01:00 UTC. */
+function transitionTime(offsetMinutes: number): string {
+  const minutes = (60 + offsetMinutes + 24 * 60) % (24 * 60)
+  return `${pad(Math.floor(minutes / 60))}${pad(minutes % 60)}00`
+}
+
+/**
+ * A complete VTIMEZONE, which is what makes `DTSTART;TZID=` mean anything: a
+ * client that does not know the zone still places the class correctly, and a
+ * weekly class stays at the same local hour across the March and October
+ * changes — which a UTC stamp would not survive.
+ *
+ * Returns an empty array for a zone whose summer time we cannot state as a
+ * rule; the feed then falls back to UTC stamps rather than emitting a
+ * VTIMEZONE that would be a guess.
+ */
+export function buildVTimezone(timezone: string, referenceYear: number): string[] {
+  const january = new Date(Date.UTC(referenceYear, 0, 15))
+  const july = new Date(Date.UTC(referenceYear, 6, 15))
+  const standard = zoneOffsetMinutes(timezone, january)
+  const daylight = zoneOffsetMinutes(timezone, july)
+
+  if (standard === daylight) {
+    return [
+      'BEGIN:VTIMEZONE',
+      `TZID:${timezone}`,
+      'BEGIN:STANDARD',
+      `DTSTART:${referenceYear}0101T000000`,
+      `TZOFFSETFROM:${offsetStamp(standard)}`,
+      `TZOFFSETTO:${offsetStamp(standard)}`,
+      `TZNAME:UTC${offsetStamp(standard)}`,
+      'END:STANDARD',
+      'END:VTIMEZONE',
+    ]
+  }
+
+  if (!usesEuropeanDstRule(timezone)) return []
+
+  return [
+    'BEGIN:VTIMEZONE',
+    `TZID:${timezone}`,
+    `X-LIC-LOCATION:${timezone}`,
+    'BEGIN:DAYLIGHT',
+    `DTSTART:${referenceYear}0301T${transitionTime(standard)}`,
+    `TZOFFSETFROM:${offsetStamp(standard)}`,
+    `TZOFFSETTO:${offsetStamp(daylight)}`,
+    `TZNAME:UTC${offsetStamp(daylight)}`,
+    'RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU',
+    'END:DAYLIGHT',
+    'BEGIN:STANDARD',
+    `DTSTART:${referenceYear}1001T${transitionTime(daylight)}`,
+    `TZOFFSETFROM:${offsetStamp(daylight)}`,
+    `TZOFFSETTO:${offsetStamp(standard)}`,
+    `TZNAME:UTC${offsetStamp(standard)}`,
+    'RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU',
+    'END:STANDARD',
+    'END:VTIMEZONE',
+  ]
+}
+
+/**
+ * SEQUENCE from the row's own `updated_at`: minutes since 2024, so any edit
+ * produces a strictly higher number without a counter column that a write path
+ * could forget to bump. It stays a valid 32-bit integer for the next few
+ * thousand years.
+ */
+const SEQUENCE_EPOCH_MS = Date.UTC(2024, 0, 1)
+
+export function sequenceFor(updatedAt: Date | undefined): number {
+  if (!updatedAt) return 0
+  return Math.max(0, Math.floor((updatedAt.getTime() - SEQUENCE_EPOCH_MS) / 60_000))
 }
 
 /** First occurrence on or after `from` that falls on the session's weekday. */
@@ -160,11 +304,21 @@ function exceptionDates(session: IcsSession, excluded: readonly string[]): Date[
 /**
  * The feed. `uid` is derived from the session id so a republished schedule
  * updates the existing event instead of duplicating it, and `SEQUENCE` grows
- * with each publication so clients accept the update.
+ * with each edit so clients accept the update.
+ *
+ * A cancelled session stays in the feed as `STATUS:CANCELLED` for as long as
+ * the tombstone lives. Simply dropping the VEVENT would leave the class in
+ * everybody's calendar: a subscriber can only remove what it is told about.
  */
 export function buildIcsFeed(sessions: readonly IcsSession[], options: IcsOptions): string {
   const now = options.now ?? new Date()
   const excluded = options.excludedDates ?? []
+  const refresh = options.refreshMinutes ?? 60
+  const timezone = buildVTimezone(options.timezone, options.referenceYear ?? now.getUTCFullYear())
+
+  // Without a VTIMEZONE we cannot ask the client to resolve `TZID`, so the
+  // stamps go out in UTC, converted per occurrence.
+  const useTzid = timezone.length > 0
 
   const lines: string[] = [
     'BEGIN:VCALENDAR',
@@ -174,9 +328,15 @@ export function buildIcsFeed(sessions: readonly IcsSession[], options: IcsOption
     'METHOD:PUBLISH',
     `X-WR-CALNAME:${escapeIcsText(options.calendarName)}`,
     `X-WR-TIMEZONE:${options.timezone}`,
-    `REFRESH-INTERVAL;VALUE=DURATION:PT${options.refreshMinutes ?? 60}M`,
-    `X-PUBLISHED-TTL:PT${options.refreshMinutes ?? 60}M`,
+    `REFRESH-INTERVAL;VALUE=DURATION:PT${refresh}M`,
+    `X-PUBLISHED-TTL:PT${refresh}M`,
+    ...timezone,
   ]
+
+  const stamp = (date: Date, time: ClockTime): string =>
+    useTzid
+      ? `;TZID=${options.timezone}:${localStamp(date, time)}`
+      : `:${utcStamp(instantOf(date, time, options.timezone))}`
 
   for (const session of sessions) {
     if (toMinutes(session.endTime) <= toMinutes(session.startTime)) continue
@@ -187,9 +347,11 @@ export function buildIcsFeed(sessions: readonly IcsSession[], options: IcsOption
       'BEGIN:VEVENT',
       `UID:${session.id}@uacademic`,
       `DTSTAMP:${utcStamp(now)}`,
-      `DTSTART;TZID=${options.timezone}:${localStamp(start, session.startTime)}`,
-      `DTEND;TZID=${options.timezone}:${localStamp(start, session.endTime)}`,
+      `SEQUENCE:${session.sequence ?? 0}`,
+      `DTSTART${stamp(start, session.startTime)}`,
+      `DTEND${stamp(start, session.endTime)}`,
       `SUMMARY:${escapeIcsText(session.summary)}`,
+      `STATUS:${session.status === 'cancelled' ? 'CANCELLED' : 'CONFIRMED'}`,
     )
 
     const rule = ruleFor(session)
@@ -198,19 +360,43 @@ export function buildIcsFeed(sessions: readonly IcsSession[], options: IcsOption
     const exdates = exceptionDates(session, excluded)
     if (exdates.length > 0) {
       lines.push(
-        `EXDATE;TZID=${options.timezone}:${exdates
-          .map((date) => localStamp(date, session.startTime))
-          .join(',')}`,
+        useTzid
+          ? `EXDATE;TZID=${options.timezone}:${exdates
+              .map((date) => localStamp(date, session.startTime))
+              .join(',')}`
+          : `EXDATE:${exdates
+              .map((date) => utcStamp(instantOf(date, session.startTime, options.timezone)))
+              .join(',')}`,
       )
     }
 
     if (session.location) lines.push(`LOCATION:${escapeIcsText(session.location)}`)
     if (session.description) lines.push(`DESCRIPTION:${escapeIcsText(session.description)}`)
-    lines.push('TRANSP:OPAQUE', 'END:VEVENT')
+    if (session.url) lines.push(`URL:${session.url}`)
+    lines.push(
+      session.status === 'cancelled' ? 'TRANSP:TRANSPARENT' : 'TRANSP:OPAQUE',
+      'END:VEVENT',
+    )
   }
 
   lines.push('END:VCALENDAR')
 
   // CRLF everywhere, folded: some clients are strict about both.
   return `${lines.map(foldIcsLine).join('\r\n')}\r\n`
+}
+
+/**
+ * The instant a local wall-clock time falls on in a zone. Used only by the
+ * UTC fallback, and it reads the offset of that very day so a date either side
+ * of a summer-time change lands on the right minute.
+ */
+function instantOf(date: Date, time: ClockTime, timezone: string): Date {
+  const naive = Date.UTC(
+    date.getUTCFullYear(),
+    date.getUTCMonth(),
+    date.getUTCDate(),
+    Number(time.slice(0, 2)),
+    Number(time.slice(3, 5)),
+  )
+  return new Date(naive - zoneOffsetMinutes(timezone, new Date(naive)) * 60_000)
 }

@@ -11,17 +11,34 @@
  * cannot be turned into a set of working calendar URLs, and it is revocable
  * without touching anything else.
  */
-import { type IcsSession, buildIcsFeed, occurrencesBetween, translate } from '@uacademic/shared'
+import {
+  type IcsSession,
+  buildIcsFeed,
+  latencyFor,
+  occurrencesBetween,
+  parseCenterSettings,
+  translate,
+} from '@uacademic/shared'
 import ExcelJS from 'exceljs'
 import type { FastifyInstance, FastifyRequest } from 'fastify'
 import { createHash } from 'node:crypto'
 import PDFDocument from 'pdfkit'
 import { z } from 'zod'
 
+import { env } from '../../config/env.js'
 import { generateFeedToken } from '../../lib/crypto.js'
+import { toJson } from '../../lib/json.js'
 import { AppError } from '../../lib/errors.js'
 import { type PrismaClient, prisma } from '../../lib/prisma.js'
 import { parseWith } from '../../lib/validate.js'
+import {
+  type FeedFilters,
+  type TombstonePayload,
+  sessionsForUser,
+  toIcsSession as sessionToIcs,
+  tombstoneToIcsSession,
+} from '../../services/calendar/drafts.js'
+import { registerCalendarConnectionRoutes } from './connections-routes.js'
 import { requireCenterScope, requireUser } from '../../plugins/context.js'
 
 const rangeSchema = z.object({
@@ -100,6 +117,18 @@ export function registerCalendarRoutes(app: FastifyInstance): void {
 
   registerFeedRoutes(app)
   registerExportRoutes(app)
+  registerCalendarConnectionRoutes(app)
+}
+
+const filtersSchema = z.object({
+  academicYearId: z.uuid().nullable().optional(),
+  subjectId: z.uuid().nullable().optional(),
+  includeColleagues: z.boolean().optional(),
+})
+
+function readFilters(value: unknown): FeedFilters {
+  const parsed = filtersSchema.safeParse(value ?? {})
+  return parsed.success ? parsed.data : {}
 }
 
 function registerFeedRoutes(app: FastifyInstance): void {
@@ -116,6 +145,17 @@ function registerFeedRoutes(app: FastifyInstance): void {
       createdAt: token?.createdAt.toISOString() ?? null,
       lastFetchedAt: token?.lastFetchedAt?.toISOString() ?? null,
       id: token?.id ?? null,
+      filters: readFilters(token?.filtersJson),
+      /**
+       * A subscription is pull: the client decides when to read, and we
+       * cannot hurry it. The screen says so with these numbers rather than
+       * implying a change lands instantly.
+       */
+      latency: {
+        apple: latencyFor('ics.apple'),
+        outlook: latencyFor('ics.outlook'),
+        google: latencyFor('ics.google'),
+      },
     }
   })
 
@@ -123,6 +163,7 @@ function registerFeedRoutes(app: FastifyInstance): void {
   app.post('/api/v1/calendar/feed', async (request, reply) => {
     const user = requireUser(request)
     const token = generateFeedToken()
+    const filters = readFilters(request.body)
 
     await prisma().calendarFeedToken.updateMany({
       where: { userId: user.userId, revokedAt: null },
@@ -130,15 +171,37 @@ function registerFeedRoutes(app: FastifyInstance): void {
     })
 
     const created = await prisma().calendarFeedToken.create({
-      data: { userId: user.userId, token: hashFeedToken(token) },
+      data: { userId: user.userId, token: hashFeedToken(token), filtersJson: toJson(filters) },
     })
 
     return reply.code(201).send({
       id: created.id,
       url: `${feedBaseUrl(request)}/api/v1/calendar/feed/${token}.ics`,
       token,
+      filters,
     })
   })
+
+  /**
+   * What the feed carries. Changing it does not change the address: a
+   * subscription that has to be re-added in four clients is a subscription
+   * nobody updates.
+   */
+  app.patch(
+    '/api/v1/calendar/feed/:id',
+    async (request: FastifyRequest<{ Params: { id: string } }>) => {
+      const user = requireUser(request)
+      const filters = readFilters(request.body)
+
+      const updated = await prisma().calendarFeedToken.updateMany({
+        where: { id: request.params.id, userId: user.userId, revokedAt: null },
+        data: { filtersJson: toJson(filters) },
+      })
+      if (updated.count === 0) throw AppError.notFound()
+
+      return { id: request.params.id, filters }
+    },
+  )
 
   app.delete(
     '/api/v1/calendar/feed/:id',
@@ -158,10 +221,19 @@ function registerFeedRoutes(app: FastifyInstance): void {
    * The subscription itself. No session, no cookie: the token is the identity,
    * which is why it is single-purpose, revocable and carries only the owner's
    * own timetable.
+   *
+   * It is also the one endpoint strangers can reach, so it gets its own, much
+   * tighter rate limit — a calendar client that reads every hour is nowhere
+   * near it, and a scanner walking token space is.
    */
   app.get(
     '/api/v1/calendar/feed/:token.ics',
-    { config: { public: true } },
+    {
+      config: {
+        public: true,
+        rateLimit: { max: 60, timeWindow: 60_000 },
+      },
+    },
     async (request: FastifyRequest<{ Params: { token: string } }>, reply) => {
       const raw = request.params.token.replace(/\.ics$/, '')
       const feed = await prisma().calendarFeedToken.findFirst({
@@ -170,24 +242,50 @@ function registerFeedRoutes(app: FastifyInstance): void {
       })
       if (!feed) throw AppError.notFound()
 
-      const sessions = await publishedSessionsFor(prisma(), feed.user.id)
-      const centers = await prisma().center.findMany({
-        where: { userRoles: { some: { userId: feed.user.id } } },
-        select: { timezone: true },
-        take: 1,
+      const membership = await prisma().userCenterRole.findFirst({
+        where: { userId: feed.user.id },
+        include: { center: true },
+        orderBy: { createdAt: 'asc' },
       })
+      const settings = parseCenterSettings(membership?.center.settingsJson)
+      const context = {
+        timezone: membership?.center.timezone ?? 'Europe/Madrid',
+        centerName: membership?.center.name ?? '',
+        settings: settings.calendar,
+        appUrl: env().APP_URL,
+      }
 
+      const filters = readFilters(feed.filtersJson)
+      const sessions = await sessionsForUser(prisma(), feed.user.id, filters)
       const excluded = await nonTeachingDates(prisma(), '2000-01-01', '2100-01-01')
+
+      // Classes that stopped existing still travel, as cancellations. A client
+      // can only remove an event it is told about.
+      const tombstones = await prisma().calendarTombstone.findMany({
+        where: { userId: feed.user.id, expiresAt: { gt: new Date() } },
+      })
 
       await prisma().calendarFeedToken.update({
         where: { id: feed.id },
         data: { lastFetchedAt: new Date() },
       })
 
-      const body = buildIcsFeed(sessions.map(toIcsSession), {
+      const events: IcsSession[] = [
+        ...sessions.map((session) => sessionToIcs(session, context)),
+        ...tombstones.map((tombstone) =>
+          tombstoneToIcsSession(
+            tombstone.sessionId,
+            tombstone.payloadJson as unknown as TombstonePayload,
+            tombstone.cancelledAt,
+          ),
+        ),
+      ]
+
+      const body = buildIcsFeed(events, {
         calendarName: `UAcademic · ${feed.user.firstName} ${feed.user.lastName}`,
-        timezone: centers[0]?.timezone ?? 'Europe/Madrid',
+        timezone: context.timezone,
         excludedDates: excluded,
+        refreshMinutes: settings.calendar.feedRefreshMinutes,
       })
 
       return reply

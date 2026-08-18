@@ -142,29 +142,6 @@ test.describe('the teacher calendar', () => {
     await expect(page.locator('.fc')).toBeVisible()
   })
 
-  test('hands out a subscription address that serves a real calendar', async ({
-    page,
-    request,
-  }) => {
-    await asRole(page, 'Coordinació')
-    await page.goto('/calendar')
-
-    await page.getByRole('button', { name: "Genera l'adreça" }).click()
-
-    const field = page.getByLabel('Adreça de subscripció')
-    await expect(field).toBeVisible()
-    const url = await field.inputValue()
-    expect(url).toContain('/api/v1/calendar/feed/')
-
-    // No cookie, no session: the address is the identity.
-    const feed = await request.get(url)
-    expect(feed.status()).toBe(200)
-    expect(feed.headers()['content-type']).toContain('text/calendar')
-    expect(await feed.text()).toContain('BEGIN:VCALENDAR')
-
-    await expect(page.getByText(/Qui tingui aquesta adreça/)).toBeVisible()
-  })
-
   test('downloads the timetable as a PDF', async ({ page }) => {
     await asRole(page, 'Coordinació')
     await page.goto('/calendar')

@@ -64,7 +64,8 @@
     "changes": "Canvis de classe",
     "absences": "Absències",
     "notifications": "Notificacions",
-    "audit": "Auditoria"
+    "audit": "Auditoria",
+    "connections": "Connexions de calendari"
   },
   "layout": {
     "skipToContent": "Ves al contingut principal",
@@ -1077,6 +1078,95 @@
         "title": "Càrrega per sobre del límit",
         "body": "La teva càrrega assignada supera la capacitat contractada."
       }
+    },
+    "calendar": {
+      "disconnected": {
+        "title": "Cal tornar a connectar el calendari",
+        "body": "La connexió amb {{provider}} ha deixat de funcionar. Torna-la a activar des de Connexions de calendari."
+      },
+      "restored": {
+        "title": "Classe restaurada al teu calendari",
+        "body": "Hem tornat a posar {{count}} classe(s) al teu calendari: l’horari oficial és el d’UAcademic."
+      }
+    }
+  },
+  "connections": {
+    "title": "Connexions de calendari",
+    "subtitle": "Perquè no hagis d’entrar a UAcademic per saber quan fas classe",
+    "levels": {
+      "ics": "Subscripció ICS",
+      "icsHint": "Funciona a tot arreu. El client decideix quan actualitza.",
+      "microsoft": "Microsoft 365 (Outlook)",
+      "microsoftHint": "Recomanat: ja hi entres amb el compte de Microsoft.",
+      "google": "Google Calendar",
+      "googleHint": "Escriptura directa, sense l’espera de les subscripcions."
+    },
+    "status": {
+      "active": "Connectat",
+      "error": "Amb errors",
+      "revoked": "Cal tornar a connectar",
+      "expired": "Caducat",
+      "disconnected": "Sense connectar"
+    },
+    "connect": "Connecta",
+    "reconnect": "Torna a connectar",
+    "disconnect": "Desconnecta",
+    "disconnectRemote": "Desconnecta i esborra el calendari remot",
+    "disconnected": "Connexió eliminada",
+    "connected": "Calendari connectat",
+    "syncNow": "Sincronitza ara",
+    "syncQueued": "Sincronització encuada",
+    "lastSync": "Última sincronització",
+    "never": "Mai",
+    "notConfigured": "Aquest proveïdor no està configurat en aquesta instal·lació.",
+    "dedicatedCalendar": "Calendari dedicat",
+    "dedicatedCalendarHint": "Creem un calendari propi, \"UAcademic – [Centre]\". Mai escrivim al teu calendari personal, i el pots amagar, canviar de color o esborrar sense conseqüències.",
+    "sourceOfTruth": "La font de veritat és UAcademic: si esborres una classe al teu calendari, la restaurem a la següent sincronització i t’avisem.",
+    "latency": {
+      "title": "Quant triga a veure’s un canvi",
+      "immediate": "Gairebé immediat",
+      "range": "Entre {{min}} i {{max}}",
+      "clientControlled": "Ho decideix el client de calendari, no nosaltres.",
+      "minutes": "{{count}} min",
+      "hours": "{{count}} h"
+    },
+    "busy": {
+      "title": "Llegir la meva disponibilitat ocupada",
+      "description": "Llegim només l’inici i el final dels teus esdeveniments, mai el títol ni el contingut, i els fem servir perquè el motor d’horaris eviti aquestes franges.",
+      "retention": "Es guarden {{days}} dies i no en conservem històric.",
+      "consent": "Autoritzo la lectura de la meva disponibilitat ocupada",
+      "enabled": "Lectura de disponibilitat activada",
+      "disabled": "Lectura de disponibilitat desactivada",
+      "repeats": "Només tenim en compte els compromisos que es repeteixen."
+    },
+    "apple": {
+      "title": "Apple i iCloud",
+      "body": "iCloud no té API pública de calendari i no et demanarem mai una contrasenya d’aplicació. Fes servir la subscripció ICS (a Apple Calendar s’actualitza cada hora o menys) o, si tens el compte de Microsoft al dispositiu, connecta Microsoft 365: les classes apareixeran a l’app Calendari nativa."
+    },
+    "feed": {
+      "title": "Subscripció ICS",
+      "filters": "Què inclou el feed",
+      "academicYear": "Curs acadèmic",
+      "subject": "Assignatura",
+      "includeColleagues": "Inclou classes d’altres docents de les meves assignatures",
+      "saved": "Filtres desats",
+      "instructions": "Com subscriure’s",
+      "googleWarning": "Google Calendar torna a llegir les subscripcions cada 8-24 hores i no es pot forçar. Per a canvis d’última hora, connecta Google Calendar amb el botó de dalt.",
+      "steps": {
+        "apple": "Calendari → Arxiu → Nova subscripció de calendari → enganxa l’adreça → Actualitza: cada hora.",
+        "google": "Google Calendar → Altres calendaris → + → Des d’URL → enganxa l’adreça.",
+        "outlook": "Outlook → Calendari → Afegeix calendari → Subscriu-te des del web → enganxa l’adreça.",
+        "thunderbird": "Thunderbird → Calendari nou → A la xarxa → iCalendar (ICS) → enganxa l’adreça."
+      }
+    },
+    "errors": {
+      "notConfigured": "Aquest proveïdor de calendari no està configurat.",
+      "connectFailed": "No s’ha pogut completar la connexió."
+    },
+    "clients": {
+      "apple": "Apple",
+      "outlook": "Outlook",
+      "google": "Google"
     }
   }
 }

@@ -18,9 +18,11 @@ import {
   type SpaceResource,
   type TeacherResource,
   type Weekday,
+  busyToAvoidEntries,
   computeTeacherLoad,
   parseCenterSettings,
   weeklyCapacityFrom,
+  withExternalBusy,
 } from '@uacademic/shared'
 import type { FastifyRequest } from 'fastify'
 
@@ -58,7 +60,7 @@ export async function plannerContext(request: FastifyRequest): Promise<PlannerCo
   const center = await prisma().center.findUnique({ where: { id: centerId } })
   const settings = parseCenterSettings(center?.settingsJson)
 
-  const [profiles, spaces, groups] = await Promise.all([
+  const [profiles, spaces, groups, busySlots] = await Promise.all([
     db.teacherProfile.findMany({
       where: { academicYearId: academicYear.id },
       include: {
@@ -70,6 +72,13 @@ export async function plannerContext(request: FastifyRequest): Promise<PlannerCo
     db.group.findMany({
       where: { subject: { academicYearId: academicYear.id } },
       include: { subject: { select: { id: true, code: true, nameCa: true } } },
+    }),
+    // Personal commitments imported from a connected calendar, for whoever
+    // opted in. Start and end only — that is all that was ever read.
+    prisma().externalBusySlot.findMany({
+      where: { teacherProfile: { academicYearId: academicYear.id } },
+      select: { teacherProfileId: true, startAt: true, endAt: true },
+      take: 5_000,
     }),
   ])
 
@@ -83,12 +92,27 @@ export async function plannerContext(request: FastifyRequest): Promise<PlannerCo
         })),
       })
 
-      const availability: AvailabilityEntry[] = profile.availability.map((entry) => ({
+      const declared: AvailabilityEntry[] = profile.availability.map((entry) => ({
         weekday: entry.weekday as Weekday,
         startTime: entry.startTime,
         endTime: entry.endTime,
         level: entry.level,
       }))
+
+      /**
+       * A standing external commitment makes a slot *less* attractive, never
+       * more: `withExternalBusy` keeps whatever the teacher declared where it
+       * is stricter, and only what repeats counts as standing.
+       */
+      const external = busyToAvoidEntries(
+        busySlots.filter((slot) => slot.teacherProfileId === profile.id),
+        {
+          timezone: center?.timezone ?? 'Europe/Madrid',
+          slotMinutes: settings.schedule.slotMinutes,
+          minOccurrences: settings.calendar.busyMinOccurrences,
+        },
+      )
+      const availability = withExternalBusy(declared, external)
 
       return [
         profile.id,

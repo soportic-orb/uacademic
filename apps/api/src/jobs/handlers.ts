@@ -21,6 +21,8 @@ import {
 import type { Logger } from 'pino'
 
 import { toJson } from '../lib/json.js'
+import { type ConnectionRow, pullBusy, syncConnection } from '../services/calendar/sync.js'
+import { purgeExpiredTombstones } from '../services/calendar/tombstones.js'
 import { sendMail } from '../services/mailer.js'
 import { sendPush } from '../services/push.js'
 import type { JobHandler } from './worker.js'
@@ -197,16 +199,79 @@ export function buildJobHandlers(client: PrismaClient, logger: Logger): Record<s
         await client.user.update({ where: { id: user.id }, data: { digestSentAt: new Date() } })
       }
     },
+    /**
+     * One person's calendars, brought in line with the timetable.
+     *
+     * The job is per user rather than per session on purpose: a publication
+     * that moves thirty classes must cost one round of provider calls, not
+     * thirty. Failures bubble up so the queue retries with backoff — except a
+     * revoked consent, which `syncConnection` parks instead.
+     */
+    'calendar.sync': async (payload) => {
+      const job = payload as { userId: string; connectionId?: string }
+
+      const connections = await client.calendarConnection.findMany({
+        where: {
+          userId: job.userId,
+          status: 'active',
+          ...(job.connectionId ? { id: job.connectionId } : {}),
+        },
+      })
+
+      for (const connection of connections) {
+        const outcome = await syncConnection(client, connection as ConnectionRow)
+        logger.info({ provider: connection.provider, ...outcome }, 'calendar.sync')
+      }
+    },
+
+    /**
+     * Free/busy in the other direction, for whoever opted in. Only start and
+     * end are ever read, and the rows are short-lived by design.
+     */
+    'calendar.busy.pull': async (payload) => {
+      const job = payload as { connectionId?: string }
+
+      const connections = await client.calendarConnection.findMany({
+        where: {
+          status: 'active',
+          busySyncEnabled: true,
+          ...(job.connectionId ? { id: job.connectionId } : {}),
+        },
+      })
+
+      for (const connection of connections) {
+        const result = await pullBusy(client, connection as ConnectionRow)
+        logger.info({ provider: connection.provider, ...result }, 'calendar.busy.pull')
+      }
+    },
+
+    /**
+     * Housekeeping: cancellations stop being announced once every client has
+     * had time to read them, and borrowed busy time is not kept as history.
+     */
+    'calendar.purge': async () => {
+      const tombstones = await purgeExpiredTombstones(client)
+
+      const centers = await client.center.findMany({ select: { settingsJson: true } })
+      const retentionDays = Math.max(
+        1,
+        ...centers.map(
+          (center) => parseCenterSettings(center.settingsJson).calendar.busyRetentionDays,
+        ),
+      )
+      const busy = await client.externalBusySlot.deleteMany({
+        where: { fetchedAt: { lt: new Date(Date.now() - retentionDays * 86_400_000) } },
+      })
+
+      if (tombstones > 0 || busy.count > 0) {
+        logger.info({ tombstones, busySlots: busy.count }, 'calendar.purge')
+      }
+    },
   }
 }
 
-/**
- * The two recurring jobs. They are enqueued rather than run inline so that a
- * host with several PM2 workers still executes each one once: claiming a row
- * is what makes that safe.
- */
 export async function enqueuePeriodicJobs(client: PrismaClient): Promise<void> {
-  const types = ['changes.expire', 'notification.digest']
+  const types = ['changes.expire', 'notification.digest', 'calendar.busy.pull', 'calendar.purge']
 
   for (const type of types) {
     const pending = await client.job.count({ where: { type, status: 'pending' } })

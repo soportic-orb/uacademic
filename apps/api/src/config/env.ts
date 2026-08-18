@@ -58,6 +58,27 @@ const envSchema = z.object({
   ENTRA_CLIENT_ID: z.string().optional(),
   /** Extra accepted audiences, comma separated (e.g. `api://…`). */
   ENTRA_EXTRA_AUDIENCES: z.string().optional(),
+  /**
+   * Confidential-client secret, used only by the calendar consent flow: the
+   * sign-in itself is a public-client flow and never needs it.
+   */
+  ENTRA_CLIENT_SECRET: z.string().optional(),
+  /** Authority segment for the consent flow. `organizations` = any tenant. */
+  ENTRA_AUTHORITY_TENANT: z.string().default('organizations'),
+
+  /**
+   * Google Calendar (level 3). Our own OAuth client, with a verification
+   * process that takes weeks — see the README before switching it on.
+   */
+  GOOGLE_CLIENT_ID: z.string().optional(),
+  GOOGLE_CLIENT_SECRET: z.string().optional(),
+
+  /**
+   * Public address of this API, used to build the OAuth redirect URIs and the
+   * ICS subscription URL. It must match what is registered with each provider,
+   * which is why it is configured rather than derived from a request header.
+   */
+  API_PUBLIC_URL: z.string().default('http://localhost:3001'),
 
   /**
    * Email (Nodemailer). Without a host the mailer logs what it would have

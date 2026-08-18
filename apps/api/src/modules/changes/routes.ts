@@ -26,6 +26,13 @@ import { toJson } from '../../lib/json.js'
 import { prisma } from '../../lib/prisma.js'
 import type { RealtimeTransport } from '../../lib/realtime.js'
 import { parseWith } from '../../lib/validate.js'
+import { enqueueCalendarSync } from '../../services/calendar/sync.js'
+import {
+  type TombstoneInput,
+  clearTombstones,
+  recordTombstones,
+  tombstoneForSession,
+} from '../../services/calendar/tombstones.js'
 import { notify } from '../../services/notify.js'
 import { plannerContext } from '../planner/context.js'
 import {
@@ -328,6 +335,73 @@ export function registerChangeRoutes(app: FastifyInstance, bus: RealtimeTranspor
 
 type PlannerContext = Awaited<ReturnType<typeof plannerContext>>
 
+interface MovedSession {
+  id: string
+  teacherProfileId: string | null
+}
+
+/**
+ * An applied change, seen from the teacher's phone.
+ *
+ * Whoever gains a class gets it written into their connected calendar; whoever
+ * loses one — a substitution accepted, a class handed over — gets a *cancelled*
+ * event in their subscription, because a feed cannot take back what it simply
+ * stops mentioning.
+ */
+async function propagateToCalendars(
+  context: PlannerContext,
+  moved: { before: unknown; after: unknown },
+): Promise<void> {
+  const before = (Array.isArray(moved.before) ? moved.before : []) as MovedSession[]
+  const after = (Array.isArray(moved.after) ? moved.after : []) as MovedSession[]
+
+  const profileIds = [...before, ...after]
+    .map((session) => session.teacherProfileId)
+    .filter((id): id is string => Boolean(id))
+
+  const profiles = await prisma().teacherProfile.findMany({
+    where: { id: { in: [...new Set(profileIds)] } },
+    select: { id: true, userId: true },
+  })
+  const userOf = (profileId: string | null) =>
+    profileId ? (profiles.find((row) => row.id === profileId)?.userId ?? null) : null
+
+  const settings = context.settings.calendar
+  const tombstones: TombstoneInput[] = []
+  const cleared: { userId: string; sessionId: string }[] = []
+
+  for (const previous of before) {
+    const current = after.find((session) => session.id === previous.id)
+    if (!current || current.teacherProfileId === previous.teacherProfileId) continue
+
+    const lostBy = userOf(previous.teacherProfileId)
+    if (lostBy) {
+      const tombstone = await tombstoneForSession(prisma(), {
+        centerId: context.centerId,
+        sessionId: previous.id,
+        userId: lostBy,
+        reason: 'reassigned',
+      })
+      if (tombstone) tombstones.push(tombstone)
+    }
+
+    const gainedBy = userOf(current.teacherProfileId)
+    if (gainedBy) cleared.push({ userId: gainedBy, sessionId: current.id })
+  }
+
+  await recordTombstones(prisma(), tombstones, settings.tombstoneDays)
+  await clearTombstones(prisma(), cleared)
+
+  await enqueueCalendarSync(
+    prisma(),
+    [
+      ...profiles.map((profile) => profile.userId),
+      ...tombstones.map((tombstone) => tombstone.userId),
+    ],
+    { reason: 'change' },
+  )
+}
+
 async function find(context: PlannerContext, id: string): Promise<ChangeRow> {
   const row = await context.db.changeRequest.findFirst({ where: { id } })
   if (!row) throw AppError.notFound()
@@ -447,6 +521,7 @@ async function applyAndRecord(
     'class_session',
   )
 
+  await propagateToCalendars(context, moved)
   await announce(context, row, 'applied', bus)
 }
 

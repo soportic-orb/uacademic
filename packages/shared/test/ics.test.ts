@@ -80,7 +80,10 @@ describe('the ICS feed', () => {
 
   it('writes a one-off class without a recurrence rule', () => {
     const lines = feed([session({ recurrence: 'once' })]).split('\r\n')
-    expect(lines.some((line) => line.startsWith('RRULE'))).toBe(false)
+    // Only the event's own rule counts: VTIMEZONE carries the yearly
+    // summer-time transitions, which every feed has.
+    const event = lines.slice(lines.indexOf('BEGIN:VEVENT'))
+    expect(event.some((line) => line.startsWith('RRULE'))).toBe(false)
   })
 
   it('removes the days the academic calendar closes', () => {

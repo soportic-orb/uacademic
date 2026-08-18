@@ -64,7 +64,8 @@
     "changes": "Class changes",
     "absences": "Absences",
     "notifications": "Notifications",
-    "audit": "Audit"
+    "audit": "Audit",
+    "connections": "Calendar connections"
   },
   "layout": {
     "skipToContent": "Skip to main content",
@@ -1077,6 +1078,95 @@
         "title": "Load above the limit",
         "body": "Your assigned load is above your contracted capacity."
       }
+    },
+    "calendar": {
+      "disconnected": {
+        "title": "Your calendar needs reconnecting",
+        "body": "The connection to {{provider}} stopped working. Switch it back on from Calendar connections."
+      },
+      "restored": {
+        "title": "A class was restored to your calendar",
+        "body": "We put {{count}} class(es) back in your calendar: the official timetable is the one in UAcademic."
+      }
+    }
+  },
+  "connections": {
+    "title": "Calendar connections",
+    "subtitle": "So you never have to open UAcademic to find out when you teach",
+    "levels": {
+      "ics": "ICS subscription",
+      "icsHint": "Works everywhere. The client decides when it refreshes.",
+      "microsoft": "Microsoft 365 (Outlook)",
+      "microsoftHint": "Recommended: you already sign in with your Microsoft account.",
+      "google": "Google Calendar",
+      "googleHint": "Written directly, without the wait a subscription brings."
+    },
+    "status": {
+      "active": "Connected",
+      "error": "Failing",
+      "revoked": "Needs reconnecting",
+      "expired": "Expired",
+      "disconnected": "Not connected"
+    },
+    "connect": "Connect",
+    "reconnect": "Reconnect",
+    "disconnect": "Disconnect",
+    "disconnectRemote": "Disconnect and delete the remote calendar",
+    "disconnected": "Connection removed",
+    "connected": "Calendar connected",
+    "syncNow": "Sync now",
+    "syncQueued": "Synchronisation queued",
+    "lastSync": "Last synchronised",
+    "never": "Never",
+    "notConfigured": "This provider is not configured on this installation.",
+    "dedicatedCalendar": "Dedicated calendar",
+    "dedicatedCalendarHint": "We create a calendar of our own, \"UAcademic – [Center]\". We never write into your personal calendar, and you can hide it, recolour it or delete it with no side effects.",
+    "sourceOfTruth": "UAcademic is the source of truth: if you delete a class from your calendar, we restore it on the next synchronisation and tell you.",
+    "latency": {
+      "title": "How long a change takes to show up",
+      "immediate": "Almost immediate",
+      "range": "Between {{min}} and {{max}}",
+      "clientControlled": "The calendar client decides, not us.",
+      "minutes": "{{count}} min",
+      "hours": "{{count}} h"
+    },
+    "busy": {
+      "title": "Read my busy time",
+      "description": "We read only the start and the end of your events — never the title or the content — and use them so the schedule engine avoids those slots.",
+      "retention": "Kept for {{days}} days, with no history.",
+      "consent": "I allow my busy time to be read",
+      "enabled": "Busy time reading is on",
+      "disabled": "Busy time reading is off",
+      "repeats": "Only commitments that repeat are taken into account."
+    },
+    "apple": {
+      "title": "Apple and iCloud",
+      "body": "iCloud has no public calendar API, and we will never ask you for an app-specific password. Use the ICS subscription (Apple Calendar refreshes it hourly or faster) or, if your Microsoft account is on the device, connect Microsoft 365: the classes then appear in the native Calendar app."
+    },
+    "feed": {
+      "title": "ICS subscription",
+      "filters": "What the feed carries",
+      "academicYear": "Academic year",
+      "subject": "Subject",
+      "includeColleagues": "Include classes taught by colleagues on my subjects",
+      "saved": "Filters saved",
+      "instructions": "How to subscribe",
+      "googleWarning": "Google Calendar re-reads subscriptions every 8 to 24 hours and there is no way to hurry it. For same-day changes, connect Google Calendar with the button above.",
+      "steps": {
+        "apple": "Calendar → File → New Calendar Subscription → paste the address → Refresh: every hour.",
+        "google": "Google Calendar → Other calendars → + → From URL → paste the address.",
+        "outlook": "Outlook → Calendar → Add calendar → Subscribe from web → paste the address.",
+        "thunderbird": "Thunderbird → New Calendar → On the Network → iCalendar (ICS) → paste the address."
+      }
+    },
+    "errors": {
+      "notConfigured": "This calendar provider is not configured.",
+      "connectFailed": "The connection could not be completed."
+    },
+    "clients": {
+      "apple": "Apple",
+      "outlook": "Outlook",
+      "google": "Google"
     }
   }
 }
