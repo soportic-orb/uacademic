@@ -1,9 +1,13 @@
 import type { Role } from '@uacademic/shared'
 import {
+  BellRing,
   BookOpen,
   CalendarClock,
   CalendarDays,
+  CalendarOff,
   FileText,
+  Repeat,
+  ScrollText,
   LayoutDashboard,
   MessageSquare,
   Settings,
@@ -86,11 +90,36 @@ export const NAV_ITEMS: NavItem[] = [
     roles: ['COORDINATOR'],
   },
   {
+    key: 'changes',
+    path: '/changes',
+    icon: Repeat,
+    roles: ['CENTER_ADMIN', 'COORDINATOR', 'TEACHER'],
+  },
+  {
+    key: 'absences',
+    path: '/absences',
+    icon: CalendarOff,
+    roles: ['CENTER_ADMIN', 'COORDINATOR', 'TEACHER'],
+  },
+  {
     key: 'messages',
     path: '/messages',
     icon: MessageSquare,
     roles: ['CENTER_ADMIN', 'COORDINATOR', 'TEACHER'],
     mobile: true,
+  },
+  {
+    key: 'notifications',
+    path: '/notifications',
+    icon: BellRing,
+    roles: ['SUPERADMIN', 'CENTER_ADMIN', 'COORDINATOR', 'TEACHER'],
+  },
+  {
+    key: 'audit',
+    path: '/audit',
+    icon: ScrollText,
+    // R4: the log is for whoever answers for the center, not for everybody.
+    roles: ['SUPERADMIN', 'CENTER_ADMIN'],
   },
   {
     key: 'documents',

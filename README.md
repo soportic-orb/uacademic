@@ -137,6 +137,57 @@ reuses it from an Expo app.
 
 ---
 
+## What phase 4 adds
+
+Collaboration: what happens to a timetable after it is published.
+
+**Class changes** walk a ladder, and only the ladder:
+
+```
+draft → requested → accepted by teacher → approved by coordination → applied
+              ↘ rejected      ↘ rejected            ↘ cancelled / expired
+```
+
+Every step asks the same pure function (`packages/shared/src/domain/change-requests.ts`)
+whether _this actor_ may take _this step_ from _this state_, re-checks the result
+against the published week with the phase-3 constraint engine, writes an audit
+entry (R4) and tells the people the step concerns, each in their own language (R1).
+A center where coordination is only informed (`workflow.coordinatorApprovesChanges`
+= false) skips the approval state entirely; `workflow.autoApplyApprovedChanges`
+decides whether an approval lands in the timetable by itself, and it lands through
+the same conflict guard as a manual apply. Unanswered requests expire after
+`workflow.changeRequestExpiryHours`, which the queue worker enforces on a schedule
+and records as a `system` change.
+
+**Absences and substitutions.** A teacher reports a range of days with a reason;
+the system lists the classes it actually leaves uncovered and ranks who could take
+each one — competence in the subject or its area, free in that slot, and with
+capacity headroom — scoring each candidate and, for the ineligible ones, naming the
+blocker. Asking a colleague to cover is a _request_, not an order: it creates a
+change request they can decline, and the class only moves when the ladder reaches
+`applied`.
+
+**Messaging.** One-to-one conversations, an automatic group per subject, a center
+channel and read-only coordinator announcements — who may read and who may post is
+decided by pure rules both ends share. Attachments (10 MB, five per message, an
+allow-list of types), a read indicator, and full-text search across the
+conversations the reader belongs to. Delivery is SSE over the user's own channel,
+with the polling endpoint as the fallback for hosts that will not hold a stream
+open.
+
+**Notifications.** A catalog of events × channels (in-app / push / email) with
+per-user preferences, mandatory channels that cannot be muted, and a daily digest
+for low-priority events. Push is Web Push with VAPID; the permission is only ever
+requested from a real click, and on iOS — where push exists only inside a PWA added
+to the home screen (16.4+) — a non-installed device gets the "Share → Add to Home
+Screen" onboarding instead of a prompt that would be denied forever. Email is
+Nodemailer with MJML templates, queued in the `jobs` table with retries and backoff,
+and every message is rendered in the locale stored on the recipient's profile.
+
+**The audit viewer** for administrators: filters by entity, person, date range and
+origin (`user` / `ai` / `system`), with the before/after payload of each entry. The
+log stays what R4 says it is — append-only, never editable.
+
 ## What phase 3 adds
 
 Planning: the part that turns a load model into a timetable.

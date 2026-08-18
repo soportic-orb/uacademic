@@ -2,22 +2,21 @@ import { createBrowserRouter } from 'react-router'
 
 import { AppShell } from '../components/layout/app-shell'
 import { RequireSession } from '../auth/require-session'
+import { AbsencesPage } from '../pages/absences'
 import { AdminIndexPage } from '../pages/admin-index'
-import { AdminResourcePage } from '../pages/admin-resource'
+import { AuditPage } from '../pages/audit'
 import { CalendarPage } from '../pages/calendar'
+import { ChangesPage } from '../pages/changes'
+import { AdminResourcePage } from '../pages/admin-resource'
 import { DashboardPage } from '../pages/dashboard'
 import { LoginPage } from '../pages/login'
 import { ProfilePage } from '../pages/profile'
 import { UsersPage } from '../features/admin/users-page'
 import { ImportWizard } from '../features/imports/import-wizard'
 import { MyLoadPage } from '../pages/my-load'
-import {
-  AssistantPage,
-  DocumentsPage,
-  MessagesPage,
-  NotFoundPage,
-  PlatformPage,
-} from '../pages/placeholders'
+import { MessagesPage } from '../pages/messages'
+import { NotificationsPage } from '../pages/notifications'
+import { AssistantPage, DocumentsPage, NotFoundPage, PlatformPage } from '../pages/placeholders'
 import { PlanningPage } from '../pages/planning'
 import { SettingsPage } from '../pages/settings'
 import { SubjectsPage } from '../pages/subjects'
@@ -47,7 +46,14 @@ export const router = createBrowserRouter([
       { path: 'teachers/:id', element: <TeacherDetailPage /> },
       { path: 'subjects', element: <SubjectsPage /> },
       { path: 'assistant', element: <AssistantPage /> },
+      { path: 'changes', element: <ChangesPage /> },
+      { path: 'changes/:id', element: <ChangesPage /> },
+      { path: 'absences', element: <AbsencesPage /> },
+      { path: 'absences/:id', element: <AbsencesPage /> },
       { path: 'messages', element: <MessagesPage /> },
+      { path: 'messages/:id', element: <MessagesPage /> },
+      { path: 'notifications', element: <NotificationsPage /> },
+      { path: 'audit', element: <AuditPage /> },
       { path: 'documents', element: <DocumentsPage /> },
       { path: 'platform', element: <PlatformPage /> },
       { path: 'settings', element: <SettingsPage /> },

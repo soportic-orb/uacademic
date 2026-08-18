@@ -223,7 +223,16 @@ describe.skipIf(!hasDatabase)('teaching capacity', () => {
           ),
         },
       })
-      expect(restored.json().skills).toHaveLength(seeded.length)
+      // Asserted as sets: the endpoint stores each subject and each area once,
+      // so a demo database that accumulated a duplicate would otherwise make
+      // this fail for the wrong reason.
+      const setOf = (skills: { subjectId: string | null; knowledgeArea: string | null }[]) => ({
+        subjects: new Set(skills.flatMap((skill) => (skill.subjectId ? [skill.subjectId] : []))),
+        areas: new Set(
+          skills.flatMap((skill) => (skill.knowledgeArea ? [skill.knowledgeArea] : [])),
+        ),
+      })
+      expect(setOf(restored.json().skills)).toEqual(setOf(seeded))
     })
 
     it('refuses a subject that belongs to another center', async () => {

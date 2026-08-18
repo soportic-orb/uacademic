@@ -38,6 +38,10 @@ export default defineConfig({
         AUTH_MODE: process.env.AUTH_MODE ?? 'mock',
         WEB_ORIGIN: `http://127.0.0.1:${WEB_PORT}`,
         SESSION_COOKIE_SECRET: 'e2e-session-secret-that-is-long-enough',
+        // The whole suite is one browser on one IP driving every screen in a
+        // few minutes, and the rate limiter counts per IP. The production
+        // default would throttle the run, not a real user.
+        RATE_LIMIT_MAX: '5000',
       },
       cwd: '../..',
     },

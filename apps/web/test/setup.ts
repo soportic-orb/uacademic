@@ -16,4 +16,10 @@ if (!window.matchMedia) {
   })) as typeof window.matchMedia
 }
 
+// jsdom has no layout, so it has no `scrollIntoView` either; components that
+// keep a thread pinned to its last message call it on every render.
+if (!Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = () => {}
+}
+
 await initI18n('ca')

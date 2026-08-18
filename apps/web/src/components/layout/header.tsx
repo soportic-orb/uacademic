@@ -1,10 +1,11 @@
 import type { SessionUser } from '@uacademic/shared'
 import { formatPersonName } from '@uacademic/shared'
-import { Bell, LogOut, Menu, Search, UserRound } from 'lucide-react'
+import { LogOut, Menu, Search, UserRound } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 
 import { useSession } from '../../auth/session'
+import { NotificationBell } from '../../features/notifications/notification-bell'
 import { useToast } from '../../hooks/use-toast'
 import { DEMO_IDENTITIES, useSessionStore } from '../../stores/session'
 import { Button } from '../ui/button'
@@ -78,14 +79,7 @@ export function Header({ user, onOpenSearch, onToggleSidebar }: HeaderProps) {
         </kbd>
       </button>
 
-      <Button
-        variant="ghost"
-        size="icon"
-        aria-label={t('layout.notifications')}
-        onClick={() => toast.info('layout.notificationsEmpty')}
-      >
-        <Bell className="size-5" aria-hidden="true" />
-      </Button>
+      <NotificationBell />
 
       {/*
         Phase 0 identity switcher, kept only for local development and the e2e

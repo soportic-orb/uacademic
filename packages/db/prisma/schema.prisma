@@ -214,11 +214,17 @@ enum ChangeRequestType {
   availability_change
 }
 
+/// The phase 3 ladder: a change is answered by the counterpart, then by
+/// coordination, and only then written into the timetable.
 enum ChangeRequestStatus {
-  pending
-  approved
+  draft
+  requested
+  accepted_by_teacher
+  approved_by_coordinator
+  applied
   rejected
-  withdrawn
+  cancelled
+  expired
 }
 
 enum AbsenceType {
@@ -448,19 +454,22 @@ model AcademicYear {
 // ───────────────────────────────────────────────────────────────────────────────
 
 model User {
-  id          String          @id @default(uuid(7)) @db.Char(36)
+  id           String          @id @default(uuid(7)) @db.Char(36)
   /// Entra ID `oid` claim — the stable identifier (R3). Null until first login.
-  entraOid    String?         @unique @map("entra_oid") @db.Char(36)
-  email       String          @unique @db.VarChar(255)
-  firstName   String          @map("first_name") @db.VarChar(100)
-  lastName    String          @map("last_name") @db.VarChar(150)
-  locale      Locale          @default(ca)
-  theme       ThemePreference @default(system)
-  avatarUrl   String?         @map("avatar_url") @db.VarChar(500)
-  status      UserStatus      @default(invited)
-  lastLoginAt DateTime?       @map("last_login_at")
-  createdAt   DateTime        @default(now()) @map("created_at")
-  updatedAt   DateTime        @updatedAt @map("updated_at")
+  entraOid     String?         @unique @map("entra_oid") @db.Char(36)
+  email        String          @unique @db.VarChar(255)
+  firstName    String          @map("first_name") @db.VarChar(100)
+  lastName     String          @map("last_name") @db.VarChar(150)
+  locale       Locale          @default(ca)
+  theme        ThemePreference @default(system)
+  avatarUrl    String?         @map("avatar_url") @db.VarChar(500)
+  status       UserStatus      @default(invited)
+  lastLoginAt  DateTime?       @map("last_login_at")
+  /// Last time this person's daily digest went out, so the next one only
+  /// carries what happened since.
+  digestSentAt DateTime?       @map("digest_sent_at")
+  createdAt    DateTime        @default(now()) @map("created_at")
+  updatedAt    DateTime        @updatedAt @map("updated_at")
 
   centerRoles         UserCenterRole[]
   coordinatedSubjects SubjectCoordinator[]
@@ -836,9 +845,12 @@ model ChangeRequest {
   targetUserId String?             @map("target_user_id") @db.Char(36)
   sessionId    String?             @map("session_id") @db.Char(36)
   proposedJson Json                @map("proposed_json")
-  status       ChangeRequestStatus @default(pending)
+  status       ChangeRequestStatus @default(draft)
   resolvedBy   String?             @map("resolved_by") @db.Char(36)
   resolvedAt   DateTime?           @map("resolved_at")
+  /// When an unanswered request expires by itself (workflow settings).
+  expiresAt    DateTime?           @map("expires_at")
+  appliedAt    DateTime?           @map("applied_at")
   reason       String?             @db.Text
   createdAt    DateTime            @default(now()) @map("created_at")
   updatedAt    DateTime            @updatedAt @map("updated_at")
@@ -852,6 +864,7 @@ model ChangeRequest {
   @@index([centerId, status])
   @@index([requesterId])
   @@index([sessionId])
+  @@index([status, expiresAt])
   @@map("change_requests")
 }
 
@@ -862,6 +875,8 @@ model Absence {
   dateFrom            DateTime      @map("date_from") @db.Date
   dateTo              DateTime      @map("date_to") @db.Date
   type                AbsenceType
+  /// What the teacher wrote when reporting it.
+  reason              String?       @db.VarChar(255)
   substituteProfileId String?       @map("substitute_profile_id") @db.Char(36)
   status              AbsenceStatus @default(requested)
   createdAt           DateTime      @default(now()) @map("created_at")
@@ -931,6 +946,8 @@ model Message {
 
   @@index([conversationId, createdAt])
   @@index([centerId, createdAt])
+  /// Message search runs in MySQL rather than in the application.
+  @@fulltext([body])
   @@map("messages")
 }
 
@@ -958,6 +975,8 @@ model NotificationPref {
   inApp     Boolean @default(true) @map("in_app")
   push      Boolean @default(false)
   email     Boolean @default(false)
+  /// Collect this event into the daily digest instead of sending it at once.
+  digest    Boolean @default(false)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

@@ -34,7 +34,15 @@
     "generate": "Generate",
     "stop": "Stop",
     "from": "From",
-    "to": "To"
+    "to": "To",
+    "send": "Send",
+    "reply": "Reply",
+    "markAllRead": "Mark everything as read",
+    "filters": "Filters",
+    "reason": "Reason",
+    "note": "Note",
+    "attach": "Attach",
+    "unread": "Unread"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -52,7 +60,11 @@
     "more": "More",
     "admin": "Administration",
     "imports": "Imports",
-    "availability": "Availability"
+    "availability": "Availability",
+    "changes": "Class changes",
+    "absences": "Absences",
+    "notifications": "Notifications",
+    "audit": "Audit"
   },
   "layout": {
     "skipToContent": "Skip to main content",
@@ -264,6 +276,28 @@
       "title": "No conversations",
       "description": "Subject conversations will show up here.",
       "action": "Start a conversation"
+    },
+    "conversations": "Conversations",
+    "newConversation": "New conversation",
+    "placeholder": "Write a message…",
+    "search": "Search the messages",
+    "searchEmpty": "No message matches the search.",
+    "readByAll": "Read by everyone",
+    "sent": "Sent",
+    "announcementReadOnly": "This is an announcements channel: only coordination can post.",
+    "members": "Members",
+    "attachments": {
+      "add": "Attach a file",
+      "tooLarge": "The file is over 10 MB.",
+      "unsupportedType": "That file type is not accepted.",
+      "tooMany": "At most 5 files per message.",
+      "download": "Download"
+    },
+    "types": {
+      "direct": "Direct conversation",
+      "group": "Group",
+      "subject": "Subject",
+      "announcement": "Center announcements"
     }
   },
   "documents": {
@@ -336,7 +370,11 @@
     "changeRequestSubject": "New class change request",
     "changeRequestBody": "{{requester}} requested a change to the {{subject}} session.",
     "scheduleChangedSubject": "Changes to your timetable",
-    "scheduleChangedBody": "Version {{version}} of the timetable has been published with {{count}} change(s) that affect you."
+    "scheduleChangedBody": "Version {{version}} of the timetable has been published with {{count}} change(s) that affect you.",
+    "openApp": "Open UAcademic",
+    "preferencesHint": "You can change what we tell you about in Settings → Notifications.",
+    "digestSubject": "Daily digest: {{count}} notices",
+    "digestGroup": "{{count}} notices"
   },
   "push": {
     "changeRequestTitle": "Change request",
@@ -800,6 +838,245 @@
       "excel": "Export to Excel",
       "done": "File downloaded",
       "failed": "We could not generate the file"
+    }
+  },
+  "changes": {
+    "title": "Class changes",
+    "subtitle": "Requests to move, swap or cover a class",
+    "create": "Request a change",
+    "empty": "No requests yet.",
+    "mine": "Mine",
+    "open": "Open",
+    "all": "All",
+    "requestedBy": "Requested by {{name}}",
+    "targetIs": "Affects {{name}}",
+    "expiresAt": "Expires on {{date}}",
+    "expiresNever": "No expiry",
+    "session": "Session",
+    "proposal": "Proposal",
+    "conflicts": "Conflicts found",
+    "noConflicts": "No conflict with the published timetable",
+    "status": {
+      "draft": "Draft",
+      "requested": "Requested",
+      "accepted_by_teacher": "Accepted by the teacher",
+      "approved_by_coordinator": "Approved by coordination",
+      "applied": "Applied",
+      "rejected": "Rejected",
+      "cancelled": "Cancelled",
+      "expired": "Expired"
+    },
+    "type": {
+      "session_swap": "Session swap",
+      "session_move": "Session move",
+      "session_cancel": "Session cancellation",
+      "space_change": "Room change",
+      "substitution": "Substitution",
+      "availability_change": "Availability change"
+    },
+    "actions": {
+      "submit": "Send the request",
+      "accept": "Accept",
+      "reject": "Reject",
+      "approve": "Approve",
+      "apply": "Apply to the timetable",
+      "cancel": "Withdraw"
+    },
+    "done": {
+      "submit": "Request sent",
+      "accept": "Request accepted",
+      "reject": "Request rejected",
+      "approve": "Request approved",
+      "apply": "Change applied to the timetable",
+      "cancel": "Request withdrawn"
+    },
+    "errors": {
+      "closed": "This request is already closed.",
+      "invalidTransition": "That step is not possible from this state.",
+      "notYours": "That step is not yours to take.",
+      "approvalNotRequired": "In this center coordination is only informed, not asked.",
+      "approvalRequired": "Coordination has to approve it before it can be applied.",
+      "conflicts": "It cannot be applied: it conflicts with the published timetable."
+    },
+    "form": {
+      "type": "Kind of change",
+      "session": "Session",
+      "target": "Person affected",
+      "weekday": "New day",
+      "startTime": "New start time",
+      "endTime": "New end time",
+      "space": "New room",
+      "reason": "Reason",
+      "submit": "Send"
+    }
+  },
+  "absences": {
+    "title": "Absences",
+    "subtitle": "Report an absence and find who can cover the classes",
+    "report": "Report an absence",
+    "empty": "No absences on record.",
+    "dateFrom": "From",
+    "dateTo": "To",
+    "type": "Reason",
+    "reason": "Details",
+    "reported": "Absence reported",
+    "affectedSessions": "Classes affected",
+    "noSessions": "No classes fall inside this range.",
+    "findSubstitute": "Find a substitute",
+    "status": {
+      "requested": "Reported",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "cancelled": "Cancelled"
+    },
+    "substituteAsked": "Substitute proposed: {{name}}"
+  },
+  "absenceType": {
+    "sick_leave": "Sick leave",
+    "personal_leave": "Personal leave",
+    "conference": "Conference",
+    "training": "Training",
+    "other": "Other"
+  },
+  "substitutes": {
+    "title": "Who can cover this class",
+    "eligible": "Can cover it",
+    "ineligible": "Cannot cover it",
+    "score": "Suitability",
+    "assign": "Ask them to cover it",
+    "assigned": "Substitution request sent",
+    "empty": "No colleague is free for this slot.",
+    "reasons": {
+      "teachesSubject": "Teaches this subject",
+      "sharesArea": "Shares the {{area}} area",
+      "preferredSlot": "A slot they prefer",
+      "availableSlot": "A slot they are available in",
+      "avoidSlot": "A slot they would rather avoid",
+      "hasCapacity": "{{hours}} h of weekly capacity left"
+    },
+    "blockers": {
+      "notQualified": "Does not teach this subject or its area",
+      "busy": "Already teaching in this slot",
+      "unavailable": "Marked this slot as unavailable",
+      "noCapacity": "No contracted capacity left",
+      "sameTeacher": "This is the absent teacher"
+    }
+  },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "Nothing to report.",
+    "markRead": "Mark as read",
+    "preferences": "Notification preferences",
+    "preferencesHint": "Choose how you want to hear about each thing.",
+    "event": "Event",
+    "channels": {
+      "inApp": "In the app",
+      "push": "Push",
+      "email": "Email"
+    },
+    "digest": "Daily digest",
+    "digestHint": "Low-priority notices are collected into a single email a day.",
+    "mandatory": "This notice cannot be switched off.",
+    "priority": {
+      "high": "High",
+      "normal": "Normal",
+      "low": "Low"
+    },
+    "saved": "Preferences saved",
+    "push": {
+      "title": "Notifications on your phone",
+      "enable": "Enable notifications",
+      "enabled": "Notifications enabled",
+      "denied": "You blocked notifications in this browser. Allow them again from its settings.",
+      "unsupported": "This browser does not support web push.",
+      "unavailable": "Push is not configured on the server yet.",
+      "iosTitle": "To get notifications on an iPhone or iPad",
+      "iosSteps": "Open this page in Safari, tap Share and then \"Add to Home Screen\". Open UAcademic from the new icon and try again.",
+      "iosNote": "Apple only delivers web push to apps added to the home screen (iOS 16.4 or later)."
+    },
+    "unreadCount": "{{count}} unread",
+    "open": "Open",
+    "viewAll": "See them all"
+  },
+  "audit": {
+    "title": "Audit",
+    "subtitle": "Everything that changed, who changed it and from where",
+    "entity": "Entity",
+    "action": "Action",
+    "source": "Source",
+    "user": "User",
+    "date": "Date",
+    "from": "From",
+    "to": "To",
+    "ip": "IP address",
+    "before": "Before",
+    "after": "After",
+    "empty": "No entry matches the filters.",
+    "sources": {
+      "user": "Person",
+      "ai": "AI assistant",
+      "system": "System"
+    },
+    "details": "Change detail"
+  },
+  "notify": {
+    "schedule": {
+      "published": {
+        "title": "Timetable published",
+        "body": "A new version of the timetable has been published with changes that affect you."
+      }
+    },
+    "change": {
+      "requested": {
+        "title": "New change request",
+        "body": "A change request is waiting for your answer ({{session}})."
+      },
+      "accepted": {
+        "title": "Request accepted",
+        "body": "The change request for {{session}} was accepted."
+      },
+      "approved": {
+        "title": "Change approved",
+        "body": "Coordination approved the change for {{session}}."
+      },
+      "applied": {
+        "title": "Change applied",
+        "body": "The change for {{session}} is now in the timetable."
+      },
+      "rejected": {
+        "title": "Change rejected",
+        "body": "The change request for {{session}} was rejected."
+      },
+      "expired": {
+        "title": "Request expired",
+        "body": "A change request expired without an answer."
+      }
+    },
+    "absence": {
+      "reported": {
+        "title": "Absence reported",
+        "body": "{{teacher}} reported an absence from {{from}} to {{to}}."
+      },
+      "substituteAssigned": {
+        "title": "You have been asked to cover a class",
+        "body": "You are asked to cover {{session}} from {{from}} to {{to}}."
+      }
+    },
+    "message": {
+      "received": {
+        "title": "New message",
+        "body": "{{sender}} wrote to you in {{conversation}}."
+      },
+      "announcement": {
+        "title": "Center announcement",
+        "body": "{{sender}} posted an announcement."
+      }
+    },
+    "load": {
+      "overCapacity": {
+        "title": "Load above the limit",
+        "body": "Your assigned load is above your contracted capacity."
+      }
     }
   }
 }

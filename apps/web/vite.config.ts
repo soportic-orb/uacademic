@@ -9,6 +9,15 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'prompt',
+      // `injectManifest` rather than `generateSW`: the service worker has to
+      // handle `push` and `notificationclick` itself, which a generated one
+      // cannot do (phase 4).
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.ts',
+      injectManifest: {
+        globPatterns: ['**/*.{js,css,html,svg,woff2}'],
+      },
       includeAssets: ['favicon.svg'],
       manifest: {
         name: 'UAcademic',
@@ -20,11 +29,7 @@ export default defineConfig({
         start_url: '/',
         icons: [{ src: '/favicon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' }],
       },
-      workbox: {
-        // API responses are tenant-scoped; caching them across identities would
-        // be a leak waiting to happen, so only the shell is precached.
-        navigateFallbackDenylist: [/^\/api\//],
-      },
+      devOptions: { enabled: false, type: 'module' },
     }),
   ],
   server: {

@@ -34,7 +34,15 @@
     "generate": "Genera",
     "stop": "Atura",
     "from": "De",
-    "to": "A"
+    "to": "A",
+    "send": "Envia",
+    "reply": "Respon",
+    "markAllRead": "Marca-ho tot com a llegit",
+    "filters": "Filtres",
+    "reason": "Motiu",
+    "note": "Nota",
+    "attach": "Adjunta",
+    "unread": "No llegit"
   },
   "nav": {
     "dashboard": "Tauler",
@@ -52,7 +60,11 @@
     "more": "Més",
     "admin": "Administració",
     "imports": "Importacions",
-    "availability": "Disponibilitat"
+    "availability": "Disponibilitat",
+    "changes": "Canvis de classe",
+    "absences": "Absències",
+    "notifications": "Notificacions",
+    "audit": "Auditoria"
   },
   "layout": {
     "skipToContent": "Ves al contingut principal",
@@ -264,6 +276,28 @@
       "title": "Cap conversa",
       "description": "Les converses d'assignatura apareixeran aquí.",
       "action": "Inicia una conversa"
+    },
+    "conversations": "Converses",
+    "newConversation": "Nova conversa",
+    "placeholder": "Escriu un missatge…",
+    "search": "Cerca als missatges",
+    "searchEmpty": "Cap missatge coincideix amb la cerca.",
+    "readByAll": "Llegit per tothom",
+    "sent": "Enviat",
+    "announcementReadOnly": "Aquest canal és només d’anuncis: només coordinació hi pot escriure.",
+    "members": "Participants",
+    "attachments": {
+      "add": "Adjunta un fitxer",
+      "tooLarge": "El fitxer supera els 10 MB.",
+      "unsupportedType": "Aquest tipus de fitxer no s’admet.",
+      "tooMany": "Màxim 5 fitxers per missatge.",
+      "download": "Descarrega"
+    },
+    "types": {
+      "direct": "Conversa directa",
+      "group": "Grup",
+      "subject": "Assignatura",
+      "announcement": "Anuncis del centre"
     }
   },
   "documents": {
@@ -336,7 +370,11 @@
     "changeRequestSubject": "Nova sol·licitud de canvi de classe",
     "changeRequestBody": "{{requester}} ha demanat un canvi a la sessió de {{subject}}.",
     "scheduleChangedSubject": "Canvis al teu horari",
-    "scheduleChangedBody": "S'ha publicat la versió {{version}} de l'horari amb {{count}} canvi(s) que t'afecten."
+    "scheduleChangedBody": "S'ha publicat la versió {{version}} de l'horari amb {{count}} canvi(s) que t'afecten.",
+    "openApp": "Obre UAcademic",
+    "preferencesHint": "Pots canviar què t’avisem des de Configuració → Notificacions.",
+    "digestSubject": "Resum del dia: {{count}} avisos",
+    "digestGroup": "{{count}} avisos"
   },
   "push": {
     "changeRequestTitle": "Sol·licitud de canvi",
@@ -800,6 +838,245 @@
       "excel": "Exporta a Excel",
       "done": "Fitxer descarregat",
       "failed": "No hem pogut generar el fitxer"
+    }
+  },
+  "changes": {
+    "title": "Canvis de classe",
+    "subtitle": "Sol·licituds de moviment, intercanvi i substitució",
+    "create": "Sol·licita un canvi",
+    "empty": "No hi ha cap sol·licitud.",
+    "mine": "Les meves",
+    "open": "Obertes",
+    "all": "Totes",
+    "requestedBy": "Demanat per {{name}}",
+    "targetIs": "Afecta {{name}}",
+    "expiresAt": "Caduca el {{date}}",
+    "expiresNever": "Sense caducitat",
+    "session": "Sessió",
+    "proposal": "Proposta",
+    "conflicts": "Conflictes detectats",
+    "noConflicts": "Cap conflicte amb l’horari publicat",
+    "status": {
+      "draft": "Esborrany",
+      "requested": "Demanat",
+      "accepted_by_teacher": "Acceptat pel docent",
+      "approved_by_coordinator": "Aprovat per coordinació",
+      "applied": "Aplicat",
+      "rejected": "Rebutjat",
+      "cancelled": "Cancel·lat",
+      "expired": "Caducat"
+    },
+    "type": {
+      "session_swap": "Intercanvi de sessions",
+      "session_move": "Moviment de sessió",
+      "session_cancel": "Anul·lació de sessió",
+      "space_change": "Canvi d'aula",
+      "substitution": "Substitució",
+      "availability_change": "Canvi de disponibilitat"
+    },
+    "actions": {
+      "submit": "Envia la sol·licitud",
+      "accept": "Accepta",
+      "reject": "Rebutja",
+      "approve": "Aprova",
+      "apply": "Aplica a l’horari",
+      "cancel": "Retira"
+    },
+    "done": {
+      "submit": "Sol·licitud enviada",
+      "accept": "Sol·licitud acceptada",
+      "reject": "Sol·licitud rebutjada",
+      "approve": "Sol·licitud aprovada",
+      "apply": "Canvi aplicat a l’horari",
+      "cancel": "Sol·licitud retirada"
+    },
+    "errors": {
+      "closed": "Aquesta sol·licitud ja està tancada.",
+      "invalidTransition": "Aquest pas no és possible en aquest estat.",
+      "notYours": "Aquest pas no et correspon a tu.",
+      "approvalRequired": "Cal l’aprovació de coordinació abans d’aplicar-ho.",
+      "approvalNotRequired": "En aquest centre l’aprovació de coordinació és informativa.",
+      "conflicts": "No es pot aplicar: hi ha conflictes amb l’horari publicat."
+    },
+    "form": {
+      "type": "Tipus de canvi",
+      "session": "Sessió afectada",
+      "target": "Persona afectada",
+      "weekday": "Nou dia",
+      "startTime": "Nova hora d’inici",
+      "endTime": "Nova hora de fi",
+      "space": "Nova aula",
+      "reason": "Motiu",
+      "submit": "Envia"
+    }
+  },
+  "absences": {
+    "title": "Absències",
+    "subtitle": "Comunica una absència i busca qui pot cobrir les classes",
+    "report": "Comunica una absència",
+    "empty": "No hi ha absències registrades.",
+    "dateFrom": "Des del",
+    "dateTo": "Fins al",
+    "type": "Motiu",
+    "reason": "Detall",
+    "reported": "Absència comunicada",
+    "affectedSessions": "Classes afectades",
+    "noSessions": "Cap classe afectada en aquest rang.",
+    "findSubstitute": "Busca substitut",
+    "status": {
+      "requested": "Comunicada",
+      "approved": "Aprovada",
+      "rejected": "Rebutjada",
+      "cancelled": "Cancel·lada"
+    },
+    "substituteAsked": "Substitut proposat: {{name}}"
+  },
+  "absenceType": {
+    "sick_leave": "Baixa mèdica",
+    "personal_leave": "Assumptes propis",
+    "conference": "Congrés",
+    "training": "Formació",
+    "other": "Altres"
+  },
+  "substitutes": {
+    "title": "Qui pot cobrir aquesta classe",
+    "eligible": "Poden cobrir-la",
+    "ineligible": "No poden cobrir-la",
+    "score": "Idoneïtat",
+    "assign": "Demana-li que la cobreixi",
+    "assigned": "Petició de substitució enviada",
+    "empty": "Cap company o companya disponible per a aquesta franja.",
+    "reasons": {
+      "teachesSubject": "Imparteix aquesta assignatura",
+      "sharesArea": "Comparteix l’àrea de {{area}}",
+      "preferredSlot": "És una franja que prefereix",
+      "availableSlot": "És una franja on està disponible",
+      "avoidSlot": "És una franja que preferiria evitar",
+      "hasCapacity": "Li queden {{hours}} h de capacitat setmanal"
+    },
+    "blockers": {
+      "notQualified": "No imparteix aquesta assignatura ni la seva àrea",
+      "busy": "Ja té classe en aquesta franja",
+      "unavailable": "Ha marcat aquesta franja com a no disponible",
+      "noCapacity": "No li queda capacitat contractada",
+      "sameTeacher": "És la persona absent"
+    }
+  },
+  "notifications": {
+    "title": "Notificacions",
+    "empty": "No tens notificacions.",
+    "markRead": "Marca com a llegida",
+    "preferences": "Preferències de notificació",
+    "preferencesHint": "Tria com vols que t’avisem de cada cosa.",
+    "event": "Esdeveniment",
+    "channels": {
+      "inApp": "A l’app",
+      "push": "Push",
+      "email": "Correu"
+    },
+    "digest": "Resum diari",
+    "digestHint": "Els avisos de baixa prioritat s’agrupen en un sol correu al dia.",
+    "mandatory": "Aquest avís no es pot desactivar.",
+    "priority": {
+      "high": "Alta",
+      "normal": "Normal",
+      "low": "Baixa"
+    },
+    "saved": "Preferències desades",
+    "push": {
+      "title": "Avisos al mòbil",
+      "enable": "Activa els avisos",
+      "enabled": "Avisos activats",
+      "denied": "Has bloquejat els avisos al navegador. Cal tornar-los a permetre des de la configuració del navegador.",
+      "unsupported": "Aquest navegador no admet avisos push.",
+      "unavailable": "El servidor encara no té configurat el push.",
+      "iosTitle": "Per rebre avisos a l’iPhone o l’iPad",
+      "iosSteps": "Obre aquesta pàgina a Safari, toca Compartir i després \"Afegeix a la pantalla d’inici\". Obre UAcademic des de la icona nova i torna a provar-ho.",
+      "iosNote": "Apple només permet avisos push a les apps afegides a la pantalla d’inici (iOS 16.4 o superior)."
+    },
+    "unreadCount": "{{count}} sense llegir",
+    "open": "Ves-hi",
+    "viewAll": "Veure-les totes"
+  },
+  "audit": {
+    "title": "Auditoria",
+    "subtitle": "Tot el que s’ha modificat, qui ho ha fet i des d’on",
+    "entity": "Entitat",
+    "action": "Acció",
+    "source": "Origen",
+    "user": "Usuari",
+    "date": "Data",
+    "from": "Des del",
+    "to": "Fins al",
+    "ip": "Adreça IP",
+    "before": "Abans",
+    "after": "Després",
+    "empty": "Cap registre coincideix amb els filtres.",
+    "sources": {
+      "user": "Persona",
+      "ai": "Assistent IA",
+      "system": "Sistema"
+    },
+    "details": "Detall del canvi"
+  },
+  "notify": {
+    "schedule": {
+      "published": {
+        "title": "Horari publicat",
+        "body": "S’ha publicat una versió nova de l’horari amb canvis que t’afecten."
+      }
+    },
+    "change": {
+      "requested": {
+        "title": "Nova sol·licitud de canvi",
+        "body": "Tens una sol·licitud de canvi pendent de resposta ({{session}})."
+      },
+      "accepted": {
+        "title": "Sol·licitud acceptada",
+        "body": "S’ha acceptat la sol·licitud de canvi de {{session}}."
+      },
+      "approved": {
+        "title": "Canvi aprovat",
+        "body": "Coordinació ha aprovat el canvi de {{session}}."
+      },
+      "applied": {
+        "title": "Canvi aplicat",
+        "body": "El canvi de {{session}} ja és a l’horari."
+      },
+      "rejected": {
+        "title": "Canvi rebutjat",
+        "body": "S’ha rebutjat la sol·licitud de canvi de {{session}}."
+      },
+      "expired": {
+        "title": "Sol·licitud caducada",
+        "body": "Una sol·licitud de canvi ha caducat sense resposta."
+      }
+    },
+    "absence": {
+      "reported": {
+        "title": "Absència comunicada",
+        "body": "{{teacher}} ha comunicat una absència del {{from}} al {{to}}."
+      },
+      "substituteAssigned": {
+        "title": "Et demanen una substitució",
+        "body": "Et proposen cobrir {{session}} del {{from}} al {{to}}."
+      }
+    },
+    "message": {
+      "received": {
+        "title": "Missatge nou",
+        "body": "{{sender}} t’ha escrit a {{conversation}}."
+      },
+      "announcement": {
+        "title": "Anunci del centre",
+        "body": "{{sender}} ha publicat un anunci."
+      }
+    },
+    "load": {
+      "overCapacity": {
+        "title": "Càrrega per sobre del límit",
+        "body": "La teva càrrega assignada supera la capacitat contractada."
+      }
     }
   }
 }

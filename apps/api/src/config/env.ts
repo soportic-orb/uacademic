@@ -59,6 +59,32 @@ const envSchema = z.object({
   /** Extra accepted audiences, comma separated (e.g. `api://…`). */
   ENTRA_EXTRA_AUDIENCES: z.string().optional(),
 
+  /**
+   * Email (Nodemailer). Without a host the mailer logs what it would have
+   * sent instead of failing: a development database must not need an SMTP
+   * server to exercise the notification flow.
+   */
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.coerce.number().int().min(1).max(65535).default(587),
+  SMTP_SECURE: z
+    .enum(['true', 'false'])
+    .optional()
+    .transform((value) => value === 'true'),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASSWORD: z.string().optional(),
+  SMTP_FROM: z.string().default('UAcademic <no-reply@example.edu>'),
+
+  /** Web Push (VAPID). Push is simply unavailable when these are missing. */
+  VAPID_PUBLIC_KEY: z.string().optional(),
+  VAPID_PRIVATE_KEY: z.string().optional(),
+  VAPID_SUBJECT: z.string().default('mailto:admin@example.edu'),
+
+  /** Where the web app lives, for the links inside notifications. */
+  APP_URL: z.string().default('http://localhost:5173'),
+
+  /** Message attachments live on disk; there is no object storage on the host. */
+  UPLOAD_DIR: z.string().default('./var/uploads'),
+
   IMPORT_MAX_ROWS: z.coerce.number().int().min(1).max(100_000).default(5_000),
   IMPORT_MAX_FILE_MB: z.coerce.number().int().min(1).max(50).default(5),
 
@@ -113,6 +139,19 @@ export function acceptedAudiences(env: Env): string[] {
   return [env.ENTRA_CLIENT_ID, ...(env.ENTRA_EXTRA_AUDIENCES ?? '').split(',')]
     .map((audience) => audience?.trim())
     .filter((audience): audience is string => Boolean(audience && audience.length > 0))
+}
+
+/**
+ * The configuration the running app was built with.
+ *
+ * `buildApp` publishes its own environment here so that a service reaching for
+ * `env()` — the mailer, the notification links — sees the same values the app
+ * was given rather than re-reading `process.env`. Without this, an app built
+ * with an injected configuration (every test, and the e2e runner) would parse
+ * the ambient environment again and fail on rules that do not apply to it.
+ */
+export function setEnv(value: Env): void {
+  cached = value
 }
 
 export function env(): Env {

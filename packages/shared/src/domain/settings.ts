@@ -47,10 +47,26 @@ export const scheduleSettingsSchema = z.object({
 })
 
 export const workflowSettingsSchema = z.object({
+  /** False means coordination is only informed: the approval step is skipped. */
   coordinatorApprovesChanges: z.boolean().default(true),
   teacherCanProposeSwap: z.boolean().default(true),
   changeRequestNoticeDays: z.number().int().min(0).max(90).default(7),
+  /** Hours before an unanswered change request expires. Zero disables it. */
+  changeRequestExpiryHours: z.number().int().min(0).max(720).default(72),
+  /** Whether an approved change is written into the timetable automatically. */
+  autoApplyApprovedChanges: z.boolean().default(true),
   autoNotifyAffectedTeachers: z.boolean().default(true),
+})
+
+/** Notification policy of the center; each user narrows it further (R9). */
+export const notificationSettingsSchema = z.object({
+  /** Whether low-priority events may be collected into one daily email. */
+  dailyDigest: z.boolean().default(true),
+  /** Center-local hour the digest is sent at. */
+  digestHour: z.number().int().min(0).max(23).default(8),
+  /** Quiet hours for push, center-local. Equal values disable them. */
+  quietHoursFrom: clockTime.default('22:00'),
+  quietHoursTo: clockTime.default('07:00'),
 })
 
 /**
@@ -112,6 +128,7 @@ export const centerSettingsSchema = z.object({
   engine: engineSettingsSchema.prefault({}),
   formats: formatSettingsSchema.prefault({}),
   identity: identitySettingsSchema.prefault({}),
+  notifications: notificationSettingsSchema.prefault({}),
 })
 
 export type CenterSettings = z.infer<typeof centerSettingsSchema>

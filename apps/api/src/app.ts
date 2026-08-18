@@ -5,14 +5,19 @@ import helmet from '@fastify/helmet'
 import rateLimit from '@fastify/rate-limit'
 import Fastify, { type FastifyInstance } from 'fastify'
 
-import { type Env, corsOrigins, env as loadEnvironment } from './config/env.js'
+import { type Env, corsOrigins, env as loadEnvironment, setEnv } from './config/env.js'
 import { InMemoryRealtimeBus, type RealtimeTransport } from './lib/realtime.js'
 import { registerContext } from './plugins/context.js'
 import { registerErrorHandler } from './plugins/error-handler.js'
 import { registerAdminResources } from './modules/admin/resources.js'
 import { registerUserRoutes } from './modules/admin/users-routes.js'
 import { registerAuthRoutes } from './modules/auth/routes.js'
+import { registerAbsenceRoutes } from './modules/absences/routes.js'
+import { registerAuditRoutes } from './modules/audit/routes.js'
 import { registerCalendarRoutes } from './modules/calendar/routes.js'
+import { registerChangeRoutes } from './modules/changes/routes.js'
+import { registerMessagingRoutes } from './modules/messaging/routes.js'
+import { registerNotificationRoutes } from './modules/notifications/routes.js'
 import { registerCenterRoutes } from './modules/centers/routes.js'
 import { registerImportRoutes } from './modules/imports/routes.js'
 import { registerEventRoutes } from './modules/events/routes.js'
@@ -29,6 +34,9 @@ export interface BuildAppOptions {
 
 export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyInstance> {
   const env = options.env ?? loadEnvironment()
+  // Services that read the configuration on their own (the mailer, the links
+  // inside notifications) must see this app's environment, not the ambient one.
+  setEnv(env)
   const bus = options.bus ?? new InMemoryRealtimeBus()
 
   const app = Fastify({
@@ -92,6 +100,11 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
   registerSubjectRoutes(app)
   registerPlannerRoutes(app, bus)
   registerCalendarRoutes(app)
+  registerChangeRoutes(app, bus)
+  registerAbsenceRoutes(app, bus)
+  registerMessagingRoutes(app, bus)
+  registerNotificationRoutes(app)
+  registerAuditRoutes(app)
   registerEventRoutes(app, bus)
   registerAdminResources(app)
   registerUserRoutes(app)

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Outlet } from 'react-router'
 
 import { useSession } from '../../auth/session'
+import { useRealtime } from '../../features/realtime/use-realtime'
 import { useSessionStore } from '../../stores/session'
 import { CardSkeleton } from '../feedback/states'
 import { BottomNav } from './bottom-nav'
@@ -17,6 +18,11 @@ export function AppShell() {
   const centerId = useSessionStore((state) => state.centerId)
   const [collapsed, setCollapsed] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
+
+  // One subscription for the whole session: the bell, the threads and the
+  // published timetable all refresh from it (SSE, or polling where a stream
+  // cannot be held open).
+  useRealtime()
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {

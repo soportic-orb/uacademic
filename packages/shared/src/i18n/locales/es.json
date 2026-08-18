@@ -34,7 +34,15 @@
     "generate": "Generar",
     "stop": "Detener",
     "from": "De",
-    "to": "A"
+    "to": "A",
+    "send": "Enviar",
+    "reply": "Responder",
+    "markAllRead": "Marcar todo como leído",
+    "filters": "Filtros",
+    "reason": "Motivo",
+    "note": "Nota",
+    "attach": "Adjuntar",
+    "unread": "No leído"
   },
   "nav": {
     "dashboard": "Panel",
@@ -52,7 +60,11 @@
     "more": "Más",
     "admin": "Administración",
     "imports": "Importaciones",
-    "availability": "Disponibilidad"
+    "availability": "Disponibilidad",
+    "changes": "Cambios de clase",
+    "absences": "Ausencias",
+    "notifications": "Notificaciones",
+    "audit": "Auditoría"
   },
   "layout": {
     "skipToContent": "Ir al contenido principal",
@@ -264,6 +276,28 @@
       "title": "Ninguna conversación",
       "description": "Las conversaciones de asignatura aparecerán aquí.",
       "action": "Iniciar conversación"
+    },
+    "conversations": "Conversaciones",
+    "newConversation": "Nueva conversación",
+    "placeholder": "Escribe un mensaje…",
+    "search": "Buscar en los mensajes",
+    "searchEmpty": "Ningún mensaje coincide con la búsqueda.",
+    "readByAll": "Leído por todos",
+    "sent": "Enviado",
+    "announcementReadOnly": "Este canal es solo de anuncios: solo coordinación puede escribir.",
+    "members": "Participantes",
+    "attachments": {
+      "add": "Adjuntar un archivo",
+      "tooLarge": "El archivo supera los 10 MB.",
+      "unsupportedType": "Este tipo de archivo no se admite.",
+      "tooMany": "Máximo 5 archivos por mensaje.",
+      "download": "Descargar"
+    },
+    "types": {
+      "direct": "Conversación directa",
+      "group": "Grupo",
+      "subject": "Asignatura",
+      "announcement": "Anuncios del centro"
     }
   },
   "documents": {
@@ -336,7 +370,11 @@
     "changeRequestSubject": "Nueva solicitud de cambio de clase",
     "changeRequestBody": "{{requester}} ha pedido un cambio en la sesión de {{subject}}.",
     "scheduleChangedSubject": "Cambios en tu horario",
-    "scheduleChangedBody": "Se ha publicado la versión {{version}} del horario con {{count}} cambio(s) que te afectan."
+    "scheduleChangedBody": "Se ha publicado la versión {{version}} del horario con {{count}} cambio(s) que te afectan.",
+    "openApp": "Abrir UAcademic",
+    "preferencesHint": "Puedes cambiar de qué te avisamos desde Configuración → Notificaciones.",
+    "digestSubject": "Resumen del día: {{count}} avisos",
+    "digestGroup": "{{count}} avisos"
   },
   "push": {
     "changeRequestTitle": "Solicitud de cambio",
@@ -800,6 +838,245 @@
       "excel": "Exportar a Excel",
       "done": "Archivo descargado",
       "failed": "No hemos podido generar el archivo"
+    }
+  },
+  "changes": {
+    "title": "Cambios de clase",
+    "subtitle": "Solicitudes de movimiento, intercambio y sustitución",
+    "create": "Solicitar un cambio",
+    "empty": "No hay ninguna solicitud.",
+    "mine": "Las mías",
+    "open": "Abiertas",
+    "all": "Todas",
+    "requestedBy": "Pedido por {{name}}",
+    "targetIs": "Afecta a {{name}}",
+    "expiresAt": "Caduca el {{date}}",
+    "expiresNever": "Sin caducidad",
+    "session": "Sesión",
+    "proposal": "Propuesta",
+    "conflicts": "Conflictos detectados",
+    "noConflicts": "Ningún conflicto con el horario publicado",
+    "status": {
+      "draft": "Borrador",
+      "requested": "Solicitado",
+      "accepted_by_teacher": "Aceptado por el docente",
+      "approved_by_coordinator": "Aprobado por coordinación",
+      "applied": "Aplicado",
+      "rejected": "Rechazado",
+      "cancelled": "Cancelado",
+      "expired": "Caducado"
+    },
+    "type": {
+      "session_swap": "Intercambio de sesiones",
+      "session_move": "Movimiento de sesión",
+      "session_cancel": "Anulación de sesión",
+      "space_change": "Cambio de aula",
+      "substitution": "Sustitución",
+      "availability_change": "Cambio de disponibilidad"
+    },
+    "actions": {
+      "submit": "Enviar la solicitud",
+      "accept": "Aceptar",
+      "reject": "Rechazar",
+      "approve": "Aprobar",
+      "apply": "Aplicar al horario",
+      "cancel": "Retirar"
+    },
+    "done": {
+      "submit": "Solicitud enviada",
+      "accept": "Solicitud aceptada",
+      "reject": "Solicitud rechazada",
+      "approve": "Solicitud aprobada",
+      "apply": "Cambio aplicado al horario",
+      "cancel": "Solicitud retirada"
+    },
+    "errors": {
+      "closed": "Esta solicitud ya está cerrada.",
+      "invalidTransition": "Este paso no es posible en este estado.",
+      "notYours": "Este paso no te corresponde a ti.",
+      "approvalRequired": "Hace falta la aprobación de coordinación antes de aplicarlo.",
+      "approvalNotRequired": "En este centro la aprobación de coordinación es informativa.",
+      "conflicts": "No se puede aplicar: hay conflictos con el horario publicado."
+    },
+    "form": {
+      "type": "Tipo de cambio",
+      "session": "Sesión afectada",
+      "target": "Persona afectada",
+      "weekday": "Nuevo día",
+      "startTime": "Nueva hora de inicio",
+      "endTime": "Nueva hora de fin",
+      "space": "Nueva aula",
+      "reason": "Motivo",
+      "submit": "Enviar"
+    }
+  },
+  "absences": {
+    "title": "Ausencias",
+    "subtitle": "Comunica una ausencia y busca quién puede cubrir las clases",
+    "report": "Comunicar una ausencia",
+    "empty": "No hay ausencias registradas.",
+    "dateFrom": "Desde el",
+    "dateTo": "Hasta el",
+    "type": "Motivo",
+    "reason": "Detalle",
+    "reported": "Ausencia comunicada",
+    "affectedSessions": "Clases afectadas",
+    "noSessions": "Ninguna clase afectada en este rango.",
+    "findSubstitute": "Buscar sustituto",
+    "status": {
+      "requested": "Comunicada",
+      "approved": "Aprobada",
+      "rejected": "Rechazada",
+      "cancelled": "Cancelada"
+    },
+    "substituteAsked": "Sustituto propuesto: {{name}}"
+  },
+  "absenceType": {
+    "sick_leave": "Baja médica",
+    "personal_leave": "Asuntos propios",
+    "conference": "Congreso",
+    "training": "Formación",
+    "other": "Otros"
+  },
+  "substitutes": {
+    "title": "Quién puede cubrir esta clase",
+    "eligible": "Pueden cubrirla",
+    "ineligible": "No pueden cubrirla",
+    "score": "Idoneidad",
+    "assign": "Pedirle que la cubra",
+    "assigned": "Petición de sustitución enviada",
+    "empty": "Ningún compañero o compañera disponible para esta franja.",
+    "reasons": {
+      "teachesSubject": "Imparte esta asignatura",
+      "sharesArea": "Comparte el área de {{area}}",
+      "preferredSlot": "Es una franja que prefiere",
+      "availableSlot": "Es una franja en la que está disponible",
+      "avoidSlot": "Es una franja que preferiría evitar",
+      "hasCapacity": "Le quedan {{hours}} h de capacidad semanal"
+    },
+    "blockers": {
+      "notQualified": "No imparte esta asignatura ni su área",
+      "busy": "Ya tiene clase en esta franja",
+      "unavailable": "Ha marcado esta franja como no disponible",
+      "noCapacity": "No le queda capacidad contratada",
+      "sameTeacher": "Es la persona ausente"
+    }
+  },
+  "notifications": {
+    "title": "Notificaciones",
+    "empty": "No tienes notificaciones.",
+    "markRead": "Marcar como leída",
+    "preferences": "Preferencias de notificación",
+    "preferencesHint": "Elige cómo quieres que te avisemos de cada cosa.",
+    "event": "Evento",
+    "channels": {
+      "inApp": "En la app",
+      "push": "Push",
+      "email": "Correo"
+    },
+    "digest": "Resumen diario",
+    "digestHint": "Los avisos de baja prioridad se agrupan en un solo correo al día.",
+    "mandatory": "Este aviso no se puede desactivar.",
+    "priority": {
+      "high": "Alta",
+      "normal": "Normal",
+      "low": "Baja"
+    },
+    "saved": "Preferencias guardadas",
+    "push": {
+      "title": "Avisos en el móvil",
+      "enable": "Activar los avisos",
+      "enabled": "Avisos activados",
+      "denied": "Has bloqueado los avisos en el navegador. Hay que volver a permitirlos desde su configuración.",
+      "unsupported": "Este navegador no admite avisos push.",
+      "unavailable": "El servidor todavía no tiene configurado el push.",
+      "iosTitle": "Para recibir avisos en el iPhone o el iPad",
+      "iosSteps": "Abre esta página en Safari, toca Compartir y después \"Añadir a pantalla de inicio\". Abre UAcademic desde el icono nuevo y vuelve a intentarlo.",
+      "iosNote": "Apple solo permite avisos push en las apps añadidas a la pantalla de inicio (iOS 16.4 o superior)."
+    },
+    "unreadCount": "{{count}} sin leer",
+    "open": "Ir",
+    "viewAll": "Verlas todas"
+  },
+  "audit": {
+    "title": "Auditoría",
+    "subtitle": "Todo lo que se ha modificado, quién lo ha hecho y desde dónde",
+    "entity": "Entidad",
+    "action": "Acción",
+    "source": "Origen",
+    "user": "Usuario",
+    "date": "Fecha",
+    "from": "Desde el",
+    "to": "Hasta el",
+    "ip": "Dirección IP",
+    "before": "Antes",
+    "after": "Después",
+    "empty": "Ningún registro coincide con los filtros.",
+    "sources": {
+      "user": "Persona",
+      "ai": "Asistente IA",
+      "system": "Sistema"
+    },
+    "details": "Detalle del cambio"
+  },
+  "notify": {
+    "schedule": {
+      "published": {
+        "title": "Horario publicado",
+        "body": "Se ha publicado una versión nueva del horario con cambios que te afectan."
+      }
+    },
+    "change": {
+      "requested": {
+        "title": "Nueva solicitud de cambio",
+        "body": "Tienes una solicitud de cambio pendiente de respuesta ({{session}})."
+      },
+      "accepted": {
+        "title": "Solicitud aceptada",
+        "body": "Se ha aceptado la solicitud de cambio de {{session}}."
+      },
+      "approved": {
+        "title": "Cambio aprobado",
+        "body": "Coordinación ha aprobado el cambio de {{session}}."
+      },
+      "applied": {
+        "title": "Cambio aplicado",
+        "body": "El cambio de {{session}} ya está en el horario."
+      },
+      "rejected": {
+        "title": "Cambio rechazado",
+        "body": "Se ha rechazado la solicitud de cambio de {{session}}."
+      },
+      "expired": {
+        "title": "Solicitud caducada",
+        "body": "Una solicitud de cambio ha caducado sin respuesta."
+      }
+    },
+    "absence": {
+      "reported": {
+        "title": "Ausencia comunicada",
+        "body": "{{teacher}} ha comunicado una ausencia del {{from}} al {{to}}."
+      },
+      "substituteAssigned": {
+        "title": "Te piden una sustitución",
+        "body": "Te proponen cubrir {{session}} del {{from}} al {{to}}."
+      }
+    },
+    "message": {
+      "received": {
+        "title": "Mensaje nuevo",
+        "body": "{{sender}} te ha escrito en {{conversation}}."
+      },
+      "announcement": {
+        "title": "Anuncio del centro",
+        "body": "{{sender}} ha publicado un anuncio."
+      }
+    },
+    "load": {
+      "overCapacity": {
+        "title": "Carga por encima del límite",
+        "body": "Tu carga asignada supera la capacidad contratada."
+      }
     }
   }
 }
