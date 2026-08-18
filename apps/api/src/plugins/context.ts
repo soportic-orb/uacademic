@@ -16,6 +16,7 @@ import { writeAuditLog } from '../lib/audit.js'
 import { AppError } from '../lib/errors.js'
 import { type ScopedPrismaClient, prisma, scopedPrisma } from '../lib/prisma.js'
 import { type ActiveSession, loadSession } from '../services/auth-service.js'
+import { isWebAppRequest, webDistPath } from './web-app.js'
 
 export interface RequestUser extends Principal {
   email: string
@@ -159,10 +160,18 @@ export function registerContext(app: FastifyInstance, env: Env): void {
   app.decorateRequest('centerId', undefined)
   app.decorateRequest('crossCenter', false)
 
+  // Asked once, at boot: a filesystem check per request would be silly.
+  const servesWebApp = webDistPath() !== null
+
   app.addHook('onRequest', async (request) => {
     request.locale = resolveLocale(parseAcceptLanguage(request.headers['accept-language']))
 
     if (request.routeOptions.config?.public) return
+
+    // Where this process also serves the web application, its files and its
+    // shell are not API calls and have no session to check: the bundle is
+    // what a browser needs *before* it can sign in.
+    if (servesWebApp && isWebAppRequest(request)) return
 
     const user = await authenticate(request, env)
     if (!user) throw AppError.unauthorized()

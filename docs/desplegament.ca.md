@@ -200,8 +200,23 @@ pm2 save && pm2 startup
 
 ## 7. Nginx
 
-Copia `scripts/deploy/nginx.conf.example` a la configuració del vhost i ajusta
-el nom del servidor. Els tres punts que no es poden ometre:
+Hi ha dues formes, i totes dues funcionen.
+
+**Nginx serveix la SPA i fa de proxy de `/api/`** — l'estructura de
+`scripts/deploy/nginx.conf.example`, i la preferible: els fitxers estàtics els
+serveix qui sap fer-ho bé.
+
+**El panell fa de proxy de tots els camins cap al port de l'aplicació**, que és
+el que produeixen els tipus de lloc Node.js de CloudPanel i de Plesk. Aleshores
+l'API serveix ella mateixa la SPA construïda, des d'`apps/web/dist`: `/install`
+i totes les pantalles següents funcionen sense cap configuració d'estàtics. No
+cal fer res — si l'aplicació web està construïda, se serveix.
+(`UACADEMIC_WEB_DIST` canvia on es busca.) A canvi, el bundle el serveix Node,
+així que quan la plataforma ja estigui en marxa val més la primera forma.
+
+Per a la primera forma, copia `scripts/deploy/nginx.conf.example` a la
+configuració del vhost i ajusta el nom del servidor. Els tres punts que no es
+poden ometre:
 
 - `index.html`, `sw.js` i `manifest.webmanifest` **sense cache**. Un service
   worker en cache és com un navegador es queda encallat en la versió del mes
@@ -317,10 +332,9 @@ CloudPanel és el port del proxy invers del lloc; a Plesk, les «Additional ngin
 directives».
 
 **`/health` respon `{"status":"setup"}`.** Això és correcte abans d'instal·lar:
-l'API és en mode instal·lació i només serveix `/health` i `/api/v1/install/*`.
-La pàgina `/install` és un fitxer estàtic que serveix Nginx des de
-`current/apps/web/dist` — si aquest directori és buit, `pnpm build` no s'ha
-executat o no ha acabat.
+l'API és en mode instal·lació, esperant l'assistent. Si aleshores `/install`
+respon 404, no hi ha ningú servint la pàgina — comprova que existeix
+`apps/web/dist`, és a dir que `pnpm build` ha acabat.
 
 Una API que mor en arrencar escriu el motiu a `shared/logs/api.error.log`, en
 una línia, dient quina variable o quin fitxer falta.

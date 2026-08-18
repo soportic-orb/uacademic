@@ -20,6 +20,7 @@
     "@fastify/helmet": "13.1.0",
     "@fastify/multipart": "10.1.1",
     "@fastify/rate-limit": "11.2.0",
+    "@fastify/static": "^10.1.3",
     "@uacademic/db": "workspace:*",
     "@uacademic/shared": "workspace:*",
     "csv-parse": "7.0.2",

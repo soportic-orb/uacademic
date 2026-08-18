@@ -202,8 +202,24 @@ pm2 save && pm2 startup
 
 ## 7. Nginx
 
-Copia `scripts/deploy/nginx.conf.example` a la configuración del vhost y ajusta
-el nombre del servidor. Los tres puntos que no se pueden omitir:
+Hay dos formas, y las dos funcionan.
+
+**Nginx sirve la SPA y hace de proxy de `/api/`** — la estructura de
+`scripts/deploy/nginx.conf.example`, y la preferible: los ficheros estáticos
+los sirve quien sabe hacerlo bien.
+
+**El panel hace de proxy de todas las rutas hacia el puerto de la aplicación**,
+que es lo que producen los tipos de sitio Node.js de CloudPanel y de Plesk.
+Entonces la API sirve ella misma la SPA construida, desde `apps/web/dist`:
+`/install` y todas las pantallas siguientes funcionan sin configurar ningún
+estático. No hay nada que hacer — si la aplicación web está construida, se
+sirve. (`UACADEMIC_WEB_DIST` cambia dónde se busca.) A cambio, el bundle lo
+sirve Node, así que cuando la plataforma esté en marcha conviene más la primera
+forma.
+
+Para la primera forma, copia `scripts/deploy/nginx.conf.example` a la
+configuración del vhost y ajusta el nombre del servidor. Los tres puntos que no
+se pueden omitir:
 
 - `index.html`, `sw.js` y `manifest.webmanifest` **sin caché**. Un service
   worker en caché es cómo un navegador se queda atascado en la versión del mes
@@ -320,10 +336,9 @@ CloudPanel es el puerto del proxy inverso del sitio; en Plesk, las «Additional
 nginx directives».
 
 **`/health` responde `{"status":"setup"}`.** Eso es correcto antes de instalar:
-la API está en modo instalación y sólo sirve `/health` y `/api/v1/install/*`.
-La página `/install` es un fichero estático que sirve Nginx desde
-`current/apps/web/dist` — si ese directorio está vacío, `pnpm build` no se ha
-ejecutado o no ha terminado.
+la API está en modo instalación, esperando al asistente. Si entonces `/install`
+responde 404, no hay nadie sirviendo la página — comprueba que existe
+`apps/web/dist`, es decir que `pnpm build` ha terminado.
 
 Una API que muere al arrancar escribe el motivo en
 `shared/logs/api.error.log`, en una línea, diciendo qué variable o qué fichero

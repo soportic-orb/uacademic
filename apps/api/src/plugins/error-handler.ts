@@ -5,6 +5,7 @@ import { ZodError } from 'zod'
 
 import { AppError, isAppError } from '../lib/errors.js'
 import { TenantViolationError } from '../lib/tenant-scope.js'
+import { serveWebApp } from './web-app.js'
 
 /**
  * One shape for every failure, with the message already resolved in the
@@ -12,6 +13,10 @@ import { TenantViolationError } from '../lib/tenant-scope.js'
  */
 export function registerErrorHandler(app: FastifyInstance): void {
   app.setNotFoundHandler((request, reply) => {
+    // Where this installation also serves the web application, a browser
+    // asking for a page gets the SPA shell: its routes are not ours to know.
+    if (serveWebApp(request, reply)) return
+
     const error = AppError.notFound()
     void reply.status(error.statusCode).send(toBody(error, request.id, request.locale))
   })

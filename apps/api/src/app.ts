@@ -9,6 +9,7 @@ import { type Env, corsOrigins, env as loadEnvironment, setEnv } from './config/
 import { InMemoryRealtimeBus, type RealtimeTransport } from './lib/realtime.js'
 import { registerContext } from './plugins/context.js'
 import { registerErrorHandler } from './plugins/error-handler.js'
+import { API_ONLY_CSP, WEB_APP_CSP, registerWebApp, webDistPath } from './plugins/web-app.js'
 import { registerAdminResources } from './modules/admin/resources.js'
 import { registerUserRoutes } from './modules/admin/users-routes.js'
 import { registerAuthRoutes } from './modules/auth/routes.js'
@@ -73,18 +74,13 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
     bodyLimit: 1024 * 1024,
   })
 
+  // Whether this process is also the web server. Where Nginx serves the SPA —
+  // the documented layout — it is not, and the policy stays as narrow as an
+  // API's should be.
+  const webApp = webDistPath()
+
   await app.register(helmet, {
-    // The API answers JSON and serves documents as attachments; it never
-    // renders HTML, so the policy can be as narrow as it looks. The SPA is
-    // served by Nginx and carries its own headers (see the deployment manual).
-    contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'none'"],
-        frameAncestors: ["'none'"],
-        baseUri: ["'none'"],
-        formAction: ["'none'"],
-      },
-    },
+    contentSecurityPolicy: { directives: webApp ? WEB_APP_CSP : API_ONLY_CSP },
     crossOriginResourcePolicy: { policy: 'same-site' },
     referrerPolicy: { policy: 'no-referrer' },
     // HSTS only where there is TLS to insist on.
@@ -124,6 +120,11 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
       fields: 30,
     },
   })
+
+  if (webApp) {
+    await registerWebApp(app)
+    app.log.info({ webApp }, 'serving the web application from the API')
+  }
 
   registerErrorHandler(app)
   registerContext(app, env)

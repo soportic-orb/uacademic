@@ -200,8 +200,22 @@ pm2 save && pm2 startup
 
 ## 7. Nginx
 
-Copy `scripts/deploy/nginx.conf.example` into the vhost configuration and
-adjust the server name. Three things cannot be left out:
+There are two shapes, and both work.
+
+**Nginx serves the SPA and proxies `/api/`** — the layout in
+`scripts/deploy/nginx.conf.example`, and the one to prefer: static files are
+served by the thing that is good at it.
+
+**The panel proxies every path to the application port**, which is what
+CloudPanel's and Plesk's Node.js site types produce. The API then serves the
+built SPA itself, from `apps/web/dist` next to it: `/install` and every screen
+after it work with no static configuration at all. Nothing to set up — if the
+web application is built, it is served. (`UACADEMIC_WEB_DIST` overrides where
+it is looked for.) The trade is that Node serves the bundle, so prefer the
+first shape once the platform is up.
+
+For the first shape, copy `scripts/deploy/nginx.conf.example` into the vhost
+configuration and adjust the server name. Three things cannot be left out:
 
 - `index.html`, `sw.js` and `manifest.webmanifest` **uncached**. A cached
   service worker is how a browser gets stuck on last month's version.
@@ -315,10 +329,9 @@ that is the site's reverse-proxy port, in Plesk the "Additional nginx
 directives".
 
 **`/health` answers `{"status":"setup"}`.** That is correct before installing:
-the API is in setup mode and only serves `/health` and `/api/v1/install/*`.
-The `/install` page itself is a static file served by Nginx from
-`current/apps/web/dist` — if that directory is empty, `pnpm build` has not run
-or has not finished.
+the API is in setup mode, waiting for the wizard. If `/install` then answers
+404, nothing is serving the page — check that `apps/web/dist` exists, which
+means `pnpm build` finished.
 
 An API that exits at boot writes the reason in
 `shared/logs/api.error.log`, one line, naming the variable or the file.

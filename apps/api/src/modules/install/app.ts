@@ -16,6 +16,7 @@ import rateLimit from '@fastify/rate-limit'
 import Fastify, { type FastifyInstance } from 'fastify'
 
 import { registerErrorHandler } from '../../plugins/error-handler.js'
+import { API_ONLY_CSP, WEB_APP_CSP, registerWebApp, webDistPath } from '../../plugins/web-app.js'
 import { registerInstallRoutes } from './routes.js'
 
 export interface InstallerOptions {
@@ -34,10 +35,10 @@ export async function buildInstallerApp(options: InstallerOptions = {}): Promise
     bodyLimit: 64 * 1024,
   })
 
+  // Serving the wizard as well as answering it needs a policy that allows the
+  // bundle to run; answering only, nothing at all.
   await app.register(helmet, {
-    contentSecurityPolicy: {
-      directives: { defaultSrc: ["'none'"], frameAncestors: ["'none'"] },
-    },
+    contentSecurityPolicy: { directives: webDistPath() ? WEB_APP_CSP : API_ONLY_CSP },
   })
 
   // The wizard is served from the same origin by Nginx; during a local install
@@ -51,8 +52,12 @@ export async function buildInstallerApp(options: InstallerOptions = {}): Promise
 
   await app.register(rateLimit, { max: 30, timeWindow: 60_000 })
 
+  const webRoot = await registerWebApp(app)
+
   registerErrorHandler(app)
   registerInstallRoutes(app)
+
+  if (webRoot) app.log.info({ webRoot }, 'serving the installer page from the API')
 
   app.get('/health', async () => ({ status: 'setup', checks: { database: 'unknown' } }))
 
