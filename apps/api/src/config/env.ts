@@ -5,6 +5,14 @@ import { z } from 'zod'
 /**
  * R10: every secret and every environment-dependent value arrives here, is
  * validated once, and is never read from `process.env` again.
+ *
+ * Every name is read with the `UACADEMIC_` prefix and **only** with it. The
+ * target hosting is a shared Plesk or CloudPanel server (CLAUDE.md §2), where
+ * several applications live side by side with one environment between them:
+ * a bare `SMTP_HOST` or `GOOGLE_CLIENT_ID` belonging to the neighbour would
+ * otherwise be picked up silently, and UAcademic would post mail through
+ * somebody else's server or offer somebody else's OAuth client. Names below
+ * are the ones after the prefix is stripped.
  */
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -118,13 +126,66 @@ const envSchema = z.object({
 
 export type Env = z.infer<typeof envSchema>
 
+/** Every variable this application reads carries it. Nothing else is read. */
+export const ENV_PREFIX = 'UACADEMIC_'
+
+/**
+ * `NODE_ENV` is the one exception: it is a Node convention rather than an
+ * application setting, and the tooling (vitest, tsx, PM2) sets it itself.
+ */
+const UNPREFIXED = ['NODE_ENV'] as const
+
+const SCHEMA_KEYS = Object.keys(envSchema.shape)
+
+/**
+ * Picks this application's variables out of an environment that may belong to
+ * several. `UACADEMIC_SMTP_HOST` is ours; `SMTP_HOST` is not, however tempting
+ * it looks.
+ */
+export function scopeEnv(source: NodeJS.ProcessEnv): Record<string, string | undefined> {
+  const scoped: Record<string, string | undefined> = {}
+
+  for (const key of SCHEMA_KEYS) {
+    const value = (UNPREFIXED as readonly string[]).includes(key)
+      ? source[key]
+      : source[`${ENV_PREFIX}${key}`]
+
+    if (value !== undefined) scoped[key] = value
+  }
+
+  return scoped
+}
+
+/**
+ * Names another application on the same host may have set, which we are
+ * deliberately ignoring. Reported once at boot so an operator who renamed only
+ * half of their configuration finds out immediately rather than by noticing
+ * that no email ever arrives.
+ */
+export function ignoredLegacyNames(source: NodeJS.ProcessEnv = process.env): string[] {
+  return SCHEMA_KEYS.filter(
+    (key) =>
+      !(UNPREFIXED as readonly string[]).includes(key) &&
+      source[key] !== undefined &&
+      source[`${ENV_PREFIX}${key}`] === undefined,
+  ).sort()
+}
+
 let cached: Env | undefined
 
 export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
-  const parsed = envSchema.safeParse(source)
+  const parsed = envSchema.safeParse(scopeEnv(source))
   if (!parsed.success) {
+    // Reported under the name an operator has to set, prefix included: being
+    // told that "DATABASE_URL is required" would send them to the wrong one.
     const details = parsed.error.issues
-      .map((issue) => `  - ${issue.path.join('.') || '(root)'}: ${issue.message}`)
+      .map((issue) => {
+        const key = String(issue.path[0] ?? '')
+        const name = (UNPREFIXED as readonly string[]).includes(key)
+          ? key
+          : `${ENV_PREFIX}${key || '(root)'}`
+        return `  - ${name}: ${issue.message}`
+      })
       .join('\n')
     throw new Error(`Invalid environment configuration:\n${details}`)
   }
@@ -135,21 +196,23 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
   // discovered in production.
   if (env.NODE_ENV === 'production') {
     if (env.AUTH_MODE === 'mock') {
-      throw new Error('AUTH_MODE=mock is refused in production: it accepts any identity by header.')
+      throw new Error(
+        `${ENV_PREFIX}AUTH_MODE=mock is refused in production: it accepts any identity by header.`,
+      )
     }
     if (env.SESSION_COOKIE_SECRET.startsWith('development-only')) {
-      throw new Error('SESSION_COOKIE_SECRET still holds its development default.')
+      throw new Error(`${ENV_PREFIX}SESSION_COOKIE_SECRET still holds its development default.`)
     }
     if (!env.APP_ENCRYPTION_KEY) {
       throw new Error(
-        'APP_ENCRYPTION_KEY is required in production: TOTP secrets are stored with it.',
+        `${ENV_PREFIX}APP_ENCRYPTION_KEY is required in production: it encrypts TOTP secrets and calendar tokens.`,
       )
     }
   }
 
   if (env.AUTH_MODE === 'entra' && !env.ENTRA_CLIENT_ID) {
     throw new Error(
-      'ENTRA_CLIENT_ID is required when AUTH_MODE=entra: it is the expected audience.',
+      `${ENV_PREFIX}ENTRA_CLIENT_ID is required when ${ENV_PREFIX}AUTH_MODE=entra: it is the expected audience.`,
     )
   }
 

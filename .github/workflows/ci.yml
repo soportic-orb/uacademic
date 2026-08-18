@@ -49,14 +49,14 @@ jobs:
           --health-timeout=5s
           --health-retries=20
     env:
-      DATABASE_URL: mysql://root:root@127.0.0.1:3306/uacademic
-      SHADOW_DATABASE_URL: mysql://root:root@127.0.0.1:3306/uacademic_shadow
+      UACADEMIC_DATABASE_URL: mysql://root:root@127.0.0.1:3306/uacademic
+      UACADEMIC_SHADOW_DATABASE_URL: mysql://root:root@127.0.0.1:3306/uacademic_shadow
       # Phase 1 auth: the suites build their own app instances, but the boot
       # guard needs a client id whenever AUTH_MODE is `entra`.
-      AUTH_MODE: mock
+      UACADEMIC_AUTH_MODE: mock
       ENTRA_CLIENT_ID: 00000000-1111-2222-3333-444444444444
-      SESSION_COOKIE_SECRET: ci-session-secret-that-is-long-enough-x
-      APP_ENCRYPTION_KEY: "0000000000000000000000000000000000000000000000000000000000000001"
+      UACADEMIC_SESSION_COOKIE_SECRET: ci-session-secret-that-is-long-enough-x
+      UACADEMIC_APP_ENCRYPTION_KEY: "0000000000000000000000000000000000000000000000000000000000000001"
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -97,14 +97,14 @@ jobs:
           --health-timeout=5s
           --health-retries=20
     env:
-      DATABASE_URL: mysql://root:root@127.0.0.1:3306/uacademic
-      VITE_API_URL: http://127.0.0.1:3001
+      UACADEMIC_DATABASE_URL: mysql://root:root@127.0.0.1:3306/uacademic
+      VITE_UACADEMIC_API_URL: http://127.0.0.1:3001
       # The e2e build keeps the demo identity switcher so role-based flows can
       # be exercised; the real sign-in flow is driven through the local
       # superadmin credential the seed creates.
-      VITE_AUTH_MODE: mock
-      AUTH_MODE: mock
-      SESSION_COOKIE_SECRET: ci-session-secret-that-is-long-enough-x
+      VITE_UACADEMIC_AUTH_MODE: mock
+      UACADEMIC_AUTH_MODE: mock
+      UACADEMIC_SESSION_COOKIE_SECRET: ci-session-secret-that-is-long-enough-x
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4

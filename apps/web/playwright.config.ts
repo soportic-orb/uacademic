@@ -31,23 +31,23 @@ export default defineConfig({
       port: API_PORT,
       reuseExistingServer: !process.env.CI,
       env: {
-        // Not `production`: that mode refuses AUTH_MODE=mock, which is exactly
-        // what the role-switching flows below rely on.
+        // Not `production`: that mode refuses UACADEMIC_AUTH_MODE=mock, which
+        // is exactly what the role-switching flows below rely on.
         NODE_ENV: 'test',
-        LOG_LEVEL: 'warn',
-        AUTH_MODE: process.env.AUTH_MODE ?? 'mock',
-        WEB_ORIGIN: `http://127.0.0.1:${WEB_PORT}`,
-        SESSION_COOKIE_SECRET: 'e2e-session-secret-that-is-long-enough',
+        UACADEMIC_LOG_LEVEL: 'warn',
+        UACADEMIC_AUTH_MODE: process.env.UACADEMIC_AUTH_MODE ?? 'mock',
+        UACADEMIC_WEB_ORIGIN: `http://127.0.0.1:${WEB_PORT}`,
+        UACADEMIC_SESSION_COOKIE_SECRET: 'e2e-session-secret-that-is-long-enough',
         // The whole suite is one browser on one IP driving every screen in a
         // few minutes, and the rate limiter counts per IP. The production
         // default would throttle the run, not a real user.
-        RATE_LIMIT_MAX: '5000',
+        UACADEMIC_RATE_LIMIT_MAX: '5000',
         // The suite decides which calendar providers exist, rather than
-        // inheriting whatever credentials happen to be in the shell.
-        ENTRA_CLIENT_SECRET: '',
-        GOOGLE_CLIENT_ID: '',
-        GOOGLE_CLIENT_SECRET: '',
-        APP_ENCRYPTION_KEY: 'a'.repeat(64),
+        // whatever a developer happens to have configured locally.
+        UACADEMIC_ENTRA_CLIENT_SECRET: '',
+        UACADEMIC_GOOGLE_CLIENT_ID: '',
+        UACADEMIC_GOOGLE_CLIENT_SECRET: '',
+        UACADEMIC_APP_ENCRYPTION_KEY: 'a'.repeat(64),
       },
       cwd: '../..',
     },

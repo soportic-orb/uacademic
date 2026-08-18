@@ -30,7 +30,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   // In mock mode the identity comes from a header, so switching demo user has
   // to refetch the session; in every other build this key is constant.
   const mockUserEmail = useSessionStore((state) => state.mockUserEmail)
-  const identityKey = import.meta.env.VITE_AUTH_MODE === 'mock' ? mockUserEmail : 'session'
+  const identityKey =
+    import.meta.env.VITE_UACADEMIC_AUTH_MODE === 'mock' ? mockUserEmail : 'session'
 
   const query = useQuery({
     queryKey: ['session', identityKey],

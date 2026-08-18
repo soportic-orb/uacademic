@@ -4,10 +4,10 @@ import { CENTER_HEADER } from '@uacademic/shared'
 import { currentLocale } from '../i18n'
 import { useSessionStore } from '../stores/session'
 
-const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3001'
+const BASE_URL = import.meta.env.VITE_UACADEMIC_API_URL ?? 'http://localhost:3001'
 
 /** Development and e2e only; the API refuses this mode in production. */
-const MOCK_AUTH = import.meta.env.VITE_AUTH_MODE === 'mock'
+const MOCK_AUTH = import.meta.env.VITE_UACADEMIC_AUTH_MODE === 'mock'
 
 /** Carries the API's localized message so a toast can show it as-is (R1). */
 export class ApiRequestError extends Error {

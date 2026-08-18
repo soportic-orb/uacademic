@@ -125,11 +125,11 @@ describe.skipIf(!hasDatabase)('calendar connections', () => {
 
   beforeAll(async () => {
     // The tokens are stored encrypted; without a key there is nothing to test.
-    process.env.APP_ENCRYPTION_KEY = 'a'.repeat(64)
+    process.env.UACADEMIC_APP_ENCRYPTION_KEY = 'a'.repeat(64)
     // The suite decides which providers this installation has, rather than
-    // inheriting whatever credentials happen to be in the shell.
-    delete process.env.GOOGLE_CLIENT_ID
-    delete process.env.GOOGLE_CLIENT_SECRET
+    // whatever a developer happens to have configured locally.
+    delete process.env.UACADEMIC_GOOGLE_CLIENT_ID
+    delete process.env.UACADEMIC_GOOGLE_CLIENT_SECRET
     app = await createTestApp()
     centerId = await seedCenterId()
     userId = (await prisma.user.findFirst({ where: { email: SEED.teacherEmail } }))!.id

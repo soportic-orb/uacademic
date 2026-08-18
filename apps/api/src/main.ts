@@ -1,11 +1,21 @@
 import { disconnectPrisma } from '@uacademic/db'
 
 import { buildApp } from './app.js'
-import { env } from './config/env.js'
+import { ENV_PREFIX, env, ignoredLegacyNames } from './config/env.js'
 
 const configuration = env()
 
 const app = await buildApp({ env: configuration })
+
+// Names another application on this host has set, which we are not reading.
+// Only the names — never the values.
+const ignored = ignoredLegacyNames()
+if (ignored.length > 0) {
+  app.log.info(
+    { ignored, prefix: ENV_PREFIX },
+    'ignoring environment variables that are not this application’s',
+  )
+}
 
 const shutdown = async (signal: string) => {
   app.log.info({ signal }, 'shutting down')

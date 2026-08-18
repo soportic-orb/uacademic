@@ -1,7 +1,7 @@
 import { disconnectPrisma, getPrismaClient } from '@uacademic/db'
 import { pino } from 'pino'
 
-import { env } from '../config/env.js'
+import { ENV_PREFIX, env, ignoredLegacyNames } from '../config/env.js'
 import { buildJobHandlers, enqueuePeriodicJobs } from './handlers.js'
 import { JobWorker } from './worker.js'
 
@@ -11,6 +11,14 @@ import { JobWorker } from './worker.js'
  */
 const configuration = env()
 const logger = pino({ level: configuration.LOG_LEVEL, name: 'jobs' })
+
+const ignored = ignoredLegacyNames()
+if (ignored.length > 0) {
+  logger.info(
+    { ignored, prefix: ENV_PREFIX },
+    'ignoring environment variables that are not this application’s',
+  )
+}
 
 const client = getPrismaClient()
 

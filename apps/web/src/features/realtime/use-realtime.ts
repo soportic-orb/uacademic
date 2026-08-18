@@ -12,14 +12,14 @@ import { useEffect, useRef, useState } from 'react'
 import { apiFetch } from '../../lib/api'
 import { useSessionStore } from '../../stores/session'
 
-const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3001'
+const BASE_URL = import.meta.env.VITE_UACADEMIC_API_URL ?? 'http://localhost:3001'
 
 /**
  * Development and e2e only. `EventSource` cannot carry the identity header the
  * mock mode switches users with, so those builds poll instead — which also
  * keeps the fallback path exercised by the e2e suite.
  */
-const MOCK_AUTH = import.meta.env.VITE_AUTH_MODE === 'mock'
+const MOCK_AUTH = import.meta.env.VITE_UACADEMIC_AUTH_MODE === 'mock'
 
 const POLL_INTERVAL_MS = 15_000
 

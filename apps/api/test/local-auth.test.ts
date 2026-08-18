@@ -37,11 +37,11 @@ describe.skipIf(!hasDatabase)('local superadmin sign-in', () => {
       env: loadEnv({
         ...process.env,
         NODE_ENV: 'test',
-        LOG_LEVEL: 'silent',
-        AUTH_MODE: 'entra',
-        ENTRA_CLIENT_ID: 'test-client',
-        APP_ENCRYPTION_KEY: ENCRYPTION_KEY,
-        SESSION_COOKIE_SECRET: 'test-session-secret-that-is-long-enough',
+        UACADEMIC_LOG_LEVEL: 'silent',
+        UACADEMIC_AUTH_MODE: 'entra',
+        UACADEMIC_ENTRA_CLIENT_ID: 'test-client',
+        UACADEMIC_APP_ENCRYPTION_KEY: ENCRYPTION_KEY,
+        UACADEMIC_SESSION_COOKIE_SECRET: 'test-session-secret-that-is-long-enough',
       }),
     })
   })

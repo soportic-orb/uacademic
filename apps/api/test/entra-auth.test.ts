@@ -85,11 +85,11 @@ describe.skipIf(!hasDatabase)('Entra ID sign-in', () => {
       env: loadEnv({
         ...process.env,
         NODE_ENV: 'test',
-        LOG_LEVEL: 'silent',
-        AUTH_MODE: 'entra',
-        ENTRA_JWKS_URI: jwksUri,
-        ENTRA_CLIENT_ID: CLIENT_ID,
-        SESSION_COOKIE_SECRET: 'test-session-secret-that-is-long-enough',
+        UACADEMIC_LOG_LEVEL: 'silent',
+        UACADEMIC_AUTH_MODE: 'entra',
+        UACADEMIC_ENTRA_JWKS_URI: jwksUri,
+        UACADEMIC_ENTRA_CLIENT_ID: CLIENT_ID,
+        UACADEMIC_SESSION_COOKIE_SECRET: 'test-session-secret-that-is-long-enough',
       }),
     })
 

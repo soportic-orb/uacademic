@@ -17,7 +17,7 @@ export interface HeaderProps {
 }
 
 /** Development and e2e only; the API refuses this mode in production. */
-const MOCK_AUTH = import.meta.env.VITE_AUTH_MODE === 'mock'
+const MOCK_AUTH = import.meta.env.VITE_UACADEMIC_AUTH_MODE === 'mock'
 
 export function Header({ user, onOpenSearch, onToggleSidebar }: HeaderProps) {
   const { t } = useTranslation()

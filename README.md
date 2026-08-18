@@ -28,7 +28,7 @@ CloudPanel, running Nginx and PM2.
 
 ```bash
 pnpm install
-cp .env.example .env            # fill in DATABASE_URL at least
+cp .env.example .env            # fill in UACADEMIC_DATABASE_URL at least
 ```
 
 Create the database and a user for it:
@@ -40,6 +40,23 @@ CREATE USER 'uacademic'@'localhost' IDENTIFIED BY 'change-me';
 GRANT ALL PRIVILEGES ON uacademic.* TO 'uacademic'@'localhost';
 GRANT ALL PRIVILEGES ON uacademic_shadow.* TO 'uacademic'@'localhost';
 ```
+
+### Every variable is namespaced
+
+All configuration is read from names prefixed with `UACADEMIC_` (and
+`VITE_UACADEMIC_` for the browser build). The application reads **only** prefixed
+names — a bare `DATABASE_URL`, `SMTP_HOST` or `GOOGLE_CLIENT_ID` is ignored, and
+so is anything else in the environment.
+
+That is not tidiness. The target is a shared Plesk or CloudPanel host where
+several applications live side by side with one environment between them: an
+unprefixed `SMTP_HOST` belonging to the neighbouring app would otherwise be
+picked up silently, and UAcademic would post its mail through somebody else's
+server. `NODE_ENV` is the one exception — it belongs to Node, not to us.
+
+On start-up the API logs the names (never the values) of any unprefixed
+variables it recognised and ignored, so a half-finished rename shows up
+immediately instead of as mail that never arrives.
 
 The API and the Prisma CLI read `.env` from their own package, so link or copy it:
 
@@ -64,7 +81,7 @@ traffic light covers all four states.
 
 Sign-in is Microsoft Entra ID: MSAL in the browser (authorization code flow with PKCE)
 obtains an access token, the API validates it and returns an httpOnly session cookie.
-Set `VITE_ENTRA_CLIENT_ID` and `ENTRA_CLIENT_ID` to your app registration, and register
+Set `VITE_UACADEMIC_ENTRA_CLIENT_ID` and `UACADEMIC_ENTRA_CLIENT_ID` to your app registration, and register
 your tenant under **Administration → Identity tenants** — a token whose `tid` is not in
 that table is refused with 403, which is what keeps every other Microsoft organization
 in the world out (R3).
@@ -72,12 +89,12 @@ in the world out (R3).
 **Break-glass access.** The platform superadmin also has a local password (argon2id)
 with TOTP, so the product stays reachable when Entra ID does not. The seed creates it
 with the password from `SEED_SUPERADMIN_PASSWORD` (default `Superadmin-2026-demo`) for
-`ona.bertran@demo.uacademic.test`; TOTP is enrolled only when `APP_ENCRYPTION_KEY` is
+`ona.bertran@demo.uacademic.test`; TOTP is enrolled only when `UACADEMIC_APP_ENCRYPTION_KEY` is
 set, and the seed prints the secret once. Nobody else has a password: their organization
 owns it, so the profile screen shows the linked Microsoft account instead.
 
-**Local development without Microsoft.** Setting `AUTH_MODE=mock` (API) and
-`VITE_AUTH_MODE=mock` (web) brings back the phase 0 identity switcher, with one demo
+**Local development without Microsoft.** Setting `UACADEMIC_AUTH_MODE=mock` (API) and
+`VITE_UACADEMIC_AUTH_MODE=mock` (web) brings back the phase 0 identity switcher, with one demo
 account per role and an `x-mock-user: <email>` header. The API refuses this mode when
 `NODE_ENV=production`.
 
@@ -215,13 +232,13 @@ process at the start of the phase, not at the end. What to prepare:
 | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Scopes requested  | `https://www.googleapis.com/auth/calendar` (create the dedicated calendar and its events), `https://www.googleapis.com/auth/calendar.readonly` (busy time, only for users who opt in) |
 | OAuth client type | Web application                                                                                                                                                                       |
-| Redirect URI      | `<API_PUBLIC_URL>/api/v1/calendar/connections/google/callback`                                                                                                                        |
+| Redirect URI      | `<UACADEMIC_API_PUBLIC_URL>/api/v1/calendar/connections/google/callback`                                                                                                              |
 | Consent screen    | Published, with the homepage, the privacy policy and the terms on a verified domain                                                                                                   |
 | Demo video        | The full consent flow and what each scope is used for, as Google asks                                                                                                                 |
 | Justification     | Both scopes are sensitive: explain the dedicated calendar and that reads are free/busy only                                                                                           |
 
 Until it is verified, the client works for test users added to the consent
-screen. With no `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` configured the
+screen. With no `UACADEMIC_GOOGLE_CLIENT_ID`/`UACADEMIC_GOOGLE_CLIENT_SECRET` configured the
 provider simply reports itself unavailable and the ICS feed carries on.
 
 ## What phase 4 adds

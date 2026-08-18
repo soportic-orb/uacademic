@@ -11,7 +11,7 @@ import {
  * the bundle, and the resulting access token is exchanged once for a server
  * session cookie (see `auth/session.tsx`).
  */
-const clientId = import.meta.env.VITE_ENTRA_CLIENT_ID ?? ''
+const clientId = import.meta.env.VITE_UACADEMIC_ENTRA_CLIENT_ID ?? ''
 
 /**
  * `/organizations` because the app is registered as multi-tenant: any work or
@@ -19,7 +19,8 @@ const clientId = import.meta.env.VITE_ENTRA_CLIENT_ID ?? ''
  * the API against the registered tenants (R3).
  */
 const authority =
-  import.meta.env.VITE_ENTRA_AUTHORITY ?? 'https://login.microsoftonline.com/organizations'
+  import.meta.env.VITE_UACADEMIC_ENTRA_AUTHORITY ??
+  'https://login.microsoftonline.com/organizations'
 
 const configuration: Configuration = {
   auth: {

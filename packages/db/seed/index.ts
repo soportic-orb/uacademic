@@ -205,8 +205,8 @@ async function seedPlatformUsers() {
  * stored encrypted and there is no sane fallback for that.
  */
 async function seedLocalCredential(userId: string) {
-  const password = process.env.SEED_SUPERADMIN_PASSWORD ?? 'Superadmin-2026-demo'
-  const encryptionKey = process.env.APP_ENCRYPTION_KEY
+  const password = process.env.UACADEMIC_SEED_SUPERADMIN_PASSWORD ?? 'Superadmin-2026-demo'
+  const encryptionKey = process.env.UACADEMIC_APP_ENCRYPTION_KEY
   const existing = await prisma.localCredential.findUnique({ where: { userId } })
   if (existing) return
 

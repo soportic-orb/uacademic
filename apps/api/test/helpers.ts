@@ -9,7 +9,7 @@ import { loadEnv } from '../src/config/env.js'
  * worth something if they hold against the actual query planner. CI starts a
  * MySQL service, runs the migration and the seed, and sets DATABASE_URL.
  */
-export const hasDatabase = Boolean(process.env.DATABASE_URL)
+export const hasDatabase = Boolean(process.env.UACADEMIC_DATABASE_URL)
 
 export const SEED = {
   centerId: '0198f0d2-8f2a-7000-8000-0b2d05e00001',
@@ -32,7 +32,12 @@ export const FOREIGN = {
 }
 
 export async function createTestApp(): Promise<FastifyInstance> {
-  const env = loadEnv({ ...process.env, NODE_ENV: 'test', LOG_LEVEL: 'silent', AUTH_MODE: 'mock' })
+  const env = loadEnv({
+    ...process.env,
+    NODE_ENV: 'test',
+    UACADEMIC_LOG_LEVEL: 'silent',
+    UACADEMIC_AUTH_MODE: 'mock',
+  })
   return buildApp({ env })
 }
 

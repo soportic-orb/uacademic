@@ -12,7 +12,7 @@ import { expect, test } from '@playwright/test'
  */
 const SUPERADMIN = {
   email: 'ona.bertran@demo.uacademic.test',
-  password: process.env.SEED_SUPERADMIN_PASSWORD ?? 'Superadmin-2026-demo',
+  password: process.env.UACADEMIC_SEED_SUPERADMIN_PASSWORD ?? 'Superadmin-2026-demo',
 }
 
 /**
