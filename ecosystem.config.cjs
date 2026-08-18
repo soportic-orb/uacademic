@@ -13,10 +13,41 @@
  *   pm2 start ecosystem.config.cjs
  *   pm2 save && pm2 startup
  */
+const fs = require('node:fs')
 const path = require('node:path')
 
-const ROOT = process.env.UACADEMIC_DEPLOY_ROOT || '/var/www/uacademic'
-const CURRENT = path.join(ROOT, 'current')
+/**
+ * Where this installation lives.
+ *
+ * `/var/www/uacademic` is the layout section 2 of the deployment manual
+ * describes, but a panel decides its own paths — CloudPanel puts a site under
+ * `/home/<user>/htdocs/<domain>` — and a first installation is often a plain
+ * clone with no `current` symlink yet. So both are found rather than assumed:
+ * `UACADEMIC_DEPLOY_ROOT` wins, then the documented path if it is really
+ * there, and otherwise the directory above this file.
+ */
+const ROOT =
+  process.env.UACADEMIC_DEPLOY_ROOT ||
+  (fs.existsSync('/var/www/uacademic') ? '/var/www/uacademic' : path.dirname(__dirname))
+
+/**
+ * The release to run. The symlink is the point of the release layout — PM2
+ * keeps pointing at `current` and a deployment flips it underneath — so it
+ * wins whenever it exists. Without one, this file's own directory is the
+ * checkout somebody just built.
+ */
+const CURRENT = fs.existsSync(path.join(ROOT, 'current')) ? path.join(ROOT, 'current') : __dirname
+
+// PM2 creates the log file but not the directory above it, and refusing to
+// start over a missing folder is a poor first impression. If the directory
+// cannot be created, PM2's own error naming the path is more useful than one
+// thrown while reading this file.
+const LOGS = path.join(ROOT, 'shared/logs')
+try {
+  fs.mkdirSync(LOGS, { recursive: true })
+} catch {
+  /* left to PM2 to report */
+}
 
 module.exports = {
   apps: [
@@ -30,8 +61,8 @@ module.exports = {
       env: { NODE_ENV: 'production' },
       // The shared directory survives deployments; the release directory does
       // not, so nothing that matters is written inside it.
-      error_file: path.join(ROOT, 'shared/logs/api.error.log'),
-      out_file: path.join(ROOT, 'shared/logs/api.out.log'),
+      error_file: path.join(LOGS, 'api.error.log'),
+      out_file: path.join(LOGS, 'api.out.log'),
       time: true,
       // A release switch flips the symlink under a running process, so the
       // reload has to be graceful: finish what is in flight, then exit.
@@ -47,8 +78,8 @@ module.exports = {
       exec_mode: 'fork',
       max_memory_restart: '512M',
       env: { NODE_ENV: 'production' },
-      error_file: path.join(ROOT, 'shared/logs/worker.error.log'),
-      out_file: path.join(ROOT, 'shared/logs/worker.out.log'),
+      error_file: path.join(LOGS, 'worker.error.log'),
+      out_file: path.join(LOGS, 'worker.out.log'),
       time: true,
       kill_timeout: 30_000,
     },

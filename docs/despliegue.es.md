@@ -44,6 +44,36 @@ Los ficheros subidos nunca los sirve el servidor web: solo la API, después de
 comprobar el rol y el centro. Por eso `uploads/` vive fuera del webroot y el
 bloque `location /shared/` de la configuración de Nginx devuelve 404.
 
+**En un panel sin root (CloudPanel).** El usuario del sitio es propietario de
+`/home/<usuario>/htdocs/<dominio>` y de nada por encima, así que la estructura
+se traslada allí y las herramientas se instalan en el prefijo del propio
+usuario — `corepack`, `apt` y `pm2 startup` son de root:
+
+```bash
+cd /home/uacademic/htdocs/uacademic.cat
+mkdir -p shared/logs shared/uploads backups
+pnpm add -g pm2
+echo 'export UACADEMIC_DEPLOY_ROOT=/home/uacademic/htdocs/uacademic.cat' >> ~/.profile
+```
+
+Esa variable es la que hace que la API encuentre `shared/.env`, y PM2 la lee al
+arrancar los procesos — ponla también en la sesión actual, no solo en
+`~/.profile`. Sin enlace `current`, PM2 ejecuta el checkout donde encuentra
+`ecosystem.config.cjs`, de modo que un clon normal ya funciona.
+
+Y ahora lo que más importa: pon la **raíz del sitio** en `repo/apps/web/dist`.
+Lo único que debe ser accesible desde la web es la SPA construida — con la raíz
+un nivel más arriba, `https://uacademic.cat/shared/.env` serviría la contraseña
+de la base de datos y la clave de cifrado.
+
+`pm2 startup` necesita root. Sin él, sobrevive a un reinicio con el crontab del
+propio usuario:
+
+```bash
+pm2 save
+(crontab -l 2>/dev/null; echo "@reboot $(command -v pm2) resurrect") | crontab -
+```
+
 ---
 
 ## 3. Base de datos

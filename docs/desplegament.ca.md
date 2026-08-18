@@ -44,6 +44,36 @@ Els fitxers pujats no són mai servits pel servidor web: només per l'API,
 després de comprovar el rol i el centre. Per això `uploads/` viu fora del
 webroot i el bloc `location /shared/` de la configuració d'Nginx retorna 404.
 
+**En un panell sense root (CloudPanel).** L'usuari del lloc és propietari de
+`/home/<usuari>/htdocs/<domini>` i de res per sobre, així que l'estructura es
+mou allà i les eines s'instal·len al prefix del mateix usuari — `corepack`,
+`apt` i `pm2 startup` són de root:
+
+```bash
+cd /home/uacademic/htdocs/uacademic.cat
+mkdir -p shared/logs shared/uploads backups
+pnpm add -g pm2
+echo 'export UACADEMIC_DEPLOY_ROOT=/home/uacademic/htdocs/uacademic.cat' >> ~/.profile
+```
+
+Aquesta variable és la que fa que l'API trobi `shared/.env`, i PM2 la llegeix
+quan arrenca els processos — posa-la també a la sessió actual, no només a
+`~/.profile`. Sense enllaç `current`, PM2 executa el checkout on troba
+`ecosystem.config.cjs`, de manera que un clon normal ja funciona.
+
+I ara el que més importa: posa l'**arrel del lloc** a `repo/apps/web/dist`.
+L'única cosa que ha de ser accessible des del web és la SPA construïda — amb
+l'arrel un nivell més amunt, `https://uacademic.cat/shared/.env` serviria la
+contrasenya de la base de dades i la clau de xifratge.
+
+`pm2 startup` necessita root. Sense root, sobreviu a un reinici amb el crontab
+del mateix usuari:
+
+```bash
+pm2 save
+(crontab -l 2>/dev/null; echo "@reboot $(command -v pm2) resurrect") | crontab -
+```
+
 ---
 
 ## 3. Base de dades
