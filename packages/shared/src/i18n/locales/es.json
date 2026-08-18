@@ -324,7 +324,70 @@
   "assistant": {
     "title": "Asistente IA",
     "subtitle": "Propuestas revisables antes de aplicarse",
-    "restricted": "Solo la coordinación tiene acceso al asistente."
+    "restricted": "Solo la coordinación tiene acceso al asistente.",
+    "open": "Abre el asistente",
+    "close": "Cerrar",
+    "placeholder": "Pregunta lo que necesites sobre este curso…",
+    "send": "Preguntar",
+    "thinking": "Pensando…",
+    "emptyTitle": "¿Qué quieres saber?",
+    "emptyHint": "Puedes pedir datos, explicaciones o propuestas de cambio.",
+    "context": "Contexto: {{subject}}",
+    "history": "Conversaciones",
+    "newConversation": "Nueva conversación",
+    "proposal": "Propuesta",
+    "proposalHint": "Nada se aplica hasta que lo confirmes.",
+    "confirm": "Confirmar y aplicar",
+    "reject": "Descartar",
+    "confirmed": "Propuesta aplicada",
+    "rejected": "Propuesta descartada",
+    "blocked": "Esta propuesta no se puede aplicar: hay conflictos duros.",
+    "changes": "Cambios propuestos",
+    "before": "Ahora",
+    "after": "Propuesta",
+    "conflicts": "Conflictos",
+    "warnings": "Avisos",
+    "usage": "{{tokens}} tokens · {{percent}}% del presupuesto mensual",
+    "budget": {
+      "warning": "Has consumido el {{percent}}% del presupuesto mensual de IA de este centro.",
+      "exceeded": "Se ha agotado el presupuesto mensual de IA de este centro."
+    },
+    "suggestions": {
+      "workload": "¿Cuántas horas libres le quedan a {{name}} este semestre?",
+      "schedule": "Genera una propuesta de horario para esta asignatura respetando disponibilidades",
+      "substitute": "¿Quién puede cubrir las clases de {{name}} el {{date}}?",
+      "rebalance": "Tengo docentes sobrecargados, redistribuye la carga",
+      "why": "¿Por qué no puedo poner esta clase el martes a las 10?"
+    },
+    "tools": {
+      "get_teacher_workload": "Consultando la carga docente",
+      "get_teacher_availability": "Consultando la disponibilidad",
+      "get_subject_schedule": "Consultando el horario de la asignatura",
+      "list_conflicts": "Comprobando conflictos",
+      "get_space_occupancy": "Consultando la ocupación de aulas",
+      "get_change_history": "Consultando el historial de cambios",
+      "find_eligible_substitutes": "Buscando sustitutos",
+      "propose_schedule": "Preparando una propuesta de horario",
+      "assign_teacher_to_group": "Preparando una asignación",
+      "move_session": "Preparando un cambio de sesión",
+      "rebalance_workload": "Preparando una redistribución de carga",
+      "draft_announcement": "Redactando un anuncio"
+    },
+    "warningsText": {
+      "loadAfterAssignment": "La carga quedaría al {{percent}}% ({{status}}).",
+      "notQualified": "Esta persona no tiene registrada la competencia de {{subject}}.",
+      "stillOverloaded": "A {{name}} todavía le sobran {{hours}} h."
+    },
+    "errors": {
+      "unavailable": "El asistente no está configurado en esta instalación.",
+      "disabled": "El asistente está desactivado en este centro.",
+      "failed": "No se ha podido completar la respuesta. El resto de la plataforma funciona igual.",
+      "budgetExceeded": "Se ha agotado el presupuesto mensual de IA de este centro.",
+      "notConfirmable": "Esta propuesta tiene conflictos y no se puede aplicar.",
+      "alreadyResolved": "Esta propuesta ya se ha resuelto.",
+      "staleProposal": "El horario ha cambiado desde la propuesta: vuelve a pedirla.",
+      "noChannel": "No hay ningún canal donde publicar el anuncio."
+    }
   },
   "states": {
     "loadingLabel": "Cargando contenido",

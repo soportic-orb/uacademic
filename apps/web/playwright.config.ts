@@ -48,6 +48,9 @@ export default defineConfig({
         UACADEMIC_GOOGLE_CLIENT_ID: '',
         UACADEMIC_GOOGLE_CLIENT_SECRET: '',
         UACADEMIC_APP_ENCRYPTION_KEY: 'a'.repeat(64),
+        // No assistant in the e2e environment: the suite asserts that the
+        // product is whole without it.
+        UACADEMIC_ANTHROPIC_API_KEY: '',
       },
       cwd: '../..',
     },

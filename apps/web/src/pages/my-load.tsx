@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 
 import { LoadBadge } from '../components/data/load-badge'
+import { AssistantLauncher } from '../features/assistant/assistant-launcher'
 import { CardSkeleton, ErrorState } from '../components/feedback/states'
 import { Card, CardBody, CardHeader } from '../components/ui/card'
 import { useTeacherWorkload } from '../features/capacity/queries'
@@ -38,13 +39,17 @@ export function MyLoadPage() {
           <h1 className="text-2xl font-semibold text-text">{t('load.title')}</h1>
           <p className="mt-1 text-sm text-text-muted">{t('teachers.workload.subtitle')}</p>
         </div>
-        <Link
-          to="/teachers/me"
-          className="inline-flex items-center gap-2 text-sm text-primary underline-offset-2 hover:underline"
-        >
-          <CalendarClock className="size-4" aria-hidden="true" />
-          {t('teachers.availability.title')}
-        </Link>
+        <div className="flex flex-wrap items-center gap-4">
+          <Link
+            to="/teachers/me"
+            className="inline-flex items-center gap-2 text-sm text-primary underline-offset-2 hover:underline"
+          >
+            <CalendarClock className="size-4" aria-hidden="true" />
+            {t('teachers.availability.title')}
+          </Link>
+          {/* Coordination only; a teacher looking at their own load sees nothing. */}
+          <AssistantLauncher />
+        </div>
       </header>
 
       <Card className="max-w-2xl">

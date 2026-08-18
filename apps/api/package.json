@@ -13,6 +13,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.117.1",
     "@fastify/cookie": "11.1.2",
     "@fastify/cors": "11.3.0",
     "@fastify/helmet": "13.1.0",

@@ -91,6 +91,22 @@ export const notificationSettingsSchema = z.object({
 })
 
 /**
+ * The assistant (R5, R9). Off until a center turns it on, capped by a token
+ * budget it cannot exceed, and warning before it gets there rather than after.
+ */
+export const aiSettingsSchema = z.object({
+  enabled: z.boolean().default(true),
+  /** Tokens per calendar month. Zero means no ceiling. */
+  monthlyTokenBudget: z.number().int().min(0).max(100_000_000).default(2_000_000),
+  /** Percentage of the budget at which the center is warned. */
+  alertThresholdPercent: z.number().int().min(1).max(99).default(80),
+  /** How many tool round-trips one question may take before it is cut off. */
+  maxToolIterations: z.number().int().min(1).max(20).default(8),
+  /** Cap per answer, so one runaway question cannot spend a month's budget. */
+  maxOutputTokens: z.number().int().min(256).max(64_000).default(8_000),
+})
+
+/**
  * Weights of the schedule engine: one per soft constraint, so a center that
  * cares more about avoiding gaps than about buildings just raises a number.
  * Higher means the criterion pulls harder; zero switches it off.
@@ -151,6 +167,7 @@ export const centerSettingsSchema = z.object({
   identity: identitySettingsSchema.prefault({}),
   notifications: notificationSettingsSchema.prefault({}),
   calendar: calendarSettingsSchema.prefault({}),
+  ai: aiSettingsSchema.prefault({}),
 })
 
 export type CenterSettings = z.infer<typeof centerSettingsSchema>
@@ -158,6 +175,7 @@ export type LoadSettings = z.infer<typeof loadSettingsSchema>
 export type ScheduleSettings = z.infer<typeof scheduleSettingsSchema>
 export type IdentitySettings = z.infer<typeof identitySettingsSchema>
 export type CalendarSettings = z.infer<typeof calendarSettingsSchema>
+export type AiSettings = z.infer<typeof aiSettingsSchema>
 export type NotificationSettings = z.infer<typeof notificationSettingsSchema>
 
 export const defaultCenterSettings: CenterSettings = centerSettingsSchema.parse({})

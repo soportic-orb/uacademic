@@ -154,6 +154,68 @@ reuses it from an Expo app.
 
 ---
 
+## What phase 5 adds
+
+Claude as the coordinator's assistant — inside the product, not beside it.
+
+**The browser never talks to Anthropic.** Everything goes through
+`apps/api/src/modules/ai`: the context is built there, scoped to one center and
+to the caller's role, the tools run there, and the key never leaves the server.
+
+**Reading tools run themselves** — `get_teacher_workload`,
+`get_teacher_availability`, `get_subject_schedule`, `list_conflicts`,
+`get_space_occupancy`, `get_change_history`, `find_eligible_substitutes`. They
+query the same tenant-scoped client the HTTP routes use, so a missing tenant
+filter is not a thing that can happen here either.
+
+**Writing tools return a proposal and nothing else** — `propose_schedule`,
+`assign_teacher_to_group`, `move_session`, `rebalance_workload`,
+`draft_announcement`. Each computes exactly what would change, runs the phase-3
+constraint engine over it so the preview carries real conflicts, and stores a
+`pending` row. The flow is fixed:
+
+```
+question → Claude reads → proposes → the UI shows the diff and the conflicts
+        → the coordinator CONFIRMS → it is applied → audit entry, source = 'ai'
+```
+
+A proposal with a hard violation is shown — knowing exactly what is impossible
+is useful — but it cannot be confirmed. Confirmation re-runs the engine before
+writing: a proposal is a photograph of a moment, and the timetable may have
+moved underneath it.
+
+**What reaches the model.** Names, internal identifiers, hours and slots.
+Never an identity document, a phone number, an address, a bank account or
+anything medical — `minimizeForModel` strips them from every payload on the way
+out, and a test asserts the absence rather than trusting the query. The free-text
+reason on an availability exception never travels either: it is a place where
+somebody writes why they were ill.
+
+**What it costs.** Every exchange is recorded in `ai_interactions` with tokens
+in and out. A center has a monthly token budget (`ai.monthlyTokenBudget`),
+warns at a configurable percentage of it (80% by default) and stops answering
+when it is spent — the rest of the platform does not notice.
+
+**When Anthropic is down**, or no key is configured, or a center switched the
+assistant off, the panel degrades to a sentence and every other screen behaves
+exactly as it did before. The e2e suite runs with no key precisely to assert
+that.
+
+**The UI** is a contextual side panel, reachable from planning and from the
+load screens, which knows the subject and the year being worked on. The answer
+streams as it is produced, tool activity is named while it happens, and the
+conversation history is kept per subject.
+
+These five questions work end to end:
+
+| Question                                                      | How it is answered                                                                                   |
+| ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| "How many free hours does Marta have left this semester?"     | `get_teacher_workload`, with the hours broken down by term                                           |
+| "Draft a timetable for Physiology II respecting availability" | `propose_schedule` runs the phase-3 solver and returns a reviewable proposal                         |
+| "Juan is off on 14 March — who can cover his two classes?"    | `find_eligible_substitutes` for that teacher and date, ranked with reasons and blockers              |
+| "Three teachers are overloaded, rebalance the load"           | `rebalance_workload` moves whole assignments to colleagues with competence and headroom              |
+| "Why can I not put this class on Tuesday at 10?"              | `list_conflicts` evaluates the hypothetical placement with the same engine the planner drags against |
+
 ## What phase 4B adds
 
 Getting the timetable out of UAcademic, so a teacher never has to open it to
@@ -430,6 +492,15 @@ from one center cannot read another center's data (R2), which is only meaningful
 a real database. CI starts a MySQL service, migrates and seeds it before running them.
 Unit tests — domain logic, i18n coverage, tenant scoping rules, toasts, navigation — run
 without any database.
+
+The assistant is tested without Anthropic: the model is stubbed and replays scripted
+turns, so the tools, the proposal ladder, the confirmation, the audit entry and the
+budget are all exercised without a network or a key. The e2e suite runs with no key at
+all, which is how the "the platform is whole without it" promise stays true.
+
+MySQL's full-text index backs the message search. If the database server is stopped
+abruptly, InnoDB can leave that index stale and the search test then finds nothing:
+`OPTIMIZE TABLE messages` rebuilds it.
 
 The Entra ID flow is tested without Microsoft: the suite generates an RSA key pair,
 serves the public half as a JWKS over localhost, and mints real RS256 tokens — including

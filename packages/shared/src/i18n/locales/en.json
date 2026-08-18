@@ -324,7 +324,70 @@
   "assistant": {
     "title": "AI assistant",
     "subtitle": "Proposals you review before anything is applied",
-    "restricted": "Only coordinators have access to the assistant."
+    "restricted": "Only coordination has access to the assistant.",
+    "open": "Open the assistant",
+    "close": "Close",
+    "placeholder": "Ask anything about this academic year…",
+    "send": "Ask",
+    "thinking": "Thinking…",
+    "emptyTitle": "What would you like to know?",
+    "emptyHint": "Ask for data, for an explanation, or for a change to be proposed.",
+    "context": "Context: {{subject}}",
+    "history": "Conversations",
+    "newConversation": "New conversation",
+    "proposal": "Proposal",
+    "proposalHint": "Nothing is applied until you confirm it.",
+    "confirm": "Confirm and apply",
+    "reject": "Discard",
+    "confirmed": "Proposal applied",
+    "rejected": "Proposal discarded",
+    "blocked": "This proposal cannot be applied: it breaks hard constraints.",
+    "changes": "Proposed changes",
+    "before": "Now",
+    "after": "Proposed",
+    "conflicts": "Conflicts",
+    "warnings": "Warnings",
+    "usage": "{{tokens}} tokens · {{percent}}% of the monthly budget",
+    "budget": {
+      "warning": "You have used {{percent}}% of this center’s monthly AI budget.",
+      "exceeded": "This center’s monthly AI budget is spent."
+    },
+    "suggestions": {
+      "workload": "How many hours does {{name}} have left this semester?",
+      "schedule": "Draft a timetable for this subject that respects availability",
+      "substitute": "Who can cover {{name}}’s classes on {{date}}?",
+      "rebalance": "Some teachers are overloaded — rebalance the load",
+      "why": "Why can I not put this class on Tuesday at 10?"
+    },
+    "tools": {
+      "get_teacher_workload": "Reading the teaching load",
+      "get_teacher_availability": "Reading the availability",
+      "get_subject_schedule": "Reading the subject's timetable",
+      "list_conflicts": "Checking conflicts",
+      "get_space_occupancy": "Reading room occupancy",
+      "get_change_history": "Reading the change history",
+      "find_eligible_substitutes": "Looking for substitutes",
+      "propose_schedule": "Preparing a timetable proposal",
+      "assign_teacher_to_group": "Preparing an assignment",
+      "move_session": "Preparing a class change",
+      "rebalance_workload": "Preparing a load rebalance",
+      "draft_announcement": "Drafting an announcement"
+    },
+    "warningsText": {
+      "loadAfterAssignment": "The load would reach {{percent}}% ({{status}}).",
+      "notQualified": "This person is not recorded as able to teach {{subject}}.",
+      "stillOverloaded": "{{name}} would still be {{hours}} h over."
+    },
+    "errors": {
+      "unavailable": "The assistant is not configured on this installation.",
+      "disabled": "The assistant is switched off for this center.",
+      "failed": "The answer could not be completed. Everything else works as usual.",
+      "budgetExceeded": "This center’s monthly AI budget is spent.",
+      "notConfirmable": "This proposal has conflicts and cannot be applied.",
+      "alreadyResolved": "This proposal has already been resolved.",
+      "staleProposal": "The timetable changed since the proposal: ask for it again.",
+      "noChannel": "There is no channel to publish the announcement in."
+    }
   },
   "states": {
     "loadingLabel": "Loading content",

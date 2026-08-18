@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { AssistantLauncher } from '../features/assistant/assistant-launcher'
+
 import { CardSkeleton, EmptyState, ErrorState } from '../components/feedback/states'
 import { CompareView } from '../features/planner/compare-view'
 import { GeneratePanel } from '../features/planner/generate-panel'
@@ -35,9 +37,13 @@ export function PlanningPage() {
 
   return (
     <div className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold text-text">{t('planning.title')}</h1>
-        <p className="mt-1 text-sm text-text-muted">{t('planning.subtitle')}</p>
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold text-text">{t('planning.title')}</h1>
+          <p className="mt-1 text-sm text-text-muted">{t('planning.subtitle')}</p>
+        </div>
+        {/* The assistant, where the planning actually happens. */}
+        <AssistantLauncher />
       </header>
 
       {version.isPending ? (

@@ -14,6 +14,7 @@ import { registerUserRoutes } from './modules/admin/users-routes.js'
 import { registerAuthRoutes } from './modules/auth/routes.js'
 import { registerAbsenceRoutes } from './modules/absences/routes.js'
 import { registerAuditRoutes } from './modules/audit/routes.js'
+import { registerAiRoutes } from './modules/ai/routes.js'
 import { registerCalendarRoutes } from './modules/calendar/routes.js'
 import { registerChangeRoutes } from './modules/changes/routes.js'
 import { registerMessagingRoutes } from './modules/messaging/routes.js'
@@ -105,6 +106,7 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
   registerMessagingRoutes(app, bus)
   registerNotificationRoutes(app)
   registerAuditRoutes(app)
+  registerAiRoutes(app)
   registerEventRoutes(app, bus)
   registerAdminResources(app)
   registerUserRoutes(app)

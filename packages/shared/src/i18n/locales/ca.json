@@ -323,8 +323,71 @@
   },
   "assistant": {
     "title": "Assistent IA",
-    "subtitle": "Propostes revisables abans d'aplicar-se",
-    "restricted": "Només la coordinació té accés a l'assistent."
+    "subtitle": "Propostes revisables abans d’aplicar-se",
+    "restricted": "Només la coordinació té accés a l'assistent.",
+    "open": "Obre l'assistent",
+    "close": "Tanca",
+    "placeholder": "Pregunta el que necessitis sobre aquest curs…",
+    "send": "Pregunta",
+    "thinking": "Pensant…",
+    "emptyTitle": "Què vols saber?",
+    "emptyHint": "Pots demanar dades, explicacions o propostes de canvi.",
+    "context": "Context: {{subject}}",
+    "history": "Converses",
+    "newConversation": "Nova conversa",
+    "proposal": "Proposta",
+    "proposalHint": "Res s’aplica fins que ho confirmis.",
+    "confirm": "Confirma i aplica",
+    "reject": "Descarta",
+    "confirmed": "Proposta aplicada",
+    "rejected": "Proposta descartada",
+    "blocked": "Aquesta proposta no es pot aplicar: hi ha conflictes durs.",
+    "changes": "Canvis proposats",
+    "before": "Ara",
+    "after": "Proposta",
+    "conflicts": "Conflictes",
+    "warnings": "Avisos",
+    "usage": "{{tokens}} tokens · {{percent}}% del pressupost mensual",
+    "budget": {
+      "warning": "Has consumit el {{percent}}% del pressupost mensual d’IA d’aquest centre.",
+      "exceeded": "S’ha exhaurit el pressupost mensual d’IA d’aquest centre."
+    },
+    "suggestions": {
+      "workload": "Quantes hores lliures li queden a {{name}} aquest semestre?",
+      "schedule": "Genera una proposta d’horari per a aquesta assignatura respectant disponibilitats",
+      "substitute": "Qui pot cobrir les classes de {{name}} el {{date}}?",
+      "rebalance": "Tinc docents sobrecarregats, redistribueix la càrrega",
+      "why": "Per què no puc posar aquesta classe dimarts a les 10?"
+    },
+    "tools": {
+      "get_teacher_workload": "Consultant la càrrega docent",
+      "get_teacher_availability": "Consultant la disponibilitat",
+      "get_subject_schedule": "Consultant l'horari de l'assignatura",
+      "list_conflicts": "Comprovant conflictes",
+      "get_space_occupancy": "Consultant l'ocupació d'aules",
+      "get_change_history": "Consultant l'historial de canvis",
+      "find_eligible_substitutes": "Buscant substituts",
+      "propose_schedule": "Preparant una proposta d'horari",
+      "assign_teacher_to_group": "Preparant una assignació",
+      "move_session": "Preparant un canvi de sessió",
+      "rebalance_workload": "Preparant una redistribució de càrrega",
+      "draft_announcement": "Redactant un anunci"
+    },
+    "warningsText": {
+      "loadAfterAssignment": "La càrrega quedaria al {{percent}}% ({{status}}).",
+      "notQualified": "Aquesta persona no té registrada la competència de {{subject}}.",
+      "stillOverloaded": "A {{name}} encara li sobren {{hours}} h."
+    },
+    "errors": {
+      "unavailable": "L'assistent no està configurat en aquesta instal·lació.",
+      "disabled": "L'assistent està desactivat en aquest centre.",
+      "failed": "No s’ha pogut completar la resposta. La resta de la plataforma funciona igual.",
+      "budgetExceeded": "S’ha exhaurit el pressupost mensual d’IA d’aquest centre.",
+      "notConfirmable": "Aquesta proposta té conflictes i no es pot aplicar.",
+      "alreadyResolved": "Aquesta proposta ja s’ha resolt.",
+      "staleProposal": "L’horari ha canviat des de la proposta: torna-la a demanar.",
+      "noChannel": "No hi ha cap canal on publicar l’anunci."
+    }
   },
   "states": {
     "loadingLabel": "Carregant contingut",

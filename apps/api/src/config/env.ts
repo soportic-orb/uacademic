@@ -111,6 +111,14 @@ const envSchema = z.object({
   /** Where the web app lives, for the links inside notifications. */
   APP_URL: z.string().default('http://localhost:5173'),
 
+  /**
+   * The assistant (phase 5). Without a key the AI panel degrades to a message
+   * and every other screen carries on exactly as before — an integration that
+   * takes the product down with it is not an integration worth having.
+   */
+  ANTHROPIC_API_KEY: z.string().optional(),
+  ANTHROPIC_MODEL: z.string().default('claude-opus-5'),
+
   /** Message attachments live on disk; there is no object storage on the host. */
   UPLOAD_DIR: z.string().default('./var/uploads'),
 

@@ -1,4 +1,5 @@
 export * from './domain/access.js'
+export * from './domain/ai.js'
 export * from './domain/availability.js'
 export * from './domain/calendar-sync.js'
 export * from './domain/capacity.js'

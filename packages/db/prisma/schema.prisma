@@ -273,6 +273,19 @@ enum BusySlotSource {
   manual
 }
 
+enum AiRole {
+  user
+  assistant
+}
+
+enum ProposalStatus {
+  pending
+  confirmed
+  rejected
+  expired
+  failed
+}
+
 enum DocumentScope {
   university
   center
@@ -409,6 +422,8 @@ model Center {
   messages               Message[]
   notifications          Notification[]
   calendarTombstones     CalendarTombstone[]
+  aiConversations        AiConversation[]
+  aiProposals            AiProposal[]
   documents              Document[]
   documentChunks         DocumentChunk[]
   settingsVersions       CenterSettingsVersion[]
@@ -489,6 +504,9 @@ model User {
   calendarConnections CalendarConnection[]
   calendarTombstones  CalendarTombstone[]
   consents            ConsentRecord[]
+  aiConversations     AiConversation[]
+  aiProposals         AiProposal[]           @relation("ProposalAuthor")
+  resolvedProposals   AiProposal[]           @relation("ProposalResolver")
   uploadedDocuments   Document[]              @relation("DocumentUploader")
   approvedSettings    CenterSettingsVersion[] @relation("SettingsApprover")
   resolvedExtractions SettingExtraction[]     @relation("ExtractionResolver")
@@ -565,6 +583,7 @@ model Subject {
   degree       Degree       @relation(fields: [degreeId], references: [id], onDelete: Restrict)
 
   coordinators  SubjectCoordinator[]
+  aiConversations AiConversation[]
   groups        Group[]
   skills        TeacherSkill[]
   conversations Conversation[]
@@ -1293,6 +1312,74 @@ model AiInteraction {
   @@index([centerId, createdAt])
   @@index([userId, createdAt])
   @@map("ai_interactions")
+}
+
+/// One thread with the assistant. Scoped to a subject when the coordinator was
+/// working on one, so the history follows the work rather than the browser tab.
+model AiConversation {
+  id            String   @id @default(uuid(7)) @db.Char(36)
+  centerId      String   @map("center_id") @db.Char(36)
+  userId        String   @map("user_id") @db.Char(36)
+  subjectId     String?  @map("subject_id") @db.Char(36)
+  title         String?  @db.VarChar(200)
+  lastMessageAt DateTime @default(now()) @map("last_message_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  center   Center      @relation(fields: [centerId], references: [id], onDelete: Cascade)
+  user     User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subject  Subject?    @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  messages AiMessage[]
+  proposals AiProposal[]
+
+  @@index([userId, lastMessageAt])
+  @@index([centerId, subjectId])
+  @@map("ai_conversations")
+}
+
+model AiMessage {
+  id             String      @id @default(uuid(7)) @db.Char(36)
+  conversationId String      @map("conversation_id") @db.Char(36)
+  role           AiRole
+  content        String      @db.Text
+  /// Tool calls and their results, as the transcript replays them.
+  blocksJson     Json?       @map("blocks_json")
+  tokensIn       Int?        @map("tokens_in")
+  tokensOut      Int?        @map("tokens_out")
+  createdAt      DateTime    @default(now()) @map("created_at")
+
+  conversation AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+  @@map("ai_messages")
+}
+
+/// R5: what the assistant would do, waiting for a person to say yes.
+/// Nothing here has been written to the timetable — that only happens on
+/// confirmation, and it is audited with source = 'ai'.
+model AiProposal {
+  id             String         @id @default(uuid(7)) @db.Char(36)
+  centerId       String         @map("center_id") @db.Char(36)
+  conversationId String         @map("conversation_id") @db.Char(36)
+  userId         String         @map("user_id") @db.Char(36)
+  tool           String         @db.VarChar(100)
+  inputJson      Json           @map("input_json")
+  /// The preview the UI renders: summary, per-entity diff, conflicts.
+  previewJson    Json           @map("preview_json")
+  status         ProposalStatus @default(pending)
+  resolvedBy     String?        @map("resolved_by") @db.Char(36)
+  resolvedAt     DateTime?      @map("resolved_at")
+  error          String?        @db.Text
+  expiresAt      DateTime?      @map("expires_at")
+  createdAt      DateTime       @default(now()) @map("created_at")
+
+  center       Center         @relation(fields: [centerId], references: [id], onDelete: Cascade)
+  conversation AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User           @relation("ProposalAuthor", fields: [userId], references: [id], onDelete: Cascade)
+  resolver     User?          @relation("ProposalResolver", fields: [resolvedBy], references: [id], onDelete: SetNull)
+
+  @@index([conversationId, createdAt])
+  @@index([centerId, status])
+  @@map("ai_proposals")
 }
 
 /// R4: append-only. The application user has INSERT+SELECT grants only.
