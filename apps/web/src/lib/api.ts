@@ -2,19 +2,24 @@ import type { ApiError as ApiErrorBody } from '@uacademic/shared'
 import { CENTER_HEADER } from '@uacademic/shared'
 
 import { currentLocale } from '../i18n'
+import { API_BASE_URL } from './api-base'
 import { useSessionStore } from '../stores/session'
-
-const BASE_URL = import.meta.env.VITE_UACADEMIC_API_URL ?? 'http://localhost:3001'
 
 /** Development and e2e only; the API refuses this mode in production. */
 const MOCK_AUTH = import.meta.env.VITE_UACADEMIC_AUTH_MODE === 'mock'
 
-/** Carries the API's localized message so a toast can show it as-is (R1). */
+/**
+ * Carries the API's localized message so a toast can show it as-is (R1), and
+ * its key, which is what a caller matches on: several failures share a status
+ * and a code — a wrong password and a missing second factor are both a 401
+ * UNAUTHORIZED — and only the key tells them apart.
+ */
 export class ApiRequestError extends Error {
   constructor(
     readonly status: number,
     readonly code: string,
     readonly localizedMessage: string,
+    readonly messageKey: string = '',
     readonly details: { path: string; messageKey: string }[] = [],
     readonly traceId?: string,
   ) {
@@ -41,7 +46,7 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
     if (mockUserEmail) headers.set('x-mock-user', mockUserEmail)
   }
 
-  const response = await fetch(`${BASE_URL}${path}`, {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
     ...init,
     headers,
     credentials: 'include',
@@ -53,6 +58,7 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
       response.status,
       body?.error.code ?? 'INTERNAL_ERROR',
       body?.error.message ?? 'errors.generic',
+      body?.error.messageKey ?? '',
       body?.error.details ?? [],
       body?.error.traceId,
     )
@@ -78,13 +84,14 @@ export async function apiDownload(path: string): Promise<Blob> {
     if (mockUserEmail) headers.set('x-mock-user', mockUserEmail)
   }
 
-  const response = await fetch(`${BASE_URL}${path}`, { headers, credentials: 'include' })
+  const response = await fetch(`${API_BASE_URL}${path}`, { headers, credentials: 'include' })
   if (!response.ok) {
     const body = (await response.json().catch(() => null)) as ApiErrorBody | null
     throw new ApiRequestError(
       response.status,
       body?.error.code ?? 'INTERNAL_ERROR',
       body?.error.message ?? 'errors.generic',
+      body?.error.messageKey ?? '',
     )
   }
 

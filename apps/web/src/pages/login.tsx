@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Navigate, useLocation } from 'react-router'
 
@@ -21,6 +21,16 @@ export function LoginPage() {
   const [showLocal, setShowLocal] = useState(false)
   const [busy, setBusy] = useState(false)
   const [form, setForm] = useState({ email: '', password: '', totp: '' })
+  // Nobody is asked for a code until their own account turns out to want one:
+  // an installation a minute old has no authenticator app behind it.
+  const [totpRequired, setTotpRequired] = useState(false)
+  const totpRef = useRef<HTMLInputElement>(null)
+
+  // The form just grew a field in answer to what was submitted; moving focus
+  // there is the whole point, and it is what a screen reader needs too.
+  useEffect(() => {
+    if (totpRequired) totpRef.current?.focus()
+  }, [totpRequired])
 
   // Signing in lands wherever the guard bounced from, or on the dashboard.
   if (isAuthenticated) {
@@ -55,6 +65,11 @@ export function LoginPage() {
         ...(form.totp ? { totp: form.totp } : {}),
       })
     } catch (error) {
+      // The account has a second factor after all: show the field rather than
+      // an error about something that was never on screen.
+      if (error instanceof ApiRequestError && error.messageKey === 'auth.errors.totpRequired') {
+        setTotpRequired(true)
+      }
       handleError(error)
     } finally {
       setBusy(false)
@@ -119,17 +134,21 @@ export function LoginPage() {
                   />
                 </Field>
 
-                <Field label={t('auth.totp')} hint={t('auth.totpHint')}>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    autoComplete="one-time-code"
-                    maxLength={6}
-                    value={form.totp}
-                    onChange={(event) => setForm({ ...form, totp: event.target.value })}
-                    className="tabular h-10 w-full rounded-control border border-border bg-surface px-3 text-sm text-text"
-                  />
-                </Field>
+                {totpRequired ? (
+                  <Field label={t('auth.totp')} hint={t('auth.totpHint')}>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      maxLength={6}
+                      required
+                      ref={totpRef}
+                      value={form.totp}
+                      onChange={(event) => setForm({ ...form, totp: event.target.value })}
+                      className="tabular h-10 w-full rounded-control border border-border bg-surface px-3 text-sm text-text"
+                    />
+                  </Field>
+                ) : null}
 
                 <Button type="submit" className="w-full" disabled={busy}>
                   {t('auth.submit')}
@@ -152,11 +171,16 @@ function Field({
   hint?: string
   children: React.ReactNode
 }) {
+  // The hint sits outside the <label> on purpose: inside, it becomes part of
+  // the field's accessible name, and "Verification code" is read out as
+  // "Verification code six digits from your authenticator app".
   return (
-    <label className="block">
-      <span className="mb-1 block text-sm font-medium text-text">{label}</span>
-      {children}
-      {hint ? <span className="mt-1 block text-xs text-text-muted">{hint}</span> : null}
-    </label>
+    <div>
+      <label className="block">
+        <span className="mb-1 block text-sm font-medium text-text">{label}</span>
+        {children}
+      </label>
+      {hint ? <p className="mt-1 text-xs text-text-muted">{hint}</p> : null}
+    </div>
   )
 }

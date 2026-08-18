@@ -11,9 +11,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { currentLocale } from '../../i18n'
 import { ApiRequestError, apiFetch, apiJson } from '../../lib/api'
+import { API_BASE_URL } from '../../lib/api-base'
 import { useSessionStore } from '../../stores/session'
 
-const BASE_URL = import.meta.env.VITE_UACADEMIC_API_URL ?? 'http://localhost:3001'
 const MOCK_AUTH = import.meta.env.VITE_UACADEMIC_AUTH_MODE === 'mock'
 
 export interface ProposalChange {
@@ -163,7 +163,7 @@ export async function askAssistant(input: AskInput): Promise<void> {
     if (mockUserEmail) headers.set('x-mock-user', mockUserEmail)
   }
 
-  const response = await fetch(`${BASE_URL}/api/v1/ai/ask`, {
+  const response = await fetch(`${API_BASE_URL}/api/v1/ai/ask`, {
     method: 'POST',
     credentials: 'include',
     headers,

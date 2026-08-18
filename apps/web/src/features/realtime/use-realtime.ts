@@ -10,9 +10,8 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 
 import { apiFetch } from '../../lib/api'
+import { API_BASE_URL } from '../../lib/api-base'
 import { useSessionStore } from '../../stores/session'
-
-const BASE_URL = import.meta.env.VITE_UACADEMIC_API_URL ?? 'http://localhost:3001'
 
 /**
  * Development and e2e only. `EventSource` cannot carry the identity header the
@@ -106,7 +105,7 @@ export function useRealtime(onEvent?: (event: RealtimeEvent) => void): RealtimeS
     if (MOCK_AUTH || typeof EventSource === 'undefined') {
       startPolling()
     } else {
-      source = new EventSource(`${BASE_URL}/api/v1/events/stream`, { withCredentials: true })
+      source = new EventSource(`${API_BASE_URL}/api/v1/events/stream`, { withCredentials: true })
       source.onopen = () => {
         if (!disposed) setState((current) => ({ ...current, transport: 'stream', connected: true }))
       }

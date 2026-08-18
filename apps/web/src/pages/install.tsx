@@ -20,8 +20,9 @@ import { useTranslation } from 'react-i18next'
 
 import { Button } from '../components/ui/button'
 import { Card, CardBody, CardHeader } from '../components/ui/card'
+import { API_BASE_URL } from '../lib/api-base'
 
-const API = import.meta.env.VITE_UACADEMIC_API_URL ?? ''
+const API = API_BASE_URL
 
 const STEPS = ['token', 'database', 'site', 'admin', 'done'] as const
 type Step = (typeof STEPS)[number]
