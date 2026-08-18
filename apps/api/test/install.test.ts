@@ -7,12 +7,15 @@
  * operator had to invent.
  */
 import { disconnectPrisma, getPrismaClient } from '@uacademic/db'
+import { parse as parseEnvFile } from 'dotenv'
 import type { FastifyInstance } from 'fastify'
 import { mkdtemp, readFile, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
+import { loadEnv } from '../src/config/env.js'
+import { buildApp } from '../src/app.js'
 import { buildInstallerApp } from '../src/modules/install/app.js'
 import {
   databaseUrl,
@@ -147,6 +150,17 @@ describe('the installer', () => {
       for (const name of ['WEB_ORIGIN', 'API_PUBLIC_URL', 'APP_URL']) {
         expect(file).toContain(`UACADEMIC_${name}="https://uacademic.cat"`)
       }
+    })
+
+    it('is a configuration the platform can actually boot on', () => {
+      // The defect this stands guard over: the installer wrote a value the
+      // API's own schema refused, so a brand-new installation came up on the
+      // installer, completed, and then would not start.
+      const env = loadEnv(parseEnvFile(rendered()))
+
+      expect(env.AUTH_MODE).toBe('local')
+      expect(env.NODE_ENV).toBe('production')
+      expect(env.APP_ENCRYPTION_KEY).toBe('b'.repeat(64))
     })
 
     it('stays on local sign-in until an Entra client id exists', () => {
@@ -299,5 +313,36 @@ describe.skipIf(!hasDatabase)('the installed platform', () => {
       payload: { token: 'x'.repeat(32) },
     })
     expect(response.statusCode).toBe(410)
+  })
+})
+
+describe.skipIf(!hasDatabase)('an installation with no Entra application yet', () => {
+  let app: FastifyInstance
+
+  beforeAll(async () => {
+    app = await buildApp({
+      env: loadEnv({
+        ...process.env,
+        NODE_ENV: 'test',
+        UACADEMIC_LOG_LEVEL: 'silent',
+        UACADEMIC_AUTH_MODE: 'local',
+        UACADEMIC_SESSION_COOKIE_SECRET: 'test-session-secret-that-is-long-enough',
+      }),
+    })
+  })
+
+  afterAll(async () => {
+    await app.close()
+  })
+
+  it('says Microsoft sign-in is not configured instead of failing at the JWKS', async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/entra/session',
+      payload: { accessToken: 'anything' },
+    })
+
+    expect(response.statusCode).toBe(503)
+    expect(response.json().error.messageKey).toBe('auth.errors.entraNotConfigured')
   })
 })

@@ -40,10 +40,13 @@ const envSchema = z.object({
     .optional(),
 
   /**
-   * `entra` is the real thing. `mock` keeps the phase 0 header identity for
-   * local development and the e2e suite; it is refused in production below.
+   * `entra` is the real thing. `local` is a first-day installation that has no
+   * Entra application registered yet: only the break-glass credential works,
+   * and the sign-in screen offers only that. `mock` keeps the phase 0 header
+   * identity for development and the e2e suite; it is refused in production
+   * below.
    */
-  AUTH_MODE: z.enum(['mock', 'entra']).default('entra'),
+  AUTH_MODE: z.enum(['mock', 'entra', 'local']).default('entra'),
   /** Fallback identity for the mock mode when no header is sent. */
   MOCK_USER_EMAIL: z.string().optional(),
 

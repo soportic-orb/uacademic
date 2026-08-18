@@ -129,6 +129,15 @@ pm2 restart uacademic
 A partir de ahí `/install` responde 410 para siempre. Para cambiar la
 configuración se edita `shared/.env` y se reinicia; no hay reinstalación.
 
+**Entrar por primera vez.** Una instalación nueva no tiene ninguna aplicación
+de Entra registrada, así que el instalador escribe
+`UACADEMIC_AUTH_MODE="local"` y el botón de Microsoft de la pantalla de acceso
+queda desactivado. Entra con el correo y la contraseña que le has dado al
+instalador: es la credencial de rescate del superadministrador. Cuando tengas
+Entra ID registrado (apartado 11), pon `UACADEMIC_AUTH_MODE="entra"` y
+`UACADEMIC_ENTRA_CLIENT_ID`, reconstruye la aplicación web y reinicia; la
+credencial se queda como la forma de entrar el día que Microsoft no responda.
+
 Si prefieres hacerlo por línea de comandos, existe el equivalente:
 
 ```bash

@@ -115,15 +115,18 @@ export function registerInstallRoutes(app: FastifyInstance): void {
    * superadmin, writes the configuration, and takes this endpoint with it.
    */
   app.post('/api/v1/install/run', async (request, reply) => {
+    // Asked before the body is even looked at: a browser left open through an
+    // installation should be told it is over, not handed a validation error
+    // about a field it cannot fix.
+    const state = await readState()
+    if (state.installed) {
+      throw new AppError(410, 'GONE', 'installer.errors.alreadyInstalled')
+    }
+
     const input = parseWith(installSchema, request.body)
 
     if (!(await tokenMatches(input.token))) {
       throw new AppError(401, 'UNAUTHORIZED', 'installer.errors.badToken')
-    }
-
-    const state = await readState()
-    if (state.installed) {
-      throw new AppError(410, 'GONE', 'installer.errors.alreadyInstalled')
     }
 
     const result = await install(input as InstallInput)

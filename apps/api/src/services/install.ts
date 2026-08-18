@@ -23,6 +23,7 @@
  */
 import { randomBytes, timingSafeEqual } from 'node:crypto'
 import { spawn } from 'node:child_process'
+import { connect } from 'node:net'
 import { chmod, mkdir, readFile, writeFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
@@ -168,6 +169,29 @@ export interface DatabaseCheck {
 
 /** Eight seconds is generous for a local socket and short enough to act on. */
 const CONNECT_TIMEOUT_MS = 8_000
+const TCP_TIMEOUT_MS = 3_000
+
+/**
+ * Is anything listening at all?
+ *
+ * Worth asking separately: a refused login and an unreachable host both look
+ * like a hung connection from the driver, and sending somebody to check their
+ * firewall when the password is wrong wastes an afternoon.
+ */
+function probeTcp(host: string, port: number): Promise<boolean> {
+  return new Promise((resolve) => {
+    const socket = connect({ host, port })
+    const done = (reachable: boolean) => {
+      socket.destroy()
+      resolve(reachable)
+    }
+
+    socket.setTimeout(TCP_TIMEOUT_MS)
+    socket.once('connect', () => done(true))
+    socket.once('timeout', () => done(false))
+    socket.once('error', () => done(false))
+  })
+}
 
 function withTimeout<T>(work: Promise<T>, ms = CONNECT_TIMEOUT_MS): Promise<T> {
   return Promise.race([
@@ -186,6 +210,14 @@ function withTimeout<T>(work: Promise<T>, ms = CONNECT_TIMEOUT_MS): Promise<T> {
  * spinner and learns nothing.
  */
 export async function checkDatabase(input: DatabaseInput): Promise<DatabaseCheck> {
+  if (!(await probeTcp(input.host, input.port))) {
+    return {
+      ok: false,
+      errorKey: 'installer.errors.databaseUnreachable',
+      detail: `no answer from ${input.host}:${input.port}`,
+    }
+  }
+
   // Connected to `information_schema`, which always exists, so that "the
   // server is unreachable", "these credentials are wrong" and "that schema is
   // not there" come back as three different answers instead of one timeout.
@@ -226,13 +258,17 @@ export async function checkDatabase(input: DatabaseInput): Promise<DatabaseCheck
 
     return {
       ok: false,
-      errorKey: /access denied/i.test(message)
+      // The port answered, so a hung handshake here is the login being
+      // refused far more often than the network.
+      errorKey: /access denied|not allowed to connect|using password/i.test(message)
         ? 'installer.errors.databaseAccess'
         : /unknown database|does not exist/i.test(message)
           ? 'installer.errors.databaseMissing'
-          : /econnrefused|enotfound|etimedout|timed out|connect/i.test(message)
-            ? 'installer.errors.databaseUnreachable'
-            : 'installer.errors.databaseFailed',
+          : /timed out|etimedout/i.test(message)
+            ? 'installer.errors.databaseAccess'
+            : /econnrefused|enotfound|connect/i.test(message)
+              ? 'installer.errors.databaseUnreachable'
+              : 'installer.errors.databaseFailed',
       // The driver's own words, which usually name the real problem. No
       // password can appear here: it is not part of the message.
       detail: message.slice(0, 300),

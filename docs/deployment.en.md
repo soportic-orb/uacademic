@@ -129,6 +129,14 @@ pm2 restart uacademic
 From then on `/install` answers 410 for good. Changing the configuration means
 editing `shared/.env` and restarting; there is no reinstall.
 
+**Signing in the first time.** A fresh installation has no Entra application
+registered, so the installer writes `UACADEMIC_AUTH_MODE="local"` and the
+Microsoft button on the sign-in screen stays disabled. Sign in with the email
+and password you gave the installer — the superadmin's break-glass credential.
+Once Entra ID is registered (section 11), set `UACADEMIC_AUTH_MODE="entra"` and
+`UACADEMIC_ENTRA_CLIENT_ID`, rebuild the web app and restart; the credential
+stays as the way in when Microsoft is down.
+
 If you would rather do it from a shell, there is an equivalent:
 
 ```bash

@@ -913,7 +913,8 @@
       "passwordTooWeak": "La contraseña debe combinar mayúsculas, minúsculas y cifras.",
       "passwordMismatch": "Las contraseñas no coinciden.",
       "passwordReused": "La contraseña nueva debe ser distinta de la actual.",
-      "localNotAvailable": "Esta cuenta no tiene acceso local."
+      "localNotAvailable": "Esta cuenta no tiene acceso local.",
+      "entraNotConfigured": "El inicio de sesión con Microsoft no está configurado en esta instalación."
     }
   },
   "admin": {

@@ -46,6 +46,13 @@ export function registerAuthRoutes(app: FastifyInstance, env: Env): void {
     '/api/v1/auth/entra/session',
     { config: { public: true } },
     async (request, reply): Promise<SessionUser> => {
+      // A fresh installation runs on the break-glass credential until an Entra
+      // application is registered. Saying so beats a JWKS error nobody can act
+      // on.
+      if (env.AUTH_MODE !== 'entra') {
+        throw new AppError(503, 'SERVICE_UNAVAILABLE', 'auth.errors.entraNotConfigured')
+      }
+
       const body = parseWith(entraSessionRequestSchema, request.body)
       const client = prisma()
 
