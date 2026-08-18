@@ -9,10 +9,10 @@ import { cn } from '../../lib/cn'
  * every badge shows an icon and a text label as well (R8).
  */
 const STATUS_STYLES: Record<LoadStatus, string> = {
-  under: 'bg-load-under-surface text-load-under border-load-under/30',
-  optimal: 'bg-load-optimal-surface text-load-optimal border-load-optimal/30',
-  limit: 'bg-load-limit-surface text-load-limit border-load-limit/30',
-  over: 'bg-load-over-surface text-load-over border-load-over/30',
+  under: 'bg-load-under-surface text-load-under-text border-load-under/30',
+  optimal: 'bg-load-optimal-surface text-load-optimal-text border-load-optimal/30',
+  limit: 'bg-load-limit-surface text-load-limit-text border-load-limit/30',
+  over: 'bg-load-over-surface text-load-over-text border-load-over/30',
 }
 
 const STATUS_ICON = {

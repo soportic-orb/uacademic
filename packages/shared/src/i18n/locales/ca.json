@@ -65,7 +65,8 @@
     "absences": "Absències",
     "notifications": "Notificacions",
     "audit": "Auditoria",
-    "connections": "Connexions de calendari"
+    "connections": "Connexions de calendari",
+    "privacy": "Privacitat"
   },
   "layout": {
     "skipToContent": "Ves al contingut principal",
@@ -699,7 +700,33 @@
   },
   "platform": {
     "title": "Plataforma",
-    "subtitle": "Universitats, centres i tenants d'identitat"
+    "subtitle": "Versió instal·lada, versió disponible i actualització.",
+    "installed": "Versió instal·lada",
+    "available": "Versió disponible",
+    "upToDate": "Aquesta instal·lació ja té l’última versió publicada.",
+    "unknown": "Desconeguda",
+    "changelog": "Canvis",
+    "update": "Actualitza ara",
+    "updating": "Actualitzant… no tanquis aquesta pàgina.",
+    "applied": "Actualitzada a la versió {{version}}",
+    "rolledBack": "L’actualització ha fallat i s’ha tornat a la versió anterior.",
+    "failed": "No s’ha pogut actualitzar. No s’ha canviat res.",
+    "backup": "Còpia de seguretat: {{file}}",
+    "history": "Historial de desplegaments",
+    "noHistory": "Encara no s’ha desplegat cap versió des d’aquí.",
+    "status": {
+      "available": "Disponible",
+      "applying": "Aplicant",
+      "applied": "Aplicada",
+      "failed": "Fallida",
+      "rolled_back": "Revertida"
+    },
+    "invisible": "El professorat no ha de fer res: la nova versió s’aplica sola la pròxima vegada que obrin l’aplicació.",
+    "errors": {
+      "notConfigured": "Les actualitzacions automàtiques no estan configurades en aquesta instal·lació.",
+      "noRelease": "No hi ha cap versió publicada per instal·lar.",
+      "alreadyRunning": "Ja hi ha una actualització en curs."
+    }
   },
   "assistant": {
     "title": "Assistent IA",
@@ -1610,6 +1637,127 @@
       "apple": "Apple",
       "outlook": "Outlook",
       "google": "Google"
+    }
+  },
+  "install": {
+    "title": "Instal·la UAcademic",
+    "why": "Instal·lada s’obre com una app, va més ràpida i el teu horari es pot consultar sense connexió.",
+    "action": "Instal·la",
+    "offline": "El teu horari queda disponible encara que et quedis sense cobertura.",
+    "ios": {
+      "share": "Toca el botó Compartir de Safari, a la barra inferior.",
+      "add": "Tria «Afegir a la pantalla d’inici» i confirma.",
+      "push": "A l’iPhone i l’iPad, els avisos només arriben si l’app està a la pantalla d’inici."
+    }
+  },
+  "offline": {
+    "title": "Sense connexió",
+    "calendar": "Mostrem l’últim horari desat al dispositiu. Es refrescarà quan tornis a tenir xarxa.",
+    "generic": "Ara mateix no hi ha connexió. El que veus pot no estar actualitzat."
+  },
+  "privacy": {
+    "title": "Privacitat i dades",
+    "subtitle": "Què guardem de tu, quant de temps i què pots fer-hi.",
+    "export": {
+      "title": "Descarrega les teves dades",
+      "hint": "Un fitxer amb tot el que la plataforma guarda sobre tu: perfil, horari, missatges, avisos i converses amb l’assistent.",
+      "action": "Descarrega-ho tot",
+      "excluded": "Per seguretat no s’hi inclouen claus ni testimonis: ni els d’accés al calendari ni el de la subscripció ICS.",
+      "done": "Dades exportades"
+    },
+    "erasure": {
+      "title": "Esborra el teu compte",
+      "hint": "Ho demanes tu i ho executa l’administració del centre. No és immediat, i és millor així: esborrar un compte a mig curs deixaria classes sense responsable.",
+      "action": "Demana l’esborrat",
+      "requested": "Petició registrada. L’administració del centre es posarà en contacte.",
+      "erased": "S’esborra",
+      "kept": "Es conserva",
+      "keptWhy": "El registre acadèmic i l’auditoria es conserven: el centre ha de poder dir qui va aprovar què. Hi quedes com a compte anònim, no com a tu.",
+      "categories": {
+        "name": "Nom i cognoms",
+        "email": "Adreça electrònica",
+        "avatar": "Fotografia",
+        "microsoftAccount": "Vincle amb el compte de Microsoft",
+        "sessions": "Sessions obertes",
+        "pushSubscriptions": "Dispositius per rebre avisos",
+        "calendarConnections": "Connexions de calendari",
+        "calendarFeeds": "Subscripcions ICS",
+        "notificationPreferences": "Preferències d’avisos",
+        "notifications": "Avisos rebuts",
+        "assistantConversations": "Converses amb l’assistent",
+        "availabilityNotes": "Motius escrits a les excepcions de disponibilitat",
+        "classSessions": "Classes impartides",
+        "assignments": "Encàrrec docent",
+        "auditTrail": "Registre d’auditoria",
+        "changeRequestHistory": "Historial de canvis de classe",
+        "messagesToOthers": "Missatges enviats a altres persones",
+        "consentRecords": "Consentiments donats"
+      }
+    },
+    "ai": {
+      "title": "Ús d’intel·ligència artificial",
+      "body": "L’assistent envia a Anthropic el text de la pregunta, els documents normatius del centre i dades organitzatives amb noms i identificadors interns. Mai DNI, telèfon, adreça, dades bancàries ni de salut. No escriu res sense que una persona ho confirmi, i cada interacció queda registrada."
+    },
+    "activities": {
+      "title": "Registre d’activitats de tractament",
+      "hint": "Què tractem, per què, amb quina base i durant quant de temps.",
+      "purpose": "Finalitat",
+      "basis": "Base jurídica",
+      "retention": "Conservació",
+      "recipient": "Destinataris",
+      "tables": "Taules",
+      "keeps": "Sense termini definit",
+      "days": "{{count}} dies",
+      "contact": "Contacte de protecció de dades: {{contact}}",
+      "noContact": "El centre encara no ha publicat cap contacte de protecció de dades.",
+      "recipients": {
+        "none": "Cap: només el servidor del centre",
+        "microsoft": "Microsoft (identitat i calendari)",
+        "google": "Google (calendari, si s’hi connecta)",
+        "anthropic": "Anthropic (assistent)",
+        "email": "Servidor de correu del centre",
+        "push": "Servei de notificacions del navegador"
+      },
+      "identity": {
+        "title": "Identitat i accés",
+        "purpose": "Autenticar les persones i saber quin rol tenen a cada centre.",
+        "basis": "Execució d’una relació laboral o de servei i interès legítim del centre."
+      },
+      "teaching": {
+        "title": "Encàrrec docent",
+        "purpose": "Comparar la capacitat contractada amb la docència assignada.",
+        "basis": "Obligació legal i execució del contracte."
+      },
+      "availability": {
+        "title": "Disponibilitat",
+        "purpose": "Planificar horaris que respectin quan pot fer classe cada persona.",
+        "basis": "Execució del contracte i consentiment per a la sincronització amb calendaris externs."
+      },
+      "schedule": {
+        "title": "Horaris i canvis",
+        "purpose": "Publicar l’horari, tramitar canvis de classe i absències.",
+        "basis": "Obligació legal i interès legítim en l’organització docent."
+      },
+      "communication": {
+        "title": "Comunicació",
+        "purpose": "Missatges interns i avisos sobre canvis que t’afecten.",
+        "basis": "Interès legítim; els avisos push, amb consentiment del navegador."
+      },
+      "calendar": {
+        "title": "Calendari extern",
+        "purpose": "Publicar el teu horari al calendari que facis servir.",
+        "basis": "Consentiment, revocable en qualsevol moment."
+      },
+      "assistant": {
+        "title": "Assistent d’IA",
+        "purpose": "Respondre preguntes de coordinació sobre horaris, càrrega i normativa.",
+        "basis": "Interès legítim del centre; l’ús queda registrat i cap acció s’aplica sense confirmació humana."
+      },
+      "audit": {
+        "title": "Auditoria i consentiments",
+        "purpose": "Poder dir qui va fer cada canvi i quan es va donar cada consentiment.",
+        "basis": "Obligació legal i interès legítim en la traçabilitat."
+      }
     }
   }
 }

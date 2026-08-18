@@ -65,7 +65,8 @@
     "absences": "Ausencias",
     "notifications": "Notificaciones",
     "audit": "Auditoría",
-    "connections": "Conexiones de calendario"
+    "connections": "Conexiones de calendario",
+    "privacy": "Privacidad"
   },
   "layout": {
     "skipToContent": "Ir al contenido principal",
@@ -699,7 +700,33 @@
   },
   "platform": {
     "title": "Plataforma",
-    "subtitle": "Universidades, centros y tenants de identidad"
+    "subtitle": "Versión instalada, versión disponible y actualización.",
+    "installed": "Versión instalada",
+    "available": "Versión disponible",
+    "upToDate": "Esta instalación ya tiene la última versión publicada.",
+    "unknown": "Desconocida",
+    "changelog": "Cambios",
+    "update": "Actualiza ahora",
+    "updating": "Actualizando… no cierres esta página.",
+    "applied": "Actualizada a la versión {{version}}",
+    "rolledBack": "La actualización ha fallado y se ha vuelto a la versión anterior.",
+    "failed": "No se ha podido actualizar. No se ha cambiado nada.",
+    "backup": "Copia de seguridad: {{file}}",
+    "history": "Historial de despliegues",
+    "noHistory": "Todavía no se ha desplegado ninguna versión desde aquí.",
+    "status": {
+      "available": "Disponible",
+      "applying": "Aplicando",
+      "applied": "Aplicada",
+      "failed": "Fallida",
+      "rolled_back": "Revertida"
+    },
+    "invisible": "El profesorado no tiene que hacer nada: la nueva versión se aplica sola la próxima vez que abran la aplicación.",
+    "errors": {
+      "notConfigured": "Las actualizaciones automáticas no están configuradas en esta instalación.",
+      "noRelease": "No hay ninguna versión publicada para instalar.",
+      "alreadyRunning": "Ya hay una actualización en curso."
+    }
   },
   "assistant": {
     "title": "Asistente IA",
@@ -1610,6 +1637,127 @@
       "apple": "Apple",
       "outlook": "Outlook",
       "google": "Google"
+    }
+  },
+  "install": {
+    "title": "Instala UAcademic",
+    "why": "Instalada se abre como una app, va más rápida y tu horario se puede consultar sin conexión.",
+    "action": "Instala",
+    "offline": "Tu horario queda disponible aunque te quedes sin cobertura.",
+    "ios": {
+      "share": "Toca el botón Compartir de Safari, en la barra inferior.",
+      "add": "Elige «Añadir a pantalla de inicio» y confirma.",
+      "push": "En iPhone y iPad, los avisos solo llegan si la app está en la pantalla de inicio."
+    }
+  },
+  "offline": {
+    "title": "Sin conexión",
+    "calendar": "Mostramos el último horario guardado en el dispositivo. Se actualizará cuando vuelvas a tener red.",
+    "generic": "Ahora mismo no hay conexión. Lo que ves puede no estar actualizado."
+  },
+  "privacy": {
+    "title": "Privacidad y datos",
+    "subtitle": "Qué guardamos de ti, cuánto tiempo y qué puedes hacer al respecto.",
+    "export": {
+      "title": "Descarga tus datos",
+      "hint": "Un fichero con todo lo que la plataforma guarda sobre ti: perfil, horario, mensajes, avisos y conversaciones con el asistente.",
+      "action": "Descárgalo todo",
+      "excluded": "Por seguridad no se incluyen claves ni tokens: ni los de acceso al calendario ni el de la suscripción ICS.",
+      "done": "Datos exportados"
+    },
+    "erasure": {
+      "title": "Borra tu cuenta",
+      "hint": "Lo pides tú y lo ejecuta la administración del centro. No es inmediato, y es mejor así: borrar una cuenta a mitad de curso dejaría clases sin responsable.",
+      "action": "Pide el borrado",
+      "requested": "Petición registrada. La administración del centro se pondrá en contacto.",
+      "erased": "Se borra",
+      "kept": "Se conserva",
+      "keptWhy": "El registro académico y la auditoría se conservan: el centro debe poder decir quién aprobó qué. Quedas ahí como cuenta anónima, no como tú.",
+      "categories": {
+        "name": "Nombre y apellidos",
+        "email": "Dirección de correo",
+        "avatar": "Fotografía",
+        "microsoftAccount": "Vínculo con la cuenta de Microsoft",
+        "sessions": "Sesiones abiertas",
+        "pushSubscriptions": "Dispositivos para recibir avisos",
+        "calendarConnections": "Conexiones de calendario",
+        "calendarFeeds": "Suscripciones ICS",
+        "notificationPreferences": "Preferencias de avisos",
+        "notifications": "Avisos recibidos",
+        "assistantConversations": "Conversaciones con el asistente",
+        "availabilityNotes": "Motivos escritos en las excepciones de disponibilidad",
+        "classSessions": "Clases impartidas",
+        "assignments": "Encargo docente",
+        "auditTrail": "Registro de auditoría",
+        "changeRequestHistory": "Historial de cambios de clase",
+        "messagesToOthers": "Mensajes enviados a otras personas",
+        "consentRecords": "Consentimientos otorgados"
+      }
+    },
+    "ai": {
+      "title": "Uso de inteligencia artificial",
+      "body": "El asistente envía a Anthropic el texto de la pregunta, los documentos normativos del centro y datos organizativos con nombres e identificadores internos. Nunca DNI, teléfono, dirección, datos bancarios ni de salud. No escribe nada sin que una persona lo confirme, y cada interacción queda registrada."
+    },
+    "activities": {
+      "title": "Registro de actividades de tratamiento",
+      "hint": "Qué tratamos, para qué, con qué base y durante cuánto tiempo.",
+      "purpose": "Finalidad",
+      "basis": "Base jurídica",
+      "retention": "Conservación",
+      "recipient": "Destinatarios",
+      "tables": "Tablas",
+      "keeps": "Sin plazo definido",
+      "days": "{{count}} días",
+      "contact": "Contacto de protección de datos: {{contact}}",
+      "noContact": "El centro todavía no ha publicado ningún contacto de protección de datos.",
+      "recipients": {
+        "none": "Ninguno: solo el servidor del centro",
+        "microsoft": "Microsoft (identidad y calendario)",
+        "google": "Google (calendario, si se conecta)",
+        "anthropic": "Anthropic (asistente)",
+        "email": "Servidor de correo del centro",
+        "push": "Servicio de notificaciones del navegador"
+      },
+      "identity": {
+        "title": "Identidad y acceso",
+        "purpose": "Autenticar a las personas y saber qué rol tienen en cada centro.",
+        "basis": "Ejecución de una relación laboral o de servicio e interés legítimo del centro."
+      },
+      "teaching": {
+        "title": "Encargo docente",
+        "purpose": "Comparar la capacidad contratada con la docencia asignada.",
+        "basis": "Obligación legal y ejecución del contrato."
+      },
+      "availability": {
+        "title": "Disponibilidad",
+        "purpose": "Planificar horarios que respeten cuándo puede dar clase cada persona.",
+        "basis": "Ejecución del contrato y consentimiento para la sincronización con calendarios externos."
+      },
+      "schedule": {
+        "title": "Horarios y cambios",
+        "purpose": "Publicar el horario, tramitar cambios de clase y ausencias.",
+        "basis": "Obligación legal e interés legítimo en la organización docente."
+      },
+      "communication": {
+        "title": "Comunicación",
+        "purpose": "Mensajes internos y avisos sobre cambios que te afectan.",
+        "basis": "Interés legítimo; los avisos push, con consentimiento del navegador."
+      },
+      "calendar": {
+        "title": "Calendario externo",
+        "purpose": "Publicar tu horario en el calendario que utilices.",
+        "basis": "Consentimiento, revocable en cualquier momento."
+      },
+      "assistant": {
+        "title": "Asistente de IA",
+        "purpose": "Responder preguntas de coordinación sobre horarios, carga y normativa.",
+        "basis": "Interés legítimo del centro; el uso queda registrado y ninguna acción se aplica sin confirmación humana."
+      },
+      "audit": {
+        "title": "Auditoría y consentimientos",
+        "purpose": "Poder decir quién hizo cada cambio y cuándo se dio cada consentimiento.",
+        "basis": "Obligación legal e interés legítimo en la trazabilidad."
+      }
     }
   }
 }

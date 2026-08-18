@@ -146,13 +146,116 @@ apps/api          Fastify API, tenant scoping, audit, SSE, job worker
 packages/shared   Domain logic, Zod schemas, i18n catalogs — no DOM, no Node
 packages/db       Prisma schema, migrations, demo seed
 tooling/          Shared tsconfig, ESLint and Prettier configs
-docs/             Architecture notes and decisions
+docs/             Architecture notes, decisions, and the deployment,
+                  administrator and teacher manuals in ca/es/en
+scripts/deploy/   Bootstrap, release and Nginx configuration for the host
 ```
 
 `packages/shared` has no browser and no Node dependencies on purpose: a later phase
 reuses it from an Expo app.
 
 ---
+
+## What phase 6 adds
+
+Everything between "it works on my machine" and "a university runs on it".
+
+### The app on a phone
+
+A complete icon set — drawn by `apps/web/scripts/generate-icons.mjs` rather
+than committed as binaries nobody can review — a manifest that installs
+standalone, and the Apple meta tags iOS actually reads.
+
+The service worker caches static assets with staleWhileRevalidate and **one**
+family of API responses with NetworkFirst: the caller's own timetable, so a
+teacher on a train sees their week instead of an empty screen. Nothing else
+from the API is ever cached — a tenant-scoped answer served to the next
+identity would be a leak (R2) — and even that one cache is dropped the moment
+the identity or the active center changes.
+
+**Installing is explained honestly.** Chromium fires `beforeinstallprompt` and
+we keep it for a moment the person chose. iOS has no such event, so there the
+card gives the actual menu names — Share → Add to Home Screen — instead of a
+button that cannot work. On iOS it also says why it matters: without the app on
+the home screen, push never arrives.
+
+### Updates nobody notices
+
+A push to `main` that passes lint, types and the whole test suite publishes a
+versioned `tar.gz` with its SHA-256 to Releases.
+
+The superadmin panel shows what is installed, what is available and the
+changelog, and one button runs the procedure a careful operator would follow by
+hand: download with the PAT → **verify the checksum before unpacking anything**
+→ back up the database → unpack into `releases/<version>` → migrate → switch
+the `current` symlink → reload PM2 → health check → **roll back automatically**
+if it does not answer. Every attempt lands in `app_versions`, successful or
+not.
+
+Migrations must be backward compatible within a version — add a column, fill
+it, use it; never drop in the same deployment — because between the migration
+and the reload the previous code is still serving requests against the new
+schema, and after a rollback it is serving them again.
+
+**For a teacher, nothing happens.** The service worker notices the new version
+and does not force a reload, and does not ask either — being asked is itself an
+interruption. It records it and applies it at the next start of the app.
+Somebody halfway through a message loses nothing and never finds out there was
+a deployment.
+
+### Running in production
+
+`scripts/deploy/bootstrap.sh` lays out `current → releases/` beside
+`shared/` (env, uploads, logs) and `backups/`; `release.sh` performs the same
+deployment by hand, rollback included; `ecosystem.config.cjs` runs the API in
+cluster mode and the worker in its own process, so an HTTP request never waits
+behind an SMTP handshake. Where daemons are not allowed, a cron entry every
+minute runs `jobs/tick.js` under `flock` instead — the two are interchangeable
+because a job is claimed with a conditional UPDATE, not a lock in memory.
+
+Helmet with a real CSP, CORS restricted to the configured origins, a 1 MB JSON
+body limit with a separate multipart ceiling, and rate limiting keyed by
+session rather than by IP — behind Nginx every request comes from the proxy.
+`nginx.conf.example` carries the vhost, including the cache rules that keep a
+browser from getting stuck on last month's service worker.
+
+Backups run nightly through `mysqldump`, gzipped as they are produced, pruned
+by a configurable retention.
+
+### Data protection, implemented
+
+- **Export**: one file with everything held about the caller — profile,
+  timetable, messages, notifications, assistant conversations. No keys travel
+  with it: not the calendar tokens, not the ICS feed token. A data export that
+  leaks a live capability is a breach with good intentions.
+- **Erasure**: requested by the person, carried out by the center's
+  administration — a teacher erasing themselves mid-semester would take their
+  own timetable's author with them. What goes is the person; what stays is the
+  academic record and the audit trail, where they remain an anonymous account.
+  Both lists are on screen _before_ anybody confirms.
+- **Retention**: per-center periods for the audit log, notifications, assistant
+  transcripts and expired sessions, applied by a daily job. Zero keeps
+  everything, which is a decision rather than an oversight.
+- **The record of processing activities**, derived from what the schema
+  actually stores: purpose, legal basis, recipients and retention, per table.
+- **The AI notice**, in plain language, on the privacy page rather than in a
+  policy nobody opens.
+
+### Accessibility as a gate
+
+axe runs over nine screens in both themes on every push, and it found real
+defects rather than confirming good intentions: `#0072CE` on the primary tint
+measures 4.39:1, `#15803D` on a 10 % green wash 4.37:1 — both just under AA.
+The palette now carries darker text tokens for tinted surfaces, white on the
+dark-mode danger fill was replaced, a scroll anchor that was a `<div>` inside a
+`<ul>` became a list item, and FullCalendar's unlabelled `role="img"` chevrons
+were swapped for its own localised words. What a machine cannot check — moving
+a class with the keyboard — stays covered by the planner's own e2e test.
+
+### Manuals
+
+`docs/` carries the deployment manual, the administrator manual and the teacher
+guide, each in Catalan, Spanish and English (R1).
 
 ## What phase 5 adds
 

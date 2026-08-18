@@ -7,6 +7,7 @@ import { Link } from 'react-router'
 import { useSession } from '../../auth/session'
 import { NotificationBell } from '../../features/notifications/notification-bell'
 import { useToast } from '../../hooks/use-toast'
+import { clearApiCache } from '../../app/service-worker'
 import { DEMO_IDENTITIES, useSessionStore } from '../../stores/session'
 import { Button } from '../ui/button'
 
@@ -54,7 +55,11 @@ export function Header({ user, onOpenSearch, onToggleSidebar }: HeaderProps) {
           <span className="sr-only">{t('layout.centerSelector')}</span>
           <select
             value={centerId ?? ''}
-            onChange={(event) => setCenterId(event.target.value)}
+            onChange={(event) => {
+              // The cached timetable belongs to the center it was read from.
+              clearApiCache()
+              setCenterId(event.target.value)
+            }}
             className="h-9 rounded-control border border-border bg-surface px-2 text-sm text-text"
           >
             {uniqueCenters.map((membership) => (

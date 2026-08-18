@@ -159,7 +159,7 @@ export function ImportWizard() {
             className={cn(
               'rounded-control border px-3 py-1',
               step === name
-                ? 'border-primary bg-primary-surface text-primary'
+                ? 'border-primary bg-primary-surface text-primary-strong'
                 : 'border-border text-text-muted',
             )}
           >

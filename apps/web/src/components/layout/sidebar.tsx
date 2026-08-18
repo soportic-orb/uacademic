@@ -48,7 +48,7 @@ export function Sidebar({ roles, collapsed, onToggle }: SidebarProps) {
                 cn(
                   'flex items-center gap-3 rounded-control px-3 py-2 text-sm font-medium transition-colors',
                   isActive
-                    ? 'bg-primary-surface text-primary'
+                    ? 'bg-primary-surface text-primary-strong'
                     : 'text-text-muted hover:bg-surface-muted hover:text-text',
                   collapsed && 'justify-center px-0',
                 )

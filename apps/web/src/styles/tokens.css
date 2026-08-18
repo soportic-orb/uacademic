@@ -20,21 +20,32 @@
   --primary-800: #00335c;
   --primary-900: #001f38;
 
-  /* Semantic status colors */
-  --success: #15803d;
-  --warning: #b45309;
-  --danger: #b91c1c;
+  /* Semantic status colors.
+     These are the shades used as *text on a tinted surface*, which is the
+     hardest case: #15803D on a 10 % green wash measures 4.37:1 and fails AA
+     by a hair. One step darker clears it, and reads the same. */
+  --success: #166534;
+  --warning: #92400e;
+  --danger: #991b1b;
+  /* Text on a solid semantic fill — the unread badge, mostly. */
+  --danger-contrast: #ffffff;
   --info: var(--primary-500);
 
   /* Teaching-load traffic light: always paired with an icon and a label */
   --load-under: var(--primary-500);
-  --load-optimal: #15803d;
-  --load-limit: #b45309;
-  --load-over: #b91c1c;
+  --load-optimal: #166534;
+  --load-limit: #92400e;
+  --load-over: #991b1b;
   --load-under-surface: var(--primary-50);
   --load-optimal-surface: #dcfce7;
   --load-limit-surface: #fef3c7;
   --load-over-surface: #fee2e2;
+  /* The label inside a badge sits on the tint, not on the page: the accent
+     itself is too light there (#0072CE on #EAF4FC is 4.39:1). */
+  --load-under-text: var(--primary-700);
+  --load-optimal-text: #14532d;
+  --load-limit-text: #7c2d12;
+  --load-over-text: #7f1d1d;
 
   /* Availability levels of the weekly editor. Never the only carrier of
      meaning: every cell also shows a symbol and an accessible label (R8). */
@@ -61,6 +72,9 @@
   --primary: var(--primary-500);
   --primary-hover: var(--primary-600);
   --primary-surface: var(--primary-50);
+  /* Text on `--primary-surface`. The accent is for solid fills and for links
+     on white; on the tint it needs to be darker to clear AA. */
+  --primary-strong: var(--primary-700);
   --primary-contrast: #ffffff;
   --ring: var(--primary-500);
 
@@ -89,12 +103,15 @@
   --primary: #3d9be0;
   --primary-hover: #6fb2ee;
   --primary-surface: #102a44;
+  --primary-strong: #a3cff5;
   --primary-contrast: #04121f;
   --ring: #6fb2ee;
 
   --success: #4ade80;
   --warning: #fbbf24;
   --danger: #f87171;
+  /* The dark palette lightens danger, so white on it is unreadable. */
+  --danger-contrast: #3a0f0f;
 
   --load-under: #6fb2ee;
   --load-optimal: #4ade80;
@@ -104,6 +121,10 @@
   --load-optimal-surface: #0d2e1d;
   --load-limit-surface: #33270a;
   --load-over-surface: #3a1414;
+  --load-under-text: #a3cff5;
+  --load-optimal-text: #86efac;
+  --load-limit-text: #fcd34d;
+  --load-over-text: #fca5a5;
 
   --availability-preferred: #1d4f7c;
   --availability-available: #102a44;

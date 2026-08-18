@@ -1,0 +1,155 @@
+name: Release
+
+# A push to main that passes everything becomes an artefact a server can
+# install over the air. Nothing is published unless lint, types, unit and
+# integration tests are green first: the platform panel offers whatever is in
+# Releases, so a broken release is a broken update button.
+on:
+  push:
+    branches: [main]
+  # Cutting a release by hand, for a hotfix or a re-run.
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to publish (default: date-based)"
+        required: false
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: "22.19.0"
+  PNPM_VERSION: "10.33.0"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and publish
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: uacademic
+        ports: ["3306:3306"]
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    env:
+      UACADEMIC_DATABASE_URL: mysql://root:root@127.0.0.1:3306/uacademic
+      UACADEMIC_SHADOW_DATABASE_URL: mysql://root:root@127.0.0.1:3306/uacademic_shadow
+      UACADEMIC_AUTH_MODE: mock
+      ENTRA_CLIENT_ID: 00000000-1111-2222-3333-444444444444
+      UACADEMIC_SESSION_COOKIE_SECRET: ci-session-secret-that-is-long-enough-x
+      UACADEMIC_APP_ENCRYPTION_KEY: "0000000000000000000000000000000000000000000000000000000000000001"
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build:packages
+
+      - name: Lint, format and types
+        run: |
+          pnpm lint
+          pnpm format:check
+          pnpm typecheck
+
+      - name: Create the shadow database
+        run: mysql -h 127.0.0.1 -uroot -proot -e "CREATE DATABASE IF NOT EXISTS uacademic_shadow CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+
+      - name: Apply migrations and seed the demo data
+        run: |
+          pnpm --filter @uacademic/db exec prisma migrate deploy
+          pnpm db:seed
+
+      - run: pnpm test
+      - run: pnpm build
+
+      - name: Decide the version
+        id: version
+        run: |
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            # Date plus the run number: sortable, and it says when it was cut.
+            VERSION="$(date -u +%Y.%m.%d)-${{ github.run_number }}"
+          fi
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Build the changelog
+        id: changelog
+        run: |
+          PREVIOUS="$(git describe --tags --abbrev=0 2>/dev/null || true)"
+          if [ -n "${PREVIOUS}" ]; then
+            LOG="$(git log --pretty='- %s' "${PREVIOUS}..HEAD")"
+          else
+            LOG="$(git log --pretty='- %s' -20)"
+          fi
+          {
+            echo 'body<<CHANGELOG'
+            echo "${LOG}"
+            echo CHANGELOG
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Pack the artefact
+        id: pack
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          STAGE="$(mktemp -d)/uacademic"
+          mkdir -p "${STAGE}"
+
+          # Only what the server runs: the built output, the production
+          # dependencies' manifests, the migrations and the process files.
+          # No sources, no tests, no node_modules — the release script
+          # installs from the lockfile on the host.
+          rsync -a --relative \
+            package.json pnpm-workspace.yaml pnpm-lock.yaml ecosystem.config.cjs \
+            apps/api/package.json apps/api/dist \
+            apps/web/package.json apps/web/dist \
+            packages/shared/package.json packages/shared/dist \
+            packages/db/package.json packages/db/dist packages/db/prisma \
+            scripts/deploy \
+            "${STAGE}/"
+
+          echo "${VERSION}" > "${STAGE}/VERSION"
+
+          ARTIFACT="uacademic-${VERSION}.tar.gz"
+          tar -czf "${ARTIFACT}" -C "$(dirname "${STAGE}")" uacademic
+          sha256sum "${ARTIFACT}" | cut -d' ' -f1 > "${ARTIFACT}.sha256"
+
+          echo "artifact=${ARTIFACT}" >> "$GITHUB_OUTPUT"
+          echo "sha256=$(cat "${ARTIFACT}.sha256")" >> "$GITHUB_OUTPUT"
+
+      - name: Publish the release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: ${{ steps.version.outputs.version }}
+          # The checksum is in the body as well as in the file: the update
+          # procedure on the server verifies what it downloaded before it
+          # unpacks anything.
+          body: |
+            ${{ steps.changelog.outputs.body }}
+
+            ---
+            SHA256: `${{ steps.pack.outputs.sha256 }}`
+          files: |
+            ${{ steps.pack.outputs.artifact }}
+            ${{ steps.pack.outputs.artifact }}.sha256

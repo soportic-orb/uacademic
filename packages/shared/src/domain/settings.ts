@@ -8,6 +8,7 @@
  */
 import { z } from 'zod'
 
+import { privacySettingsSchema } from './privacy.js'
 import { type ClockTime, isClockTime } from './time.js'
 
 const clockTime = z.string().refine(isClockTime, {
@@ -329,6 +330,8 @@ export const identitySettingsSchema = z.object({
 })
 
 export const centerSettingsSchema = z.object({
+  // Data protection: how long anything is kept, and who to write to about it.
+  privacy: privacySettingsSchema.prefault({}),
   // `prefault` (not `default`) so the nested defaults are actually applied:
   // in Zod 4 a plain default value is returned as-is, without being parsed.
   capacity: capacitySettingsSchema.prefault({}),

@@ -4,6 +4,7 @@ import { createContext, type ReactNode, useCallback, useContext, useEffect } fro
 
 import { ApiRequestError, apiFetch } from '../lib/api'
 import { useSessionStore } from '../stores/session'
+import { clearApiCache } from '../app/service-worker'
 import { acquireTokenSilently, signInWithMicrosoft, signOutFromMicrosoft } from './msal'
 
 interface SessionContextValue {
@@ -91,6 +92,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const signOut = useCallback(async () => {
     await apiFetch('/api/v1/auth/logout', { method: 'POST' }).catch(() => undefined)
     await signOutFromMicrosoft().catch(() => undefined)
+    // Whatever the worker kept of this person's timetable goes with them: the
+    // next identity on this device must not find it there (R2).
+    clearApiCache()
     setCenterId(undefined)
     queryClient.clear()
     queryClient.setQueryData(['session', identityKey], null)

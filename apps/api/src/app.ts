@@ -16,6 +16,8 @@ import { registerAbsenceRoutes } from './modules/absences/routes.js'
 import { registerAuditRoutes } from './modules/audit/routes.js'
 import { registerAiRoutes } from './modules/ai/routes.js'
 import { registerDocumentRoutes } from './modules/documents/routes.js'
+import { registerPlatformRoutes } from './modules/platform/routes.js'
+import { registerPrivacyRoutes } from './modules/privacy/routes.js'
 import { registerSettingsRoutes } from './modules/settings/routes.js'
 import { registerCalendarRoutes } from './modules/calendar/routes.js'
 import { registerChangeRoutes } from './modules/changes/routes.js'
@@ -65,9 +67,28 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
     },
     trustProxy: true,
     genReqId: () => crypto.randomUUID(),
+    // A JSON body has no business being megabytes: uploads go through the
+    // multipart routes, which have their own, larger limit.
+    bodyLimit: 1024 * 1024,
   })
 
-  await app.register(helmet, { contentSecurityPolicy: false })
+  await app.register(helmet, {
+    // The API answers JSON and serves documents as attachments; it never
+    // renders HTML, so the policy can be as narrow as it looks. The SPA is
+    // served by Nginx and carries its own headers (see the deployment manual).
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'none'"],
+        frameAncestors: ["'none'"],
+        baseUri: ["'none'"],
+        formAction: ["'none'"],
+      },
+    },
+    crossOriginResourcePolicy: { policy: 'same-site' },
+    referrerPolicy: { policy: 'no-referrer' },
+    // HSTS only where there is TLS to insist on.
+    hsts: env.NODE_ENV === 'production' ? { maxAge: 15_552_000, includeSubDomains: true } : false,
+  })
   await app.register(cors, {
     origin: corsOrigins(env.WEB_ORIGIN),
     credentials: true,
@@ -86,10 +107,21 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
   await app.register(rateLimit, {
     max: env.RATE_LIMIT_MAX,
     timeWindow: env.RATE_LIMIT_WINDOW_MS,
+    // Behind Nginx every request arrives from the proxy, so the count has to
+    // follow the person: the session cookie first, the forwarded address next.
+    keyGenerator: (request) =>
+      (request.cookies?.uacademic_session ?? '').slice(0, 32) || request.ip,
   })
   await app.register(cookie, { secret: env.SESSION_COOKIE_SECRET })
   await app.register(multipart, {
-    limits: { fileSize: env.IMPORT_MAX_FILE_MB * 1024 * 1024, files: 1 },
+    // The document library allows larger files than a spreadsheet import, so
+    // the ceiling here is the higher of the two and each route checks its own
+    // limit against the center's settings before a byte is written.
+    limits: {
+      fileSize: Math.max(env.IMPORT_MAX_FILE_MB, 50) * 1024 * 1024,
+      files: 1,
+      fields: 30,
+    },
   })
 
   registerErrorHandler(app)
@@ -111,6 +143,8 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
   registerAiRoutes(app)
   registerDocumentRoutes(app)
   registerSettingsRoutes(app)
+  registerPrivacyRoutes(app)
+  registerPlatformRoutes(app)
   registerEventRoutes(app, bus)
   registerAdminResources(app)
   registerUserRoutes(app)

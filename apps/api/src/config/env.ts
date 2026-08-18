@@ -139,6 +139,29 @@ const envSchema = z.object({
   JOB_POLL_INTERVAL_MS: z.coerce.number().int().min(200).default(5_000),
   JOB_BATCH_SIZE: z.coerce.number().int().min(1).max(100).default(5),
 
+  /**
+   * Backups (phase 6). `mysqldump` is spawned, so the path matters on a host
+   * that keeps it somewhere unusual. Retention zero keeps everything, which is
+   * a decision rather than a default.
+   */
+  BACKUP_DIR: z.string().default('./var/backups'),
+  BACKUP_RETENTION_DAYS: z.coerce.number().int().min(0).max(3_650).default(14),
+  MYSQLDUMP_PATH: z.string().default('mysqldump'),
+
+  /**
+   * Over-the-air updates (phase 6). The token reads a private repository's
+   * releases and is only ever used server-side; without it the platform panel
+   * says so and nothing else changes.
+   */
+  GITHUB_OTA_TOKEN: z.string().optional(),
+  GITHUB_OTA_REPO: z.string().default('soportic-orb/uacademic'),
+  /** Where releases are unpacked: `<dir>/releases/<version>`, `<dir>/current`. */
+  DEPLOY_ROOT: z.string().default('/var/www/uacademic'),
+  /** Read after a deployment to decide whether it stands or is rolled back. */
+  HEALTH_CHECK_URL: z.string().default('http://127.0.0.1:3001/api/v1/health'),
+  /** The PM2 process group to reload once the symlink has moved. */
+  PM2_APP_NAME: z.string().default('uacademic'),
+
   RATE_LIMIT_MAX: z.coerce.number().int().min(1).default(300),
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().min(1_000).default(60_000),
 })

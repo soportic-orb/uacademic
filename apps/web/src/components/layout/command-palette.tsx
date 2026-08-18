@@ -113,7 +113,7 @@ export function CommandPalette({ open, onClose, roles }: CommandPaletteProps) {
                 onClick={() => go(index)}
                 className={cn(
                   'flex w-full items-center gap-3 rounded-control px-3 py-2 text-left text-sm',
-                  index === activeIndex ? 'bg-primary-surface text-primary' : 'text-text',
+                  index === activeIndex ? 'bg-primary-surface text-primary-strong' : 'text-text',
                 )}
               >
                 <item.icon className="size-4" aria-hidden="true" />

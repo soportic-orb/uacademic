@@ -13,13 +13,15 @@ import { AdminResourcePage } from '../pages/admin-resource'
 import { DashboardPage } from '../pages/dashboard'
 import { DocumentsPage } from '../pages/documents'
 import { LoginPage } from '../pages/login'
+import { PrivacyPage } from '../pages/privacy'
 import { ProfilePage } from '../pages/profile'
 import { UsersPage } from '../features/admin/users-page'
 import { ImportWizard } from '../features/imports/import-wizard'
 import { MyLoadPage } from '../pages/my-load'
 import { MessagesPage } from '../pages/messages'
 import { NotificationsPage } from '../pages/notifications'
-import { NotFoundPage, PlatformPage } from '../pages/placeholders'
+import { NotFoundPage } from '../pages/placeholders'
+import { PlatformPage } from '../pages/platform'
 import { PlanningPage } from '../pages/planning'
 import { SettingsPage } from '../pages/settings'
 import { SubjectsPage } from '../pages/subjects'
@@ -62,6 +64,7 @@ export const router = createBrowserRouter([
       { path: 'platform', element: <PlatformPage /> },
       { path: 'settings', element: <SettingsPage /> },
       { path: 'profile', element: <ProfilePage /> },
+      { path: 'privacy', element: <PrivacyPage /> },
       { path: 'admin', element: <AdminIndexPage /> },
       { path: 'admin/users', element: <UsersPage /> },
       { path: 'admin/:resourceKey', element: <AdminResourcePage /> },

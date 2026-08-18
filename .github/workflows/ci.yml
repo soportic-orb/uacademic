@@ -123,6 +123,9 @@ jobs:
           pnpm db:seed
 
       - run: pnpm --filter @uacademic/web exec playwright install --with-deps chromium
+      # The e2e suite includes the axe pass over the critical screens in both
+      # themes: WCAG 2.2 AA is an acceptance criterion (R8), so it fails the
+      # build rather than a review.
       - run: pnpm test:e2e
 
       - uses: actions/upload-artifact@v4

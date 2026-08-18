@@ -19,6 +19,8 @@
   --color-primary: var(--primary);
   --color-primary-hover: var(--primary-hover);
   --color-primary-surface: var(--primary-surface);
+  --color-primary-strong: var(--primary-strong);
+  --color-danger-contrast: var(--danger-contrast);
   --color-primary-contrast: var(--primary-contrast);
 
   --color-bg: var(--bg);
@@ -40,6 +42,10 @@
   --color-load-limit: var(--load-limit);
   --color-load-over: var(--load-over);
   --color-load-under-surface: var(--load-under-surface);
+  --color-load-under-text: var(--load-under-text);
+  --color-load-optimal-text: var(--load-optimal-text);
+  --color-load-limit-text: var(--load-limit-text);
+  --color-load-over-text: var(--load-over-text);
   --color-load-optimal-surface: var(--load-optimal-surface);
   --color-load-limit-surface: var(--load-limit-surface);
   --color-load-over-surface: var(--load-over-surface);

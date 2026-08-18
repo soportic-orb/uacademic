@@ -32,7 +32,7 @@ export function ThreadView({ conversationId }: { conversationId: string }) {
   const [attachments, setAttachments] = useState<Attachment[]>([])
   const [uploading, setUploading] = useState(false)
   const fileInput = useRef<HTMLInputElement>(null)
-  const bottom = useRef<HTMLDivElement>(null)
+  const bottom = useRef<HTMLLIElement>(null)
 
   const markedFor = useRef<string | null>(null)
   useEffect(() => {
@@ -163,7 +163,9 @@ export function ThreadView({ conversationId }: { conversationId: string }) {
             ) : null}
           </li>
         ))}
-        <div ref={bottom} />
+        {/* The scroll anchor lives in the list, so it has to be a list item:
+            a <div> inside a <ul> is invalid and screen readers say so. */}
+        <li ref={bottom} aria-hidden="true" />
       </ul>
 
       {thread.canPost ? (

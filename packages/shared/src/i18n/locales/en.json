@@ -65,7 +65,8 @@
     "absences": "Absences",
     "notifications": "Notifications",
     "audit": "Audit",
-    "connections": "Calendar connections"
+    "connections": "Calendar connections",
+    "privacy": "Privacy"
   },
   "layout": {
     "skipToContent": "Skip to main content",
@@ -699,7 +700,33 @@
   },
   "platform": {
     "title": "Platform",
-    "subtitle": "Universities, centers and identity tenants"
+    "subtitle": "Installed version, available version, and the update.",
+    "installed": "Installed version",
+    "available": "Available version",
+    "upToDate": "This installation already runs the latest published version.",
+    "unknown": "Unknown",
+    "changelog": "Changes",
+    "update": "Update now",
+    "updating": "Updating… keep this page open.",
+    "applied": "Updated to version {{version}}",
+    "rolledBack": "The update failed and the previous version was restored.",
+    "failed": "The update could not be applied. Nothing was changed.",
+    "backup": "Database backup: {{file}}",
+    "history": "Deployment history",
+    "noHistory": "No version has been deployed from here yet.",
+    "status": {
+      "available": "Available",
+      "applying": "Applying",
+      "applied": "Applied",
+      "failed": "Failed",
+      "rolled_back": "Rolled back"
+    },
+    "invisible": "Teachers need do nothing: the new version applies itself the next time they open the app.",
+    "errors": {
+      "notConfigured": "Automatic updates are not configured on this installation.",
+      "noRelease": "There is no published version to install.",
+      "alreadyRunning": "An update is already running."
+    }
   },
   "assistant": {
     "title": "AI assistant",
@@ -1610,6 +1637,127 @@
       "apple": "Apple",
       "outlook": "Outlook",
       "google": "Google"
+    }
+  },
+  "install": {
+    "title": "Install UAcademic",
+    "why": "Installed it opens like an app, runs faster, and your timetable can be read with no connection.",
+    "action": "Install",
+    "offline": "Your timetable stays available even where there is no signal.",
+    "ios": {
+      "share": "Tap Safari’s Share button, in the bottom bar.",
+      "add": "Choose \"Add to Home Screen\" and confirm.",
+      "push": "On iPhone and iPad, notifications only arrive once the app is on the home screen."
+    }
+  },
+  "offline": {
+    "title": "Offline",
+    "calendar": "Showing the last timetable saved on this device. It will refresh once you are back online.",
+    "generic": "There is no connection right now. What you see may be out of date."
+  },
+  "privacy": {
+    "title": "Privacy and data",
+    "subtitle": "What we hold about you, for how long, and what you can do about it.",
+    "export": {
+      "title": "Download your data",
+      "hint": "One file with everything the platform holds about you: profile, timetable, messages, notifications and assistant conversations.",
+      "action": "Download everything",
+      "excluded": "No keys or tokens are included, deliberately: neither the calendar credentials nor the ICS subscription token.",
+      "done": "Data exported"
+    },
+    "erasure": {
+      "title": "Erase your account",
+      "hint": "You ask, and the center’s administration carries it out. Not instant, and better that way: erasing an account mid-semester would leave classes without anybody responsible for them.",
+      "action": "Request erasure",
+      "requested": "Request recorded. The center’s administration will be in touch.",
+      "erased": "Erased",
+      "kept": "Kept",
+      "keptWhy": "The academic record and the audit trail are kept: a center has to be able to say who approved what. You remain there as an anonymous account, not as yourself.",
+      "categories": {
+        "name": "Name and surname",
+        "email": "Email address",
+        "avatar": "Photograph",
+        "microsoftAccount": "Link to the Microsoft account",
+        "sessions": "Open sessions",
+        "pushSubscriptions": "Devices receiving notifications",
+        "calendarConnections": "Calendar connections",
+        "calendarFeeds": "ICS subscriptions",
+        "notificationPreferences": "Notification preferences",
+        "notifications": "Notifications received",
+        "assistantConversations": "Assistant conversations",
+        "availabilityNotes": "Reasons written on availability exceptions",
+        "classSessions": "Classes taught",
+        "assignments": "Teaching assignments",
+        "auditTrail": "Audit trail",
+        "changeRequestHistory": "Class change history",
+        "messagesToOthers": "Messages sent to other people",
+        "consentRecords": "Consents given"
+      }
+    },
+    "ai": {
+      "title": "Use of artificial intelligence",
+      "body": "The assistant sends Anthropic the text of the question, the center’s regulatory documents and organisational data with names and internal identifiers. Never an identity document, phone number, address, bank details or anything medical. It writes nothing without a person confirming it, and every exchange is recorded."
+    },
+    "activities": {
+      "title": "Record of processing activities",
+      "hint": "What is processed, why, on what basis and for how long.",
+      "purpose": "Purpose",
+      "basis": "Legal basis",
+      "retention": "Retention",
+      "recipient": "Recipients",
+      "tables": "Tables",
+      "keeps": "No defined period",
+      "days": "{{count}} days",
+      "contact": "Data protection contact: {{contact}}",
+      "noContact": "The center has not published a data protection contact yet.",
+      "recipients": {
+        "none": "None: the center’s own server only",
+        "microsoft": "Microsoft (identity and calendar)",
+        "google": "Google (calendar, where connected)",
+        "anthropic": "Anthropic (assistant)",
+        "email": "The center’s mail server",
+        "push": "The browser’s notification service"
+      },
+      "identity": {
+        "title": "Identity and access",
+        "purpose": "Authenticating people and knowing which role they hold in each center.",
+        "basis": "Performance of an employment or service relationship, and the center’s legitimate interest."
+      },
+      "teaching": {
+        "title": "Teaching commitment",
+        "purpose": "Comparing contracted capacity with assigned teaching.",
+        "basis": "Legal obligation and performance of the contract."
+      },
+      "availability": {
+        "title": "Availability",
+        "purpose": "Planning timetables that respect when each person can teach.",
+        "basis": "Performance of the contract, and consent for syncing with external calendars."
+      },
+      "schedule": {
+        "title": "Timetable and changes",
+        "purpose": "Publishing the timetable and handling class changes and absences.",
+        "basis": "Legal obligation and legitimate interest in organising teaching."
+      },
+      "communication": {
+        "title": "Communication",
+        "purpose": "Internal messages and notifications about changes that affect you.",
+        "basis": "Legitimate interest; push notifications with the browser’s consent."
+      },
+      "calendar": {
+        "title": "External calendar",
+        "purpose": "Publishing your timetable into the calendar you actually use.",
+        "basis": "Consent, revocable at any time."
+      },
+      "assistant": {
+        "title": "AI assistant",
+        "purpose": "Answering coordination questions about timetables, load and regulations.",
+        "basis": "The center’s legitimate interest; usage is recorded and nothing is applied without human confirmation."
+      },
+      "audit": {
+        "title": "Audit and consents",
+        "purpose": "Being able to say who made each change and when each consent was given.",
+        "basis": "Legal obligation and legitimate interest in traceability."
+      }
     }
   }
 }

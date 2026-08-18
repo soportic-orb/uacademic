@@ -17,6 +17,7 @@ import {
   Upload,
   User,
   Users,
+  ShieldCheck,
 } from 'lucide-react'
 import type { ComponentType } from 'react'
 
@@ -156,6 +157,13 @@ export const NAV_ITEMS: NavItem[] = [
     key: 'settings',
     path: '/settings',
     icon: Settings,
+    roles: ['SUPERADMIN', 'CENTER_ADMIN', 'COORDINATOR', 'TEACHER'],
+  },
+  {
+    key: 'privacy',
+    path: '/privacy',
+    icon: ShieldCheck,
+    // Everybody's: it is their data the page is about.
     roles: ['SUPERADMIN', 'CENTER_ADMIN', 'COORDINATOR', 'TEACHER'],
   },
 ]

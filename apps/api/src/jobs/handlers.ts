@@ -26,7 +26,9 @@ import { type ConnectionRow, pullBusy, syncConnection } from '../services/calend
 import { purgeExpiredTombstones } from '../services/calendar/tombstones.js'
 import { indexDocument } from '../services/documents/index-service.js'
 import { invalidateVectorCache } from '../services/documents/retrieval.js'
+import { createBackup } from '../services/backup.js'
 import { sendMail } from '../services/mailer.js'
+import { applyRetention } from '../services/privacy.js'
 import { runExtractionBlock } from '../services/settings/extraction-run.js'
 import { sendPush } from '../services/push.js'
 import type { JobHandler } from './worker.js'
@@ -282,6 +284,29 @@ export function buildJobHandlers(client: PrismaClient, logger: Logger): Record<s
     },
 
     /**
+     * The nightly backup. Kept close to the update procedure on purpose: the
+     * same function runs before a deployment touches a migration.
+     */
+    'db.backup': async () => {
+      const result = await createBackup()
+      logger.info(
+        { file: result.file, bytes: result.bytes, pruned: result.pruned.length },
+        'db.backup',
+      )
+    },
+
+    /**
+     * Retention. Each center says how long it keeps an audit trail, a
+     * notification, an assistant transcript; this is where saying it has an
+     * effect. The audit log is INSERT-only, which is about nobody rewriting
+     * history — not about keeping it for ever (R4).
+     */
+    'privacy.retention': async () => {
+      const report = await applyRetention(client)
+      logger.info(report, 'privacy.retention')
+    },
+
+    /**
      * Housekeeping: cancellations stop being announced once every client has
      * had time to read them, and borrowed busy time is not kept as history.
      */
@@ -307,7 +332,14 @@ export function buildJobHandlers(client: PrismaClient, logger: Logger): Record<s
 }
 
 export async function enqueuePeriodicJobs(client: PrismaClient): Promise<void> {
-  const types = ['changes.expire', 'notification.digest', 'calendar.busy.pull', 'calendar.purge']
+  const types = [
+    'changes.expire',
+    'notification.digest',
+    'calendar.busy.pull',
+    'calendar.purge',
+    'privacy.retention',
+    'db.backup',
+  ]
 
   for (const type of types) {
     const pending = await client.job.count({ where: { type, status: 'pending' } })

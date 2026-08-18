@@ -202,6 +202,10 @@ export function CalendarView() {
                 slotMaxTime="22:00:00"
                 nowIndicator
                 headerToolbar={{ left: 'prev,next today', center: 'title', right: '' }}
+                // FullCalendar's chevrons render as `role="img"` with no
+                // alternative text. Its own localised words are both readable
+                // and announceable, so the icons go.
+                buttonIcons={false}
                 events={events}
                 eventContent={(argument) => (
                   <div className="px-1 py-0.5 text-xs">
