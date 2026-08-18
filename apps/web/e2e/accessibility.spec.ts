@@ -60,6 +60,13 @@ test.describe('accessibility', () => {
     })
   }
 
+  test('the installer is usable before anything exists', async ({ page }) => {
+    // No session, no database, no shell — and still a screen somebody can
+    // fill in with a keyboard and a screen reader.
+    const violations = await scan(page, '/install')
+    expect(violations, JSON.stringify(violations, null, 2)).toEqual([])
+  })
+
   test('dark mode keeps its contrast', async ({ page }) => {
     await asRole(page, 'Coordinació')
     await page.goto('/settings')

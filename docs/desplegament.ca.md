@@ -61,6 +61,9 @@ compte a cada desplegament.
 
 ## 4. Configuració
 
+**Si fas servir l'instal·lador web (punt 5), aquest fitxer l'escriu ell** i
+aquest apartat és la referència del que hi haurà a dins.
+
 Totes les variables porten el prefix `UACADEMIC_`. No és decoratiu: en un
 servidor compartit, un `SMTP_HOST` del veí s'agafaria en silenci i el correu
 sortiria pel seu servidor. L'aplicació només llegeix les seves.
@@ -89,7 +92,53 @@ estan documentades a `.env.example`, amb el que implica deixar-les buides.
 
 ---
 
-## 5. Primer desplegament
+## 5. Instal·lació des del navegador
+
+La manera recomanada. Amb el codi construït i l'API en marxa, obre
+**https://uacademic.cat/install** i segueix quatre passos: testimoni, base de
+dades, centre i administrador.
+
+**El testimoni.** Quan l'API arrenca sense configuració, no falla: entra en mode
+instal·lació, escriu un testimoni d'un sol ús a `shared/install.token` i
+l'imprimeix al log. Llegeix-lo per SSH:
+
+```bash
+cat /var/www/uacademic/shared/install.token
+pm2 logs uacademic --lines 30      # també hi surt
+```
+
+Això és el que impedeix que qualsevol que trobi l'adreça instal·li la
+plataforma: cal accés al servidor.
+
+**Què fa l'instal·lador**, en aquest ordre i sense escriure res fins a l'últim
+pas: prova la connexió amb MySQL i diu què hi ha trobat (joc de caràcters,
+col·lació, si ja hi ha taules) · executa les migracions · crea la universitat,
+el centre i el compte SUPERADMIN · escriu `shared/.env` amb mode 600, amb el
+secret de sessió i la clau de xifratge **generats**, no escollits a mà.
+
+**Què no fa**: crear la base de dades. Crea-la abans (punt 3): un instal·lador
+web amb permisos per crear bases de dades és més permís del que necessita.
+
+En acabar, reinicia perquè llegeixi la configuració nova:
+
+```bash
+pm2 restart uacademic
+```
+
+A partir d'aquí `/install` respon 410 per sempre. Per canviar la configuració
+s'edita `shared/.env` i es reinicia; no hi ha reinstal·lació.
+
+Si prefereixes fer-ho per línia d'ordres, hi ha l'equivalent:
+
+```bash
+UACADEMIC_BOOTSTRAP_UNIVERSITY="…" UACADEMIC_BOOTSTRAP_CENTER="…" \
+UACADEMIC_BOOTSTRAP_CENTER_CODE="…" UACADEMIC_BOOTSTRAP_EMAIL="…" \
+UACADEMIC_BOOTSTRAP_PASSWORD="…" pnpm --filter @uacademic/db bootstrap
+```
+
+---
+
+## 6. Desplegar una versió a mà
 
 ```bash
 scripts/deploy/release.sh 2026.08.18-1 /tmp/uacademic-2026.08.18-1.tar.gz <sha256>
@@ -110,7 +159,7 @@ pm2 save && pm2 startup
 
 ---
 
-## 6. Nginx
+## 7. Nginx
 
 Copia `scripts/deploy/nginx.conf.example` a la configuració del vhost i ajusta
 el nom del servidor. Els tres punts que no es poden ometre:
@@ -124,7 +173,7 @@ el nom del servidor. Els tres punts que no es poden ometre:
 
 ---
 
-## 7. La cua de feina
+## 8. La cua de feina
 
 Hi ha dues maneres, i són intercanviables perquè una feina es reclama amb un
 `UPDATE` condicional, no amb un bloqueig en memòria:
@@ -143,7 +192,7 @@ Hi ha dues maneres, i són intercanviables perquè una feina es reclama amb un
 
 ---
 
-## 8. Còpies de seguretat
+## 9. Còpies de seguretat
 
 La feina `db.backup` s'executa cada dia i escriu a `UACADEMIC_BACKUP_DIR`. La
 retenció és `UACADEMIC_BACKUP_RETENTION_DAYS` (14 per defecte); zero vol dir
@@ -160,7 +209,7 @@ ningú ha provat a restaurar no és una còpia.
 
 ---
 
-## 9. Actualitzacions
+## 10. Actualitzacions
 
 El superadministrador les llança des de **Plataforma**. El servidor descarrega
 l'artefacte del repositori privat amb el PAT, **verifica la suma de
@@ -173,7 +222,7 @@ Per a això calen:
 ```
 UACADEMIC_GITHUB_OTA_TOKEN=…      # PAT amb permís de lectura de releases
 UACADEMIC_GITHUB_OTA_REPO=soportic-orb/uacademic
-UACADEMIC_HEALTH_CHECK_URL=http://127.0.0.1:3001/api/v1/health
+UACADEMIC_HEALTH_CHECK_URL=http://127.0.0.1:3001/health
 UACADEMIC_PM2_APP_NAME=uacademic
 ```
 
@@ -189,7 +238,7 @@ l'aplicació. Qui estigui escrivint un missatge no perd res.
 
 ---
 
-## 10. Microsoft Entra ID
+## 11. Microsoft Entra ID
 
 Registra l'aplicació com a **multi-tenant**. L'inici de sessió és un flux de
 client públic (PKCE) i no necessita cap secret; el secret només fa falta per al
@@ -202,10 +251,10 @@ des de **Administració → Tenants** abans que ningú hi entri.
 
 ---
 
-## 11. Comprovacions després de desplegar
+## 12. Comprovacions després de desplegar
 
 ```bash
-curl -fsS https://uacademic.exemple.edu/api/v1/health
+curl -fsS https://uacademic.exemple.edu/health
 pm2 status
 tail -f /var/www/uacademic/shared/logs/api.error.log
 ```

@@ -1759,5 +1759,94 @@
         "basis": "Legal obligation and legitimate interest in traceability."
       }
     }
+  },
+  "installer": {
+    "title": "Install UAcademic",
+    "subtitle": "Four steps. Nothing is written until the last one.",
+    "checking": "Checking the state of the installation…",
+    "already": {
+      "title": "Already installed",
+      "body": "This installation already has a configuration. To change it, edit the .env file on the server and restart the process.",
+      "signIn": "Go to sign-in"
+    },
+    "steps": {
+      "token": "Token",
+      "database": "Database",
+      "site": "Center",
+      "admin": "Administrator",
+      "done": "Done"
+    },
+    "token": {
+      "title": "Installation token",
+      "hint": "The server wrote one into shared/install.token and printed it in the log at start-up. Copy it here: this is what keeps the installer to whoever has access to the server.",
+      "label": "Token",
+      "where": "To read it: cat /var/www/uacademic/shared/install.token"
+    },
+    "database": {
+      "title": "MySQL database",
+      "hint": "Create it first with utf8mb4 and grant a user of its own full privileges. The installer does not create the database: it creates the tables.",
+      "host": "Host",
+      "port": "Port",
+      "name": "Database name",
+      "user": "User",
+      "password": "Password",
+      "test": "Test the connection",
+      "ok": "Connected · {{charset}} / {{collation}}",
+      "hasTables": "Careful: this database already holds tables. If they are from an earlier installation, the migrations will be applied on top of them.",
+      "charsetWarning": "The recommended character set is utf8mb4. With another, accents and emoji can break."
+    },
+    "site": {
+      "title": "Address and center",
+      "url": "Public address",
+      "urlHint": "With https and no trailing slash. This is what the links in notifications will carry.",
+      "university": "University",
+      "center": "Center",
+      "centerCode": "Center code",
+      "timezone": "Time zone",
+      "locale": "Default language",
+      "entraTenant": "Microsoft tenant (optional)",
+      "entraClient": "Application client ID (optional)",
+      "entraHint": "Leave them empty to sign in with the local administrator account and configure Microsoft Entra ID later."
+    },
+    "admin": {
+      "title": "Platform administrator",
+      "hint": "This account holds the SUPERADMIN role and a local password for getting in when Microsoft Entra ID is unavailable.",
+      "email": "Email",
+      "firstName": "First name",
+      "lastName": "Surname",
+      "password": "Password",
+      "passwordHint": "At least 12 characters. Keep it in a password manager: it is not shown again.",
+      "repeat": "Repeat the password",
+      "mismatch": "The passwords do not match."
+    },
+    "run": {
+      "action": "Install",
+      "working": "Installing… keep this tab open.",
+      "steps": {
+        "database": "Database connection",
+        "migrations": "Creating the tables",
+        "organisation": "University, center and administrator",
+        "configuration": "Configuration file"
+      }
+    },
+    "done": {
+      "title": "Installed",
+      "body": "Restart the API process so it reads the new configuration, and you can sign in.",
+      "restart": "pm2 restart uacademic",
+      "envFile": "Configuration written to {{path}}",
+      "next": "Next: register the Microsoft tenants, create the academic year, and upload the center’s regulation.",
+      "signIn": "Sign in to the platform"
+    },
+    "errors": {
+      "badToken": "That token is not correct.",
+      "alreadyInstalled": "The platform is already installed.",
+      "databaseUnreachable": "The database server could not be reached.",
+      "databaseAccess": "The user or password is wrong, or the user lacks privileges.",
+      "databaseMissing": "That database does not exist. Create it first.",
+      "databaseFailed": "The connection failed.",
+      "migrationsFailed": "The tables could not be created. Check that the user has CREATE and ALTER privileges.",
+      "bootstrapFailed": "The center and administrator could not be created.",
+      "configurationFailed": "The configuration file could not be written. Check the directory permissions."
+    }
   }
 }

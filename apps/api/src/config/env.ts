@@ -1,6 +1,11 @@
-import 'dotenv/config'
-
 import { z } from 'zod'
+
+import { loadEnvFile } from './env-file.js'
+
+// Resolved rather than assumed: on a deployed host the file is `shared/.env`,
+// reached through a symlink at the release root, while the working directory
+// is `apps/api`.
+loadEnvFile()
 
 /**
  * R10: every secret and every environment-dependent value arrives here, is
@@ -158,7 +163,7 @@ const envSchema = z.object({
   /** Where releases are unpacked: `<dir>/releases/<version>`, `<dir>/current`. */
   DEPLOY_ROOT: z.string().default('/var/www/uacademic'),
   /** Read after a deployment to decide whether it stands or is rolled back. */
-  HEALTH_CHECK_URL: z.string().default('http://127.0.0.1:3001/api/v1/health'),
+  HEALTH_CHECK_URL: z.string().default('http://127.0.0.1:3001/health'),
   /** The PM2 process group to reload once the symlink has moved. */
   PM2_APP_NAME: z.string().default('uacademic'),
 

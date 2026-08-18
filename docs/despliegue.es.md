@@ -61,6 +61,9 @@ cuenta en cada despliegue.
 
 ## 4. Configuración
 
+**Si usas el instalador web (punto 5), este fichero lo escribe él** y este
+apartado es la referencia de lo que habrá dentro.
+
 Todas las variables llevan el prefijo `UACADEMIC_`. No es decorativo: en un
 servidor compartido, un `SMTP_HOST` del vecino se tomaría en silencio y el
 correo saldría por su servidor. La aplicación solo lee las suyas.
@@ -89,7 +92,54 @@ están documentadas en `.env.example`, con lo que implica dejarlas vacías.
 
 ---
 
-## 5. Primer despliegue
+## 5. Instalación desde el navegador
+
+La manera recomendada. Con el código construido y la API en marcha, abre
+**https://uacademic.cat/install** y sigue cuatro pasos: token, base de datos,
+centro y administrador.
+
+**El token.** Cuando la API arranca sin configuración, no falla: entra en modo
+instalación, escribe un token de un solo uso en `shared/install.token` y lo
+imprime en el log. Léelo por SSH:
+
+```bash
+cat /var/www/uacademic/shared/install.token
+pm2 logs uacademic --lines 30      # también aparece ahí
+```
+
+Eso es lo que impide que cualquiera que encuentre la dirección instale la
+plataforma: hace falta acceso al servidor.
+
+**Qué hace el instalador**, en este orden y sin escribir nada hasta el último
+paso: prueba la conexión con MySQL y dice qué ha encontrado (juego de
+caracteres, colación, si ya hay tablas) · ejecuta las migraciones · crea la
+universidad, el centro y la cuenta SUPERADMIN · escribe `shared/.env` con modo
+600, con el secreto de sesión y la clave de cifrado **generados**, no elegidos
+a mano.
+
+**Qué no hace**: crear la base de datos. Créala antes (punto 3): un instalador
+web con permisos para crear bases de datos es más permiso del que necesita.
+
+Al terminar, reinicia para que lea la configuración nueva:
+
+```bash
+pm2 restart uacademic
+```
+
+A partir de ahí `/install` responde 410 para siempre. Para cambiar la
+configuración se edita `shared/.env` y se reinicia; no hay reinstalación.
+
+Si prefieres hacerlo por línea de comandos, existe el equivalente:
+
+```bash
+UACADEMIC_BOOTSTRAP_UNIVERSITY="…" UACADEMIC_BOOTSTRAP_CENTER="…" \
+UACADEMIC_BOOTSTRAP_CENTER_CODE="…" UACADEMIC_BOOTSTRAP_EMAIL="…" \
+UACADEMIC_BOOTSTRAP_PASSWORD="…" pnpm --filter @uacademic/db bootstrap
+```
+
+---
+
+## 6. Desplegar una versión a mano
 
 ```bash
 scripts/deploy/release.sh 2026.08.18-1 /tmp/uacademic-2026.08.18-1.tar.gz <sha256>
@@ -111,7 +161,7 @@ pm2 save && pm2 startup
 
 ---
 
-## 6. Nginx
+## 7. Nginx
 
 Copia `scripts/deploy/nginx.conf.example` a la configuración del vhost y ajusta
 el nombre del servidor. Los tres puntos que no se pueden omitir:
@@ -125,7 +175,7 @@ el nombre del servidor. Los tres puntos que no se pueden omitir:
 
 ---
 
-## 7. La cola de trabajo
+## 8. La cola de trabajo
 
 Hay dos maneras, y son intercambiables porque un trabajo se reclama con un
 `UPDATE` condicional, no con un bloqueo en memoria:
@@ -144,7 +194,7 @@ Hay dos maneras, y son intercambiables porque un trabajo se reclama con un
 
 ---
 
-## 8. Copias de seguridad
+## 9. Copias de seguridad
 
 El trabajo `db.backup` se ejecuta cada día y escribe en
 `UACADEMIC_BACKUP_DIR`. La retención es `UACADEMIC_BACKUP_RETENTION_DAYS` (14
@@ -162,7 +212,7 @@ nadie ha intentado restaurar no es una copia.
 
 ---
 
-## 9. Actualizaciones
+## 10. Actualizaciones
 
 El superadministrador las lanza desde **Plataforma**. El servidor descarga el
 artefacto del repositorio privado con el PAT, **verifica la suma de
@@ -175,7 +225,7 @@ Para eso hacen falta:
 ```
 UACADEMIC_GITHUB_OTA_TOKEN=…      # PAT con permiso de lectura de releases
 UACADEMIC_GITHUB_OTA_REPO=soportic-orb/uacademic
-UACADEMIC_HEALTH_CHECK_URL=http://127.0.0.1:3001/api/v1/health
+UACADEMIC_HEALTH_CHECK_URL=http://127.0.0.1:3001/health
 UACADEMIC_PM2_APP_NAME=uacademic
 ```
 
@@ -191,7 +241,7 @@ arranque de la aplicación. Quien esté escribiendo un mensaje no pierde nada.
 
 ---
 
-## 10. Microsoft Entra ID
+## 11. Microsoft Entra ID
 
 Registra la aplicación como **multi-tenant**. El inicio de sesión es un flujo
 de cliente público (PKCE) y no necesita ningún secreto; el secreto solo hace
@@ -204,10 +254,10 @@ de tenants registrados y responde 403 si no está. Da de alta cada tenant desde
 
 ---
 
-## 11. Comprobaciones después de desplegar
+## 12. Comprobaciones después de desplegar
 
 ```bash
-curl -fsS https://uacademic.ejemplo.edu/api/v1/health
+curl -fsS https://uacademic.ejemplo.edu/health
 pm2 status
 tail -f /var/www/uacademic/shared/logs/api.error.log
 ```

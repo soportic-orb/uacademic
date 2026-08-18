@@ -24,6 +24,8 @@ export const API_ERROR_CODES = [
   'VALIDATION_FAILED',
   'CONFLICT',
   'RATE_LIMITED',
+  /** The resource existed and was deliberately withdrawn — the installer. */
+  'GONE',
   'TENANT_REQUIRED',
   'TENANT_MISMATCH',
   'UNKNOWN_TENANT',

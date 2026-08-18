@@ -17,6 +17,7 @@ import { PrivacyPage } from '../pages/privacy'
 import { ProfilePage } from '../pages/profile'
 import { UsersPage } from '../features/admin/users-page'
 import { ImportWizard } from '../features/imports/import-wizard'
+import { InstallPage } from '../pages/install'
 import { MyLoadPage } from '../pages/my-load'
 import { MessagesPage } from '../pages/messages'
 import { NotificationsPage } from '../pages/notifications'
@@ -35,6 +36,9 @@ import { TeachersPage } from '../pages/teachers'
  */
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
+  // Outside the shell and outside the session: at this point there is no
+  // database to have an identity in.
+  { path: '/install', element: <InstallPage /> },
   {
     path: '/',
     element: (

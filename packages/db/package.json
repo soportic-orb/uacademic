@@ -21,6 +21,7 @@
     "migrate:deploy": "prisma migrate deploy",
     "reset": "prisma migrate reset --force",
     "seed": "tsx seed/index.ts",
+    "bootstrap": "tsx seed/bootstrap.ts",
     "build": "prisma generate && tsc -p tsconfig.build.json",
     "typecheck": "prisma generate && tsc -p tsconfig.json --noEmit"
   },

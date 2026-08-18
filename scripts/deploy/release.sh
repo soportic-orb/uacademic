@@ -21,7 +21,7 @@ EXPECTED_SHA="${3:-}"
 
 ROOT="${UACADEMIC_DEPLOY_ROOT:-/var/www/uacademic}"
 RELEASE="${ROOT}/releases/${VERSION}"
-HEALTH_URL="${UACADEMIC_HEALTH_CHECK_URL:-http://127.0.0.1:3001/api/v1/health}"
+HEALTH_URL="${UACADEMIC_HEALTH_CHECK_URL:-http://127.0.0.1:3001/health}"
 PM2_APP="${UACADEMIC_PM2_APP_NAME:-uacademic}"
 
 log() { printf '\n▸ %s\n' "$1"; }

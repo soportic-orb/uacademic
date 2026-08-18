@@ -23,7 +23,7 @@ module.exports = {
     {
       name: 'uacademic',
       cwd: path.join(CURRENT, 'apps/api'),
-      script: 'dist/server.js',
+      script: 'dist/main.js',
       instances: 2,
       exec_mode: 'cluster',
       max_memory_restart: '512M',

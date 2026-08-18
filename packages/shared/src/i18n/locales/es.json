@@ -1759,5 +1759,94 @@
         "basis": "Obligación legal e interés legítimo en la trazabilidad."
       }
     }
+  },
+  "installer": {
+    "title": "Instala UAcademic",
+    "subtitle": "Cuatro pasos. Nada se escribe hasta el último.",
+    "checking": "Comprobando el estado de la instalación…",
+    "already": {
+      "title": "Ya está instalada",
+      "body": "Esta instalación ya tiene configuración. Para cambiarla, edita el fichero .env en el servidor y reinicia el proceso.",
+      "signIn": "Ir al inicio de sesión"
+    },
+    "steps": {
+      "token": "Token",
+      "database": "Base de datos",
+      "site": "Centro",
+      "admin": "Administrador",
+      "done": "Hecho"
+    },
+    "token": {
+      "title": "Token de instalación",
+      "hint": "El servidor ha escrito uno en shared/install.token y lo ha impreso en el log al arrancar. Cópialo aquí: así solo quien tiene acceso al servidor puede instalar la plataforma.",
+      "label": "Token",
+      "where": "Para leerlo: cat /var/www/uacademic/shared/install.token"
+    },
+    "database": {
+      "title": "Base de datos MySQL",
+      "hint": "Créala antes con utf8mb4 y dale todos los permisos a un usuario propio. El instalador no crea la base de datos: crea las tablas.",
+      "host": "Servidor",
+      "port": "Puerto",
+      "name": "Nombre de la base de datos",
+      "user": "Usuario",
+      "password": "Contraseña",
+      "test": "Prueba la conexión",
+      "ok": "Conexión correcta · {{charset}} / {{collation}}",
+      "hasTables": "Atención: esta base de datos ya tiene tablas. Si son de una instalación anterior, las migraciones se aplicarán encima.",
+      "charsetWarning": "El juego de caracteres recomendado es utf8mb4. Con otro, los acentos y los emojis pueden romperse."
+    },
+    "site": {
+      "title": "Dirección y centro",
+      "url": "Dirección pública",
+      "urlHint": "Con https y sin barra final. Es la que recibirán los enlaces de los avisos.",
+      "university": "Universidad",
+      "center": "Centro",
+      "centerCode": "Código del centro",
+      "timezone": "Zona horaria",
+      "locale": "Idioma por defecto",
+      "entraTenant": "Tenant de Microsoft (opcional)",
+      "entraClient": "Client ID de la aplicación (opcional)",
+      "entraHint": "Si los dejas vacíos, se entra con la cuenta local de administrador y podrás configurar Microsoft Entra ID después."
+    },
+    "admin": {
+      "title": "Administrador de la plataforma",
+      "hint": "Esta cuenta tiene el rol SUPERADMIN y una contraseña local para entrar cuando Microsoft Entra ID no esté disponible.",
+      "email": "Correo electrónico",
+      "firstName": "Nombre",
+      "lastName": "Apellidos",
+      "password": "Contraseña",
+      "passwordHint": "Mínimo 12 caracteres. Guárdala en un gestor de contraseñas: no se vuelve a mostrar.",
+      "repeat": "Repite la contraseña",
+      "mismatch": "Las contraseñas no coinciden."
+    },
+    "run": {
+      "action": "Instala",
+      "working": "Instalando… no cierres esta pestaña.",
+      "steps": {
+        "database": "Conexión a la base de datos",
+        "migrations": "Creación de las tablas",
+        "organisation": "Universidad, centro y administrador",
+        "configuration": "Fichero de configuración"
+      }
+    },
+    "done": {
+      "title": "Instalada",
+      "body": "Reinicia el proceso de la API para que lea la configuración nueva, y ya puedes entrar.",
+      "restart": "pm2 restart uacademic",
+      "envFile": "Configuración escrita en {{path}}",
+      "next": "Después: registra los tenants de Microsoft, crea el curso académico y sube la normativa del centro.",
+      "signIn": "Entra en la plataforma"
+    },
+    "errors": {
+      "badToken": "El token no es correcto.",
+      "alreadyInstalled": "La plataforma ya está instalada.",
+      "databaseUnreachable": "No se ha podido conectar con el servidor de base de datos.",
+      "databaseAccess": "El usuario o la contraseña no son correctos, o el usuario no tiene permisos.",
+      "databaseMissing": "Esta base de datos no existe. Créala primero.",
+      "databaseFailed": "La conexión ha fallado.",
+      "migrationsFailed": "No se han podido crear las tablas. Revisa que el usuario tenga permisos de CREATE y ALTER.",
+      "bootstrapFailed": "No se ha podido crear el centro y el administrador.",
+      "configurationFailed": "No se ha podido escribir el fichero de configuración. Comprueba los permisos del directorio."
+    }
   }
 }

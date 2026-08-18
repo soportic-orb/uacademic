@@ -1759,5 +1759,94 @@
         "basis": "Obligació legal i interès legítim en la traçabilitat."
       }
     }
+  },
+  "installer": {
+    "title": "Instal·la UAcademic",
+    "subtitle": "Quatre passos. Res s’escriu fins a l’últim.",
+    "checking": "Comprovant l’estat de la instal·lació…",
+    "already": {
+      "title": "Ja està instal·lada",
+      "body": "Aquesta instal·lació ja té configuració. Per canviar-la, edita el fitxer .env al servidor i reinicia el procés.",
+      "signIn": "Ves a l’inici de sessió"
+    },
+    "steps": {
+      "token": "Testimoni",
+      "database": "Base de dades",
+      "site": "Centre",
+      "admin": "Administrador",
+      "done": "Fet"
+    },
+    "token": {
+      "title": "Testimoni d’instal·lació",
+      "hint": "El servidor n’ha escrit un al fitxer shared/install.token i l’ha imprès al log en arrencar. Copia’l aquí: així només qui té accés al servidor pot instal·lar la plataforma.",
+      "label": "Testimoni",
+      "where": "Per llegir-lo: cat /var/www/uacademic/shared/install.token"
+    },
+    "database": {
+      "title": "Base de dades MySQL",
+      "hint": "Crea-la abans amb utf8mb4 i dona-li tots els permisos a un usuari propi. L’instal·lador no crea la base de dades: crea les taules.",
+      "host": "Servidor",
+      "port": "Port",
+      "name": "Nom de la base de dades",
+      "user": "Usuari",
+      "password": "Contrasenya",
+      "test": "Prova la connexió",
+      "ok": "Connexió correcta · {{charset}} / {{collation}}",
+      "hasTables": "Atenció: aquesta base de dades ja té taules. Si són d’una instal·lació anterior, les migracions s’hi aplicaran a sobre.",
+      "charsetWarning": "El joc de caràcters recomanat és utf8mb4. Amb un altre, els accents i les emoges poden trencar-se."
+    },
+    "site": {
+      "title": "Adreça i centre",
+      "url": "Adreça pública",
+      "urlHint": "Amb https i sense barra final. És la que rebran els enllaços dels avisos.",
+      "university": "Universitat",
+      "center": "Centre",
+      "centerCode": "Codi del centre",
+      "timezone": "Zona horària",
+      "locale": "Idioma per defecte",
+      "entraTenant": "Tenant de Microsoft (opcional)",
+      "entraClient": "Client ID de l’aplicació (opcional)",
+      "entraHint": "Si els deixes buits, s’entra amb el compte local d’administrador i podràs configurar Microsoft Entra ID després."
+    },
+    "admin": {
+      "title": "Administrador de la plataforma",
+      "hint": "Aquest compte té el rol SUPERADMIN i una contrasenya local per entrar quan Microsoft Entra ID no estigui disponible.",
+      "email": "Correu electrònic",
+      "firstName": "Nom",
+      "lastName": "Cognoms",
+      "password": "Contrasenya",
+      "passwordHint": "Mínim 12 caràcters. Guarda-la a un gestor de contrasenyes: no es torna a mostrar.",
+      "repeat": "Repeteix la contrasenya",
+      "mismatch": "Les contrasenyes no coincideixen."
+    },
+    "run": {
+      "action": "Instal·la",
+      "working": "Instal·lant… no tanquis aquesta pestanya.",
+      "steps": {
+        "database": "Connexió a la base de dades",
+        "migrations": "Creació de les taules",
+        "organisation": "Universitat, centre i administrador",
+        "configuration": "Fitxer de configuració"
+      }
+    },
+    "done": {
+      "title": "Instal·lada",
+      "body": "Reinicia el procés de l’API perquè llegeixi la configuració nova, i ja pots entrar.",
+      "restart": "pm2 restart uacademic",
+      "envFile": "Configuració escrita a {{path}}",
+      "next": "Després: registra els tenants de Microsoft, crea el curs acadèmic i puja la normativa del centre.",
+      "signIn": "Entra a la plataforma"
+    },
+    "errors": {
+      "badToken": "El testimoni no és correcte.",
+      "alreadyInstalled": "La plataforma ja està instal·lada.",
+      "databaseUnreachable": "No s’ha pogut connectar amb el servidor de base de dades.",
+      "databaseAccess": "L’usuari o la contrasenya no són correctes, o l’usuari no té permisos.",
+      "databaseMissing": "Aquesta base de dades no existeix. Crea-la primer.",
+      "databaseFailed": "La connexió ha fallat.",
+      "migrationsFailed": "No s’han pogut crear les taules. Revisa que l’usuari tingui permisos de CREATE i ALTER.",
+      "bootstrapFailed": "No s’ha pogut crear el centre i l’administrador.",
+      "configurationFailed": "No s’ha pogut escriure el fitxer de configuració. Comprova els permisos del directori."
+    }
   }
 }

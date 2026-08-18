@@ -61,6 +61,9 @@ deployment.
 
 ## 4. Configuration
 
+**If you use the web installer (section 5), it writes this file for you** and
+this section is the reference for what ends up in it.
+
 Every variable carries the `UACADEMIC_` prefix. This is not decoration: on a
 shared server a neighbour's `SMTP_HOST` would be picked up silently and mail
 would go out through their server. The application reads only its own.
@@ -89,7 +92,54 @@ documented in `.env.example`, along with what leaving each one empty means.
 
 ---
 
-## 5. First deployment
+## 5. Installing from the browser
+
+The recommended path. With the code built and the API running, open
+**https://uacademic.cat/install** and follow four steps: token, database,
+center, administrator.
+
+**The token.** When the API starts with no configuration it does not fail: it
+comes up in setup mode, writes a one-time token to `shared/install.token` and
+prints it in the log. Read it over SSH:
+
+```bash
+cat /var/www/uacademic/shared/install.token
+pm2 logs uacademic --lines 30      # it is there too
+```
+
+That is what keeps whoever merely found the URL from installing the platform:
+it takes access to the server.
+
+**What the installer does**, in this order and writing nothing until the last
+step: tests the MySQL connection and reports what it found (character set,
+collation, whether tables are already there) · runs the migrations · creates
+the university, the center and the SUPERADMIN account · writes `shared/.env`
+at mode 600, with the session secret and the encryption key **generated**
+rather than chosen by hand.
+
+**What it does not do**: create the database. Create it first (section 3) — a
+web installer holding privileges to create databases holds more than it needs.
+
+When it finishes, restart so the new configuration is read:
+
+```bash
+pm2 restart uacademic
+```
+
+From then on `/install` answers 410 for good. Changing the configuration means
+editing `shared/.env` and restarting; there is no reinstall.
+
+If you would rather do it from a shell, there is an equivalent:
+
+```bash
+UACADEMIC_BOOTSTRAP_UNIVERSITY="…" UACADEMIC_BOOTSTRAP_CENTER="…" \
+UACADEMIC_BOOTSTRAP_CENTER_CODE="…" UACADEMIC_BOOTSTRAP_EMAIL="…" \
+UACADEMIC_BOOTSTRAP_PASSWORD="…" pnpm --filter @uacademic/db bootstrap
+```
+
+---
+
+## 6. Deploying a release by hand
 
 ```bash
 scripts/deploy/release.sh 2026.08.18-1 /tmp/uacademic-2026.08.18-1.tar.gz <sha256>
@@ -110,7 +160,7 @@ pm2 save && pm2 startup
 
 ---
 
-## 6. Nginx
+## 7. Nginx
 
 Copy `scripts/deploy/nginx.conf.example` into the vhost configuration and
 adjust the server name. Three things cannot be left out:
@@ -123,7 +173,7 @@ adjust the server name. Three things cannot be left out:
 
 ---
 
-## 7. The job queue
+## 8. The job queue
 
 Two ways, and they are interchangeable because a job is claimed with a
 conditional `UPDATE`, not with a lock held in memory:
@@ -142,7 +192,7 @@ conditional `UPDATE`, not with a lock held in memory:
 
 ---
 
-## 8. Backups
+## 9. Backups
 
 The `db.backup` job runs daily and writes to `UACADEMIC_BACKUP_DIR`. Retention
 is `UACADEMIC_BACKUP_RETENTION_DAYS` (14 by default); zero keeps everything,
@@ -159,7 +209,7 @@ is not a backup.
 
 ---
 
-## 9. Updates
+## 10. Updates
 
 The superadmin runs them from **Platform**. The server downloads the artefact
 from the private repository with the PAT, **verifies the checksum before
@@ -172,7 +222,7 @@ That needs:
 ```
 UACADEMIC_GITHUB_OTA_TOKEN=…      # PAT with read access to releases
 UACADEMIC_GITHUB_OTA_REPO=soportic-orb/uacademic
-UACADEMIC_HEALTH_CHECK_URL=http://127.0.0.1:3001/api/v1/health
+UACADEMIC_HEALTH_CHECK_URL=http://127.0.0.1:3001/health
 UACADEMIC_PM2_APP_NAME=uacademic
 ```
 
@@ -188,7 +238,7 @@ the app. Somebody halfway through a message loses nothing.
 
 ---
 
-## 10. Microsoft Entra ID
+## 11. Microsoft Entra ID
 
 Register the application as **multi-tenant**. Sign-in is a public-client flow
 (PKCE) and needs no secret; the secret is only for the calendar consent.
@@ -200,10 +250,10 @@ tenant under **Administration → Tenants** before anybody signs in.
 
 ---
 
-## 11. Checks after deploying
+## 12. Checks after deploying
 
 ```bash
-curl -fsS https://uacademic.example.edu/api/v1/health
+curl -fsS https://uacademic.example.edu/health
 pm2 status
 tail -f /var/www/uacademic/shared/logs/api.error.log
 ```

@@ -160,6 +160,22 @@ reuses it from an Expo app.
 
 Everything between "it works on my machine" and "a university runs on it".
 
+### Installing it
+
+`uacademic.cat/install` — four steps in a browser: token, database, center,
+administrator. The API boots in setup mode when it finds no configuration,
+writes a one-time token to `shared/install.token` and prints it in the log, so
+installing takes access to the server and not merely the URL. The wizard tests
+the database connection before anything is written, runs the migrations,
+creates the first center and superadmin, and writes `shared/.env` at mode 600
+with the session secret and encryption key generated rather than typed. Once a
+configuration exists every one of those routes answers 410: there is no
+reinstall, and changing configuration is an SSH job.
+
+The equivalent for a shell is `pnpm --filter @uacademic/db bootstrap`, which
+creates the same minimum — one university, one center, one superadmin — without
+the demo data the seed carries.
+
 ### The app on a phone
 
 A complete icon set — drawn by `apps/web/scripts/generate-icons.mjs` rather
