@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Navigate, useLocation } from 'react-router'
 
-import { isEntraConfigured } from '../auth/msal'
+import { useAuthConfig } from '../auth/config'
 import { useSession } from '../auth/session'
 import { Logo } from '../components/brand/logo'
 import { Button } from '../components/ui/button'
@@ -18,6 +18,10 @@ export function LoginPage() {
   const { t } = useTranslation()
   const toast = useToast()
   const { signInWithEntra, signInLocally, isAuthenticated } = useSession()
+  // Whether Microsoft is an option is the installation's answer, not the
+  // bundle's: see `auth/config.ts`.
+  const authConfig = useAuthConfig()
+  const entraReady = authConfig.data?.entra != null
   const location = useLocation()
   const [showLocal, setShowLocal] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -92,10 +96,16 @@ export function LoginPage() {
               className="w-full"
               size="lg"
               onClick={() => void onMicrosoft()}
-              disabled={busy || !isEntraConfigured()}
+              disabled={busy || authConfig.isPending || !entraReady}
             >
               {busy ? t('auth.signingIn') : t('auth.signInWithMicrosoft')}
             </Button>
+
+            {!authConfig.isPending && !entraReady ? (
+              <p className="text-center text-xs text-text-muted">
+                {t('auth.errors.entraNotConfigured')}
+              </p>
+            ) : null}
 
             <Button
               variant="link"

@@ -81,7 +81,10 @@ traffic light covers all four states.
 
 Sign-in is Microsoft Entra ID: MSAL in the browser (authorization code flow with PKCE)
 obtains an access token, the API validates it and returns an httpOnly session cookie.
-Set `VITE_UACADEMIC_ENTRA_CLIENT_ID` and `UACADEMIC_ENTRA_CLIENT_ID` to your app registration, and register
+Set `UACADEMIC_ENTRA_CLIENT_ID` to your app registration and restart the API — the
+browser asks `/api/v1/auth/config` which application to sign in against, so there is
+nothing to rebuild. (`VITE_UACADEMIC_ENTRA_CLIENT_ID` still works for `pnpm dev`, where
+there is no API to ask yet.) Then register
 your tenant under **Administration → Identity tenants** — a token whose `tid` is not in
 that table is refused with 403, which is what keeps every other Microsoft organization
 in the world out (R3).

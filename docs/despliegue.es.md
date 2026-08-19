@@ -176,9 +176,10 @@ de Entra registrada, así que el instalador escribe
 `UACADEMIC_AUTH_MODE="local"` y el botón de Microsoft de la pantalla de acceso
 queda desactivado. Entra con el correo y la contraseña que le has dado al
 instalador: es la credencial de rescate del superadministrador. Cuando tengas
-Entra ID registrado (apartado 11), pon `UACADEMIC_AUTH_MODE="entra"` y
-`UACADEMIC_ENTRA_CLIENT_ID`, reconstruye la aplicación web y reinicia; la
-credencial se queda como la forma de entrar el día que Microsoft no responda.
+Entra ID registrado (apartado 11), pon `UACADEMIC_ENTRA_CLIENT_ID` y reinicia:
+con eso basta para que el botón se active, porque el navegador pregunta a la API
+con qué aplicación se entra y no hay que reconstruir nada. La credencial se queda
+como la forma de entrar el día que Microsoft no responda.
 
 Si prefieres hacerlo por línea de comandos, existe el equivalente:
 

@@ -11,44 +11,71 @@ import {
  * the bundle, and the resulting access token is exchanged once for a server
  * session cookie (see `auth/session.tsx`).
  */
-const clientId = import.meta.env.VITE_UACADEMIC_ENTRA_CLIENT_ID ?? ''
-
 /**
- * `/organizations` because the app is registered as multi-tenant: any work or
- * school account can *authenticate* here. Whether it may *enter* is decided by
- * the API against the registered tenants (R3).
+ * Where the application is registered, learned from the API at start-up.
+ *
+ * Not read from the bundle: a client id baked at build time means an operator
+ * who registers the application and writes the id into `shared/.env` has to
+ * rebuild the web app before the button will light up — and nothing tells them
+ * so. The build-time variable is still honoured, because a developer running
+ * Vite has no API to ask yet.
  */
-const authority =
-  import.meta.env.VITE_UACADEMIC_ENTRA_AUTHORITY ??
-  'https://login.microsoftonline.com/organizations'
+let runtime: { clientId: string; authority: string } | null =
+  import.meta.env.VITE_UACADEMIC_ENTRA_CLIENT_ID
+    ? {
+        clientId: import.meta.env.VITE_UACADEMIC_ENTRA_CLIENT_ID,
+        authority:
+          import.meta.env.VITE_UACADEMIC_ENTRA_AUTHORITY ??
+          'https://login.microsoftonline.com/organizations',
+      }
+    : null
 
-const configuration: Configuration = {
-  auth: {
-    clientId,
-    authority,
-    redirectUri: window.location.origin,
-    postLogoutRedirectUri: window.location.origin,
-  },
-  cache: {
-    // Session storage, not local: closing the browser ends the Microsoft
-    // session too, and our own session lives in an httpOnly cookie anyway.
-    cacheLocation: 'sessionStorage',
-  },
+export function configureEntra(config: { clientId: string; authority: string } | null): void {
+  // Changing it after MSAL has been built would leave the instance pointing at
+  // the old application, so the instance is dropped with it.
+  runtime = config
+  instance = undefined
+  initialized = undefined
 }
 
-export const SCOPES = clientId
-  ? [`api://${clientId}/access_as_user`, 'openid', 'profile', 'email']
-  : []
+/**
+ * The authority is `/organizations` because the app is registered as
+ * multi-tenant: any work or school account can *authenticate* here. Whether it
+ * may *enter* is decided by the API against the registered tenants (R3).
+ */
+function buildConfiguration(config: { clientId: string; authority: string }): Configuration {
+  return {
+    auth: {
+      clientId: config.clientId,
+      authority: config.authority,
+      redirectUri: window.location.origin,
+      postLogoutRedirectUri: window.location.origin,
+    },
+    cache: {
+      // Session storage, not local: closing the browser ends the Microsoft
+      // session too, and our own session lives in an httpOnly cookie anyway.
+      cacheLocation: 'sessionStorage',
+    },
+  }
+}
+
+export function scopes(): string[] {
+  return runtime
+    ? [`api://${runtime.clientId}/access_as_user`, 'openid', 'profile', 'email']
+    : []
+}
 
 let instance: PublicClientApplication | undefined
 let initialized: Promise<void> | undefined
 
 export function isEntraConfigured(): boolean {
-  return clientId.length > 0
+  return runtime !== null
 }
 
 export async function getMsal(): Promise<PublicClientApplication> {
-  instance ??= new PublicClientApplication(configuration)
+  if (!runtime) throw new Error('Microsoft sign-in is not configured on this installation.')
+
+  instance ??= new PublicClientApplication(buildConfiguration(runtime))
   initialized ??= instance.initialize()
   await initialized
   return instance
@@ -56,7 +83,7 @@ export async function getMsal(): Promise<PublicClientApplication> {
 
 export async function signInWithMicrosoft(): Promise<string> {
   const msal = await getMsal()
-  const result = await msal.loginPopup({ scopes: SCOPES, prompt: 'select_account' })
+  const result = await msal.loginPopup({ scopes: scopes(), prompt: 'select_account' })
   msal.setActiveAccount(result.account)
   return result.accessToken
 }
@@ -66,12 +93,16 @@ export async function signInWithMicrosoft(): Promise<string> {
  * and only falls back to interaction when Microsoft demands it.
  */
 export async function acquireTokenSilently(): Promise<string | null> {
+  // Nothing to renew on an installation that does not use Microsoft; the caller
+  // is a background timer, and throwing there helps nobody.
+  if (!isEntraConfigured()) return null
+
   const msal = await getMsal()
   const account: AccountInfo | null = msal.getActiveAccount() ?? msal.getAllAccounts()[0] ?? null
   if (!account) return null
 
   try {
-    const result = await msal.acquireTokenSilent({ account, scopes: SCOPES })
+    const result = await msal.acquireTokenSilent({ account, scopes: scopes() })
     return result.accessToken
   } catch (error) {
     if (error instanceof InteractionRequiredAuthError) return null
@@ -80,6 +111,8 @@ export async function acquireTokenSilently(): Promise<string | null> {
 }
 
 export async function signOutFromMicrosoft(): Promise<void> {
+  if (!isEntraConfigured()) return
+
   const msal = await getMsal()
   const account = msal.getActiveAccount()
   if (!account) return

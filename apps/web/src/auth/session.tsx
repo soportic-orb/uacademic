@@ -5,6 +5,7 @@ import { createContext, type ReactNode, useCallback, useContext, useEffect } fro
 import { ApiRequestError, apiFetch } from '../lib/api'
 import { useSessionStore } from '../stores/session'
 import { clearApiCache } from '../app/service-worker'
+import { useAuthConfig } from './config'
 import { acquireTokenSilently, signInWithMicrosoft, signOutFromMicrosoft } from './msal'
 
 interface SessionContextValue {
@@ -25,6 +26,10 @@ const SessionContext = createContext<SessionContextValue | null>(null)
  */
 export function SessionProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient()
+  // Asked for here and not only on the sign-in screen: a returning Entra user
+  // lands on the dashboard, and the silent renewal below needs MSAL pointed at
+  // this installation's application without ever passing through login.
+  useAuthConfig()
   const setCenterId = useSessionStore((state) => state.setCenterId)
   const centerId = useSessionStore((state) => state.centerId)
 

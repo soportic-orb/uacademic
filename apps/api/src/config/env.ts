@@ -280,6 +280,19 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
   return env
 }
 
+/**
+ * Whether this installation can sign people in with Microsoft.
+ *
+ * The client id is what decides it, not `AUTH_MODE`: an installation is created
+ * before anyone has registered an application in Entra ID, so it starts in
+ * `local` mode, and asking the operator to also flip a mode after pasting the
+ * credentials is a step whose omission looks exactly like a broken button.
+ * Mock mode is excluded because there the identity comes from a header.
+ */
+export function entraConfigured(env: Env): boolean {
+  return env.AUTH_MODE !== 'mock' && Boolean(env.ENTRA_CLIENT_ID)
+}
+
 export function acceptedAudiences(env: Env): string[] {
   return [env.ENTRA_CLIENT_ID, ...(env.ENTRA_EXTRA_AUDIENCES ?? '').split(',')]
     .map((audience) => audience?.trim())

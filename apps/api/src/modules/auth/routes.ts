@@ -8,7 +8,7 @@ import {
 import type { CookieSerializeOptions } from '@fastify/cookie'
 import type { FastifyInstance } from 'fastify'
 
-import { acceptedAudiences, type Env } from '../../config/env.js'
+import { acceptedAudiences, entraConfigured, type Env } from '../../config/env.js'
 import { writeAuditLog } from '../../lib/audit.js'
 import { getEntraVerifier } from '../../lib/entra.js'
 import { AppError } from '../../lib/errors.js'
@@ -42,6 +42,27 @@ export function registerAuthRoutes(app: FastifyInstance, env: Env): void {
    * browser) for a server session. The token itself never touches the browser
    * storage we rely on afterwards: from here on the cookie is the credential.
    */
+  /**
+   * What the browser needs to know before anybody can sign in.
+   *
+   * Served rather than baked. The client id used to reach the bundle through
+   * `VITE_UACADEMIC_ENTRA_CLIENT_ID` at build time, so an operator who
+   * registered the application and put the id in `shared/.env` — the only file
+   * the deployment manual ever tells them about — got a sign-in button that
+   * stayed disabled and no way to find out why. Nothing here is secret: the
+   * client id is public by design in a PKCE flow, and the authority is the
+   * address of Microsoft.
+   */
+  app.get('/api/v1/auth/config', { config: { public: true } }, async () => ({
+    mode: env.AUTH_MODE,
+    entra: entraConfigured(env)
+      ? {
+          clientId: env.ENTRA_CLIENT_ID,
+          authority: `https://login.microsoftonline.com/${env.ENTRA_AUTHORITY_TENANT}`,
+        }
+      : null,
+  }))
+
   app.post(
     '/api/v1/auth/entra/session',
     { config: { public: true } },
@@ -49,7 +70,7 @@ export function registerAuthRoutes(app: FastifyInstance, env: Env): void {
       // A fresh installation runs on the break-glass credential until an Entra
       // application is registered. Saying so beats a JWKS error nobody can act
       // on.
-      if (env.AUTH_MODE !== 'entra') {
+      if (!entraConfigured(env)) {
         throw new AppError(503, 'SERVICE_UNAVAILABLE', 'auth.errors.entraNotConfigured')
       }
 

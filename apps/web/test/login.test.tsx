@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import type { AuthConfig } from '../src/auth/config'
 import { Toaster } from '../src/components/feedback/toaster'
 import { LoginPage } from '../src/pages/login'
 
@@ -22,10 +23,16 @@ vi.mock('../src/auth/session', () => ({
   }),
 }))
 
-vi.mock('../src/auth/msal', () => ({ isEntraConfigured: () => false }))
+const authConfig = vi.fn<() => { isPending: boolean; data: AuthConfig }>(() => ({
+  isPending: false,
+  data: { mode: 'local', entra: null },
+}))
+
+vi.mock('../src/auth/config', () => ({ useAuthConfig: () => authConfig() }))
 
 afterEach(() => {
   signInLocally.mockReset()
+  authConfig.mockReturnValue({ isPending: false, data: { mode: 'local', entra: null } })
 })
 
 async function openLocalForm() {
@@ -72,5 +79,38 @@ describe('the sign-in screen', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Entra' }))
 
     expect(await screen.findByLabelText('Codi de verificació')).toBeInTheDocument()
+  })
+
+  /**
+   * The button used to be enabled by a build-time variable, so an operator who
+   * registered the application after the web app was built had no way to reach
+   * Microsoft short of rebuilding — and nothing said so.
+   */
+  it('offers Microsoft as soon as the installation reports it configured', () => {
+    authConfig.mockReturnValue({
+      isPending: false,
+      data: { mode: 'entra', entra: { clientId: 'app-id', authority: 'https://login/organizations' } },
+    })
+
+    render(
+      <MemoryRouter>
+        <LoginPage />
+        <Toaster />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByRole('button', { name: /Microsoft/ })).toBeEnabled()
+  })
+
+  it('says why Microsoft is unavailable instead of greying the button in silence', () => {
+    render(
+      <MemoryRouter>
+        <LoginPage />
+        <Toaster />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByRole('button', { name: /Microsoft/ })).toBeDisabled()
+    expect(screen.getByText(/no està configurat/)).toBeInTheDocument()
   })
 })
