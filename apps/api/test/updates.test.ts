@@ -193,6 +193,32 @@ describe.skipIf(!hasDatabase)('installing a release', () => {
       expect(recorded.appliedAt).not.toBeNull()
     })
 
+    it('puts the symlink back when a step after the switch throws', async () => {
+      // The reload is that step, and it threw for real: `pm2 reload` restarts
+      // the process running the update, so the child died with it. What made
+      // it dangerous was the bookkeeping — "rolled_back" recorded while
+      // `current` stayed on the new release, so the installation quietly ran
+      // code the panel said it had rejected.
+      await applyUpdate(prisma, { release: RELEASE, userId }, { hooks: hooks() })
+      const applied = await readlink(join(root, 'current'))
+
+      const next = { ...RELEASE, version: '2026.09.02-8' }
+      const result = await applyUpdate(
+        prisma,
+        { release: next, userId },
+        {
+          hooks: hooks({
+            reload: async () => {
+              throw new Error('pm2 exited with null')
+            },
+          }),
+        },
+      )
+
+      expect(result.status).toBe('rolled_back')
+      expect(await readlink(join(root, 'current'))).toBe(applied)
+    })
+
     it('refuses an artefact whose checksum does not match, before unpacking it', async () => {
       const result = await applyUpdate(
         prisma,

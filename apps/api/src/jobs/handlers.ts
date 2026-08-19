@@ -21,6 +21,9 @@ import {
 } from '@uacademic/shared'
 import type { Logger } from 'pino'
 
+import { spawn } from 'node:child_process'
+
+import { env } from '../config/env.js'
 import { toJson } from '../lib/json.js'
 import { type ConnectionRow, pullBusy, syncConnection } from '../services/calendar/sync.js'
 import { purgeExpiredTombstones } from '../services/calendar/tombstones.js'
@@ -28,6 +31,7 @@ import { indexDocument } from '../services/documents/index-service.js'
 import { invalidateVectorCache } from '../services/documents/retrieval.js'
 import { createBackup } from '../services/backup.js'
 import { sendMail } from '../services/mailer.js'
+import { type ReleaseInfo, applyUpdate } from '../services/updates.js'
 import { applyRetention } from '../services/privacy.js'
 import { runExtractionBlock } from '../services/settings/extraction-run.js'
 import { sendPush } from '../services/push.js'
@@ -104,6 +108,43 @@ export function buildJobHandlers(client: PrismaClient, logger: Logger): Record<s
           'user.invite: no SMTP host, the invitation was logged and not sent',
         )
       }
+    },
+
+    /**
+     * Installing a release, from the one process the release does not reload.
+     *
+     * `applyUpdate` finishes with `pm2 reload uacademic`. Run from inside the
+     * API that is being reloaded, that kills the procedure and everything it
+     * spawned; run from here it is somebody else's problem, so the health
+     * check and the rollback still have a process to happen in.
+     */
+    'platform.update': async (payload) => {
+      const job = payload as { release: ReleaseInfo; userId: string; ip?: string | null }
+
+      const result = await applyUpdate(client, {
+        release: job.release,
+        userId: job.userId,
+        ip: job.ip ?? null,
+      })
+
+      logger.info({ version: result.version, status: result.status }, 'platform.update')
+
+      if (result.status !== 'applied') return
+
+      // And now this process, which is still running the previous release.
+      // Detached and delayed: the restart must not arrive before this handler
+      // returns, or the job stays locked and is retried as a stale one — which
+      // would install the same release a second time.
+      const configuration = env()
+      const restart = spawn(
+        'sh',
+        [
+          '-c',
+          `sleep 10; ${JSON.stringify(configuration.PM2_PATH)} restart ${JSON.stringify(`${configuration.PM2_APP_NAME}-worker`)}`,
+        ],
+        { detached: true, stdio: 'ignore' },
+      )
+      restart.unref()
     },
 
     'push.send': async (payload) => {

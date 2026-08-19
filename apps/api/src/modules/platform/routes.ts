@@ -8,12 +8,12 @@ import { translate } from '@uacademic/shared'
 import type { FastifyInstance } from 'fastify'
 
 import { env } from '../../config/env.js'
+import { enqueueJob } from '../../jobs/worker.js'
 import { AppError } from '../../lib/errors.js'
 import { prisma } from '../../lib/prisma.js'
 import { requireUser } from '../../plugins/context.js'
 import { mailConfigured, sendMail } from '../../services/mailer.js'
 import {
-  applyUpdate,
   latestRelease,
   updateStatus,
   updateWouldTakeEffect,
@@ -114,6 +114,19 @@ export function registerPlatformRoutes(app: FastifyInstance): void {
       throw new AppError(409, 'CONFLICT', 'platform.errors.alreadyRunning')
     }
 
-    return applyUpdate(prisma(), { release, userId: user.userId, ip: request.ip })
+    // Handed to the worker rather than run here, and that is the whole
+    // point: the last step of an update is `pm2 reload uacademic`, and this
+    // process *is* uacademic. Running it inline meant asking the process
+    // manager to kill the procedure halfway through — which it did, taking
+    // the `pm2` child with it and leaving "pm2 exited with null" as the
+    // explanation. The worker is a separate app; the reload goes straight
+    // past it.
+    await enqueueJob(prisma(), 'platform.update', {
+      release,
+      userId: user.userId,
+      ip: request.ip,
+    })
+
+    return { queued: true, version: release.version }
   })
 }

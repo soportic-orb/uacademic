@@ -11,8 +11,9 @@
  * it is over, having already rolled back if the new version did not come up.
  */
 import { formatDate } from '@uacademic/shared'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { CircleCheck, Download, History, Info, Loader2, Mail, RefreshCw } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { CardSkeleton, ErrorState } from '../components/feedback/states'
@@ -47,24 +48,36 @@ interface PlatformStatus {
   }[]
 }
 
-interface UpdateResult {
-  version: string
-  status: 'applied' | 'failed' | 'rolled_back'
-  backupFile?: string
-  error?: string
-}
-
 export function PlatformPage() {
   const { t } = useTranslation()
   const toast = useToast()
   const locale = currentLocale()
-  const queryClient = useQueryClient()
+
+  // While an update is running there is nothing to do but watch: the process
+  // being replaced is the one that would have told us.
+  const [awaiting, setAwaiting] = useState<string | null>(null)
 
   const status = useQuery({
     queryKey: ['platform-version'],
     queryFn: () => apiFetch<PlatformStatus>('/api/v1/platform/version'),
     retry: false,
+    refetchInterval: awaiting ? 4_000 : false,
   })
+
+  const outcome = awaiting
+    ? status.data?.history.find((entry) => entry.version === awaiting)
+    : undefined
+
+  useEffect(() => {
+    if (!awaiting || !outcome || outcome.status === 'applying') return
+
+    setAwaiting(null)
+    if (outcome.status === 'applied')
+      toast.success('platform.applied', { params: { version: awaiting } })
+    else if (outcome.status === 'rolled_back')
+      toast.error('platform.rolledBack', { durationMs: 16_000 })
+    else toast.error('platform.failed', { durationMs: 16_000 })
+  }, [awaiting, outcome, toast])
 
   const mail = useQuery({
     queryKey: ['platform-mail'],
@@ -98,32 +111,12 @@ export function PlatformPage() {
   })
 
   const update = useMutation({
-    mutationFn: () => apiJson<UpdateResult>('/api/v1/platform/update', 'POST', {}),
-    onSuccess: async (result) => {
-      // The reason, not just the verdict. A rollback that says only "it went
-      // back" leaves an administrator with a working platform and no idea
-      // what to fix before pressing the button again.
-      if (result.error) {
-        toast.raw({
-          variant: 'error',
-          message: t(
-            result.status === 'rolled_back' ? 'platform.rolledBackWhy' : 'platform.failedWhy',
-            { detail: result.error },
-          ),
-          durationMs: 20_000,
-        })
-        void queryClient.invalidateQueries({ queryKey: ['platform-version'] })
-        return
-      }
-
-      if (result.status === 'applied') {
-        toast.success('platform.applied', { params: { version: result.version } })
-      } else if (result.status === 'rolled_back') {
-        toast.error('platform.rolledBack', { durationMs: 12_000 })
-      } else {
-        toast.error('platform.failed', { durationMs: 12_000 })
-      }
-      await queryClient.invalidateQueries({ queryKey: ['platform-version'] })
+    mutationFn: () =>
+      apiJson<{ queued: boolean; version: string }>('/api/v1/platform/update', 'POST', {}),
+    onSuccess: (result) => {
+      // The verdict arrives later, in the history, written by the worker.
+      setAwaiting(result.version)
+      toast.info('platform.started', { params: { version: result.version }, durationMs: 10_000 })
     },
     onError: (error) => {
       if (error instanceof ApiRequestError)

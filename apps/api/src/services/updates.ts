@@ -396,8 +396,7 @@ export async function applyUpdate(
     await unlink(currentLink).catch(() => undefined)
     await symlink(releaseDir, currentLink)
 
-    if (hooks.reload) await hooks.reload()
-    else await run(configuration.PM2_PATH, ['reload', configuration.PM2_APP_NAME, '--update-env'])
+    await (hooks.reload ?? reloadApp)()
 
     // 7. Does it answer?
     const ok = await (hooks.health ?? healthy)(configuration.HEALTH_CHECK_URL)
@@ -406,9 +405,7 @@ export async function applyUpdate(
       if (previous) {
         await unlink(currentLink).catch(() => undefined)
         await symlink(previous, currentLink)
-        if (hooks.reload) await hooks.reload()
-        else
-          await run(configuration.PM2_PATH, ['reload', configuration.PM2_APP_NAME, '--update-env'])
+        await (hooks.reload ?? reloadApp)()
       }
 
       const result = await fail(
@@ -439,8 +436,32 @@ export async function applyUpdate(
       ? { version: input.release.version, status: 'applied', backupFile }
       : { version: input.release.version, status: 'applied' }
   } catch (error) {
-    // Anything that threw before the switch leaves the installation untouched.
+    // Whatever threw, the symlink is the thing that decides what this host
+    // runs — so if it has already moved, it moves back. Recording
+    // "rolled_back" while leaving `current` on the new release was the worst
+    // of both: an installation quietly running code the panel says it
+    // rejected.
+    let restored = false
+    if (previous) {
+      const now = await readlink(currentLink).catch(() => null)
+      if (now !== previous) {
+        await unlink(currentLink).catch(() => undefined)
+        await symlink(previous, currentLink).catch(() => undefined)
+        restored = true
+      }
+    }
+
+    if (restored) {
+      await (hooks.reload ?? reloadApp)().catch(() => undefined)
+    }
+
     const result = await fail(error, previous ? 'rolled_back' : 'failed')
     return backupFile ? { ...result, backupFile } : result
   }
+}
+
+/** Reloading the API's own process group — never the worker's. */
+async function reloadApp(): Promise<void> {
+  const configuration = env()
+  await run(configuration.PM2_PATH, ['reload', configuration.PM2_APP_NAME, '--update-env'])
 }

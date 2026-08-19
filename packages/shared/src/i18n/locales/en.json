@@ -747,7 +747,8 @@
     "mailUser": "Authenticating as",
     "mailFrom": "Sender",
     "rolledBackWhy": "The update failed and the previous version was restored. The server said: {{detail}}",
-    "failedWhy": "The update failed. The server said: {{detail}}"
+    "failedWhy": "The update failed. The server said: {{detail}}",
+    "started": "The update to {{version}} has started. It can take a couple of minutes; this screen will keep itself up to date."
   },
   "assistant": {
     "title": "AI assistant",

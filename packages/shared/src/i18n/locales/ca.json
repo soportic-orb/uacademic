@@ -747,7 +747,8 @@
     "mailUser": "Usuari d'autenticació",
     "mailFrom": "Remitent",
     "rolledBackWhy": "L'actualització ha fallat i s'ha tornat a la versió anterior. El servidor ha dit: {{detail}}",
-    "failedWhy": "L'actualització ha fallat. El servidor ha dit: {{detail}}"
+    "failedWhy": "L'actualització ha fallat. El servidor ha dit: {{detail}}",
+    "started": "S'ha iniciat l'actualització a {{version}}. Pot trigar un parell de minuts; aquesta pantalla s'anirà actualitzant."
   },
   "assistant": {
     "title": "Assistent IA",

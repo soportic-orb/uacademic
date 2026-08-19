@@ -747,7 +747,8 @@
     "mailUser": "Usuario de autenticación",
     "mailFrom": "Remitente",
     "rolledBackWhy": "La actualización ha fallado y se ha vuelto a la versión anterior. El servidor ha dicho: {{detail}}",
-    "failedWhy": "La actualización ha fallado. El servidor ha dicho: {{detail}}"
+    "failedWhy": "La actualización ha fallado. El servidor ha dicho: {{detail}}",
+    "started": "Se ha iniciado la actualización a {{version}}. Puede tardar un par de minutos; esta pantalla se irá actualizando."
   },
   "assistant": {
     "title": "Asistente IA",
