@@ -178,31 +178,33 @@ export function releaseIsAlreadyRunning(version: string): boolean {
   return join(env().DEPLOY_ROOT, 'releases', version) === releaseRoot()
 }
 
-let cachedRunningVersion: string | null | undefined
-
+/**
+ * Read on every ask rather than cached.
+ *
+ * A release directory does not change under a running process, so caching
+ * looked free — until an operator corrected a missing `VERSION` file, saw the
+ * screen report the old answer, and had no way to know that a restart was
+ * what stood between them. Two file reads on a superadmin-only screen are
+ * cheaper than that.
+ */
 export function runningVersion(): string | null {
-  if (cachedRunningVersion !== undefined) return cachedRunningVersion
-
   const root = releaseRoot()
-  cachedRunningVersion = null
 
   // The artefact writes VERSION; a checkout has only its package.json.
   const stamp = join(root, 'VERSION')
   if (existsSync(stamp)) {
     const value = readFileSync(stamp, 'utf8').trim()
-    if (value) cachedRunningVersion = value
+    if (value) return value
   }
 
-  if (cachedRunningVersion === null) {
-    const manifest = join(root, 'package.json')
-    if (existsSync(manifest)) {
-      const parsed: unknown = JSON.parse(readFileSync(manifest, 'utf8'))
-      const version = (parsed as { version?: unknown }).version
-      if (typeof version === 'string') cachedRunningVersion = version
-    }
+  const manifest = join(root, 'package.json')
+  if (existsSync(manifest)) {
+    const parsed: unknown = JSON.parse(readFileSync(manifest, 'utf8'))
+    const version = (parsed as { version?: unknown }).version
+    if (typeof version === 'string') return version
   }
 
-  return cachedRunningVersion
+  return null
 }
 
 export async function updateStatus(client: PrismaClient): Promise<UpdateStatus> {
