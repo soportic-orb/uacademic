@@ -67,6 +67,45 @@ export function buildJobHandlers(client: PrismaClient, logger: Logger): Record<s
       }
     },
 
+    /**
+     * Telling somebody they now have an account.
+     *
+     * Its own type rather than a notification: nobody has preferences yet —
+     * they have never signed in — so there is nothing to consult and nothing
+     * to fall back to. It is the one email the platform sends to a person who
+     * is not yet a user of it.
+     */
+    'user.invite': async (payload) => {
+      const job = payload as {
+        email: string
+        locale: string
+        firstName: string
+        centerName: string
+        url: string
+      }
+      const locale = localeOf(job.locale)
+
+      const result = await sendMail({
+        to: job.email,
+        locale,
+        subject: translate(locale, 'email.inviteSubject', { center: job.centerName }),
+        blocks: [
+          {
+            title: translate(locale, 'email.inviteTitle', { name: job.firstName }),
+            body: translate(locale, 'email.inviteBody', { center: job.centerName }),
+          },
+        ],
+        action: { label: translate(locale, 'email.inviteAction'), url: job.url },
+      })
+
+      if (result.simulated) {
+        logger.warn(
+          { to: job.email },
+          'user.invite: no SMTP host, the invitation was logged and not sent',
+        )
+      }
+    },
+
     'push.send': async (payload) => {
       const job = payload as DeliveryPayload
       const result = await sendPush(client, job.userId, {

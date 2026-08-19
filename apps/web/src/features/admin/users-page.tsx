@@ -57,11 +57,15 @@ export function UsersPage() {
   })
 
   const create = useMutation({
-    mutationFn: (input: typeof EMPTY) => apiJson('/api/v1/users', 'POST', input),
-    onSuccess: async () => {
+    mutationFn: (input: typeof EMPTY) =>
+      apiJson<{ invitationSent: boolean }>('/api/v1/users', 'POST', input),
+    onSuccess: async (result) => {
       // "Invited" rather than "created": the account is linked to their
-      // Microsoft identity the first time they sign in, not now.
-      toast.success('admin.userInvited')
+      // Microsoft identity the first time they sign in, not now. And it only
+      // says invited when somebody was actually written to — with no mail
+      // server the message goes to a log nobody reads.
+      if (result.invitationSent) toast.success('admin.userInvited')
+      else toast.warning('admin.userCreatedNoMail', { durationMs: 10_000 })
       setForm(EMPTY)
       setCreating(false)
       await queryClient.invalidateQueries({ queryKey: ['admin-users'] })

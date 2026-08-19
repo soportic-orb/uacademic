@@ -10,11 +10,14 @@ import {
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 
+import { env } from '../../config/env.js'
+import { enqueueJob } from '../../jobs/worker.js'
 import { writeAuditLog } from '../../lib/audit.js'
 import { AppError } from '../../lib/errors.js'
 import { prisma } from '../../lib/prisma.js'
 import { parseWith } from '../../lib/validate.js'
 import { requireCenterScope, requireUser } from '../../plugins/context.js'
+import { mailConfigured } from '../../services/mailer.js'
 
 /**
  * Users are global rows with per-center roles, so they cannot go through the
@@ -156,8 +159,26 @@ export function registerUserRoutes(app: FastifyInstance): void {
       ip: request.ip,
     })
 
+    // The invitation itself. Queued rather than sent inline: an SMTP server
+    // that hangs must not hang the request that created the account.
+    const center = await client.center.findUnique({ where: { id: centerId } })
+    await enqueueJob(client, 'user.invite', {
+      email: created.email,
+      locale: created.locale,
+      firstName: created.firstName,
+      centerName: center?.name ?? '',
+      url: env().APP_URL,
+    })
+
     void reply.status(201)
-    return { id: created.id, email: created.email, created: true }
+    // Whether anybody will actually receive it. With no SMTP host the queue
+    // writes the message to the log, and the screen must not claim otherwise.
+    return {
+      id: created.id,
+      email: created.email,
+      created: true,
+      invitationSent: mailConfigured(),
+    }
   })
 
   app.patch('/api/v1/users/:id', { config: { roles: CENTER_MANAGER_ROLES } }, async (request) => {

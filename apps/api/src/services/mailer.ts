@@ -133,6 +133,17 @@ export interface MailResult {
   simulated: boolean
 }
 
+/**
+ * Whether this installation can send email at all.
+ *
+ * Asked before promising somebody an invitation: with no host the mailer
+ * writes the message to the log and reports success, which is the right
+ * behaviour for a developer and a lie to an administrator.
+ */
+export function mailConfigured(): boolean {
+  return Boolean(env().SMTP_HOST)
+}
+
 export async function sendMail(input: MailInput): Promise<MailResult> {
   const { html, text } = await renderMail(input)
   const transport = mailer()

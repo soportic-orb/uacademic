@@ -12,7 +12,7 @@
  */
 import { formatDate } from '@uacademic/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { CircleCheck, Download, History, Info, Loader2, RefreshCw } from 'lucide-react'
+import { CircleCheck, Download, History, Info, Loader2, Mail, RefreshCw } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { CardSkeleton, ErrorState } from '../components/feedback/states'
@@ -21,6 +21,14 @@ import { Card, CardBody, CardHeader } from '../components/ui/card'
 import { useToast } from '../hooks/use-toast'
 import { currentLocale } from '../i18n'
 import { ApiRequestError, apiFetch, apiJson } from '../lib/api'
+
+interface MailStatus {
+  configured: boolean
+  host: string | null
+  port: number
+  secure: boolean
+  from: string
+}
 
 interface PlatformStatus {
   configured: boolean
@@ -55,6 +63,37 @@ export function PlatformPage() {
     queryKey: ['platform-version'],
     queryFn: () => apiFetch<PlatformStatus>('/api/v1/platform/version'),
     retry: false,
+  })
+
+  const mail = useQuery({
+    queryKey: ['platform-mail'],
+    queryFn: () => apiFetch<MailStatus>('/api/v1/platform/mail'),
+    retry: false,
+  })
+
+  const testMail = useMutation({
+    mutationFn: () =>
+      apiJson<{ ok: boolean; to: string; detail?: string }>(
+        '/api/v1/platform/mail/test',
+        'POST',
+        {},
+      ),
+    onSuccess: (result) => {
+      if (result.ok) toast.success('platform.testSent', { params: { to: result.to } })
+      // The mail server's own words: an administrator debugging a relay needs
+      // "535 authentication failed", not a shrug.
+      else
+        toast.raw({
+          variant: 'error',
+          message: t('platform.testFailed', { detail: result.detail }),
+          durationMs: 12_000,
+        })
+    },
+    onError: (error) => {
+      if (error instanceof ApiRequestError)
+        toast.raw({ variant: 'error', message: error.localizedMessage })
+      else toast.error('errors.generic')
+    },
   })
 
   const update = useMutation({
@@ -189,6 +228,36 @@ export function PlatformPage() {
               </p>
             </div>
           ) : null}
+        </CardBody>
+      </Card>
+
+      <Card className="max-w-3xl">
+        <CardHeader
+          title={
+            <span className="flex items-center gap-2">
+              <Mail className="size-4 text-text-muted" aria-hidden="true" />
+              {t('platform.mail')}
+            </span>
+          }
+          description={
+            mail.data?.configured
+              ? `${mail.data.host}:${mail.data.port} · ${mail.data.from}`
+              : t('platform.mailNotConfigured')
+          }
+        />
+        <CardBody>
+          <Button
+            variant="secondary"
+            disabled={!mail.data?.configured || testMail.isPending}
+            onClick={() => testMail.mutate()}
+          >
+            {testMail.isPending ? (
+              <Loader2 className="size-4 motion-safe:animate-spin" aria-hidden="true" />
+            ) : (
+              <Mail className="size-4" aria-hidden="true" />
+            )}
+            {t('platform.sendTest')}
+          </Button>
         </CardBody>
       </Card>
 

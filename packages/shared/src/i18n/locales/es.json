@@ -729,13 +729,20 @@
     "errors": {
       "notConfigured": "Las actualizaciones automáticas no están configuradas en esta instalación.",
       "noRelease": "No hay ninguna versión publicada para instalar.",
-      "alreadyRunning": "Ya hay una actualización en curso."
+      "alreadyRunning": "Ya hay una actualización en curso.",
+      "mailNotConfigured": "El correo no está configurado en esta instalación."
     },
     "releasePath": "Se ejecuta desde",
     "lastInstalled": "Última instalada desde aquí",
     "check": "Comprueba si hay actualizaciones",
     "checkedAt": "Comprobado a las {{at}}",
-    "noReleases": "Todavía no se ha publicado ninguna versión en el repositorio. Cuando haya una, aparecerá aquí."
+    "noReleases": "Todavía no se ha publicado ninguna versión en el repositorio. Cuando haya una, aparecerá aquí.",
+    "mail": "Correo",
+    "mailConfigured": "Configurado",
+    "mailNotConfigured": "No configurado: la plataforma escribe los correos en el log en vez de enviarlos.",
+    "sendTest": "Envía un correo de prueba",
+    "testSent": "Correo de prueba enviado a {{to}}. Mira la bandeja de entrada.",
+    "testFailed": "El servidor de correo ha respondido: {{detail}}"
   },
   "assistant": {
     "title": "Asistente IA",
@@ -854,7 +861,14 @@
     "openApp": "Abrir UAcademic",
     "preferencesHint": "Puedes cambiar de qué te avisamos desde Configuración → Notificaciones.",
     "digestSubject": "Resumen del día: {{count}} avisos",
-    "digestGroup": "{{count}} avisos"
+    "digestGroup": "{{count}} avisos",
+    "inviteSubject": "Ya tienes acceso a {{center}} en UAcademic",
+    "inviteTitle": "Hola, {{name}}",
+    "inviteBody": "Te hemos dado acceso a {{center}}. Entra con la cuenta de tu universidad: no hace falta que crees ninguna contraseña.",
+    "inviteAction": "Entra en UAcademic",
+    "testSubject": "Prueba de correo de UAcademic",
+    "testTitle": "El correo funciona",
+    "testBody": "Si lees esto, la plataforma envía correo correctamente a través de {{host}}."
   },
   "push": {
     "changeRequestTitle": "Solicitud de cambio",
@@ -994,7 +1008,8 @@
     "newUserHint": "La cuenta se enlaza con su identidad de Microsoft la primera vez que entre.",
     "invite": "Invita",
     "userInvited": "Usuario invitado. Podrá entrar con la cuenta de su universidad.",
-    "emailHint": "El de la universidad: es el que debe coincidir con su cuenta de Microsoft."
+    "emailHint": "El de la universidad: es el que debe coincidir con su cuenta de Microsoft.",
+    "userCreatedNoMail": "Usuario creado, pero no se ha enviado ningún correo: el servidor SMTP no está configurado. Avísale tú mismo."
   },
   "imports": {
     "title": "Importación masiva",

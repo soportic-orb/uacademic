@@ -729,13 +729,20 @@
     "errors": {
       "notConfigured": "Automatic updates are not configured on this installation.",
       "noRelease": "There is no published version to install.",
-      "alreadyRunning": "An update is already running."
+      "alreadyRunning": "An update is already running.",
+      "mailNotConfigured": "Email is not configured on this installation."
     },
     "releasePath": "Running from",
     "lastInstalled": "Last installed from here",
     "check": "Check for updates",
     "checkedAt": "Checked at {{at}}",
-    "noReleases": "No version has been published to the repository yet. One will appear here when there is."
+    "noReleases": "No version has been published to the repository yet. One will appear here when there is.",
+    "mail": "Email",
+    "mailConfigured": "Configured",
+    "mailNotConfigured": "Not configured: the platform writes messages to the log instead of sending them.",
+    "sendTest": "Send a test email",
+    "testSent": "Test email sent to {{to}}. Check the inbox.",
+    "testFailed": "The mail server answered: {{detail}}"
   },
   "assistant": {
     "title": "AI assistant",
@@ -854,7 +861,14 @@
     "openApp": "Open UAcademic",
     "preferencesHint": "You can change what we tell you about in Settings → Notifications.",
     "digestSubject": "Daily digest: {{count}} notices",
-    "digestGroup": "{{count}} notices"
+    "digestGroup": "{{count}} notices",
+    "inviteSubject": "You now have access to {{center}} on UAcademic",
+    "inviteTitle": "Hello, {{name}}",
+    "inviteBody": "You have been given access to {{center}}. Sign in with your university account — there is no password to create.",
+    "inviteAction": "Open UAcademic",
+    "testSubject": "UAcademic mail test",
+    "testTitle": "Email works",
+    "testBody": "If you are reading this, the platform sends mail correctly through {{host}}."
   },
   "push": {
     "changeRequestTitle": "Change request",
@@ -994,7 +1008,8 @@
     "newUserHint": "The account is linked to their Microsoft identity the first time they sign in.",
     "invite": "Invite",
     "userInvited": "User invited. They can sign in with their university account.",
-    "emailHint": "Their university address: this is what must match their Microsoft account."
+    "emailHint": "Their university address: this is what must match their Microsoft account.",
+    "userCreatedNoMail": "User created, but no email was sent: SMTP is not configured. Let them know yourself."
   },
   "imports": {
     "title": "Bulk import",
