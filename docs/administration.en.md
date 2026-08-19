@@ -19,6 +19,29 @@ resolved from the database, never from the sign-in token.
 
 ---
 
+## 1b. Adding people
+
+Administration → Users. Creating a user asks for a name, an email address and a
+role in the center; the password is not set here, and you never see it.
+
+Creating one sends an **invitation** to that address with a link to the screen
+where they choose their own password. The link:
+
+- works **once**, and expires after **7 days**;
+- is retired the moment you send another one ("Invite again" on the user's
+  row), which is also how a **forgotten password is reset**;
+- leaves the account active and the person already inside on their first visit.
+
+From then on they can sign in either way: with their email and the password
+they chose, or with their Microsoft account if their university's tenant is
+registered. It is not a choice between two accounts — it is one identity.
+
+If the users screen tells you the invitation was not sent, this installation
+has no mail server configured yet (Platform → Mail). The account exists all the
+same; send the invitation once mail works.
+
+---
+
 ## 2. Setting up a year
 
 The order matters: each step needs the one before it.

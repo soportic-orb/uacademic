@@ -190,6 +190,11 @@ restart — that alone lights the button up, because the browser asks the API
 which application to sign in against and there is nothing to rebuild. The
 credential stays as the way in when Microsoft is down.
 
+Email and password are not the superadmin's alone. Anybody an administrator
+invites sets their own from the link in the invitation, and can sign in that
+way from then on — which is what makes the platform usable at a university
+whose Entra tenant is not registered, or by a lecturer with no work account.
+
 If you would rather do it from a shell, there is an equivalent:
 
 ```bash

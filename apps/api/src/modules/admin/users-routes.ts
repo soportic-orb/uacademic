@@ -7,6 +7,7 @@ import {
   userInputSchema,
   userRoleInputSchema,
 } from '@uacademic/shared'
+import type { PrismaClient } from '@uacademic/db'
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 
@@ -17,7 +18,21 @@ import { AppError } from '../../lib/errors.js'
 import { prisma } from '../../lib/prisma.js'
 import { parseWith } from '../../lib/validate.js'
 import { requireCenterScope, requireUser } from '../../plugins/context.js'
+import { issueInvitation } from '../../services/invitations.js'
 import { mailConfigured } from '../../services/mailer.js'
+
+/**
+ * The address in the invitation email: a one-time link to the screen where the
+ * person chooses their own password.
+ *
+ * Minted here rather than in the job so the account and its way in are created
+ * together — a queue that never drains would otherwise leave the invitation
+ * without one.
+ */
+async function invitationUrl(client: PrismaClient, userId: string): Promise<string> {
+  const { token } = await issueInvitation(client, userId)
+  return `${env().APP_URL.replace(/\/$/, '')}/activate?token=${token}`
+}
 
 /**
  * Users are global rows with per-center roles, so they cannot go through the
@@ -174,7 +189,7 @@ export function registerUserRoutes(app: FastifyInstance): void {
       locale: created.locale,
       firstName: created.firstName,
       centerName: center?.name ?? '',
-      url: env().APP_URL,
+      url: await invitationUrl(client, created.id),
     })
 
     void reply.status(201)
@@ -212,7 +227,7 @@ export function registerUserRoutes(app: FastifyInstance): void {
         locale: user.locale,
         firstName: user.firstName,
         centerName: center?.name ?? '',
-        url: env().APP_URL,
+        url: await invitationUrl(client, user.id),
       })
 
       await writeAuditLog(client, {

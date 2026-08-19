@@ -201,9 +201,14 @@ export interface LocalLoginInput {
 }
 
 /**
- * Break-glass sign-in for the platform superadmin: email, argon2id password
- * and TOTP, with no dependency on Microsoft. Deliberately the only account
- * type that has a password at all.
+ * Sign-in with email and argon2id password, plus TOTP where it is enrolled,
+ * with no dependency on Microsoft.
+ *
+ * Open to anybody who has a credential, and having one is the permission:
+ * a password only exists because an administrator invited that person and they
+ * followed the link (`services/invitations.ts`). It used to be restricted to
+ * the superadmin, which left every invited lecturer at a university with no
+ * Entra tenant registered holding an account they could not reach.
  */
 export async function localLogin(
   prisma: PrismaClient,
@@ -223,11 +228,6 @@ export async function localLogin(
 
   if (isLockedOut(credential.lockedUntil)) {
     throw new AppError(403, 'FORBIDDEN', 'auth.errors.locked')
-  }
-
-  // The local path exists for the platform administrator, nobody else.
-  if (!user.centerRoles.some((membership) => membership.role === 'SUPERADMIN')) {
-    throw new AppError(403, 'FORBIDDEN', 'auth.errors.localNotAvailable')
   }
 
   const passwordOk = await verifyPassword(input.password, credential.passwordHash)

@@ -871,8 +871,8 @@
     "digestGroup": "{{count}} avisos",
     "inviteSubject": "Ja tens accés a {{center}} a UAcademic",
     "inviteTitle": "Hola, {{name}}",
-    "inviteBody": "T'hem donat accés a {{center}}. Entra amb el compte de la teva universitat: no cal que creïs cap contrasenya.",
-    "inviteAction": "Entra a UAcademic",
+    "inviteBody": "T'hem donat accés a {{center}}. Obre l'enllaç per crear la teva contrasenya. Si la teva universitat té l'accés amb Microsoft configurat, també hi podràs entrar amb el compte de la universitat. L'enllaç caduca d'aquí a {{days}} dies.",
+    "inviteAction": "Crea la contrasenya",
     "testSubject": "Prova de correu de UAcademic",
     "testTitle": "El correu funciona",
     "testBody": "Si llegeixes això, la plataforma envia correu correctament a través de {{host}}."
@@ -943,10 +943,21 @@
       "passwordTooWeak": "La contrasenya ha de combinar majúscules, minúscules i xifres.",
       "passwordMismatch": "Les contrasenyes no coincideixen.",
       "passwordReused": "La contrasenya nova ha de ser diferent de l'actual.",
-      "localNotAvailable": "Aquest compte no té accés local.",
+      "localNotAvailable": "Aquest compte encara no té contrasenya. Demana a l'administració del centre que t'enviï la invitació.",
       "entraNotConfigured": "L’inici de sessió amb Microsoft no està configurat en aquesta instal·lació.",
-      "microsoft": "No s'ha pogut entrar amb Microsoft. {{detail}}"
-    }
+      "microsoft": "No s'ha pogut entrar amb Microsoft. {{detail}}",
+      "invitationInvalid": "Aquesta invitació ja no és vàlida. Potser ja l'has feta servir o se n'ha enviat una de nova.",
+      "invitationExpired": "La invitació ha caducat. Demana a l'administració del centre que te n'enviï una de nova."
+    },
+    "activateTitle": "Crea la teva contrasenya",
+    "activateSubtitle": "Només et falta això per començar a fer servir UAcademic.",
+    "activateSubmit": "Crea la contrasenya i entra",
+    "activateHasMicrosoft": "El teu compte ja està vinculat amb Microsoft: també hi podràs entrar des del botó de Microsoft.",
+    "activated": "Ja tens el compte actiu",
+    "passwordRule": "Com a mínim 12 caràcters, amb majúscules, minúscules i xifres.",
+    "backToSignIn": "Torna a la pantalla d'entrada",
+    "withPassword": "Entra amb correu i contrasenya",
+    "withPasswordHint": "La contrasenya es crea des de l'enllaç de la invitació que has rebut per correu."
   },
   "admin": {
     "title": "Administració",

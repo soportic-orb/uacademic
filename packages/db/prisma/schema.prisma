@@ -530,6 +530,7 @@ model User {
   auditEntries         AuditLog[]
   appliedAppVersions   AppVersion[]            @relation("VersionApplier")
   localCredential      LocalCredential?
+  invitations          UserInvitation[]
   authSessions         AuthSession[]
   createdImports       ImportBatch[]           @relation("ImportCreator")
   appliedImports       ImportBatch[]           @relation("ImportApplier")
@@ -1534,6 +1535,30 @@ model LocalCredential {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("local_credentials")
+}
+
+/// The one-time link an invited person follows to set their own password.
+///
+/// Only the SHA-256 of the token is stored (CLAUDE.md §5): it is a bearer
+/// capability in a URL, so a database dump must yield no working invitation,
+/// and withdrawing one is a single row. It is a user-owned table, outside the
+/// tenant filter like `local_credentials` — which center did the inviting is
+/// recorded in `audit_log`, where it belongs.
+model UserInvitation {
+  id         String    @id @default(uuid(7)) @db.Char(36)
+  userId     String    @map("user_id") @db.Char(36)
+  tokenHash  String    @unique @map("token_hash") @db.Char(64)
+  expiresAt  DateTime  @map("expires_at")
+  /// Set when the password is chosen. An invitation is good exactly once.
+  acceptedAt DateTime? @map("accepted_at")
+  /// Set when a newer invitation supersedes this one, or an admin withdraws it.
+  revokedAt  DateTime? @map("revoked_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("user_invitations")
 }
 
 /// Server-side sessions. The browser only holds an httpOnly, signed cookie with

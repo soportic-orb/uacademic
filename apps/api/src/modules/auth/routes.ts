@@ -1,7 +1,9 @@
 import {
   SESSION_COOKIE,
+  type InvitationSummary,
   type SessionUser,
   entraSessionRequestSchema,
+  invitationAcceptSchema,
   localLoginRequestSchema,
   localPasswordChangeSchema,
 } from '@uacademic/shared'
@@ -23,6 +25,7 @@ import {
   revokeAllUserSessions,
   revokeSession,
 } from '../../services/auth-service.js'
+import { acceptInvitation, readInvitation } from '../../services/invitations.js'
 import { buildSessionUser, requireUser } from '../../plugins/context.js'
 
 export function registerAuthRoutes(app: FastifyInstance, env: Env): void {
@@ -156,6 +159,56 @@ export function registerAuthRoutes(app: FastifyInstance, env: Env): void {
       })
 
       return buildSessionUser(user.id, 'local', session.expiresAt, null)
+    },
+  )
+
+  /**
+   * The invitation behind a link, so the screen can greet the right person and
+   * say plainly when a link has expired instead of failing on submit.
+   *
+   * Public because its whole purpose is to work before there is a session, and
+   * it discloses only what the invitation was emailed to (see the schema).
+   */
+  app.get(
+    '/api/v1/auth/invitation/:token',
+    { config: { public: true } },
+    async (request): Promise<InvitationSummary> => {
+      const { token } = request.params as { token: string }
+      const invitation = await readInvitation(prisma(), token)
+      return invitation.summary
+    },
+  )
+
+  /**
+   * Accepting it: the password is set and the account opens, and the person is
+   * signed in on the spot — being sent back to a sign-in screen to type the
+   * password they chose four seconds ago is a step with no purpose.
+   */
+  app.post(
+    '/api/v1/auth/invitation/:token',
+    { config: { public: true } },
+    async (request, reply): Promise<SessionUser> => {
+      const { token } = request.params as { token: string }
+      const body = parseWith(invitationAcceptSchema, request.body)
+      const client = prisma()
+
+      const { userId } = await acceptInvitation(client, {
+        token,
+        password: body.password,
+        ip: request.ip,
+      })
+
+      const session = await createSession(client, {
+        userId,
+        method: 'local',
+        ttlHours: env.SESSION_TTL_HOURS,
+        userAgent: request.headers['user-agent'],
+        ip: request.ip,
+      })
+
+      void reply.setCookie(SESSION_COOKIE, session.id, cookieOptions(env.SESSION_TTL_HOURS * 3600))
+
+      return buildSessionUser(userId, 'local', session.expiresAt, null)
     },
   )
 

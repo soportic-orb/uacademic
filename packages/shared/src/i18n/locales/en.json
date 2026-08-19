@@ -871,8 +871,8 @@
     "digestGroup": "{{count}} notices",
     "inviteSubject": "You now have access to {{center}} on UAcademic",
     "inviteTitle": "Hello, {{name}}",
-    "inviteBody": "You have been given access to {{center}}. Sign in with your university account — there is no password to create.",
-    "inviteAction": "Open UAcademic",
+    "inviteBody": "You have been given access to {{center}}. Open the link to create your password. If your university has Microsoft sign-in configured, you will be able to use your university account too. The link expires in {{days}} days.",
+    "inviteAction": "Create your password",
     "testSubject": "UAcademic mail test",
     "testTitle": "Email works",
     "testBody": "If you are reading this, the platform sends mail correctly through {{host}}."
@@ -943,10 +943,21 @@
       "passwordTooWeak": "The password must mix upper case, lower case and digits.",
       "passwordMismatch": "The passwords do not match.",
       "passwordReused": "The new password must differ from the current one.",
-      "localNotAvailable": "This account has no local access.",
+      "localNotAvailable": "This account has no password yet. Ask your center administration to send you the invitation.",
       "entraNotConfigured": "Signing in with Microsoft is not configured on this installation.",
-      "microsoft": "Microsoft sign-in failed. {{detail}}"
-    }
+      "microsoft": "Microsoft sign-in failed. {{detail}}",
+      "invitationInvalid": "This invitation is no longer valid. It may already have been used, or replaced by a newer one.",
+      "invitationExpired": "The invitation has expired. Ask your center administration to send a new one."
+    },
+    "activateTitle": "Create your password",
+    "activateSubtitle": "This is the last thing between you and UAcademic.",
+    "activateSubmit": "Create the password and sign in",
+    "activateHasMicrosoft": "Your account is already linked to Microsoft: you can use the Microsoft button too.",
+    "activated": "Your account is active",
+    "passwordRule": "At least 12 characters, with upper case, lower case and digits.",
+    "backToSignIn": "Back to the sign-in screen",
+    "withPassword": "Sign in with email and password",
+    "withPasswordHint": "The password is set from the invitation link you received by email."
   },
   "admin": {
     "title": "Administration",

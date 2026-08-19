@@ -193,6 +193,12 @@ con eso basta para que el botón se active, porque el navegador pregunta a la AP
 con qué aplicación se entra y no hay que reconstruir nada. La credencial se queda
 como la forma de entrar el día que Microsoft no responda.
 
+El correo y la contraseña no son solo del superadministrador. Cualquier persona
+invitada por un administrador se crea la suya desde el enlace de la invitación y
+ya puede entrar así — que es lo que hace la plataforma utilizable en una
+universidad que no tiene el tenant registrado, o para un docente sin cuenta
+corporativa.
+
 Si prefieres hacerlo por línea de comandos, existe el equivalente:
 
 ```bash

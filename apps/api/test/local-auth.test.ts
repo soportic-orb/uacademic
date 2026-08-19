@@ -1,6 +1,10 @@
 /**
- * The break-glass path: the platform must stay reachable when Entra ID is
- * unavailable, without becoming a second, weaker way in for everyone else.
+ * Signing in with email and password.
+ *
+ * Open to anybody who has a credential, because having one means an
+ * administrator invited them and they followed the link. What still has to hold
+ * is that a password is the only thing that opens this door: no credential, no
+ * entry, and the same answer either way so the screen never says who exists.
  */
 import { disconnectPrisma, getPrismaClient } from '@uacademic/db'
 import { SESSION_COOKIE } from '@uacademic/shared'
@@ -27,7 +31,7 @@ const TEST_SUPERADMIN = {
   email: 'test.superadmin@demo.uacademic.test',
 }
 
-describe.skipIf(!hasDatabase)('local superadmin sign-in', () => {
+describe.skipIf(!hasDatabase)('sign-in with email and password', () => {
   let app: FastifyInstance
   let totpSecret: string
   const prisma = getPrismaClient()
@@ -153,7 +157,12 @@ describe.skipIf(!hasDatabase)('local superadmin sign-in', () => {
     expect(locked.json().error.messageKey).toBe('auth.errors.locked')
   })
 
-  it('refuses the local path to a non-superadmin, even with a valid password', async () => {
+  /**
+   * This used to be refused: the local path was the superadmin's alone, which
+   * left every invited lecturer at a university with no registered tenant
+   * holding an account they had no way of reaching.
+   */
+  it('lets a lecturer in with the password they were given', async () => {
     const teacher = await prisma.user.findUnique({ where: { email: SEED.otherTeacherEmail } })
     await prisma.localCredential.upsert({
       where: { userId: teacher!.id },
@@ -163,10 +172,22 @@ describe.skipIf(!hasDatabase)('local superadmin sign-in', () => {
 
     const response = await signIn({ email: SEED.otherTeacherEmail, password: TEACHER_PASSWORD })
 
-    expect(response.statusCode).toBe(403)
-    expect(response.json().error.messageKey).toBe('auth.errors.localNotAvailable')
+    expect(response.statusCode).toBe(200)
+    expect(response.json().email).toBe(SEED.otherTeacherEmail)
 
     await prisma.localCredential.deleteMany({ where: { userId: teacher!.id } })
+  })
+
+  it('refuses an account that has no password, saying no more than that', async () => {
+    const response = await signIn({
+      email: SEED.otherTeacherEmail,
+      password: TEACHER_PASSWORD,
+    })
+
+    expect(response.statusCode).toBe(401)
+    // The same answer as a wrong password: the screen never confirms that an
+    // address is one of ours.
+    expect(response.json().error.messageKey).toBe('auth.errors.invalidCredentials')
   })
 
   describe('password change', () => {

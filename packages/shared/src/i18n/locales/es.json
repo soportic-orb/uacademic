@@ -871,8 +871,8 @@
     "digestGroup": "{{count}} avisos",
     "inviteSubject": "Ya tienes acceso a {{center}} en UAcademic",
     "inviteTitle": "Hola, {{name}}",
-    "inviteBody": "Te hemos dado acceso a {{center}}. Entra con la cuenta de tu universidad: no hace falta que crees ninguna contraseña.",
-    "inviteAction": "Entra en UAcademic",
+    "inviteBody": "Te hemos dado acceso a {{center}}. Abre el enlace para crear tu contraseña. Si tu universidad tiene configurado el acceso con Microsoft, también podrás entrar con la cuenta de la universidad. El enlace caduca dentro de {{days}} días.",
+    "inviteAction": "Crea la contraseña",
     "testSubject": "Prueba de correo de UAcademic",
     "testTitle": "El correo funciona",
     "testBody": "Si lees esto, la plataforma envía correo correctamente a través de {{host}}."
@@ -943,10 +943,21 @@
       "passwordTooWeak": "La contraseña debe combinar mayúsculas, minúsculas y cifras.",
       "passwordMismatch": "Las contraseñas no coinciden.",
       "passwordReused": "La contraseña nueva debe ser distinta de la actual.",
-      "localNotAvailable": "Esta cuenta no tiene acceso local.",
+      "localNotAvailable": "Esta cuenta todavía no tiene contraseña. Pide a la administración del centro que te envíe la invitación.",
       "entraNotConfigured": "El inicio de sesión con Microsoft no está configurado en esta instalación.",
-      "microsoft": "No se ha podido entrar con Microsoft. {{detail}}"
-    }
+      "microsoft": "No se ha podido entrar con Microsoft. {{detail}}",
+      "invitationInvalid": "Esta invitación ya no es válida. Puede que ya la hayas usado o que se haya enviado una nueva.",
+      "invitationExpired": "La invitación ha caducado. Pide a la administración del centro que te envíe una nueva."
+    },
+    "activateTitle": "Crea tu contraseña",
+    "activateSubtitle": "Solo te falta esto para empezar a usar UAcademic.",
+    "activateSubmit": "Crear la contraseña y entrar",
+    "activateHasMicrosoft": "Tu cuenta ya está vinculada con Microsoft: también podrás entrar desde el botón de Microsoft.",
+    "activated": "Ya tienes la cuenta activa",
+    "passwordRule": "Como mínimo 12 caracteres, con mayúsculas, minúsculas y cifras.",
+    "backToSignIn": "Volver a la pantalla de entrada",
+    "withPassword": "Entrar con correo y contraseña",
+    "withPasswordHint": "La contraseña se crea desde el enlace de la invitación que has recibido por correo."
   },
   "admin": {
     "title": "Administración",

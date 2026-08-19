@@ -12,8 +12,13 @@ import { useToast } from '../hooks/use-toast'
 import { ApiRequestError } from '../lib/api'
 
 /**
- * Two doors: Microsoft for everyone, and a local one for the platform
- * superadmin so the product stays reachable when Entra ID is not.
+ * Two doors, and both are ordinary ones.
+ *
+ * Microsoft for a university whose tenant is registered, and email with a
+ * password for everybody else — an invited lecturer at a university that has
+ * not registered one yet, and the superadmin, whose credential is also the way
+ * in on the day Microsoft does not answer. The password is never set here: it
+ * is chosen from the invitation link (`pages/activate.tsx`).
  */
 export function LoginPage() {
   const { t } = useTranslation()
@@ -125,14 +130,14 @@ export function LoginPage() {
               onClick={() => setShowLocal((open) => !open)}
               aria-expanded={showLocal}
             >
-              {t('auth.localAccess')}
+              {t('auth.withPassword')}
             </Button>
           </CardBody>
         </Card>
 
         {showLocal ? (
           <Card>
-            <CardHeader title={t('auth.localAccess')} description={t('auth.localAccessHint')} />
+            <CardHeader title={t('auth.withPassword')} description={t('auth.withPasswordHint')} />
             <CardBody>
               <form className="space-y-4" onSubmit={(event) => void onLocal(event)}>
                 <Field label={t('auth.email')}>

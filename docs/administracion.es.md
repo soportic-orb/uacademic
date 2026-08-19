@@ -20,6 +20,30 @@ sesión.
 
 ---
 
+## 1b. Dar de alta a las personas
+
+Administración → Usuarios. Crear un usuario solo pide el nombre, el correo y el
+rol en el centro; el usuario no crea aquí su contraseña, y tú no la ves nunca.
+
+Al crearlo se envía una **invitación** a su correo con un enlace a la pantalla
+donde elige su propia contraseña. El enlace:
+
+- sirve **una sola vez** y caduca a los **7 días**;
+- queda anulado si envías uno nuevo («Volver a invitar» en la fila del
+  usuario), lo que sirve también para **restablecer una contraseña olvidada**;
+- deja la cuenta activa y a la persona ya dentro en la primera visita.
+
+A partir de ahí esa persona puede entrar de dos maneras: con su correo y la
+contraseña que ha elegido, o con la cuenta de Microsoft si su universidad tiene
+el tenant registrado. No hay que escoger una: son la misma identidad.
+
+Si la pantalla de usuarios te dice que la invitación no se ha enviado, es que la
+instalación todavía no tiene servidor de correo configurado (Plataforma →
+Correo). La cuenta existe igualmente; envíale la invitación cuando el correo
+funcione.
+
+---
+
 ## 2. Preparar un curso
 
 El orden importa: cada paso necesita el anterior.

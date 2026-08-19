@@ -42,7 +42,7 @@ async function openLocalForm() {
       <Toaster />
     </MemoryRouter>,
   )
-  await userEvent.click(screen.getByRole('button', { name: /administraci/i }))
+  await userEvent.click(screen.getByRole('button', { name: /correu i contrasenya/i }))
 }
 
 describe('the sign-in screen', () => {

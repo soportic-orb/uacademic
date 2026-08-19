@@ -12,7 +12,13 @@ export const entraSessionRequestSchema = z.object({
 })
 export type EntraSessionRequest = z.infer<typeof entraSessionRequestSchema>
 
-/** Break-glass path for SUPERADMIN, independent of Microsoft. */
+/**
+ * Email and password, independent of Microsoft.
+ *
+ * Every account can have one: a university that has not registered its tenant
+ * yet, a lecturer without a work account, and the platform superadmin, whose
+ * credential is also the way in on the day Microsoft does not answer.
+ */
 export const localLoginRequestSchema = z.object({
   email: z.email(),
   password: z.string().min(1).max(200),
@@ -25,16 +31,22 @@ export const localLoginRequestSchema = z.object({
 })
 export type LocalLoginRequest = z.infer<typeof localLoginRequestSchema>
 
+/**
+ * What a password has to be, in one place: the rule is quoted on the screen
+ * that asks for one, and two different screens ask.
+ */
+export const passwordSchema = z
+  .string()
+  .min(12, { message: 'auth.errors.passwordTooShort' })
+  .max(200)
+  .regex(/[a-z]/, { message: 'auth.errors.passwordTooWeak' })
+  .regex(/[A-Z]/, { message: 'auth.errors.passwordTooWeak' })
+  .regex(/[0-9]/, { message: 'auth.errors.passwordTooWeak' })
+
 export const localPasswordChangeSchema = z
   .object({
     currentPassword: z.string().min(1).max(200),
-    newPassword: z
-      .string()
-      .min(12, { message: 'auth.errors.passwordTooShort' })
-      .max(200)
-      .regex(/[a-z]/, { message: 'auth.errors.passwordTooWeak' })
-      .regex(/[A-Z]/, { message: 'auth.errors.passwordTooWeak' })
-      .regex(/[0-9]/, { message: 'auth.errors.passwordTooWeak' }),
+    newPassword: passwordSchema,
     confirmPassword: z.string(),
   })
   .refine((body) => body.newPassword === body.confirmPassword, {
@@ -46,6 +58,36 @@ export const localPasswordChangeSchema = z
     path: ['newPassword'],
   })
 export type LocalPasswordChange = z.infer<typeof localPasswordChangeSchema>
+
+/**
+ * What the activation screen may show before anybody has proved anything.
+ *
+ * Whoever holds the link already received it by email, so their own name and
+ * address tell them nothing they did not know — and seeing them is how they
+ * know the link is the right one. Nothing else is disclosed.
+ */
+export const invitationSummarySchema = z.object({
+  email: z.email(),
+  firstName: z.string(),
+  lastName: z.string(),
+  centerName: z.string().nullable(),
+  expiresAt: z.iso.datetime(),
+  /** Already linked to Microsoft: a password is an addition, not the way in. */
+  hasMicrosoftAccount: z.boolean(),
+})
+export type InvitationSummary = z.infer<typeof invitationSummarySchema>
+
+/** Accepting one: the password is chosen here, and only here. */
+export const invitationAcceptSchema = z
+  .object({
+    password: passwordSchema,
+    confirmPassword: z.string(),
+  })
+  .refine((body) => body.password === body.confirmPassword, {
+    message: 'auth.errors.passwordMismatch',
+    path: ['confirmPassword'],
+  })
+export type InvitationAccept = z.infer<typeof invitationAcceptSchema>
 
 export const sessionUserSchema = z.object({
   id: uuidSchema,

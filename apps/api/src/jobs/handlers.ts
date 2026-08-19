@@ -30,6 +30,7 @@ import { purgeExpiredTombstones } from '../services/calendar/tombstones.js'
 import { indexDocument } from '../services/documents/index-service.js'
 import { invalidateVectorCache } from '../services/documents/retrieval.js'
 import { createBackup } from '../services/backup.js'
+import { INVITATION_TTL_HOURS } from '../services/invitations.js'
 import { sendMail } from '../services/mailer.js'
 import { type ReleaseInfo, applyUpdate } from '../services/updates.js'
 import { applyRetention } from '../services/privacy.js'
@@ -96,7 +97,10 @@ export function buildJobHandlers(client: PrismaClient, logger: Logger): Record<s
         blocks: [
           {
             title: translate(locale, 'email.inviteTitle', { name: job.firstName }),
-            body: translate(locale, 'email.inviteBody', { center: job.centerName }),
+            body: translate(locale, 'email.inviteBody', {
+              center: job.centerName,
+              days: Math.round(INVITATION_TTL_HOURS / 24),
+            }),
           },
         ],
         action: { label: translate(locale, 'email.inviteAction'), url: job.url },

@@ -19,6 +19,29 @@ resolen sempre de la base de dades, mai del testimoni d'inici de sessió.
 
 ---
 
+## 1b. Donar d'alta les persones
+
+Administració → Usuaris. Crear un usuari només demana el nom, el correu i el
+rol al centre; l'usuari no es crea la contrasenya aquí, i tu no la veus mai.
+
+En crear-lo s'envia una **invitació** al seu correu amb un enllaç a la pantalla
+on tria la seva pròpia contrasenya. L'enllaç:
+
+- serveix **una sola vegada** i caduca al cap de **7 dies**;
+- queda anul·lat si n'envies un de nou («Torna a convidar» a la fila de
+  l'usuari), cosa que també serveix per **restablir una contrasenya oblidada**;
+- deixa el compte actiu i la persona ja dins a la primera visita.
+
+A partir d'aquí aquella persona pot entrar de dues maneres: amb el seu correu i
+la contrasenya que ha triat, o amb el compte de Microsoft si la seva universitat
+té el tenant registrat. No cal escollir-ne una: són la mateixa identitat.
+
+Si la pantalla d'usuaris et diu que la invitació no s'ha enviat, és que la
+instal·lació encara no té servidor de correu configurat (Plataforma → Correu).
+El compte existeix igualment; envia-li la invitació quan el correu funcioni.
+
+---
+
 ## 2. Preparar un curs
 
 L'ordre importa: cada pas necessita l'anterior.

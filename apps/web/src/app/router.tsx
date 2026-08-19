@@ -3,6 +3,7 @@ import { createBrowserRouter } from 'react-router'
 import { AppShell } from '../components/layout/app-shell'
 import { RequireSession } from '../auth/require-session'
 import { AbsencesPage } from '../pages/absences'
+import { ActivatePage } from '../pages/activate'
 import { AssistantPage } from '../pages/assistant'
 import { AdminIndexPage } from '../pages/admin-index'
 import { AuditPage } from '../pages/audit'
@@ -36,6 +37,8 @@ import { TeachersPage } from '../pages/teachers'
  */
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
+  // Outside the session too: this is where somebody goes to acquire one.
+  { path: '/activate', element: <ActivatePage /> },
   // Outside the shell and outside the session: at this point there is no
   // database to have an identity in.
   { path: '/install', element: <InstallPage /> },

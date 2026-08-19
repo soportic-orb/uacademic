@@ -191,6 +191,12 @@ només amb això el botó s'activa, perquè el navegador pregunta a l'API amb qu
 aplicació s'ha d'entrar i no cal reconstruir res. La credencial es queda com la
 manera d'entrar el dia que Microsoft no respongui.
 
+El correu i la contrasenya no són només del superadministrador. Qualsevol
+persona convidada per un administrador es crea la seva des de l'enllaç de la
+invitació i ja pot entrar així — que és el que fa la plataforma utilitzable en
+una universitat que no té el tenant registrat, o per a un docent sense compte
+corporatiu.
+
 Si prefereixes fer-ho per línia d'ordres, hi ha l'equivalent:
 
 ```bash
