@@ -33,6 +33,23 @@ export class ExtractionError extends Error {
 /** Below this, a PDF page is a picture of a page rather than a page. */
 const MIN_CHARS_PER_PAGE = 40
 
+/**
+ * A `Uint8Array` that is not a `Buffer`.
+ *
+ * pdf.js refuses a Node `Buffer` by name, and it is right to: `Buffer.slice`
+ * shares memory where `Uint8Array.slice` copies, so a parser that slices would
+ * quietly corrupt whatever else holds that memory. Nothing in the type system
+ * catches this — a `Buffer` *is* a `Uint8Array` as far as TypeScript is
+ * concerned — and the file arrives from `readFile`, which returns a `Buffer`.
+ *
+ * Copied rather than re-viewed: pdf.js may detach the buffer it is given, and
+ * a small file's `Buffer` can be a window onto Node's shared pool, where
+ * detaching would take unrelated data with it.
+ */
+function asPlainBytes(bytes: Uint8Array): Uint8Array {
+  return Buffer.isBuffer(bytes) ? new Uint8Array(bytes) : bytes
+}
+
 export async function extractText(
   bytes: Uint8Array,
   mime: string,
@@ -63,7 +80,7 @@ async function extractPdf(bytes: Uint8Array): Promise<ExtractionResult> {
   const { extractText: extractPdfText, getDocumentProxy } = await import('unpdf')
 
   try {
-    const pdf = await getDocumentProxy(bytes)
+    const pdf = await getDocumentProxy(asPlainBytes(bytes))
     const result = await extractPdfText(pdf, { mergePages: false })
     const pageTexts = Array.isArray(result.text) ? result.text : [String(result.text)]
 
