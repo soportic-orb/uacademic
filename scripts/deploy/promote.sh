@@ -47,7 +47,18 @@ if [ -f "${REPO}/.env" ] && [ ! -e "${ROOT}/shared/.env" ]; then
   cp "${REPO}/.env" "${ROOT}/shared/.env"
   chmod 600 "${ROOT}/shared/.env"
 fi
-[ -f "${ROOT}/shared/.env" ] || die "No configuration at ${ROOT}/shared/.env. Install first."
+if [ ! -f "${ROOT}/shared/.env" ]; then
+  die "No configuration at ${ROOT}/shared/.env.
+
+The deploy root is guessed as the directory above this checkout, which is
+wrong whenever the checkout does not sit directly in it — a clone made one
+level too deep, say. Name it instead:
+
+  scripts/deploy/promote.sh ${VERSION} /path/to/deploy/root
+
+If this really is a first installation, install through the browser first:
+the configuration file is what the installer writes."
+fi
 
 # `.git` is excluded because its object directories are read-only, which is
 # what makes a plain `cp -a` fail halfway through; `node_modules` because what
