@@ -12,7 +12,7 @@
  */
 import { formatDate } from '@uacademic/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { CircleCheck, Download, History, Info, Loader2 } from 'lucide-react'
+import { CircleCheck, Download, History, Info, Loader2, RefreshCw } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
 import { CardSkeleton, ErrorState } from '../components/feedback/states'
@@ -25,6 +25,9 @@ import { ApiRequestError, apiFetch, apiJson } from '../lib/api'
 interface PlatformStatus {
   configured: boolean
   currentVersion: string | null
+  runningVersion: string | null
+  releasePath: string
+  checkedAt: string
   available: { version: string; changelog: string; publishedAt: string } | null
   updateAvailable: boolean
   history: {
@@ -86,9 +89,28 @@ export function PlatformPage() {
       <Card className="max-w-3xl">
         <CardHeader
           title={t('platform.installed')}
-          description={status.data.currentVersion ?? t('platform.unknown')}
+          description={
+            status.data.runningVersion ?? status.data.currentVersion ?? t('platform.unknown')
+          }
         />
         <CardBody className="space-y-4">
+          {/*
+            Where the running code came from. It reads like a detail and is the
+            opposite: a process left running from an old release directory
+            looks identical to a healthy one from every other angle.
+          */}
+          <dl className="grid gap-1 text-xs text-text-muted sm:grid-cols-[auto_1fr] sm:gap-x-3">
+            <dt>{t('platform.releasePath')}</dt>
+            <dd className="break-all font-mono">{status.data.releasePath}</dd>
+            {status.data.currentVersion &&
+            status.data.currentVersion !== status.data.runningVersion ? (
+              <>
+                <dt>{t('platform.lastInstalled')}</dt>
+                <dd>{status.data.currentVersion}</dd>
+              </>
+            ) : null}
+          </dl>
+
           {!status.data.configured ? (
             <p className="rounded-control border border-border bg-surface-muted p-3 text-sm text-text-muted">
               {t('platform.errors.notConfigured')}
@@ -129,12 +151,44 @@ export function PlatformPage() {
                 {update.isPending ? t('platform.updating') : t('platform.update')}
               </Button>
             </>
+          ) : !status.data.available ? (
+            // Configured, reachable, and the repository has published nothing.
+            // Saying "you are up to date" here claims a comparison that never
+            // happened.
+            <p className="flex items-start gap-2 text-sm text-text-muted">
+              <Info className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
+              {t('platform.noReleases')}
+            </p>
           ) : (
             <p className="flex items-center gap-2 text-sm text-success">
               <CircleCheck className="size-4" aria-hidden="true" />
               {t('platform.upToDate')}
             </p>
           )}
+
+          {status.data.configured ? (
+            <div className="flex flex-wrap items-center gap-3 border-t border-border pt-3">
+              <Button
+                variant="secondary"
+                disabled={status.isFetching}
+                onClick={() => void status.refetch()}
+              >
+                {status.isFetching ? (
+                  <Loader2 className="size-4 motion-safe:animate-spin" aria-hidden="true" />
+                ) : (
+                  <RefreshCw className="size-4" aria-hidden="true" />
+                )}
+                {t('platform.check')}
+              </Button>
+              <p className="text-xs text-text-muted">
+                {t('platform.checkedAt', {
+                  at: formatDate(locale, new Date(status.data.checkedAt), {
+                    timeStyle: 'short',
+                  }),
+                })}
+              </p>
+            </div>
+          ) : null}
         </CardBody>
       </Card>
 

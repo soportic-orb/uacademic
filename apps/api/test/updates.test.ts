@@ -128,6 +128,26 @@ describe.skipIf(!hasDatabase)('installing a release', () => {
     })
   })
 
+  describe('what it reports about itself', () => {
+    it('says what is running and where from, not only what it once installed', async () => {
+      // An installation deployed by hand has no row in `app_versions`, so the
+      // panel used to call it "unknown". And a process left running from an
+      // old release directory looks healthy from every other angle — the path
+      // is the only thing that gives it away.
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/v1/platform/version',
+        headers: { 'x-mock-user': SEED.superadminEmail, 'x-center-id': centerId },
+      })
+
+      expect(response.statusCode).toBe(200)
+      const body = response.json()
+      expect(body.runningVersion).toBeTruthy()
+      expect(body.releasePath).toContain('uacademic')
+      expect(Date.parse(body.checkedAt)).not.toBeNaN()
+    })
+  })
+
   describe('the procedure', () => {
     it('verifies, backs up, installs, migrates, switches and checks — in that order', async () => {
       const result = await applyUpdate(prisma, { release: RELEASE, userId }, { hooks: hooks() })

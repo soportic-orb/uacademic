@@ -729,7 +729,12 @@
       "notConfigured": "Automatic updates are not configured on this installation.",
       "noRelease": "There is no published version to install.",
       "alreadyRunning": "An update is already running."
-    }
+    },
+    "releasePath": "Running from",
+    "lastInstalled": "Last installed from here",
+    "check": "Check for updates",
+    "checkedAt": "Checked at {{at}}",
+    "noReleases": "No version has been published to the repository yet. One will appear here when there is."
   },
   "assistant": {
     "title": "AI assistant",

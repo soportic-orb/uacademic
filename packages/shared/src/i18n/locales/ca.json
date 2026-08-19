@@ -729,7 +729,12 @@
       "notConfigured": "Les actualitzacions automàtiques no estan configurades en aquesta instal·lació.",
       "noRelease": "No hi ha cap versió publicada per instal·lar.",
       "alreadyRunning": "Ja hi ha una actualització en curs."
-    }
+    },
+    "releasePath": "S'executa des de",
+    "lastInstalled": "Última instal·lada des d’aquí",
+    "check": "Comprova si hi ha actualitzacions",
+    "checkedAt": "Comprovat a les {{at}}",
+    "noReleases": "Encara no s’ha publicat cap versió al repositori. Quan n’hi hagi una, apareixerà aquí."
   },
   "assistant": {
     "title": "Assistent IA",

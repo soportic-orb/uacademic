@@ -729,7 +729,12 @@
       "notConfigured": "Las actualizaciones automáticas no están configuradas en esta instalación.",
       "noRelease": "No hay ninguna versión publicada para instalar.",
       "alreadyRunning": "Ya hay una actualización en curso."
-    }
+    },
+    "releasePath": "Se ejecuta desde",
+    "lastInstalled": "Última instalada desde aquí",
+    "check": "Comprueba si hay actualizaciones",
+    "checkedAt": "Comprobado a las {{at}}",
+    "noReleases": "Todavía no se ha publicado ninguna versión en el repositorio. Cuando haya una, aparecerá aquí."
   },
   "assistant": {
     "title": "Asistente IA",

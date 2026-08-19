@@ -24,9 +24,11 @@
  */
 import { createHash } from 'node:crypto'
 import { spawn } from 'node:child_process'
+import { existsSync, readFileSync } from 'node:fs'
 import { mkdir, readlink, rm, symlink, unlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 import type { PrismaClient } from '@uacademic/db'
 
@@ -44,10 +46,23 @@ export interface ReleaseInfo {
 
 export interface UpdateStatus {
   configured: boolean
+  /** The last version this panel installed, or null if it never has. */
   currentVersion: string | null
+  /**
+   * What this process is actually running, read off the disk it was loaded
+   * from. Not the same question as the one above, and the more useful one: an
+   * installation deployed by hand has no record in `app_versions`, and a
+   * process left running from an old release directory reports that release
+   * rather than whatever was most recently built somewhere else.
+   */
+  runningVersion: string | null
+  /** The directory the running code was loaded from. */
+  releasePath: string
   available: ReleaseInfo | null
   /** True when the release on GitHub is not the one running here. */
   updateAvailable: boolean
+  /** When this answer was put together, so a refresh means something. */
+  checkedAt: string
   history: {
     version: string
     status: string
@@ -118,6 +133,47 @@ export async function currentVersion(client: PrismaClient): Promise<string | nul
   return applied?.version ?? null
 }
 
+/**
+ * Where the running code was loaded from, and what version it says it is.
+ *
+ * Both are read from this file's own location rather than from configuration,
+ * because that is the one thing that cannot be wrong: whatever `current`
+ * points at today, this module was loaded from a real directory, and that
+ * directory is the answer.
+ */
+export function releaseRoot(): string {
+  // `<release>/apps/api/dist/services/` in a build, `…/src/services/` from
+  // source — four levels up either way.
+  return resolve(dirname(fileURLToPath(import.meta.url)), '../../../..')
+}
+
+let cachedRunningVersion: string | null | undefined
+
+export function runningVersion(): string | null {
+  if (cachedRunningVersion !== undefined) return cachedRunningVersion
+
+  const root = releaseRoot()
+  cachedRunningVersion = null
+
+  // The artefact writes VERSION; a checkout has only its package.json.
+  const stamp = join(root, 'VERSION')
+  if (existsSync(stamp)) {
+    const value = readFileSync(stamp, 'utf8').trim()
+    if (value) cachedRunningVersion = value
+  }
+
+  if (cachedRunningVersion === null) {
+    const manifest = join(root, 'package.json')
+    if (existsSync(manifest)) {
+      const parsed: unknown = JSON.parse(readFileSync(manifest, 'utf8'))
+      const version = (parsed as { version?: unknown }).version
+      if (typeof version === 'string') cachedRunningVersion = version
+    }
+  }
+
+  return cachedRunningVersion
+}
+
 export async function updateStatus(client: PrismaClient): Promise<UpdateStatus> {
   const [installed, available, history] = await Promise.all([
     currentVersion(client),
@@ -125,11 +181,18 @@ export async function updateStatus(client: PrismaClient): Promise<UpdateStatus> 
     client.appVersion.findMany({ orderBy: { createdAt: 'desc' }, take: 20 }),
   ])
 
+  const running = runningVersion()
+
   return {
     configured: updatesConfigured(),
     currentVersion: installed,
+    runningVersion: running,
+    releasePath: releaseRoot(),
     available,
-    updateAvailable: Boolean(available && available.version !== installed),
+    checkedAt: new Date().toISOString(),
+    // Compared against what is running, not against what was last installed
+    // from here: those differ on every installation deployed by hand.
+    updateAvailable: Boolean(available && available.version !== (installed ?? running)),
     history: history.map((entry) => ({
       version: entry.version,
       status: entry.status,
