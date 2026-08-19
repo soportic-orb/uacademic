@@ -42,7 +42,8 @@
     "reason": "Motiu",
     "note": "Nota",
     "attach": "Adjunta",
-    "unread": "No llegit"
+    "unread": "No llegit",
+    "saving": "S’està desant…"
   },
   "nav": {
     "dashboard": "Tauler",
@@ -983,8 +984,17 @@
       "year": "Curs",
       "term": "Període",
       "teachingLanguage": "Idioma de docència",
-      "entraTenant": "Tenant d'Entra ID"
-    }
+      "entraTenant": "Tenant d'Entra ID",
+      "firstName": "Nom",
+      "lastName": "Cognoms",
+      "email": "Correu electrònic",
+      "role": "Rol"
+    },
+    "newUser": "Nou usuari",
+    "newUserHint": "El compte s'enllaça amb la seva identitat de Microsoft la primera vegada que entri.",
+    "invite": "Convida",
+    "userInvited": "Usuari convidat. Podrà entrar amb el compte de la seva universitat.",
+    "emailHint": "El de la universitat: és el que ha de coincidir amb el seu compte de Microsoft."
   },
   "imports": {
     "title": "Importació massiva",

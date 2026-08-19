@@ -1,15 +1,16 @@
 import type { ListResult } from '@uacademic/shared'
 import { formatDate, formatPersonName } from '@uacademic/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { UserPlus } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { EmptyState, ErrorState, TableSkeleton } from '../../components/feedback/states'
 import { Button } from '../../components/ui/button'
-import { Card, CardBody } from '../../components/ui/card'
+import { Card, CardBody, CardHeader } from '../../components/ui/card'
 import { useToast } from '../../hooks/use-toast'
 import { currentLocale } from '../../i18n'
-import { apiFetch } from '../../lib/api'
+import { ApiRequestError, apiFetch, apiJson } from '../../lib/api'
 
 interface UserRow {
   id: string
@@ -36,6 +37,10 @@ export function UsersPage() {
   const queryClient = useQueryClient()
   const locale = currentLocale()
 
+  const [creating, setCreating] = useState(false)
+  const EMPTY = { email: '', firstName: '', lastName: '', role: 'COORDINATOR', locale: 'ca' }
+  const [form, setForm] = useState(EMPTY)
+
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
   const [role, setRole] = useState('')
@@ -51,6 +56,23 @@ export function UsersPage() {
     queryFn: () => apiFetch<ListResult<UserRow>>(`/api/v1/users?${params.toString()}`),
   })
 
+  const create = useMutation({
+    mutationFn: (input: typeof EMPTY) => apiJson('/api/v1/users', 'POST', input),
+    onSuccess: async () => {
+      // "Invited" rather than "created": the account is linked to their
+      // Microsoft identity the first time they sign in, not now.
+      toast.success('admin.userInvited')
+      setForm(EMPTY)
+      setCreating(false)
+      await queryClient.invalidateQueries({ queryKey: ['admin-users'] })
+    },
+    onError: (error) => {
+      if (error instanceof ApiRequestError)
+        toast.raw({ variant: 'error', message: error.localizedMessage })
+      else toast.error('errors.generic')
+    },
+  })
+
   const activate = useMutation({
     mutationFn: (id: string) => apiFetch(`/api/v1/users/${id}/activate`, { method: 'POST' }),
     onSuccess: async () => {
@@ -61,10 +83,77 @@ export function UsersPage() {
 
   return (
     <div className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold text-text">{t('admin.users')}</h1>
-        <p className="mt-1 text-sm text-text-muted">{t('admin.title')}</p>
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold text-text">{t('admin.users')}</h1>
+          <p className="mt-1 text-sm text-text-muted">{t('admin.title')}</p>
+        </div>
+
+        <Button onClick={() => setCreating((open) => !open)} aria-expanded={creating}>
+          <UserPlus className="size-4" aria-hidden="true" />
+          {t('admin.newUser')}
+        </Button>
       </header>
+
+      {creating ? (
+        <Card>
+          <CardHeader title={t('admin.newUser')} description={t('admin.newUserHint')} />
+          <CardBody>
+            <form
+              className="grid gap-4 sm:grid-cols-2"
+              onSubmit={(event) => {
+                event.preventDefault()
+                create.mutate(form)
+              }}
+            >
+              <Field label={t('admin.fields.firstName')}>
+                <Input
+                  value={form.firstName}
+                  onChange={(value) => setForm({ ...form, firstName: value })}
+                  required
+                />
+              </Field>
+
+              <Field label={t('admin.fields.lastName')}>
+                <Input
+                  value={form.lastName}
+                  onChange={(value) => setForm({ ...form, lastName: value })}
+                  required
+                />
+              </Field>
+
+              <Field label={t('admin.fields.email')} hint={t('admin.emailHint')}>
+                <Input
+                  type="email"
+                  value={form.email}
+                  onChange={(value) => setForm({ ...form, email: value })}
+                  required
+                />
+              </Field>
+
+              <Field label={t('admin.fields.role')}>
+                <select
+                  value={form.role}
+                  onChange={(event) => setForm({ ...form, role: event.target.value })}
+                  className="h-10 w-full rounded-control border border-border bg-surface px-2 text-sm text-text"
+                >
+                  {ROLES.map((option) => (
+                    <option key={option} value={option}>
+                      {t(`roles.${option}`)}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+
+              <div className="sm:col-span-2">
+                <Button type="submit" disabled={create.isPending}>
+                  {create.isPending ? t('common.saving') : t('admin.invite')}
+                </Button>
+              </div>
+            </form>
+          </CardBody>
+        </Card>
+      ) : null}
 
       <Card>
         <CardBody className="space-y-4">
@@ -216,5 +305,49 @@ export function UsersPage() {
         </CardBody>
       </Card>
     </div>
+  )
+}
+
+function Field({
+  label,
+  hint,
+  children,
+}: {
+  label: string
+  hint?: string
+  children: React.ReactNode
+}) {
+  // The hint sits outside the <label>: inside, it becomes part of the field's
+  // accessible name.
+  return (
+    <div>
+      <label className="block">
+        <span className="mb-1 block text-sm font-medium text-text">{label}</span>
+        {children}
+      </label>
+      {hint ? <p className="mt-1 text-xs text-text-muted">{hint}</p> : null}
+    </div>
+  )
+}
+
+function Input({
+  value,
+  onChange,
+  type = 'text',
+  required,
+}: {
+  value: string
+  onChange: (value: string) => void
+  type?: string
+  required?: boolean
+}) {
+  return (
+    <input
+      type={type}
+      required={required}
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+      className="h-10 w-full rounded-control border border-border bg-surface px-3 text-sm text-text"
+    />
   )
 }

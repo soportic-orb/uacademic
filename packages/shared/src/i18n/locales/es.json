@@ -42,7 +42,8 @@
     "reason": "Motivo",
     "note": "Nota",
     "attach": "Adjuntar",
-    "unread": "No leído"
+    "unread": "No leído",
+    "saving": "Guardando…"
   },
   "nav": {
     "dashboard": "Panel",
@@ -983,8 +984,17 @@
       "year": "Curso",
       "term": "Periodo",
       "teachingLanguage": "Idioma de docencia",
-      "entraTenant": "Tenant de Entra ID"
-    }
+      "entraTenant": "Tenant de Entra ID",
+      "firstName": "Nombre",
+      "lastName": "Apellidos",
+      "email": "Correo electrónico",
+      "role": "Rol"
+    },
+    "newUser": "Nuevo usuario",
+    "newUserHint": "La cuenta se enlaza con su identidad de Microsoft la primera vez que entre.",
+    "invite": "Invita",
+    "userInvited": "Usuario invitado. Podrá entrar con la cuenta de su universidad.",
+    "emailHint": "El de la universidad: es el que debe coincidir con su cuenta de Microsoft."
   },
   "imports": {
     "title": "Importación masiva",

@@ -42,7 +42,8 @@
     "reason": "Reason",
     "note": "Note",
     "attach": "Attach",
-    "unread": "Unread"
+    "unread": "Unread",
+    "saving": "Saving…"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -983,8 +984,17 @@
       "year": "Year",
       "term": "Term",
       "teachingLanguage": "Teaching language",
-      "entraTenant": "Entra ID tenant"
-    }
+      "entraTenant": "Entra ID tenant",
+      "firstName": "First name",
+      "lastName": "Last name",
+      "email": "Email",
+      "role": "Role"
+    },
+    "newUser": "New user",
+    "newUserHint": "The account is linked to their Microsoft identity the first time they sign in.",
+    "invite": "Invite",
+    "userInvited": "User invited. They can sign in with their university account.",
+    "emailHint": "Their university address: this is what must match their Microsoft account."
   },
   "imports": {
     "title": "Bulk import",
