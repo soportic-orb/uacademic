@@ -87,6 +87,18 @@ GRANT ALL PRIVILEGES ON uacademic.* TO 'uacademic'@'localhost';
 The user needs `ALTER` and `CREATE`: migrations run under this account on every
 deployment.
 
+**Opening it later.** The system account you log in with over SSH is not the
+database account, so a bare `mysql` is refused. Use the configuration the
+application already has:
+
+```bash
+scripts/deploy/db.sh                             # a session
+scripts/deploy/db.sh "SELECT status, error_key, error_detail FROM documents"
+```
+
+The password travels through `MYSQL_PWD`, so it reaches neither the process
+list nor your shell history.
+
 ---
 
 ## 4. Configuration

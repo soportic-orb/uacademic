@@ -87,6 +87,18 @@ GRANT ALL PRIVILEGES ON uacademic.* TO 'uacademic'@'localhost';
 L'usuari necessita `ALTER` i `CREATE`: les migracions s'executen amb aquest
 compte a cada desplegament.
 
+**Obrir-la més endavant.** El compte de sistema amb què entres per SSH no és el
+compte de la base de dades, així que un `mysql` pelat es rebutja. Fes servir la
+configuració que l'aplicació ja té:
+
+```bash
+scripts/deploy/db.sh                             # una sessió
+scripts/deploy/db.sh "SELECT status, error_key, error_detail FROM documents"
+```
+
+La contrasenya viatja per `MYSQL_PWD`, de manera que no arriba ni a la llista de
+processos ni a l'historial del teu intèrpret d'ordres.
+
 ---
 
 ## 4. Configuració
