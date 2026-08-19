@@ -169,6 +169,17 @@ const envSchema = z.object({
   HEALTH_CHECK_URL: z.string().default('http://127.0.0.1:3001/health'),
   /** The PM2 process group to reload once the symlink has moved. */
   PM2_APP_NAME: z.string().default('uacademic'),
+  /**
+   * The two tools an update shells out to.
+   *
+   * Names by default, absolute paths where they are needed: this process runs
+   * under a process manager whose environment is not the login shell's, so a
+   * `pnpm` the operator installed for their user is routinely on their PATH
+   * and absent from ours. Being able to say exactly where it is beats asking
+   * an administrator to reason about which PATH a daemon inherited.
+   */
+  PNPM_PATH: z.string().default('pnpm'),
+  PM2_PATH: z.string().default('pm2'),
 
   RATE_LIMIT_MAX: z.coerce.number().int().min(1).default(300),
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().min(1_000).default(60_000),

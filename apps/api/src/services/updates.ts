@@ -381,18 +381,23 @@ export async function applyUpdate(
     // whatever the runner happened to be. pnpm links them from its store, so
     // the second release costs almost nothing on disk.
     if (hooks.install) await hooks.install(releaseDir)
-    else await run('pnpm', ['install', '--frozen-lockfile', '--prod'], releaseDir)
+    else await run(configuration.PNPM_PATH, ['install', '--frozen-lockfile', '--prod'], releaseDir)
 
     // 6. Migrate, then switch, then reload.
     if (hooks.migrate) await hooks.migrate(releaseDir)
-    else await run('pnpm', ['--filter', '@uacademic/db', 'migrate:deploy'], releaseDir)
+    else
+      await run(
+        configuration.PNPM_PATH,
+        ['--filter', '@uacademic/db', 'migrate:deploy'],
+        releaseDir,
+      )
 
     previous = await readlink(currentLink).catch(() => null)
     await unlink(currentLink).catch(() => undefined)
     await symlink(releaseDir, currentLink)
 
     if (hooks.reload) await hooks.reload()
-    else await run('pm2', ['reload', configuration.PM2_APP_NAME, '--update-env'])
+    else await run(configuration.PM2_PATH, ['reload', configuration.PM2_APP_NAME, '--update-env'])
 
     // 7. Does it answer?
     const ok = await (hooks.health ?? healthy)(configuration.HEALTH_CHECK_URL)
@@ -402,7 +407,8 @@ export async function applyUpdate(
         await unlink(currentLink).catch(() => undefined)
         await symlink(previous, currentLink)
         if (hooks.reload) await hooks.reload()
-        else await run('pm2', ['reload', configuration.PM2_APP_NAME, '--update-env'])
+        else
+          await run(configuration.PM2_PATH, ['reload', configuration.PM2_APP_NAME, '--update-env'])
       }
 
       const result = await fail(
