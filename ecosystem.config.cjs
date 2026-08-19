@@ -26,9 +26,22 @@ const path = require('node:path')
  * `UACADEMIC_DEPLOY_ROOT` wins, then the documented path if it is really
  * there, and otherwise the directory above this file.
  */
-const ROOT =
-  process.env.UACADEMIC_DEPLOY_ROOT ||
-  (fs.existsSync('/var/www/uacademic') ? '/var/www/uacademic' : path.dirname(__dirname))
+function deployRoot() {
+  if (process.env.UACADEMIC_DEPLOY_ROOT) return process.env.UACADEMIC_DEPLOY_ROOT
+
+  // Started from a release — `<root>/releases/<version>/`, which is where
+  // `current` points. Node resolves the symlink before we see it, so the
+  // layout has to be recognised by shape: the root is two levels up, not one,
+  // or `shared/logs` would end up inside `releases/` where the next cleanup
+  // takes it.
+  const parent = path.dirname(__dirname)
+  if (path.basename(parent) === 'releases') return path.dirname(parent)
+
+  if (fs.existsSync('/var/www/uacademic')) return '/var/www/uacademic'
+  return parent
+}
+
+const ROOT = deployRoot()
 
 /**
  * The release to run. The symlink is the point of the release layout — PM2
