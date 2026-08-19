@@ -112,6 +112,21 @@ describe.skipIf(!hasDatabase)('profile photographs and logos', () => {
     expect(response.json().error.details[0].messageKey).toBe('images.errors.unsupportedType')
   })
 
+  it('refuses a picture too big to be a portrait, without buffering it', async () => {
+    const huge = Buffer.concat([PNG, Buffer.alloc(5 * 1024 * 1024)])
+    const body = multipart(huge)
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/v1/me/avatar',
+      headers: { ...asTeacher(), ...body.headers },
+      payload: body.payload,
+    })
+
+    expect(response.statusCode).toBe(422)
+    expect(response.json().error.details[0].messageKey).toBe('images.errors.tooLarge')
+  })
+
   it('hides a face from somebody who shares no center with it', async () => {
     const user = await prisma.user.findUniqueOrThrow({ where: { email: SEED.teacherEmail } })
 

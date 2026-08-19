@@ -123,7 +123,19 @@ UACADEMIC_APP_URL=https://uacademic.ejemplo.edu
 UACADEMIC_UPLOAD_DIR=/var/www/uacademic/shared/uploads
 UACADEMIC_BACKUP_DIR=/var/www/uacademic/backups
 UACADEMIC_DEPLOY_ROOT=/var/www/uacademic
+UACADEMIC_TIMEZONE=Europe/Madrid
 ```
+
+`UACADEMIC_TIMEZONE` es el reloj con el que se ejecutan la API y el trabajador,
+aplicado al arrancar: un servidor compartido suele ir en UTC, y una tarea que
+significa las 07:00 se ejecutaría una o dos horas antes medio año. Las pantallas
+muestran la zona propia de cada centro, que es una columna del centro, no este
+valor.
+
+`UACADEMIC_UPLOAD_DIR` contiene los documentos, los adjuntos de los mensajes,
+las fotografías de perfil y los logotipos de las universidades. La copia de
+seguridad nocturna solo cubre la base de datos, así que este directorio tiene
+que entrar en lo que haga la copia de los archivos.
 
 Genera la clave de cifrado con `openssl rand -hex 32`. Si la cambias, los
 tokens de calendario guardados dejan de poder descifrarse y cada usuario tendrá

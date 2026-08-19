@@ -123,7 +123,18 @@ UACADEMIC_APP_URL=https://uacademic.exemple.edu
 UACADEMIC_UPLOAD_DIR=/var/www/uacademic/shared/uploads
 UACADEMIC_BACKUP_DIR=/var/www/uacademic/backups
 UACADEMIC_DEPLOY_ROOT=/var/www/uacademic
+UACADEMIC_TIMEZONE=Europe/Madrid
 ```
+
+`UACADEMIC_TIMEZONE` és el rellotge amb què s'executen l'API i el treballador,
+aplicat en arrencar: un servidor compartit sol anar en UTC, i una tasca que vol
+dir les 07:00 s'executaria una o dues hores abans mig any. Les pantalles mostren
+la zona pròpia de cada centre, que és una columna del centre, no aquest valor.
+
+`UACADEMIC_UPLOAD_DIR` conté els documents, els adjunts dels missatges, les
+fotografies de perfil i els logotips de les universitats. La còpia de seguretat
+nocturna només cobreix la base de dades, així que aquest directori ha d'entrar
+en el que faci la còpia dels fitxers.
 
 Genera la clau de xifratge amb `openssl rand -hex 32`. Si la canvies, els
 testimonis de calendari desats deixen de ser desxifrables i cada usuari haurà

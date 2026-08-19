@@ -29,6 +29,10 @@ async function withoutDemoIdentity(page: Page) {
   })
 }
 
+/** A real 1×1 PNG: the upload route reads the bytes, not the file name. */
+const ONE_PIXEL_PNG =
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='
+
 /** Picks one of the seeded demo roles from the header switcher. */
 async function asRole(page: Page, label: string) {
   await page.goto('/')
@@ -79,8 +83,60 @@ test.describe('local sign-in', () => {
     await asRole(page, 'Coordinació')
     await page.goto('/profile')
 
-    await expect(page.getByRole('heading', { name: 'Perfil' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Perfil', exact: true })).toBeVisible()
     await expect(page.locator('#main').getByText('Coordinació')).toBeVisible()
+  })
+
+  /**
+   * The photograph, from picking a file to seeing the face in the header —
+   * which is the whole point of it: it replaces the generic person icon
+   * everywhere the user is drawn.
+   */
+  test('takes a profile photograph and shows it beside the name', async ({ page }) => {
+    await asRole(page, 'Coordinació')
+    await page.goto('/profile')
+
+    await page.getByLabel('Puja una fotografia').setInputFiles({
+      name: 'retrat.png',
+      mimeType: 'image/png',
+      buffer: Buffer.from(ONE_PIXEL_PNG, 'base64'),
+    })
+
+    await expect(page.getByText('Fotografia de perfil actualitzada')).toBeVisible()
+    await expect(page.locator('header img[alt^="Fotografia de"]')).toBeVisible()
+
+    await page.getByRole('button', { name: 'Elimina la fotografia' }).click()
+    await expect(page.getByText('Fotografia de perfil eliminada')).toBeVisible()
+    await expect(page.locator('header img[alt^="Fotografia de"]')).toHaveCount(0)
+  })
+})
+
+test.describe('the university logo', () => {
+  /**
+   * It used to be a URL field, which asked an administrator to host the image
+   * somewhere themselves. The picture is uploaded now, and the column holds an
+   * address on this installation.
+   */
+  test('is uploaded as a file from the admin form', async ({ page }) => {
+    await asRole(page, 'Superadministració')
+    await page.goto('/admin/universities')
+
+    await page.getByRole('button', { name: 'Edita' }).first().click()
+    const dialog = page.getByRole('dialog')
+    await expect(dialog).toBeVisible()
+
+    await dialog.getByLabel('Logotip').setInputFiles({
+      name: 'logo.png',
+      mimeType: 'image/png',
+      buffer: Buffer.from(ONE_PIXEL_PNG, 'base64'),
+    })
+    await dialog.getByRole('button', { name: 'Desa' }).click()
+
+    await expect(page.getByText('Canvis desats')).toBeVisible()
+
+    // And it is still there when the form is opened again.
+    await page.getByRole('button', { name: 'Edita' }).first().click()
+    await expect(page.getByRole('dialog').getByRole('img', { name: 'Logotip' })).toBeVisible()
   })
 })
 

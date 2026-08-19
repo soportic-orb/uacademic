@@ -77,6 +77,25 @@ test.describe('interface', () => {
     await expect(page.locator('html')).toHaveClass(/dark/)
   })
 
+  /**
+   * The navigation used to scroll away with the page on a long list, which on
+   * the teacher panel meant scrolling back up to reach any other section.
+   */
+  test('keeps the navigation and the header in place while the content scrolls', async ({
+    page,
+  }) => {
+    await signInAs(page, 'Coordinació')
+    await page.goto('/teachers')
+    await expect(page.getByRole('heading', { name: 'Càrrega del centre' })).toBeVisible()
+
+    await page.locator('#main').evaluate((element) => element.scrollTo(0, element.scrollHeight))
+
+    await expect(page.getByRole('navigation', { name: 'Navegació principal' })).toBeInViewport()
+    await expect(page.getByRole('button', { name: 'Cerca global' })).toBeInViewport()
+    // The page itself never scrolls: the content column owns the scrollbar.
+    expect(await page.evaluate(() => window.scrollY)).toBe(0)
+  })
+
   test('opens the command palette with the keyboard and navigates with it', async ({ page }) => {
     await page.goto('/')
     // Wait for the shell to mount: the ⌘K listener lives in it.

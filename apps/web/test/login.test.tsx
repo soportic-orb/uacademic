@@ -89,7 +89,10 @@ describe('the sign-in screen', () => {
   it('offers Microsoft as soon as the installation reports it configured', () => {
     authConfig.mockReturnValue({
       isPending: false,
-      data: { mode: 'entra', entra: { clientId: 'app-id', authority: 'https://login/organizations' } },
+      data: {
+        mode: 'entra',
+        entra: { clientId: 'app-id', authority: 'https://login/organizations' },
+      },
     })
 
     render(

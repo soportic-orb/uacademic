@@ -26,10 +26,15 @@ import {
 
 /** Read the one file out of a multipart request, or say what was wrong with it. */
 async function readUpload(request: FastifyRequest): Promise<{ bytes: Buffer; extension: string }> {
-  const file = await request.file()
+  // The ceiling is set on the stream, not checked after the fact: the shared
+  // limit allows a 50 MB document, and there is no reason to hold that much of
+  // a portrait in memory before refusing it.
+  const file = await request.file({ limits: { fileSize: MAX_IMAGE_BYTES } })
   if (!file) throw AppError.validation([{ path: 'file', messageKey: 'validation.required' }])
 
-  const bytes = await file.toBuffer()
+  const bytes = await file.toBuffer().catch(() => null)
+  if (!bytes) throw AppError.validation([{ path: 'file', messageKey: 'images.errors.tooLarge' }])
+
   const check = checkImageUpload({ bytes, maxBytes: MAX_IMAGE_BYTES })
   if (!check.ok) {
     throw AppError.validation([{ path: 'file', messageKey: `images.errors.${check.reason}` }])

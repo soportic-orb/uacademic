@@ -123,7 +123,17 @@ UACADEMIC_APP_URL=https://uacademic.example.edu
 UACADEMIC_UPLOAD_DIR=/var/www/uacademic/shared/uploads
 UACADEMIC_BACKUP_DIR=/var/www/uacademic/backups
 UACADEMIC_DEPLOY_ROOT=/var/www/uacademic
+UACADEMIC_TIMEZONE=Europe/Madrid
 ```
+
+`UACADEMIC_TIMEZONE` is the clock the API and the worker run on, applied at
+start-up: a shared host is commonly on UTC, and a job that means 07:00 would
+otherwise fire an hour or two early for half the year. Screens show each
+center's own zone, which is a column on the center, not this setting.
+
+`UACADEMIC_UPLOAD_DIR` holds documents, message attachments, profile
+photographs and university logos. The nightly backup covers the database only,
+so this directory has to be in whatever backs up the filesystem.
 
 Generate the encryption key with `openssl rand -hex 32`. If you change it, the
 stored calendar tokens can no longer be decrypted and everybody has to connect
