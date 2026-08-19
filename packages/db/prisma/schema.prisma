@@ -543,7 +543,11 @@ model UserCenterRole {
   userId    String    @map("user_id") @db.Char(36)
   centerId  String    @map("center_id") @db.Char(36)
   role      Role
-  validFrom DateTime  @default(now()) @map("valid_from") @db.Date
+  /// A date, defaulted by the database to today. Written as an expression
+  /// because `now()` on a DATE column becomes `DEFAULT CURRENT_TIMESTAMP`,
+  /// which MySQL 8 refuses outright — MariaDB accepts it, so the difference
+  /// only shows on the engine the deployment manual actually names.
+  validFrom DateTime  @default(dbgenerated("(CURRENT_DATE)")) @map("valid_from") @db.Date
   validTo   DateTime? @map("valid_to") @db.Date
   createdAt DateTime  @default(now()) @map("created_at")
 

@@ -85,7 +85,7 @@ CREATE TABLE `user_center_roles` (
     `user_id` CHAR(36) NOT NULL,
     `center_id` CHAR(36) NOT NULL,
     `role` ENUM('SUPERADMIN', 'CENTER_ADMIN', 'COORDINATOR', 'TEACHER') NOT NULL,
-    `valid_from` DATE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `valid_from` DATE NOT NULL DEFAULT (CURRENT_DATE),
     `valid_to` DATE NULL,
     `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 
