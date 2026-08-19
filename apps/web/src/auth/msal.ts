@@ -39,6 +39,21 @@ export function configureEntra(config: { clientId: string; authority: string } |
 }
 
 /**
+ * Where Microsoft sends the pop-up back to.
+ *
+ * A static, empty page rather than the site root. Pointing it at the root loads
+ * the whole application inside the pop-up — React, the translations and the
+ * service worker, in a window meant to be visible for an instant — which is a
+ * blank window for as long as that takes and a half-started app when MSAL
+ * closes it. This page has nothing in it: MSAL reads the response out of its
+ * address bar and closes it.
+ *
+ * It must be registered in Entra ID under the *Single-page application*
+ * platform, alongside the site root used for sign-out.
+ */
+export const REDIRECT_PATH = '/auth-callback.html'
+
+/**
  * The authority is `/organizations` because the app is registered as
  * multi-tenant: any work or school account can *authenticate* here. Whether it
  * may *enter* is decided by the API against the registered tenants (R3).
@@ -48,7 +63,7 @@ function buildConfiguration(config: { clientId: string; authority: string }): Co
     auth: {
       clientId: config.clientId,
       authority: config.authority,
-      redirectUri: window.location.origin,
+      redirectUri: `${window.location.origin}${REDIRECT_PATH}`,
       postLogoutRedirectUri: window.location.origin,
     },
     cache: {

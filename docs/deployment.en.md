@@ -367,10 +367,38 @@ the app. Somebody halfway through a message loses nothing.
 Register the application as **multi-tenant**. Sign-in is a public-client flow
 (PKCE) and needs no secret; the secret is only for the calendar consent.
 
-Every Microsoft organisation in the world passes signature verification at the
-`/organizations` endpoint. That is why the server validates `tid` against the
-list of registered tenants and answers 403 when it is not there. Register each
-tenant under **Administration → Tenants** before anybody signs in.
+**Redirect URIs.** Under _Authentication_, add a platform of type
+**Single-page application** — not _Web_: a Web registration refuses the
+browser's token request with `AADSTS9002326` — and register two URIs:
+
+```
+https://uacademic.example.edu/auth-callback.html   sign-in
+https://uacademic.example.edu/                     sign-out
+```
+
+The first is an empty page that exists only to receive Microsoft's answer. It
+is not the application on purpose: sending the pop-up to the site root loads
+the whole app inside it, which is a white window for as long as that takes and,
+when a new version happens to be waiting, a reload that throws the answer away
+and leaves the pop-up blank for good.
+
+Use the exact host people type. `https://www.uacademic.cat` and
+`https://uacademic.cat` are two different registrations as far as Entra is
+concerned, and the one that is missing fails with `AADSTS50011`.
+
+**The API scope.** Under _Expose an API_, accept the proposed application ID
+URI (`api://<client-id>`) and add a scope named **`access_as_user`**, consentable
+by admins and users. That is the scope the browser asks for, and the token it
+returns is what the server verifies; without it sign-in stops at
+`AADSTS65005`.
+
+**Tenants.** Every Microsoft organisation in the world passes signature
+verification at the `/organizations` endpoint. That is why the server validates
+`tid` against the list of registered tenants and answers 403 when it is not
+there. Register each tenant under **Administration → Tenants** before anybody
+signs in — that, and `centers.entra_tenant_id`, is how one sign-in screen with
+no organisation picker still knows which center somebody belongs to: the tenant
+arrives inside the token, not from anything the person typed.
 
 ---
 

@@ -378,10 +378,39 @@ Registra la aplicación como **multi-tenant**. El inicio de sesión es un flujo
 de cliente público (PKCE) y no necesita ningún secreto; el secreto solo hace
 falta para el consentimiento de calendario.
 
-Cada organización de Microsoft del mundo pasa la verificación de firma del
-endpoint `/organizations`. Por eso el servidor valida el `tid` contra la lista
-de tenants registrados y responde 403 si no está. Da de alta cada tenant desde
-**Administración → Tenants** antes de que nadie entre.
+**URI de redirección.** En _Autenticación_, añade una plataforma de tipo
+**Aplicación de una sola página** — no _Web_: un registro de tipo Web rechaza la
+petición de token del navegador con `AADSTS9002326` — y da de alta dos
+direcciones:
+
+```
+https://uacademic.cat/auth-callback.html   entrada
+https://uacademic.cat/                     salida
+```
+
+La primera es una página vacía que solo existe para recibir la respuesta de
+Microsoft. No es la aplicación, y es a propósito: enviar la ventana emergente a
+la raíz del sitio carga toda la aplicación dentro de ella, lo que es una ventana
+en blanco mientras dura y, si hay una versión nueva esperando, una recarga que
+tira la respuesta y deja la ventana en blanco para siempre.
+
+Usa exactamente el host que escribe la gente. Para Entra,
+`https://www.uacademic.cat` y `https://uacademic.cat` son dos registros
+distintos, y el que falte falla con `AADSTS50011`.
+
+**El ámbito de la API.** En _Exponer una API_, acepta el URI de identificador de
+aplicación que te propone (`api://<client-id>`) y añade un ámbito llamado
+**`access_as_user`**, consentible por administradores y usuarios. Es el ámbito
+que pide el navegador, y el token resultante es el que verifica el servidor; sin
+esto la entrada se detiene con `AADSTS65005`.
+
+**Tenants.** Cada organización de Microsoft del mundo pasa la verificación de
+firma del endpoint `/organizations`. Por eso el servidor valida el `tid` contra
+la lista de tenants registrados y responde 403 si no está. Da de alta cada
+tenant desde **Administración → Tenants** antes de que nadie entre: eso, y
+`centers.entra_tenant_id`, es como una única pantalla de entrada sin ningún
+selector de organización sabe igualmente a qué centro pertenece cada persona —
+el tenant llega dentro del token, no de nada que la persona haya escrito.
 
 ---
 

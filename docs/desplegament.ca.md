@@ -373,10 +373,39 @@ Registra l'aplicació com a **multi-tenant**. L'inici de sessió és un flux de
 client públic (PKCE) i no necessita cap secret; el secret només fa falta per al
 consentiment de calendari.
 
-Cada organització de Microsoft del món passa la verificació de signatura del
-punt final `/organizations`. Per això el servidor valida el `tid` contra la
-llista de tenants registrats i respon 403 si no hi és. Dona d'alta cada tenant
-des de **Administració → Tenants** abans que ningú hi entri.
+**URI de redirecció.** A _Autenticació_, afegeix una plataforma de tipus
+**Aplicació d'una sola pàgina** — no _Web_: un registre de tipus Web rebutja la
+petició de testimoni del navegador amb `AADSTS9002326` — i dona d'alta dues
+adreces:
+
+```
+https://uacademic.cat/auth-callback.html   entrada
+https://uacademic.cat/                     sortida
+```
+
+La primera és una pàgina buida que només existeix per rebre la resposta de
+Microsoft. No és l'aplicació, i és volgut: enviar la finestra emergent a l'arrel
+del lloc hi carrega tota l'aplicació a dins, cosa que és una finestra en blanc
+mentre dura i, si hi ha una versió nova esperant, una recàrrega que llença la
+resposta i deixa la finestra en blanc per sempre.
+
+Fes servir exactament l'amfitrió que escriu la gent. Per a Entra,
+`https://www.uacademic.cat` i `https://uacademic.cat` són dos registres
+diferents, i el que falti falla amb `AADSTS50011`.
+
+**L'àmbit de l'API.** A _Exposa una API_, accepta l'URI d'identificador
+d'aplicació que et proposa (`api://<client-id>`) i afegeix un àmbit anomenat
+**`access_as_user`**, consentible per administradors i usuaris. És l'àmbit que
+demana el navegador, i el testimoni que en surt és el que verifica el servidor;
+sense això l'entrada s'atura amb `AADSTS65005`.
+
+**Tenants.** Cada organització de Microsoft del món passa la verificació de
+signatura del punt final `/organizations`. Per això el servidor valida el `tid`
+contra la llista de tenants registrats i respon 403 si no hi és. Dona d'alta
+cada tenant des de **Administració → Tenants** abans que ningú hi entri: això, i
+`centers.entra_tenant_id`, és com una única pantalla d'entrada sense cap
+selector d'organització sap igualment a quin centre pertany cadascú — el tenant
+arriba dins del testimoni, no de res que la persona hagi escrit.
 
 ---
 
