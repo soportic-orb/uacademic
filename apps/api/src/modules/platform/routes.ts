@@ -15,6 +15,7 @@ import { requireUser } from '../../plugins/context.js'
 import { mailConfigured, sendMail } from '../../services/mailer.js'
 import {
   latestRelease,
+  releaseIsAlreadyRunning,
   updateStatus,
   updateWouldTakeEffect,
   updatesConfigured,
@@ -108,6 +109,10 @@ export function registerPlatformRoutes(app: FastifyInstance): void {
 
     const release = await latestRelease()
     if (!release) throw new AppError(503, 'SERVICE_UNAVAILABLE', 'platform.errors.noRelease')
+
+    if (releaseIsAlreadyRunning(release.version)) {
+      throw new AppError(409, 'CONFLICT', 'platform.errors.sameRelease')
+    }
 
     const running = await prisma().appVersion.findFirst({ where: { status: 'applying' } })
     if (running) {

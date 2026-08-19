@@ -164,6 +164,20 @@ export async function updateWouldTakeEffect(): Promise<boolean> {
   return target !== null && target === releaseRoot()
 }
 
+/**
+ * Would installing this release overwrite the directory we are running from?
+ *
+ * It can happen without anything being wrong: an installation promoted by
+ * hand into `releases/<version>` reports the version in its package.json
+ * until a `VERSION` file says otherwise, so the panel compares the two and
+ * offers an update to the code already running. Unpacking a tarball over a
+ * live release, and reinstalling its dependencies underneath itself, is not
+ * something to find out about afterwards.
+ */
+export function releaseIsAlreadyRunning(version: string): boolean {
+  return join(env().DEPLOY_ROOT, 'releases', version) === releaseRoot()
+}
+
 let cachedRunningVersion: string | null | undefined
 
 export function runningVersion(): string | null {

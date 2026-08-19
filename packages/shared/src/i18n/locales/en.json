@@ -731,7 +731,8 @@
       "noRelease": "There is no published version to install.",
       "alreadyRunning": "An update is already running.",
       "mailNotConfigured": "Email is not configured on this installation.",
-      "notLinked": "This installation does not run from the `current` link, so updating would not change the code being served. Run scripts/deploy/promote.sh once and try again."
+      "notLinked": "This installation does not run from the `current` link, so updating would not change the code being served. Run scripts/deploy/promote.sh once and try again.",
+      "sameRelease": "This is the release already running: installing it would overwrite the directory it runs from. If the screen names a different installed version, the release is missing its VERSION file."
     },
     "releasePath": "Running from",
     "lastInstalled": "Last installed from here",

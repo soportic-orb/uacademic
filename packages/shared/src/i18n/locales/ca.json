@@ -731,7 +731,8 @@
       "noRelease": "No hi ha cap versió publicada per instal·lar.",
       "alreadyRunning": "Ja hi ha una actualització en curs.",
       "mailNotConfigured": "El correu no està configurat en aquesta instal·lació.",
-      "notLinked": "Aquesta instal·lació no s'executa des de l'enllaç «current», així que actualitzar no canviaria el codi que corre. Executa scripts/deploy/promote.sh una vegada i torna-ho a provar."
+      "notLinked": "Aquesta instal·lació no s'executa des de l'enllaç «current», així que actualitzar no canviaria el codi que corre. Executa scripts/deploy/promote.sh una vegada i torna-ho a provar.",
+      "sameRelease": "Aquesta versió és la que ja s'està executant: instal·lar-la sobreescriuria el directori des d'on corre. Si la pantalla diu una altra versió instal·lada, és que falta el fitxer VERSION a la release."
     },
     "releasePath": "S'executa des de",
     "lastInstalled": "Última instal·lada des d’aquí",
