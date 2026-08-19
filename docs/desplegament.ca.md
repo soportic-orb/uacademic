@@ -285,14 +285,42 @@ comprovació abans de desempaquetar res**, fa còpia de la base de dades,
 migra, mou el symlink, recarrega i comprova la salut. Si la comprovació falla,
 torna a la versió anterior sol. Tot queda a `app_versions`.
 
-Per a això calen:
+Per a això calen, a `shared/.env`:
 
 ```
 UACADEMIC_GITHUB_OTA_TOKEN=…      # PAT amb permís de lectura de releases
 UACADEMIC_GITHUB_OTA_REPO=soportic-orb/uacademic
+UACADEMIC_DEPLOY_ROOT=/var/www/uacademic
 UACADEMIC_HEALTH_CHECK_URL=http://127.0.0.1:3001/health
 UACADEMIC_PM2_APP_NAME=uacademic
 ```
+
+El testimoni és un token d'accés personal **de gra fi** sobre el repositori, amb
+`Contents: Read-only` i res més. Llegeix les releases; no escriu mai. Viu al
+servidor, mai al repositori (R10) i mai al navegador: el panell pregunta a
+l'API, i el testimoni el té l'API.
+
+**Dues condicions que el panell no et pot crear.**
+
+Hi ha d'haver alguna release: el workflow en publica una a cada push a `main`
+que passi lint, tipus i tests, així que una branca no fusionada no genera res
+per instal·lar. `Actions → Release → Run workflow` en talla una a mà.
+
+I la instal·lació ha de tenir l'estructura de l'apartat 2 — `releases/`,
+`current`, `shared/` — perquè una actualització desempaqueta a
+`releases/<versió>` i mou `current`. Instal·lar des d'un clon normal funciona i
+és la manera habitual de començar, però el botó d'actualitzar no té on deixar la
+release. Fes el canvi una vegada, abans d'activar les actualitzacions:
+
+```bash
+cd /var/www/uacademic                       # la teva arrel de desplegament
+mkdir -p releases/$(cat repo/VERSION 2>/dev/null || echo 0.1.0) shared backups
+mv repo/* releases/*/ 2>/dev/null || cp -a repo/. releases/*/
+ln -sfn "$PWD"/releases/* current
+pm2 delete all && pm2 start current/ecosystem.config.cjs --update-env && pm2 save
+```
+
+A partir d'aquí PM2 segueix `current`, i cada actualització el mou.
 
 **Regla de migracions.** Dins d'una mateixa versió, les migracions han de ser
 compatibles cap enrere: afegir columna → omplir-la → fer-la servir. Mai

@@ -188,6 +188,7 @@ export interface ApplyOptions {
     download?: (url: string) => Promise<Buffer>
     checksum?: (url: string | null) => Promise<string | null>
     extract?: (archive: string, destination: string) => Promise<void>
+    install?: (release: string) => Promise<void>
     migrate?: (release: string) => Promise<void>
     reload?: () => Promise<void>
     health?: (url: string) => Promise<boolean>
@@ -281,7 +282,14 @@ export async function applyUpdate(
     // 4. The state that outlives a release.
     await symlink(join(root, 'shared', '.env'), join(releaseDir, '.env')).catch(() => undefined)
 
-    // 5. Migrate, then switch, then reload.
+    // 5. Dependencies. The artefact carries built output and manifests but no
+    // `node_modules`: shipping them would mean shipping native builds for
+    // whatever the runner happened to be. pnpm links them from its store, so
+    // the second release costs almost nothing on disk.
+    if (hooks.install) await hooks.install(releaseDir)
+    else await run('pnpm', ['install', '--frozen-lockfile', '--prod'], releaseDir)
+
+    // 6. Migrate, then switch, then reload.
     if (hooks.migrate) await hooks.migrate(releaseDir)
     else await run('pnpm', ['--filter', '@uacademic/db', 'migrate:deploy'], releaseDir)
 
@@ -292,7 +300,7 @@ export async function applyUpdate(
     if (hooks.reload) await hooks.reload()
     else await run('pm2', ['reload', configuration.PM2_APP_NAME, '--update-env'])
 
-    // 6. Does it answer?
+    // 7. Does it answer?
     const ok = await (hooks.health ?? healthy)(configuration.HEALTH_CHECK_URL)
 
     if (!ok) {

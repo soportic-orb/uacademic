@@ -54,6 +54,9 @@ describe.skipIf(!hasDatabase)('installing a release', () => {
       steps.push('extract')
       await mkdir(destination, { recursive: true })
     },
+    install: async () => {
+      steps.push('install')
+    },
     migrate: async () => {
       steps.push('migrate')
     },
@@ -126,11 +129,22 @@ describe.skipIf(!hasDatabase)('installing a release', () => {
   })
 
   describe('the procedure', () => {
-    it('verifies, backs up, migrates, switches and checks — in that order', async () => {
+    it('verifies, backs up, installs, migrates, switches and checks — in that order', async () => {
       const result = await applyUpdate(prisma, { release: RELEASE, userId }, { hooks: hooks() })
 
       expect(result.status).toBe('applied')
-      expect(steps).toEqual(['download', 'backup', 'extract', 'migrate', 'reload', 'health'])
+      // `install` is not decoration: the artefact ships built output and
+      // manifests but no node_modules, so without it the migration that
+      // follows has no Prisma CLI to run and the release no runtime to boot.
+      expect(steps).toEqual([
+        'download',
+        'backup',
+        'extract',
+        'install',
+        'migrate',
+        'reload',
+        'health',
+      ])
 
       // The symlink now points at the new release…
       expect(await readlink(join(root, 'current'))).toBe(join(root, 'releases', RELEASE.version))

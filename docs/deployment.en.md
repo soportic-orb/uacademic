@@ -282,14 +282,42 @@ unpacking anything**, backs up the database, migrates, moves the symlink,
 reloads and health-checks. If the check fails it rolls itself back to the
 previous version. Every attempt lands in `app_versions`.
 
-That needs:
+That needs, in `shared/.env`:
 
 ```
 UACADEMIC_GITHUB_OTA_TOKEN=…      # PAT with read access to releases
 UACADEMIC_GITHUB_OTA_REPO=soportic-orb/uacademic
+UACADEMIC_DEPLOY_ROOT=/var/www/uacademic
 UACADEMIC_HEALTH_CHECK_URL=http://127.0.0.1:3001/health
 UACADEMIC_PM2_APP_NAME=uacademic
 ```
+
+The token is a **fine-grained** personal access token on the repository, with
+`Contents: Read-only` and nothing else. It reads releases; it never writes. It
+lives on the server, never in the repository (R10) and never in the browser —
+the panel asks the API, and the API holds the token.
+
+**Two conditions the panel cannot create for you.**
+
+A release has to exist: the workflow publishes one on every push to `main` that
+passes lint, types and tests, so a branch that has not been merged produces
+nothing to install. `Actions → Release → Run workflow` cuts one by hand.
+
+And the installation has to have the layout in section 2 — `releases/`,
+`current`, `shared/` — because an update unpacks into
+`releases/<version>` and moves `current`. Installing from a plain clone works
+and is the normal way to start, but the update button has nowhere to put a
+release. Move to it once, before enabling updates:
+
+```bash
+cd /var/www/uacademic                       # your deploy root
+mkdir -p releases/$(cat repo/VERSION 2>/dev/null || echo 0.1.0) shared backups
+mv repo/* releases/*/ 2>/dev/null || cp -a repo/. releases/*/
+ln -sfn "$PWD"/releases/* current
+pm2 delete all && pm2 start current/ecosystem.config.cjs --update-env && pm2 save
+```
+
+From then on PM2 follows `current`, and each update moves it.
 
 **The migration rule.** Within one version, migrations must be backward
 compatible: add a column, fill it, use it. Never drop in the same deployment.

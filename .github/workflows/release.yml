@@ -115,16 +115,20 @@ jobs:
           STAGE="$(mktemp -d)/uacademic"
           mkdir -p "${STAGE}"
 
-          # Only what the server runs: the built output, the production
-          # dependencies' manifests, the migrations and the process files.
-          # No sources, no tests, no node_modules — the release script
-          # installs from the lockfile on the host.
+          # Only what the server runs: the built output, the manifests, the
+          # migrations and the process files. No sources, no tests and no
+          # node_modules — dependencies are installed from the lockfile on the
+          # host, which needs every workspace manifest the lockfile names
+          # (`tooling/*` included) or `--frozen-lockfile` refuses to run.
           rsync -a --relative \
             package.json pnpm-workspace.yaml pnpm-lock.yaml ecosystem.config.cjs \
             apps/api/package.json apps/api/dist \
             apps/web/package.json apps/web/dist \
             packages/shared/package.json packages/shared/dist \
             packages/db/package.json packages/db/dist packages/db/prisma \
+            packages/db/prisma.config.ts \
+            tooling/eslint-config/package.json tooling/prettier-config/package.json \
+            tooling/tsconfig/package.json \
             scripts/deploy \
             "${STAGE}/"
 

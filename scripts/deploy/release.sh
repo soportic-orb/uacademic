@@ -55,12 +55,19 @@ echo "  ${BACKUP}"
 
 log "Unpacking into ${RELEASE}"
 mkdir -p "${RELEASE}"
-tar -xzf "${ARTIFACT}" -C "${RELEASE}"
+# The archive holds a single `uacademic/` directory; strip it rather than
+# ending up with `releases/<version>/uacademic/`.
+tar -xzf "${ARTIFACT}" -C "${RELEASE}" --strip-components=1
 
 log "Linking shared state"
 ln -sfn "${ROOT}/shared/.env" "${RELEASE}/.env"
 ln -sfn "${ROOT}/shared/uploads" "${RELEASE}/var-uploads"
 ln -sfn "${ROOT}/shared/logs" "${RELEASE}/logs"
+
+log "Installing dependencies"
+# The artefact carries no node_modules: what runs on this host is built for
+# this host. pnpm hardlinks from its store, so releases share almost everything.
+(cd "${RELEASE}" && pnpm install --frozen-lockfile --prod)
 
 log "Running migrations"
 # Migrations must be backward compatible within a version — add a column, fill

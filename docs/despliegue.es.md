@@ -289,14 +289,42 @@ comprobación antes de desempaquetar nada**, copia la base de datos, migra,
 mueve el symlink, recarga y comprueba la salud. Si la comprobación falla,
 vuelve solo a la versión anterior. Todo queda en `app_versions`.
 
-Para eso hacen falta:
+Para eso hacen falta, en `shared/.env`:
 
 ```
 UACADEMIC_GITHUB_OTA_TOKEN=…      # PAT con permiso de lectura de releases
 UACADEMIC_GITHUB_OTA_REPO=soportic-orb/uacademic
+UACADEMIC_DEPLOY_ROOT=/var/www/uacademic
 UACADEMIC_HEALTH_CHECK_URL=http://127.0.0.1:3001/health
 UACADEMIC_PM2_APP_NAME=uacademic
 ```
+
+El token es un token de acceso personal **de grano fino** sobre el repositorio,
+con `Contents: Read-only` y nada más. Lee las releases; no escribe nunca. Vive
+en el servidor, nunca en el repositorio (R10) y nunca en el navegador: el panel
+pregunta a la API, y el token lo tiene la API.
+
+**Dos condiciones que el panel no puede crear por ti.**
+
+Tiene que existir alguna release: el workflow publica una en cada push a `main`
+que pase lint, tipos y tests, así que una rama sin fusionar no genera nada que
+instalar. `Actions → Release → Run workflow` corta una a mano.
+
+Y la instalación debe tener la estructura del apartado 2 — `releases/`,
+`current`, `shared/` — porque una actualización desempaqueta en
+`releases/<versión>` y mueve `current`. Instalar desde un clon normal funciona y
+es la forma habitual de empezar, pero el botón de actualizar no tiene dónde
+dejar la release. Haz el cambio una vez, antes de activar las actualizaciones:
+
+```bash
+cd /var/www/uacademic                       # tu raíz de despliegue
+mkdir -p releases/$(cat repo/VERSION 2>/dev/null || echo 0.1.0) shared backups
+mv repo/* releases/*/ 2>/dev/null || cp -a repo/. releases/*/
+ln -sfn "$PWD"/releases/* current
+pm2 delete all && pm2 start current/ecosystem.config.cjs --update-env && pm2 save
+```
+
+A partir de ahí PM2 sigue `current`, y cada actualización lo mueve.
 
 **Regla de migraciones.** Dentro de una misma versión, las migraciones deben
 ser compatibles hacia atrás: añadir columna → rellenarla → usarla. Nunca
