@@ -70,6 +70,11 @@ else
   tar -c --exclude=.git --exclude=node_modules --exclude=.env -C "${REPO}" . | tar -x -C "${RELEASE}"
 fi
 
+# The panel reads this to say what it is running. Without it a promoted
+# checkout reports its package.json version — 0.1.0 forever, whatever
+# directory it actually sits in.
+printf '%s\n' "${VERSION}" > "${RELEASE}/VERSION"
+
 log "Linking the shared state"
 ln -sfn "${ROOT}/shared/.env" "${RELEASE}/.env"
 
