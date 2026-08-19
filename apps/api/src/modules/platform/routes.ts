@@ -16,6 +16,7 @@ import {
   applyUpdate,
   latestRelease,
   updateStatus,
+  updateWouldTakeEffect,
   updatesConfigured,
 } from '../../services/updates.js'
 
@@ -94,6 +95,12 @@ export function registerPlatformRoutes(app: FastifyInstance): void {
    */
   app.post('/api/v1/platform/update', { config: { roles: [...SUPERADMIN] } }, async (request) => {
     const user = requireUser(request)
+
+    if (!(await updateWouldTakeEffect())) {
+      // Checked before anything is downloaded: the alternative is a perfect
+      // deployment of code nobody runs, reported as a success.
+      throw new AppError(409, 'CONFLICT', 'platform.errors.notLinked')
+    }
 
     if (!updatesConfigured()) {
       throw new AppError(503, 'SERVICE_UNAVAILABLE', 'platform.errors.notConfigured')

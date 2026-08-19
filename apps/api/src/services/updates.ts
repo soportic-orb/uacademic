@@ -25,7 +25,7 @@
 import { createHash } from 'node:crypto'
 import { spawn } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
-import { mkdir, readlink, rm, symlink, unlink, writeFile } from 'node:fs/promises'
+import { mkdir, readlink, realpath, rm, symlink, unlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -145,6 +145,23 @@ export function releaseRoot(): string {
   // `<release>/apps/api/dist/services/` in a build, `…/src/services/` from
   // source — four levels up either way.
   return resolve(dirname(fileURLToPath(import.meta.url)), '../../../..')
+}
+
+/**
+ * Does moving `current` change what this host runs?
+ *
+ * Only if this process was loaded through that symlink. An installation
+ * started from a plain checkout — the normal way to begin — has PM2 holding a
+ * working directory of its own, so an update would unpack, migrate, move the
+ * symlink, reload, and be answered by the very same old code. The health check
+ * would pass, because nothing had broken; the panel would report success,
+ * because nothing had failed. Refusing is the only honest outcome.
+ */
+export async function updateWouldTakeEffect(): Promise<boolean> {
+  const link = join(env().DEPLOY_ROOT, 'current')
+  const target = await realpath(link).catch(() => null)
+
+  return target !== null && target === releaseRoot()
 }
 
 let cachedRunningVersion: string | null | undefined

@@ -730,7 +730,8 @@
       "notConfigured": "Automatic updates are not configured on this installation.",
       "noRelease": "There is no published version to install.",
       "alreadyRunning": "An update is already running.",
-      "mailNotConfigured": "Email is not configured on this installation."
+      "mailNotConfigured": "Email is not configured on this installation.",
+      "notLinked": "This installation does not run from the `current` link, so updating would not change the code being served. Run scripts/deploy/promote.sh once and try again."
     },
     "releasePath": "Running from",
     "lastInstalled": "Last installed from here",

@@ -148,6 +148,23 @@ describe.skipIf(!hasDatabase)('installing a release', () => {
     })
   })
 
+  describe('before it touches anything', () => {
+    it('refuses when moving the symlink would not change what runs', async () => {
+      // This suite's `root` has no `current` pointing at the running code, so
+      // an update here would deploy perfectly and be answered by the old
+      // process — a success nobody could tell from a no-op.
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/v1/platform/update',
+        headers: { 'x-mock-user': SEED.superadminEmail, 'x-center-id': centerId },
+        payload: {},
+      })
+
+      expect(response.statusCode).toBe(409)
+      expect(response.json().error.messageKey).toBe('platform.errors.notLinked')
+    })
+  })
+
   describe('the procedure', () => {
     it('verifies, backs up, installs, migrates, switches and checks — in that order', async () => {
       const result = await applyUpdate(prisma, { release: RELEASE, userId }, { hooks: hooks() })
