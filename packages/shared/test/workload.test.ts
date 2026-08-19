@@ -174,6 +174,7 @@ describe('center load table', () => {
     userId: 'u1',
     firstName: 'Marta',
     lastName: 'Puig Serra',
+    avatarUrl: null,
     category: 'associate_professor',
     dedication: 'full_time',
     contractedHours: 240,

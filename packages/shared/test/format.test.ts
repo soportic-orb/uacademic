@@ -1,12 +1,16 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 
 import {
+  DEFAULT_TIMEZONE,
+  displayTimezoneName,
   formatBytes,
+  formatDate,
   formatHours,
   formatPercent,
   formatTime,
   formatTimeRange,
   formatWeekday,
+  setDisplayTimezone,
   weekdayNames,
 } from '../src/domain/format.js'
 
@@ -46,5 +50,38 @@ describe('clock times', () => {
     expect(formatTime('ca', '09:30')).toBe('09:30')
     expect(formatTime('en', '17:00')).toBe('17:00')
     expect(formatTimeRange('es', '09:00', '10:30')).toBe('09:00–10:30')
+  })
+})
+
+describe('the zone instants are read in', () => {
+  afterEach(() => {
+    setDisplayTimezone(DEFAULT_TIMEZONE)
+  })
+
+  /**
+   * A timestamp is an instant, and printing it in UTC showed every Spanish
+   * user a time one or two hours before the one they lived through.
+   */
+  it('shows a timestamp on peninsular time by default', () => {
+    const instant = new Date('2026-08-19T21:30:00Z')
+
+    expect(formatDate('ca', instant, { hour: '2-digit', minute: '2-digit' })).toBe('23:30')
+  })
+
+  it('leaves a calendar date on its own day', () => {
+    expect(formatDate('en', new Date('2026-09-01'), { dateStyle: 'short' })).toBe('01/09/2026')
+  })
+
+  it('follows a center that keeps its own zone', () => {
+    setDisplayTimezone('Atlantic/Canary')
+    const instant = new Date('2026-08-19T21:30:00Z')
+
+    expect(formatDate('ca', instant, { hour: '2-digit', minute: '2-digit' })).toBe('22:30')
+  })
+
+  it('falls back to the platform zone when a center names none', () => {
+    setDisplayTimezone('')
+
+    expect(displayTimezoneName()).toBe(DEFAULT_TIMEZONE)
   })
 })

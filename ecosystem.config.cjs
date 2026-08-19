@@ -71,7 +71,10 @@ module.exports = {
       instances: 2,
       exec_mode: 'cluster',
       max_memory_restart: '512M',
-      env: { NODE_ENV: 'production' },
+      // TZ is a floor, not the setting: `UACADEMIC_TIMEZONE` in shared/.env
+      // overrides it at start-up. It is here so a host on UTC still runs the
+      // clock the platform is written for before anything is configured.
+      env: { NODE_ENV: 'production', TZ: 'Europe/Madrid' },
       // The shared directory survives deployments; the release directory does
       // not, so nothing that matters is written inside it.
       error_file: path.join(LOGS, 'api.error.log'),
@@ -90,7 +93,7 @@ module.exports = {
       instances: 1,
       exec_mode: 'fork',
       max_memory_restart: '512M',
-      env: { NODE_ENV: 'production' },
+      env: { NODE_ENV: 'production', TZ: 'Europe/Madrid' },
       error_file: path.join(LOGS, 'worker.error.log'),
       out_file: path.join(LOGS, 'worker.out.log'),
       time: true,

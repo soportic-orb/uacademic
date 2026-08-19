@@ -1,7 +1,7 @@
 import { disconnectPrisma } from '@uacademic/db'
 
 import { buildApp } from './app.js'
-import { ENV_PREFIX, env, ignoredLegacyNames } from './config/env.js'
+import { ENV_PREFIX, applyTimezone, env, ignoredLegacyNames } from './config/env.js'
 import { loadEnvFile } from './config/env-file.js'
 import { buildInstallerApp } from './modules/install/app.js'
 import { ensureInstallToken, readState, tokenPath } from './services/install.js'
@@ -9,6 +9,11 @@ import { ensureInstallToken, readState, tokenPath } from './services/install.js'
 // The configuration file, wherever this installation keeps it — which on a
 // deployed host is `shared/.env`, not `apps/api/.env`.
 loadEnvFile()
+
+// Read straight from the environment rather than through `env()`: in setup
+// mode there is no configuration to parse yet, and the installer still writes
+// timestamps.
+applyTimezone(process.env[`${ENV_PREFIX}TIMEZONE`])
 
 /**
  * A server with nothing configured is not a broken server: it is a server

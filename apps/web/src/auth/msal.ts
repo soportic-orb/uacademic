@@ -20,15 +20,15 @@ import {
  * so. The build-time variable is still honoured, because a developer running
  * Vite has no API to ask yet.
  */
-let runtime: { clientId: string; authority: string } | null =
-  import.meta.env.VITE_UACADEMIC_ENTRA_CLIENT_ID
-    ? {
-        clientId: import.meta.env.VITE_UACADEMIC_ENTRA_CLIENT_ID,
-        authority:
-          import.meta.env.VITE_UACADEMIC_ENTRA_AUTHORITY ??
-          'https://login.microsoftonline.com/organizations',
-      }
-    : null
+let runtime: { clientId: string; authority: string } | null = import.meta.env
+  .VITE_UACADEMIC_ENTRA_CLIENT_ID
+  ? {
+      clientId: import.meta.env.VITE_UACADEMIC_ENTRA_CLIENT_ID,
+      authority:
+        import.meta.env.VITE_UACADEMIC_ENTRA_AUTHORITY ??
+        'https://login.microsoftonline.com/organizations',
+    }
+  : null
 
 export function configureEntra(config: { clientId: string; authority: string } | null): void {
   // Changing it after MSAL has been built would leave the instance pointing at
@@ -60,9 +60,7 @@ function buildConfiguration(config: { clientId: string; authority: string }): Co
 }
 
 export function scopes(): string[] {
-  return runtime
-    ? [`api://${runtime.clientId}/access_as_user`, 'openid', 'profile', 'email']
-    : []
+  return runtime ? [`api://${runtime.clientId}/access_as_user`, 'openid', 'profile', 'email'] : []
 }
 
 let instance: PublicClientApplication | undefined

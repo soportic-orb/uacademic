@@ -71,6 +71,8 @@ export const sessionUserSchema = z.object({
       centerId: uuidSchema,
       centerName: z.string(),
       centerCode: z.string(),
+      /** The zone this center's instants are shown in (CLAUDE.md §5). */
+      centerTimezone: z.string(),
       role: roleSchema,
     }),
   ),

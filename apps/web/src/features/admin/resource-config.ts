@@ -24,8 +24,14 @@ export interface FieldOption {
 export interface FieldConfig {
   name: string
   labelKey: string
-  type: 'text' | 'number' | 'select' | 'date' | 'checkbox' | 'url'
+  type: 'text' | 'number' | 'select' | 'date' | 'checkbox' | 'url' | 'image'
   required?: boolean
+  /**
+   * `image` only: the sub-path the picture is posted to and deleted from,
+   * `/api/v1/<resource>/<id>/<upload>`. The column then holds whatever URL the
+   * server answers with, which is why the field is never sent in the body.
+   */
+  upload?: string
   options?: FieldOption[]
   /** Options loaded from another resource (degrees, academic years…). */
   optionsFrom?: { path: string; labelField: string }
@@ -75,7 +81,7 @@ export const ADMIN_RESOURCES: ResourceConfig[] = [
     columns: [{ key: 'name', labelKey: 'admin.fields.name', sortable: true }],
     fields: [
       { name: 'name', labelKey: 'admin.fields.name', type: 'text', required: true, full: true },
-      { name: 'logoUrl', labelKey: 'admin.fields.logoUrl', type: 'url', full: true },
+      { name: 'logoUrl', labelKey: 'images.logo', type: 'image', upload: 'logo', full: true },
     ],
   },
   {

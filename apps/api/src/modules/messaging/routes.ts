@@ -171,7 +171,9 @@ export function registerMessagingRoutes(app: FastifyInstance, bus: RealtimeTrans
           deletedAt: null,
           ...(request.query.before ? { createdAt: { lt: new Date(request.query.before) } } : {}),
         },
-        include: { sender: { select: { id: true, firstName: true, lastName: true } } },
+        include: {
+          sender: { select: { id: true, firstName: true, lastName: true, avatarUrl: true } },
+        },
         orderBy: { createdAt: 'desc' },
         take: 50,
       })
@@ -206,6 +208,7 @@ export function registerMessagingRoutes(app: FastifyInstance, bus: RealtimeTrans
             body: message.body,
             senderId: message.senderId,
             senderName: `${message.sender.firstName} ${message.sender.lastName}`,
+            senderAvatarUrl: message.sender.avatarUrl,
             createdAt: message.createdAt.toISOString(),
             attachments: readAttachments(message.attachmentsJson),
             // The tick a sender looks for: everybody else has caught up.

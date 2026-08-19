@@ -3,6 +3,7 @@ import {
   CENTER_HEADER,
   CROSS_CENTER_HEADER,
   DEFAULT_LOCALE,
+  DEFAULT_TIMEZONE,
   SESSION_COOKIE,
   canAccessCenter,
   isSuperadmin,
@@ -27,7 +28,7 @@ export interface RequestUser extends Principal {
   avatarUrl: string | null
   status: 'active' | 'invited' | 'pending_activation' | 'suspended'
   entraOid: string | null
-  centerNames: Map<string, { name: string; code: string }>
+  centerNames: Map<string, { name: string; code: string; timezone: string }>
 }
 
 export interface MicrosoftAccount {
@@ -67,7 +68,9 @@ function findUser(where: { id: string } | { email: string }) {
   return prisma().user.findUnique({
     where: where as { id: string },
     include: {
-      centerRoles: { include: { center: { select: { id: true, name: true, code: true } } } },
+      centerRoles: {
+        include: { center: { select: { id: true, name: true, code: true, timezone: true } } },
+      },
     },
   })
 }
@@ -77,11 +80,12 @@ type UserRow = Awaited<ReturnType<typeof findUser>>
 function hydrate(user: UserRow): RequestUser | null {
   if (!user) return null
 
-  const centerNames = new Map<string, { name: string; code: string }>()
+  const centerNames = new Map<string, { name: string; code: string; timezone: string }>()
   for (const membership of user.centerRoles) {
     centerNames.set(membership.centerId, {
       name: membership.center.name,
       code: membership.center.code,
+      timezone: membership.center.timezone,
     })
   }
 
@@ -146,6 +150,7 @@ export async function buildSessionUser(
       centerId: membership.centerId,
       centerName: user.centerNames.get(membership.centerId)?.name ?? '',
       centerCode: user.centerNames.get(membership.centerId)?.code ?? '',
+      centerTimezone: user.centerNames.get(membership.centerId)?.timezone ?? DEFAULT_TIMEZONE,
       role: membership.role,
     })),
     expiresAt: expiresAt.toISOString(),

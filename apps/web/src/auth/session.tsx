@@ -1,4 +1,5 @@
 import type { SessionUser } from '@uacademic/shared'
+import { setDisplayTimezone } from '@uacademic/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createContext, type ReactNode, useCallback, useContext, useEffect } from 'react'
 
@@ -61,6 +62,18 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!centerId && firstCenterId) setCenterId(firstCenterId)
   }, [centerId, firstCenterId, setCenterId])
+
+  /*
+    Timestamps are shown in the center's zone, not the machine's: a coordinator
+    reading the platform from a laptop still on another country's clock has to
+    see the same hour as the person sitting in the faculty.
+  */
+  const activeTimezone = (
+    user?.memberships.find((m) => m.centerId === centerId) ?? user?.memberships[0]
+  )?.centerTimezone
+  useEffect(() => {
+    setDisplayTimezone(activeTimezone)
+  }, [activeTimezone])
 
   const openSession = useMutation({
     mutationFn: async (accessToken: string) =>

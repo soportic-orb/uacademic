@@ -1,6 +1,6 @@
 import type { SessionUser } from '@uacademic/shared'
 import { formatPersonName } from '@uacademic/shared'
-import { LogOut, Menu, Search, UserRound } from 'lucide-react'
+import { LogOut, Menu, Search } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 
@@ -10,6 +10,7 @@ import { NotificationBell } from '../../features/notifications/notification-bell
 import { useToast } from '../../hooks/use-toast'
 import { clearApiCache } from '../../app/service-worker'
 import { DEMO_IDENTITIES, useSessionStore } from '../../stores/session'
+import { Avatar } from '../ui/avatar'
 import { Button } from '../ui/button'
 
 export interface HeaderProps {
@@ -37,7 +38,7 @@ export function Header({ user, onOpenSearch, onToggleSidebar }: HeaderProps) {
   )
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-2 border-b border-border bg-surface px-4">
+    <header className="z-30 flex h-16 shrink-0 items-center gap-2 border-b border-border bg-surface px-4">
       <Button
         variant="ghost"
         size="icon"
@@ -75,12 +76,19 @@ export function Header({ user, onOpenSearch, onToggleSidebar }: HeaderProps) {
       <button
         type="button"
         onClick={onOpenSearch}
-        className="ml-auto flex h-9 items-center gap-2 rounded-control border border-border bg-surface-muted px-3 text-sm text-text-muted transition-colors hover:text-text md:w-80 md:justify-start"
+        className="ml-auto flex h-9 items-center gap-2 rounded-control border border-border bg-surface-muted px-3 text-sm text-text-muted transition-colors hover:text-text md:w-96 md:justify-start xl:w-[28rem]"
         aria-label={t('layout.globalSearch')}
       >
-        <Search className="size-4" aria-hidden="true" />
-        <span className="hidden md:inline">{t('layout.searchPlaceholder')}</span>
-        <kbd className="ml-auto hidden rounded border border-border px-1.5 py-0.5 text-xs md:inline">
+        <Search className="size-4 shrink-0" aria-hidden="true" />
+        {/*
+          Nowrap and not just wide: the placeholder is a full sentence and it is
+          longest in Catalan, so on a narrow desktop it used to break onto a
+          second line inside a 36px-high control.
+        */}
+        <span className="hidden truncate whitespace-nowrap md:inline">
+          {t('layout.searchPlaceholder')}
+        </span>
+        <kbd className="ml-auto hidden shrink-0 rounded border border-border px-1.5 py-0.5 text-xs md:inline">
           {'⌘K'}
         </kbd>
       </button>
@@ -114,7 +122,11 @@ export function Header({ user, onOpenSearch, onToggleSidebar }: HeaderProps) {
           className="flex h-9 items-center gap-2 rounded-control px-2 text-sm text-text hover:bg-surface-muted"
           aria-label={t('layout.userMenu')}
         >
-          <UserRound className="size-5" aria-hidden="true" />
+          <Avatar
+            name={user ? formatPersonName(user.firstName, user.lastName) : ''}
+            url={user?.avatarUrl}
+            size="sm"
+          />
           <span className="hidden max-w-40 truncate md:inline">
             {user ? formatPersonName(user.firstName, user.lastName) : ''}
           </span>

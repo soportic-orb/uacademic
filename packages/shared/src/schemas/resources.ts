@@ -29,9 +29,14 @@ const code = z
     message: 'validation.invalidCode',
   })
 
+/**
+ * The logo is not here: it is uploaded to `/admin/universities/:id/logo`, and
+ * the column is written with the URL that route answers with. Accepting one in
+ * the body as well would be a second way to set it, and the only URLs it could
+ * carry are somewhere else's.
+ */
 export const universityInputSchema = z.object({
   name: z.string().trim().min(1).max(200),
-  logoUrl: z.url().max(500).nullish(),
 })
 export type UniversityInput = z.infer<typeof universityInputSchema>
 

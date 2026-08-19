@@ -4,11 +4,18 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Button } from '../../components/ui/button'
+import { useImageData } from '../../hooks/use-image'
 import { ApiRequestError, apiFetch } from '../../lib/api'
 import { cn } from '../../lib/cn'
 import type { FieldConfig, ResourceConfig } from './resource-config'
 
 type Values = Record<string, unknown>
+
+/** What a submitted form asks the page to do with pictures, per field. */
+export interface ImageIntent {
+  files: Record<string, File>
+  removals: string[]
+}
 
 /**
  * Form dialog built from the resource description. Field errors come back from
@@ -24,13 +31,17 @@ export function ResourceForm({
   resource: ResourceConfig
   row: Values | null
   onClose: () => void
-  onSubmit: (values: Values) => Promise<unknown>
+  onSubmit: (values: Values, images: ImageIntent) => Promise<unknown>
 }) {
   const { t } = useTranslation()
   const dialogRef = useRef<HTMLDivElement>(null)
   const [values, setValues] = useState<Values>(() => initialValues(resource.fields, row))
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [busy, setBusy] = useState(false)
+  // Pictures are not part of the JSON body: they are posted to their own
+  // endpoint once the row exists and has an id.
+  const [files, setFiles] = useState<Record<string, File>>({})
+  const [removals, setRemovals] = useState<string[]>([])
 
   // Options for relation fields (degrees, academic years, subjects…).
   const relationFields = resource.fields.filter((field) => field.optionsFrom)
@@ -72,12 +83,20 @@ export function ResourceForm({
     setErrors({})
 
     try {
-      await onSubmit(cleanValues(resource.fields, values))
+      await onSubmit(cleanValues(resource.fields, values), { files, removals })
     } catch (error) {
       if (error instanceof ApiRequestError && error.details.length > 0) {
-        setErrors(
-          Object.fromEntries(error.details.map((detail) => [detail.path, detail.messageKey])),
+        const byPath = Object.fromEntries(
+          error.details.map((detail) => [detail.path, detail.messageKey]),
         )
+        // An upload is a request of its own and answers about `file`; on this
+        // form that complaint belongs to the picture field it came from.
+        if (byPath.file) {
+          for (const field of resource.fields) {
+            if (field.type === 'image') byPath[field.name] = byPath.file
+          }
+        }
+        setErrors(byPath)
       } else if (error instanceof ApiRequestError) {
         setErrors({ _form: error.localizedMessage })
       } else {
@@ -152,6 +171,26 @@ export function ResourceForm({
                       }
                       className="size-5 rounded border-border"
                     />
+                  ) : field.type === 'image' ? (
+                    <ImageField
+                      inputId={inputId}
+                      label={t(field.labelKey)}
+                      currentUrl={
+                        removals.includes(field.name)
+                          ? null
+                          : ((row?.[field.name] as string) ?? null)
+                      }
+                      file={files[field.name] ?? null}
+                      onPick={(file) => {
+                        setFiles({ ...files, [field.name]: file })
+                        setRemovals(removals.filter((name) => name !== field.name))
+                      }}
+                      onRemove={() => {
+                        const { [field.name]: _dropped, ...rest } = files
+                        setFiles(rest)
+                        setRemovals([...new Set([...removals, field.name])])
+                      }}
+                    />
                   ) : (
                     <input
                       id={inputId}
@@ -195,6 +234,77 @@ export function ResourceForm({
   )
 }
 
+/**
+ * The picture as it stands: what is stored, or what has just been chosen and
+ * not yet sent. Showing the chosen file matters — a form that looks unchanged
+ * after picking one invites picking it again.
+ */
+function ImageField({
+  inputId,
+  label,
+  currentUrl,
+  file,
+  onPick,
+  onRemove,
+}: {
+  inputId: string
+  label: string
+  currentUrl: string | null
+  file: File | null
+  onPick: (file: File) => void
+  onRemove: () => void
+}) {
+  const { t } = useTranslation()
+  const stored = useImageData(file ? null : currentUrl)
+  const [pending, setPending] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!file) {
+      setPending(null)
+      return
+    }
+    const url = URL.createObjectURL(file)
+    setPending(url)
+    return () => URL.revokeObjectURL(url)
+  }, [file])
+
+  const preview = pending ?? stored.data ?? null
+
+  return (
+    <div className="flex flex-wrap items-center gap-4">
+      {preview ? (
+        <img
+          src={preview}
+          alt={label}
+          className="size-16 rounded-control border border-border object-contain"
+        />
+      ) : (
+        <span className="grid size-16 place-items-center rounded-control border border-dashed border-border text-xs text-text-muted">
+          {t('images.noImage')}
+        </span>
+      )}
+
+      <div className="flex flex-wrap gap-2">
+        <input
+          id={inputId}
+          type="file"
+          accept="image/png,image/jpeg,image/webp,image/gif"
+          className="text-sm text-text-muted file:mr-3 file:rounded-control file:border file:border-border file:bg-surface file:px-3 file:py-1.5 file:text-sm file:text-text"
+          onChange={(event) => {
+            const picked = event.target.files?.[0]
+            if (picked) onPick(picked)
+          }}
+        />
+        {preview ? (
+          <Button type="button" variant="secondary" onClick={onRemove}>
+            {t('common.remove')}
+          </Button>
+        ) : null}
+      </div>
+    </div>
+  )
+}
+
 function initialValues(fields: FieldConfig[], row: Values | null): Values {
   const values: Values = {}
   for (const field of fields) {
@@ -208,6 +318,10 @@ function initialValues(fields: FieldConfig[], row: Values | null): Values {
 function cleanValues(fields: FieldConfig[], values: Values): Values {
   const cleaned: Values = {}
   for (const field of fields) {
+    // A picture is uploaded separately, and the column it lands in is written
+    // by the server: sending it here would only fight with that.
+    if (field.type === 'image') continue
+
     const value = values[field.name]
     if (value === '' || value === undefined || value === null) continue
     cleaned[field.name] = field.type === 'number' ? Number(value) : value

@@ -1025,7 +1025,15 @@
     "roleRevoked": "Role removed.",
     "revokeRole": "Remove the {{role}} role",
     "revokeHint": "Removing their last role leaves them without access to this center. The account is not deleted: they may hold roles in other centers, and their history is kept.",
-    "saved": "Changes saved."
+    "saved": "Changes saved.",
+    "deleteUser": "Delete user",
+    "deleteUserConfirm": "Delete “{{name}}”? Every role they hold in this center will be removed.",
+    "userUnlinked": "This user no longer holds any role in this center",
+    "userDeleted": "User deleted",
+    "userSuspended": "This user has a history on the platform, so the account was suspended rather than deleted",
+    "errors": {
+      "cannotDeleteSelf": "You cannot delete your own account."
+    }
   },
   "imports": {
     "title": "Bulk import",
@@ -1897,6 +1905,27 @@
       "migrationsFailed": "The tables could not be created. Check that the user has CREATE and ALTER privileges.",
       "bootstrapFailed": "The center and administrator could not be created.",
       "configurationFailed": "The configuration file could not be written. Check the directory permissions."
+    }
+  },
+  "images": {
+    "photo": "Profile photo",
+    "photoHint": "PNG, JPEG, WEBP or GIF, up to 4 MB.",
+    "uploadPhoto": "Upload a photo",
+    "changePhoto": "Change photo",
+    "removePhoto": "Remove photo",
+    "photoUpdated": "Profile photo updated",
+    "photoRemoved": "Profile photo removed",
+    "logo": "Logo",
+    "logoHint": "PNG, JPEG, WEBP or GIF, up to 4 MB.",
+    "uploadLogo": "Upload a logo",
+    "changeLogo": "Change logo",
+    "removeLogo": "Remove logo",
+    "noImage": "No image",
+    "avatarOf": "Photo of {{name}}",
+    "errors": {
+      "unsupportedType": "That image format is not supported. Use PNG, JPEG, WEBP or GIF.",
+      "tooLarge": "The image is too large. The maximum is 4 MB.",
+      "empty": "The file is empty."
     }
   }
 }

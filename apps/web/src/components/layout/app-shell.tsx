@@ -40,8 +40,13 @@ export function AppShell() {
     .filter((membership) => !centerId || membership.centerId === centerId)
     .map((membership) => membership.role)
 
+  /*
+    The viewport is the frame, not the page: the shell is exactly one screen
+    tall and hides its own overflow, so the sidebar and the header stay put and
+    the only thing that scrolls is the content column.
+  */
   return (
-    <div className="flex min-h-dvh bg-bg">
+    <div className="flex h-dvh overflow-hidden bg-bg">
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-control focus:bg-surface focus:px-4 focus:py-2 focus:text-text"
@@ -51,14 +56,14 @@ export function AppShell() {
 
       <Sidebar roles={roles} collapsed={collapsed} onToggle={() => setCollapsed((v) => !v)} />
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <Header
           user={user}
           onOpenSearch={() => setSearchOpen(true)}
           onToggleSidebar={() => setCollapsed((v) => !v)}
         />
 
-        <main id="main" className="flex-1 px-4 pb-24 pt-6 md:px-8 md:pb-8">
+        <main id="main" className="flex-1 overflow-y-auto px-4 pb-24 pt-6 md:px-8 md:pb-8">
           {isPending ? (
             <div className="grid gap-4 md:grid-cols-3">
               <CardSkeleton />

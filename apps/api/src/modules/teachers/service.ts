@@ -173,6 +173,7 @@ function loadRow(profile: ProfileRow, thresholds: LoadThresholds): CenterLoadRow
     userId: profile.user.id,
     firstName: profile.user.firstName,
     lastName: profile.user.lastName,
+    avatarUrl: profile.user.avatarUrl,
     category: profile.category,
     dedication: profile.dedication,
     contractedHours: workload.contractedHours,

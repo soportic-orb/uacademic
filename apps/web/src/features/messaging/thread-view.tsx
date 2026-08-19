@@ -12,6 +12,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { CardSkeleton, ErrorState } from '../../components/feedback/states'
+import { Avatar } from '../../components/ui/avatar'
 import { Button } from '../../components/ui/button'
 import { useToast } from '../../hooks/use-toast'
 import { currentLocale } from '../../i18n'
@@ -127,8 +128,11 @@ export function ThreadView({ conversationId }: { conversationId: string }) {
       <ul className="flex-1 space-y-3 overflow-y-auto p-4">
         {thread.items.map((message) => (
           <li key={message.id} className="rounded-control border border-border p-3">
-            <div className="flex items-baseline justify-between gap-3">
-              <span className="text-sm font-medium text-text">{message.senderName}</span>
+            <div className="flex items-center justify-between gap-3">
+              <span className="flex min-w-0 items-center gap-2">
+                <Avatar name={message.senderName} url={message.senderAvatarUrl} size="xs" />
+                <span className="truncate text-sm font-medium text-text">{message.senderName}</span>
+              </span>
               <span className="tabular text-xs text-text-muted">
                 {formatDate(locale, new Date(message.createdAt), {
                   dateStyle: 'short',

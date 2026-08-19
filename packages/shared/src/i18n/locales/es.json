@@ -1025,7 +1025,15 @@
     "roleRevoked": "Rol retirado.",
     "revokeRole": "Retira el rol {{role}}",
     "revokeHint": "Retirarle el último rol lo deja sin acceso a este centro. La cuenta no se borra: puede tener roles en otros centros y su historial se conserva.",
-    "saved": "Cambios guardados."
+    "saved": "Cambios guardados.",
+    "deleteUser": "Elimina el usuario",
+    "deleteUserConfirm": "¿Seguro que quieres eliminar «{{name}}»? Se le retirarán todos los roles en este centro.",
+    "userUnlinked": "El usuario ya no tiene ningún rol en este centro",
+    "userDeleted": "Usuario eliminado",
+    "userSuspended": "El usuario tiene historial en la plataforma: la cuenta se ha suspendido en lugar de eliminarse",
+    "errors": {
+      "cannotDeleteSelf": "No puedes eliminar tu propia cuenta."
+    }
   },
   "imports": {
     "title": "Importación masiva",
@@ -1897,6 +1905,27 @@
       "migrationsFailed": "No se han podido crear las tablas. Revisa que el usuario tenga permisos de CREATE y ALTER.",
       "bootstrapFailed": "No se ha podido crear el centro y el administrador.",
       "configurationFailed": "No se ha podido escribir el fichero de configuración. Comprueba los permisos del directorio."
+    }
+  },
+  "images": {
+    "photo": "Fotografía de perfil",
+    "photoHint": "PNG, JPEG, WEBP o GIF, hasta 4 MB.",
+    "uploadPhoto": "Sube una fotografía",
+    "changePhoto": "Cambia la fotografía",
+    "removePhoto": "Elimina la fotografía",
+    "photoUpdated": "Fotografía de perfil actualizada",
+    "photoRemoved": "Fotografía de perfil eliminada",
+    "logo": "Logotipo",
+    "logoHint": "PNG, JPEG, WEBP o GIF, hasta 4 MB.",
+    "uploadLogo": "Sube un logotipo",
+    "changeLogo": "Cambia el logotipo",
+    "removeLogo": "Elimina el logotipo",
+    "noImage": "Sin imagen",
+    "avatarOf": "Fotografía de {{name}}",
+    "errors": {
+      "unsupportedType": "El formato de la imagen no es compatible. Usa PNG, JPEG, WEBP o GIF.",
+      "tooLarge": "La imagen es demasiado grande. El máximo son 4 MB.",
+      "empty": "El archivo está vacío."
     }
   }
 }

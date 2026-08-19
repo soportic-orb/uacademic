@@ -154,6 +154,7 @@ export interface CenterLoadRow {
   userId: string
   firstName: string
   lastName: string
+  avatarUrl: string | null
   category: string
   dedication: string
   contractedHours: number

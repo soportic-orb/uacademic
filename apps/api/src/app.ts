@@ -30,6 +30,7 @@ import { registerImportRoutes } from './modules/imports/routes.js'
 import { registerEventRoutes } from './modules/events/routes.js'
 import { registerHealthRoutes } from './modules/health/routes.js'
 import { registerMeRoutes } from './modules/me/routes.js'
+import { registerMediaRoutes } from './modules/media/routes.js'
 import { registerPlannerRoutes } from './modules/planner/routes.js'
 import { registerSubjectRoutes } from './modules/subjects/routes.js'
 import { registerTeacherRoutes } from './modules/teachers/routes.js'
@@ -133,6 +134,7 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
   registerInstallDisabledRoutes(app)
   registerAuthRoutes(app, env)
   registerMeRoutes(app)
+  registerMediaRoutes(app)
   registerCenterRoutes(app)
   registerTeacherRoutes(app)
   registerSubjectRoutes(app)

@@ -231,6 +231,7 @@ describe('personal workload breakdown', () => {
     userId: 'u1',
     firstName: 'Sergi',
     lastName: 'Vila Rovira',
+    avatarUrl: null,
     category: 'adjunct',
     dedication: 'part_time',
     contractedHours: 120,

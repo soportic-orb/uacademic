@@ -1,7 +1,7 @@
 import { disconnectPrisma, getPrismaClient } from '@uacademic/db'
 import { pino } from 'pino'
 
-import { ENV_PREFIX, env, ignoredLegacyNames } from '../config/env.js'
+import { ENV_PREFIX, applyTimezone, env, ignoredLegacyNames } from '../config/env.js'
 import { buildJobHandlers, enqueuePeriodicJobs } from './handlers.js'
 import { JobWorker } from './worker.js'
 
@@ -10,6 +10,7 @@ import { JobWorker } from './worker.js'
  * email or push delivery never blocks an HTTP request.
  */
 const configuration = env()
+applyTimezone(configuration.TIMEZONE)
 const logger = pino({ level: configuration.LOG_LEVEL, name: 'jobs' })
 
 const ignored = ignoredLegacyNames()

@@ -1,3 +1,4 @@
+import { DEFAULT_TIMEZONE } from '@uacademic/shared'
 import { z } from 'zod'
 
 import { loadEnvFile } from './env-file.js'
@@ -140,6 +141,15 @@ const envSchema = z.object({
 
   /** Message attachments live on disk; there is no object storage on the host. */
   UPLOAD_DIR: z.string().default('./var/uploads'),
+
+  /**
+   * The zone the server itself runs in, applied to `process.env.TZ` at start.
+   *
+   * A shared host is often on UTC, and jobs that mean "07:00" — the daily
+   * digest, the retention sweep — would then fire an hour or two early. The
+   * default is the platform's own zone, and a deployment elsewhere sets it.
+   */
+  TIMEZONE: z.string().trim().min(1).max(64).default(DEFAULT_TIMEZONE),
 
   IMPORT_MAX_ROWS: z.coerce.number().int().min(1).max(100_000).default(5_000),
   IMPORT_MAX_FILE_MB: z.coerce.number().int().min(1).max(50).default(5),
@@ -291,6 +301,18 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
  */
 export function entraConfigured(env: Env): boolean {
   return env.AUTH_MODE !== 'mock' && Boolean(env.ENTRA_CLIENT_ID)
+}
+
+/**
+ * Puts the process on the platform's clock.
+ *
+ * Called before anything reads a date: a shared host is commonly on UTC, and a
+ * job that means 07:00 would otherwise fire an hour or two early half the year.
+ */
+export function applyTimezone(timezone: string | undefined): string {
+  const zone = timezone?.trim() || DEFAULT_TIMEZONE
+  process.env.TZ = zone
+  return zone
 }
 
 export function acceptedAudiences(env: Env): string[] {

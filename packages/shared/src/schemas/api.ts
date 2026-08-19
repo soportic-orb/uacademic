@@ -85,6 +85,7 @@ export const teacherLoadSchema = z.object({
   userId: uuidSchema,
   firstName: z.string(),
   lastName: z.string(),
+  avatarUrl: z.string().nullable(),
   category: z.string(),
   dedication: z.string(),
   contractedHours: z.number(),
@@ -180,7 +181,6 @@ export type TeacherSkillDto = z.infer<typeof teacherSkillSchema>
 /** The profile card of screen (a). */
 export const teacherProfileSchema = teacherWorkloadSchema.extend({
   email: z.email(),
-  avatarUrl: z.string().nullable(),
   notes: z.string().nullable(),
   reductions: z.array(teacherReductionSchema),
   skills: z.array(teacherSkillSchema),

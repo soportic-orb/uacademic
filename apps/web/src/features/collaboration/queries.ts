@@ -87,6 +87,7 @@ export interface MessageDto {
   body: string
   senderId: string
   senderName: string
+  senderAvatarUrl: string | null
   createdAt: string
   attachments: { id: string; fileName: string; mimeType: string; sizeBytes: number }[]
   readByAll: boolean

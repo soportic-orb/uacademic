@@ -1,11 +1,12 @@
 import type { ListResult } from '@uacademic/shared'
 import { formatDate, formatPersonName } from '@uacademic/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Pencil, Send, UserPlus, X } from 'lucide-react'
+import { Pencil, Send, Trash2, UserPlus, X } from 'lucide-react'
 import { Fragment, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { EmptyState, ErrorState, TableSkeleton } from '../../components/feedback/states'
+import { Avatar } from '../../components/ui/avatar'
 import { Button } from '../../components/ui/button'
 import { Card, CardBody, CardHeader } from '../../components/ui/card'
 import { useToast } from '../../hooks/use-toast'
@@ -18,6 +19,7 @@ interface UserRow {
   firstName: string
   lastName: string
   status: 'active' | 'invited' | 'pending_activation' | 'suspended'
+  avatarUrl: string | null
   linkedToEntra: boolean
   lastLoginAt: string | null
   roles: string[]
@@ -129,6 +131,25 @@ export function UsersPage() {
       // Losing the last role means losing the center, which is what "remove
       // from this center" means for a person who may work in another.
       toast.success('admin.roleRevoked')
+      await invalidate()
+    },
+    onError: reportError,
+  })
+
+  const remove = useMutation({
+    mutationFn: (id: string) =>
+      apiFetch<{ outcome: 'unlinked' | 'deleted' | 'suspended' }>(`/api/v1/users/${id}`, {
+        method: 'DELETE',
+      }),
+    onSuccess: async (result) => {
+      // Three different things can have happened, and which one it was is not
+      // a detail: an account that survives as suspended is still an account.
+      if (result.outcome === 'deleted') toast.success('admin.userDeleted')
+      else if (result.outcome === 'suspended')
+        toast.warning('admin.userSuspended', { durationMs: 10_000 })
+      else toast.success('admin.userUnlinked')
+
+      setEditing(null)
       await invalidate()
     },
     onError: reportError,
@@ -307,9 +328,17 @@ export function UsersPage() {
                       <Fragment key={user.id}>
                         <tr className="border-b border-border/60">
                           <th scope="row" className="py-3 pr-4 text-left font-medium text-text">
-                            {formatPersonName(user.firstName, user.lastName)}
-                            <span className="block text-xs font-normal text-text-muted">
-                              {user.email}
+                            <span className="flex items-center gap-3">
+                              <Avatar
+                                name={formatPersonName(user.firstName, user.lastName)}
+                                url={user.avatarUrl}
+                              />
+                              <span>
+                                {formatPersonName(user.firstName, user.lastName)}
+                                <span className="block text-xs font-normal text-text-muted">
+                                  {user.email}
+                                </span>
+                              </span>
                             </span>
                           </th>
                           <td className="py-3 pr-4 text-text-muted">
@@ -365,6 +394,21 @@ export function UsersPage() {
                               >
                                 <Pencil className="size-4" aria-hidden="true" />
                                 {t('admin.edit')}
+                              </Button>
+
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                disabled={remove.isPending}
+                                onClick={() => {
+                                  const name = formatPersonName(user.firstName, user.lastName)
+                                  if (window.confirm(t('admin.deleteUserConfirm', { name }))) {
+                                    remove.mutate(user.id)
+                                  }
+                                }}
+                              >
+                                <Trash2 className="size-4" aria-hidden="true" />
+                                {t('admin.delete')}
                               </Button>
                             </div>
                           </td>

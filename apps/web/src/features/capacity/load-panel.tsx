@@ -14,6 +14,7 @@ import { Link } from 'react-router'
 
 import { LoadBadge } from '../../components/data/load-badge'
 import { EmptyState, ErrorState, TableSkeleton } from '../../components/feedback/states'
+import { Avatar } from '../../components/ui/avatar'
 import { Button } from '../../components/ui/button'
 import { Card, CardBody } from '../../components/ui/card'
 import { useToast } from '../../hooks/use-toast'
@@ -229,8 +230,12 @@ export function LoadPanel() {
                       <th scope="row" className="py-3 pr-4 text-left font-medium">
                         <Link
                           to={`/teachers/${teacher.teacherProfileId}`}
-                          className="text-primary underline-offset-2 hover:underline"
+                          className="flex items-center gap-3 text-primary underline-offset-2 hover:underline"
                         >
+                          <Avatar
+                            name={formatPersonName(teacher.firstName, teacher.lastName)}
+                            url={teacher.avatarUrl}
+                          />
                           {formatPersonName(teacher.firstName, teacher.lastName)}
                         </Link>
                       </th>

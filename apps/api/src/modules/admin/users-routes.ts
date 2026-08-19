@@ -84,6 +84,7 @@ export function registerUserRoutes(app: FastifyInstance): void {
         lastName: user.lastName,
         locale: user.locale,
         status: user.status,
+        avatarUrl: user.avatarUrl,
         /** Whether this person has ever signed in with Microsoft. */
         linkedToEntra: Boolean(user.entraOid),
         lastLoginAt: user.lastLoginAt?.toISOString() ?? null,
@@ -368,6 +369,68 @@ export function registerUserRoutes(app: FastifyInstance): void {
       return { ok: true }
     },
   )
+
+  /**
+   * Removing a person.
+   *
+   * Not one operation but the most that can honestly be done, in order: their
+   * roles in this center go, and then the account itself if nothing is left of
+   * it anywhere. What usually stops the last step is `audit_log`, which refuses
+   * to give up its author (R4) — an account that has ever done anything cannot
+   * be erased without erasing the record of it. That account is suspended
+   * instead, which is what "cannot sign in any more" actually means here.
+   */
+  app.delete('/api/v1/users/:id', { config: { roles: CENTER_MANAGER_ROLES } }, async (request) => {
+    const { centerId } = requireCenterScope(request)
+    const actor = requireUser(request)
+    const { id } = request.params as { id: string }
+    const client = prisma()
+
+    // Deleting the account you are signed in with locks you out of the screen
+    // you are standing on, and on a fresh installation there is no second way in.
+    if (id === actor.userId) {
+      throw AppError.validation([{ path: 'id', messageKey: 'admin.errors.cannotDeleteSelf' }])
+    }
+
+    const user = await requireMember(id, centerId)
+    const grants = await client.userCenterRole.findMany({ where: { userId: id } })
+
+    // Platform administration is only ever taken away by platform administration.
+    if (grants.some((grant) => grant.role === 'SUPERADMIN') && !isSuperadmin(actor)) {
+      throw AppError.forbidden()
+    }
+
+    const here = grants.filter((grant) => grant.centerId === centerId)
+    await client.userCenterRole.deleteMany({ where: { userId: id, centerId } })
+
+    let outcome: 'unlinked' | 'deleted' | 'suspended' = 'unlinked'
+
+    if (here.length === grants.length) {
+      try {
+        await client.user.delete({ where: { id } })
+        outcome = 'deleted'
+      } catch {
+        // Referenced by something that outlives them — the audit log, a
+        // published timetable. The account stays, unable to sign in.
+        await client.user.update({ where: { id }, data: { status: 'suspended' } })
+        outcome = 'suspended'
+      }
+    }
+
+    await writeAuditLog(client, {
+      centerId,
+      userId: actor.userId,
+      entity: 'user',
+      entityId: id,
+      action: 'delete',
+      before: { email: user.email, roles: here.map((grant) => grant.role) },
+      after: { outcome },
+      source: 'user',
+      ip: request.ip,
+    })
+
+    return { outcome }
+  })
 }
 
 /** A center administrator may only touch people who belong to their center. */

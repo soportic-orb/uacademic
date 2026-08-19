@@ -16,6 +16,28 @@ export function localeTag(locale: AppLocale): string {
 }
 
 /**
+ * The zone every instant is shown in.
+ *
+ * Timetables are stored as center-local `HH:MM` and need no conversion, but
+ * everything with a real instant behind it — when a message was sent, when a
+ * change was approved, when a session expires — is a UTC timestamp, and it used
+ * to be printed in UTC. In Spain that is an hour or two off all year, on every
+ * screen. The platform runs on peninsular time, and a center in another zone
+ * overrides it through `setDisplayTimezone`.
+ */
+export const DEFAULT_TIMEZONE = 'Europe/Madrid'
+
+let displayTimezone: string = DEFAULT_TIMEZONE
+
+export function setDisplayTimezone(timezone: string | null | undefined): void {
+  displayTimezone = timezone && timezone.trim() ? timezone : DEFAULT_TIMEZONE
+}
+
+export function displayTimezoneName(): string {
+  return displayTimezone
+}
+
+/**
  * Hour figures always show two decimals: they are compared against contracts,
  * and "18 h" versus "18,25 h" is not the same conversation.
  */
@@ -67,20 +89,24 @@ export function formatDate(
   date: Date,
   options: Intl.DateTimeFormatOptions = { dateStyle: 'medium' },
 ): string {
-  return new Intl.DateTimeFormat(localeTag(locale), { timeZone: 'UTC', ...options }).format(date)
+  return new Intl.DateTimeFormat(localeTag(locale), {
+    timeZone: displayTimezone,
+    ...options,
+  }).format(date)
 }
 
 export function formatDateRange(locale: AppLocale, from: Date, to: Date): string {
   const formatter = new Intl.DateTimeFormat(localeTag(locale), {
     dateStyle: 'medium',
-    timeZone: 'UTC',
+    timeZone: displayTimezone,
   })
   return formatter.formatRange(from, to)
 }
 
 /**
  * Weekday name for an ISO weekday. The reference date is 2024-01-01, a Monday,
- * so weekday 1 always renders as Monday — the week starts on Monday.
+ * so weekday 1 always renders as Monday — the week starts on Monday. It is a
+ * constructed date and not an instant, so it is read back in UTC.
  */
 export function formatWeekday(
   locale: AppLocale,

@@ -10,10 +10,10 @@ import { Button } from '../../components/ui/button'
 import { Card, CardBody } from '../../components/ui/card'
 import { useToast } from '../../hooks/use-toast'
 import { currentLocale } from '../../i18n'
-import { ApiRequestError, apiFetch, apiJson } from '../../lib/api'
+import { ApiRequestError, apiFetch, apiJson, apiUpload } from '../../lib/api'
 import { cn } from '../../lib/cn'
 import type { ResourceConfig } from './resource-config'
-import { ResourceForm } from './resource-form'
+import { type ImageIntent, ResourceForm } from './resource-form'
 
 type Row = Record<string, unknown>
 
@@ -69,10 +69,33 @@ export function ResourcePage({ resource }: { resource: ResourceConfig }) {
   })
 
   const save = useMutation({
-    mutationFn: async (payload: { id?: string; values: Record<string, unknown> }) =>
-      payload.id
-        ? apiJson(`/api/v1/${resource.path}/${payload.id}`, 'PATCH', payload.values)
-        : apiJson(`/api/v1/${resource.path}`, 'POST', payload.values),
+    mutationFn: async (payload: {
+      id?: string
+      values: Record<string, unknown>
+      images: ImageIntent
+    }) => {
+      const row = payload.id
+        ? await apiJson<Row>(`/api/v1/${resource.path}/${payload.id}`, 'PATCH', payload.values)
+        : await apiJson<Row>(`/api/v1/${resource.path}`, 'POST', payload.values)
+
+      // Pictures go after the row, never before it: they are stored under the
+      // id, and on a create that id does not exist until this point.
+      const id = payload.id ?? String(row.id ?? '')
+      for (const field of resource.fields) {
+        if (!field.upload || !id) continue
+
+        const file = payload.images.files[field.name]
+        if (file) {
+          const form = new FormData()
+          form.append('file', file)
+          await apiUpload(`/api/v1/${resource.path}/${id}/${field.upload}`, form)
+        } else if (payload.images.removals.includes(field.name)) {
+          await apiFetch(`/api/v1/${resource.path}/${id}/${field.upload}`, { method: 'DELETE' })
+        }
+      }
+
+      return row
+    },
     onSuccess: async (_result, payload) => {
       toast.success(payload.id ? 'admin.updated' : 'admin.created')
       setEditing(null)
@@ -314,10 +337,11 @@ export function ResourcePage({ resource }: { resource: ResourceConfig }) {
           resource={resource}
           row={editing === 'new' ? null : editing}
           onClose={() => setEditing(null)}
-          onSubmit={(values) =>
+          onSubmit={(values, images) =>
             save.mutateAsync({
               ...(editing === 'new' ? {} : { id: String(editing.id) }),
               values,
+              images,
             })
           }
         />

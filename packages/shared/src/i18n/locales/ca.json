@@ -1025,7 +1025,15 @@
     "roleRevoked": "Rol retirat.",
     "revokeRole": "Retira el rol {{role}}",
     "revokeHint": "Retirar-li l'últim rol el deixa sense accés a aquest centre. El compte no s'esborra: pot tenir rols en altres centres i el seu historial es conserva.",
-    "saved": "Canvis desats."
+    "saved": "Canvis desats.",
+    "deleteUser": "Elimina l'usuari",
+    "deleteUserConfirm": "Segur que vols eliminar «{{name}}»? Se li retiraran tots els rols en aquest centre.",
+    "userUnlinked": "L'usuari ja no té cap rol en aquest centre",
+    "userDeleted": "Usuari eliminat",
+    "userSuspended": "L'usuari té historial a la plataforma: el compte s'ha suspès en lloc d'eliminar-se",
+    "errors": {
+      "cannotDeleteSelf": "No pots eliminar el teu propi compte."
+    }
   },
   "imports": {
     "title": "Importació massiva",
@@ -1897,6 +1905,27 @@
       "migrationsFailed": "No s’han pogut crear les taules. Revisa que l’usuari tingui permisos de CREATE i ALTER.",
       "bootstrapFailed": "No s’ha pogut crear el centre i l’administrador.",
       "configurationFailed": "No s’ha pogut escriure el fitxer de configuració. Comprova els permisos del directori."
+    }
+  },
+  "images": {
+    "photo": "Fotografia de perfil",
+    "photoHint": "PNG, JPEG, WEBP o GIF, fins a 4 MB.",
+    "uploadPhoto": "Puja una fotografia",
+    "changePhoto": "Canvia la fotografia",
+    "removePhoto": "Elimina la fotografia",
+    "photoUpdated": "Fotografia de perfil actualitzada",
+    "photoRemoved": "Fotografia de perfil eliminada",
+    "logo": "Logotip",
+    "logoHint": "PNG, JPEG, WEBP o GIF, fins a 4 MB.",
+    "uploadLogo": "Puja un logotip",
+    "changeLogo": "Canvia el logotip",
+    "removeLogo": "Elimina el logotip",
+    "noImage": "Sense imatge",
+    "avatarOf": "Fotografia de {{name}}",
+    "errors": {
+      "unsupportedType": "El format de la imatge no és compatible. Fes servir PNG, JPEG, WEBP o GIF.",
+      "tooLarge": "La imatge és massa gran. El màxim són 4 MB.",
+      "empty": "El fitxer és buit."
     }
   }
 }

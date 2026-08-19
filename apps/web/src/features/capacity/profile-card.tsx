@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next'
 import { LoadBadge } from '../../components/data/load-badge'
 import { EmptyState } from '../../components/feedback/states'
 import { Button } from '../../components/ui/button'
+import { Avatar } from '../../components/ui/avatar'
 import { Card, CardBody, CardHeader } from '../../components/ui/card'
 import { useToast } from '../../hooks/use-toast'
 import { currentLocale } from '../../i18n'
@@ -69,6 +70,13 @@ export function ProfileCard({
         <CardHeader
           title={formatPersonName(profile.firstName, profile.lastName)}
           description={profile.email}
+          icon={
+            <Avatar
+              name={formatPersonName(profile.firstName, profile.lastName)}
+              url={profile.avatarUrl}
+              size="md"
+            />
+          }
           action={<LoadBadge status={profile.status} ratioPercent={profile.ratioPercent} />}
         />
         <CardBody>

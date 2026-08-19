@@ -1,13 +1,15 @@
 import { formatDate, formatPersonName } from '@uacademic/shared'
-import { useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
+import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { useSession } from '../auth/session'
 import { CardSkeleton } from '../components/feedback/states'
+import { Avatar } from '../components/ui/avatar'
 import { Button } from '../components/ui/button'
 import { Card, CardBody, CardHeader } from '../components/ui/card'
 import { useToast } from '../hooks/use-toast'
-import { ApiRequestError, apiJson } from '../lib/api'
+import { ApiRequestError, apiFetch, apiJson, apiUpload } from '../lib/api'
 import { currentLocale } from '../i18n'
 
 /**
@@ -31,6 +33,11 @@ export function ProfilePage() {
           {formatPersonName(user.firstName, user.lastName)}
         </p>
       </header>
+
+      <PhotoCard
+        name={formatPersonName(user.firstName, user.lastName)}
+        avatarUrl={user.avatarUrl}
+      />
 
       {user.microsoftAccount ? (
         <Card className="max-w-2xl">
@@ -71,6 +78,107 @@ export function ProfilePage() {
         </CardBody>
       </Card>
     </div>
+  )
+}
+
+/**
+ * The photograph, which is the one piece of the profile the person owns
+ * outright: they put it there and they can take it away.
+ */
+function PhotoCard({ name, avatarUrl }: { name: string; avatarUrl: string | null }) {
+  const { t } = useTranslation()
+  const toast = useToast()
+  const queryClient = useQueryClient()
+  const input = useRef<HTMLInputElement>(null)
+  const [busy, setBusy] = useState(false)
+
+  // The session carries the URL, so refreshing it is what puts the new face in
+  // the header and everywhere else this person is drawn.
+  const refresh = async () => {
+    await queryClient.invalidateQueries({ queryKey: ['session'] })
+  }
+
+  const fail = (error: unknown) => {
+    if (error instanceof ApiRequestError) {
+      const key = error.details[0]?.messageKey
+      if (key) toast.error(key)
+      else toast.raw({ variant: 'error', message: error.localizedMessage })
+    } else {
+      toast.error('errors.generic')
+    }
+  }
+
+  const upload = async (file: File) => {
+    setBusy(true)
+    try {
+      const form = new FormData()
+      form.append('file', file)
+      await apiUpload('/api/v1/me/avatar', form)
+      await refresh()
+      toast.success('images.photoUpdated')
+    } catch (error) {
+      fail(error)
+    } finally {
+      setBusy(false)
+      if (input.current) input.current.value = ''
+    }
+  }
+
+  const remove = async () => {
+    setBusy(true)
+    try {
+      await apiFetch('/api/v1/me/avatar', { method: 'DELETE' })
+      await refresh()
+      toast.success('images.photoRemoved')
+    } catch (error) {
+      fail(error)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Card className="max-w-2xl">
+      <CardHeader title={t('images.photo')} description={t('images.photoHint')} />
+      <CardBody>
+        <div className="flex flex-wrap items-center gap-4">
+          <Avatar name={name} url={avatarUrl} size="lg" />
+
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" disabled={busy} onClick={() => input.current?.click()}>
+              {avatarUrl ? t('images.changePhoto') : t('images.uploadPhoto')}
+            </Button>
+            {avatarUrl ? (
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={busy}
+                onClick={() => void remove()}
+              >
+                {t('images.removePhoto')}
+              </Button>
+            ) : null}
+          </div>
+
+          {/*
+            The visible control is the button: a bare file input cannot be
+            styled and reads badly, and the label here is what assistive
+            technology announces for the input itself.
+          */}
+          <input
+            ref={input}
+            type="file"
+            accept="image/png,image/jpeg,image/webp,image/gif"
+            aria-label={t('images.uploadPhoto')}
+            className="sr-only"
+            onChange={(event) => {
+              const file = event.target.files?.[0]
+              if (file) void upload(file)
+            }}
+          />
+        </div>
+      </CardBody>
+    </Card>
   )
 }
 
