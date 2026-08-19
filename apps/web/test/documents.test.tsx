@@ -44,6 +44,7 @@ function documentDto(overrides: Partial<DocumentDto> = {}): DocumentDto {
     type: 'regulation',
     status: 'indexed',
     errorKey: null,
+    errorDetail: null,
     language: 'ca',
     visibility: 'ai_only',
     academicYearId: null,

@@ -399,7 +399,8 @@
       "processingFailed": "The document could not be processed."
     },
     "actions": "Actions",
-    "deleteConfirm": "Delete “{{title}}”? The assistant will stop taking it into account."
+    "deleteConfirm": "Delete “{{title}}”? The assistant will stop taking it into account.",
+    "errorDetail": "Technical detail"
   },
   "settings": {
     "title": "Settings",

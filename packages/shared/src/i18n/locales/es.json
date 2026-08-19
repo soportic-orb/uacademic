@@ -399,7 +399,8 @@
       "processingFailed": "No se ha podido procesar el documento."
     },
     "actions": "Acciones",
-    "deleteConfirm": "¿Seguro que quieres eliminar «{{title}}»? El asistente dejará de tenerlo en cuenta."
+    "deleteConfirm": "¿Seguro que quieres eliminar «{{title}}»? El asistente dejará de tenerlo en cuenta.",
+    "errorDetail": "Detalle técnico"
   },
   "settings": {
     "title": "Configuración",

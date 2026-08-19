@@ -57,6 +57,9 @@ export async function extractText(
 }
 
 async function extractPdf(bytes: Uint8Array): Promise<ExtractionResult> {
+  // Loaded outside the guard below on purpose. A parser that will not load is
+  // a broken installation, not a broken file, and reporting it as "this PDF
+  // may be corrupted" sends somebody to re-scan a document that was fine.
   const { extractText: extractPdfText, getDocumentProxy } = await import('unpdf')
 
   try {

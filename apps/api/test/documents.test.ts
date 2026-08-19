@@ -289,6 +289,22 @@ describe.skipIf(!hasDatabase)('the document library', () => {
       // An i18n key the UI turns into a sentence — never a stack trace.
       expect(document.errorKey).toBeTruthy()
       expect(document.errorKey).not.toContain('Error:')
+
+      // And the parser's own words reach whoever manages documents. Without
+      // them, "the file may be corrupted" is where the investigation ends:
+      // a library that failed to load, a file that really is truncated and a
+      // page the parser choked on all look identical.
+      expect(document.errorDetail).toBeTruthy()
+
+      const listed = await app.inject({
+        method: 'GET',
+        url: '/api/v1/documents',
+        headers: asAdmin(),
+      })
+      const row = listed
+        .json()
+        .items.find((item: { id: string }) => item.id === (created.json().id as string))
+      expect(row.errorDetail).toBe(document.errorDetail)
     })
   })
 

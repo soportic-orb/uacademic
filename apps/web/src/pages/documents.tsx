@@ -306,9 +306,22 @@ export function DocumentsPage() {
                           {t(`documents.status.${document.status}`)}
                         </span>
                         {document.errorKey ? (
-                          <p className="mt-1 max-w-xs text-xs text-danger">
-                            {t(`documents.errors.${document.errorKey}`)}
-                          </p>
+                          <div className="mt-1 max-w-xs space-y-1">
+                            <p className="text-xs text-danger">
+                              {t(`documents.errors.${document.errorKey}`)}
+                            </p>
+                            {manages && document.errorDetail ? (
+                              // What the parser actually said, for whoever can
+                              // act on it. A person who uploaded a file that
+                              // will not read needs the reason, not a guess.
+                              <details className="text-xs text-text-muted">
+                                <summary className="cursor-pointer">
+                                  {t('documents.errorDetail')}
+                                </summary>
+                                <p className="mt-1 break-words font-mono">{document.errorDetail}</p>
+                              </details>
+                            ) : null}
+                          </div>
                         ) : document.status === 'indexed' ? (
                           <p className="mt-1 text-xs text-text-muted">
                             {t('documents.fragments', { count: document.chunkCount ?? 0 })}

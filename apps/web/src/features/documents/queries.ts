@@ -14,6 +14,7 @@ export interface DocumentDto {
   type: string
   status: 'uploaded' | 'processing' | 'indexed' | 'failed' | 'archived'
   errorKey: string | null
+  errorDetail: string | null
   language: string
   visibility: 'ai_only' | 'center'
   academicYearId: string | null

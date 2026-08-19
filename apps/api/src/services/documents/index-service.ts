@@ -203,6 +203,7 @@ export function documentSummary(document: {
   type: string
   status: string
   errorKey: string | null
+  errorDetail: string | null
   language: string
   visibility: string
   academicYearId: string | null
@@ -225,6 +226,11 @@ export function documentSummary(document: {
     type: document.type,
     status: document.status,
     errorKey: document.errorKey,
+    // The parser's own words. Kept out of the message a person reads — it is
+    // in English and technical — but sent, because "the file may be corrupted"
+    // with nothing behind it is the difference between fixing a problem and
+    // guessing at it.
+    errorDetail: document.errorDetail,
     language: document.language,
     visibility: document.visibility,
     academicYearId: document.academicYearId,
