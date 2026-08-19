@@ -13,7 +13,7 @@
  * The viewer opens from a citation — `?doc=…&chunk=…` — so a source chip in an
  * answer lands on the exact fragment the answer rested on.
  */
-import { type ListResult, formatBytes, formatDate } from '@uacademic/shared'
+import { type ListResult, MAX_PAGE_SIZE, formatBytes, formatDate } from '@uacademic/shared'
 import { useQuery } from '@tanstack/react-query'
 import { AlertTriangle, Clock, FileText, RefreshCw, ScanText, Trash2 } from 'lucide-react'
 import { useState } from 'react'
@@ -82,7 +82,7 @@ export function DocumentsPage() {
     queryKey: ['document-degrees'],
     queryFn: () =>
       apiFetch<ListResult<{ id: string; code: string; nameCa: string }>>(
-        '/api/v1/admin/degrees?pageSize=200',
+        `/api/v1/admin/degrees?pageSize=${MAX_PAGE_SIZE}`,
       ),
     enabled: managesCenter,
   })

@@ -1,7 +1,6 @@
 import { type SubjectDto, sumHours } from '@uacademic/shared'
 import type { FastifyInstance } from 'fastify'
 
-import { AppError } from '../../lib/errors.js'
 import { requireCenterScope } from '../../plugins/context.js'
 
 export function registerSubjectRoutes(app: FastifyInstance): void {
@@ -12,7 +11,11 @@ export function registerSubjectRoutes(app: FastifyInstance): void {
       where: { status: 'active' },
       orderBy: { startDate: 'desc' },
     })
-    if (!academicYear) throw AppError.notFound()
+    // A center whose academic calendar has not been set up yet has no
+    // subjects. That is an empty list — the state every installation starts
+    // in — and answering 404 put "we could not find the resource" on the
+    // screen of everybody who opened the product on its first day.
+    if (!academicYear) return { items: [] }
 
     const subjects = await db.subject.findMany({
       where: { academicYearId: academicYear.id },
