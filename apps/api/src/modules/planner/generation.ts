@@ -32,6 +32,27 @@ export interface GenerationRun {
   error: string | null
 }
 
+/**
+ * Runs row writes one after another, in the order they were asked for.
+ *
+ * The progress mirror and the final result write to the same column of the same
+ * row, and the solver reports 100 % immediately before returning its proposals.
+ * Issued concurrently, those two writes race: when the progress one lands last
+ * it puts `proposals: []` back over the result, and the run reads as finished
+ * with nothing in it. Chaining them costs nothing — the writes are a second
+ * apart — and makes the last one asked for the last one applied.
+ */
+export function serialWriter(): (write: () => Promise<unknown>) => Promise<void> {
+  let chain: Promise<unknown> = Promise.resolve()
+  return (write) => {
+    chain = chain.then(write, write)
+    return chain.then(
+      () => undefined,
+      () => undefined,
+    )
+  }
+}
+
 function workerUrl(): URL {
   // Dev runs the TypeScript directly through tsx; the build ships JavaScript.
   const here = new URL(import.meta.url)
@@ -73,6 +94,7 @@ export async function startGeneration(options: StartGenerationOptions): Promise<
   })
 
   const channel = centerChannel(options.centerId)
+  const persist = serialWriter()
   let lastPersisted = 0
   let settled = false
 
@@ -84,21 +106,23 @@ export async function startGeneration(options: StartGenerationOptions): Promise<
     settled = true
     clearTimeout(killer)
 
-    await prisma().job.update({
-      where: { id: run.id },
-      data: {
-        status: status === 'done' ? 'succeeded' : 'failed',
-        lastError: payload.error ?? null,
-        payloadJson: toJson({
-          centerId: options.centerId,
-          scheduleVersionId: options.scheduleVersionId,
-          userId: options.userId,
-          progress: null,
-          proposals: payload.proposals ?? [],
-          stoppedEarly: payload.stoppedEarly ?? false,
-        }),
-      },
-    })
+    await persist(() =>
+      prisma().job.update({
+        where: { id: run.id },
+        data: {
+          status: status === 'done' ? 'succeeded' : 'failed',
+          lastError: payload.error ?? null,
+          payloadJson: toJson({
+            centerId: options.centerId,
+            scheduleVersionId: options.scheduleVersionId,
+            userId: options.userId,
+            progress: null,
+            proposals: payload.proposals ?? [],
+            stoppedEarly: payload.stoppedEarly ?? false,
+          }),
+        },
+      }),
+    )
 
     options.bus.publish(channel, 'schedule.generation', {
       runId: run.id,
@@ -123,12 +147,16 @@ export async function startGeneration(options: StartGenerationOptions): Promise<
         progress: message.progress,
       })
 
+      // Nothing more is written once the run has an outcome: the last thing
+      // the solver reports is 100 %, and that must not land on the result.
+      if (settled) return
+
       // One write a second: the row is a fallback, not the transport.
       const now = Date.now()
       if (now - lastPersisted > 1000) {
         lastPersisted = now
-        void prisma()
-          .job.update({
+        void persist(() =>
+          prisma().job.update({
             where: { id: run.id },
             data: {
               payloadJson: toJson({
@@ -139,8 +167,8 @@ export async function startGeneration(options: StartGenerationOptions): Promise<
                 proposals: [],
               }),
             },
-          })
-          .catch(() => undefined)
+          }),
+        )
       }
       return
     }
