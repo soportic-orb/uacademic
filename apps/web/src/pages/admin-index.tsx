@@ -11,7 +11,7 @@ export function AdminIndexPage() {
   const { t } = useTranslation()
   const roles = useRoles()
   const resources = resourcesForRoles(roles)
-  const canManageUsers = roles.includes('CENTER_ADMIN')
+  const canManageUsers = roles.some((role) => role === 'SUPERADMIN' || role === 'CENTER_ADMIN')
 
   if (resources.length === 0 && !canManageUsers) {
     return <EmptyState title={t('errors.forbidden')} />

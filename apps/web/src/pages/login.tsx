@@ -4,6 +4,7 @@ import { Navigate, useLocation } from 'react-router'
 
 import { isEntraConfigured } from '../auth/msal'
 import { useSession } from '../auth/session'
+import { Logo } from '../components/brand/logo'
 import { Button } from '../components/ui/button'
 import { Card, CardBody, CardHeader } from '../components/ui/card'
 import { useToast } from '../hooks/use-toast'
@@ -80,7 +81,7 @@ export function LoginPage() {
     <main className="flex min-h-dvh items-center justify-center bg-bg px-4 py-12">
       <div className="w-full max-w-md space-y-6">
         <header className="text-center">
-          <p className="text-2xl font-semibold text-primary">{t('common.appName')}</p>
+          <Logo className="text-2xl" title={t('common.appName')} />
           <h1 className="mt-6 text-xl font-semibold text-text">{t('auth.title')}</h1>
           <p className="mt-1 text-sm text-text-muted">{t('auth.subtitle')}</p>
         </header>

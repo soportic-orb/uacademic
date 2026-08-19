@@ -13,8 +13,9 @@
  *
  *   1. `UACADEMIC_ENV_FILE`, when an operator says exactly where it is
  *   2. `<UACADEMIC_DEPLOY_ROOT>/shared/.env`, the deployed layout
- *   3. the nearest `.env` walking up from the working directory, which is what
- *      a developer expects in a monorepo
+ *   3. the nearest `shared/.env` or `.env` walking up from the working
+ *      directory — the deployed layout even when nobody named it, and what a
+ *      developer expects in a monorepo
  */
 import { existsSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
@@ -33,6 +34,13 @@ export function envFilePath(source: NodeJS.ProcessEnv = process.env): string {
 
   let directory = process.cwd()
   for (let level = 0; level < MAX_LEVELS; level += 1) {
+    // `shared/.env` first: on a deployed host that is the real one, and the
+    // walk is what finds it when nobody set the deploy root — a cron entry,
+    // say, whose working directory is somebody's home. Looking only for a
+    // bare `.env` is how the worker came up with no database configured.
+    const deployed = join(directory, 'shared', '.env')
+    if (existsSync(deployed)) return deployed
+
     const candidate = join(directory, '.env')
     if (existsSync(candidate)) return candidate
 

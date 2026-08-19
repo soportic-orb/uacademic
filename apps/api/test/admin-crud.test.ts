@@ -23,6 +23,7 @@ describe.skipIf(!hasDatabase)('admin CRUD', () => {
 
   const asAdmin = () => ({ 'x-mock-user': SEED.adminEmail, 'x-center-id': centerId })
   const asTeacher = () => ({ 'x-mock-user': SEED.otherTeacherEmail, 'x-center-id': centerId })
+  const asSuperadmin = () => ({ 'x-mock-user': SEED.superadminEmail, 'x-center-id': centerId })
 
   beforeAll(async () => {
     app = await createTestApp()
@@ -247,6 +248,42 @@ describe.skipIf(!hasDatabase)('admin CRUD', () => {
   })
 
   describe('users and roles', () => {
+    it('lets the platform administrator manage people too', async () => {
+      // Without this a fresh installation is a dead end: its only account is a
+      // superadmin, who could create centers and then nobody to work in them.
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/v1/users?pageSize=100',
+        headers: asSuperadmin(),
+      })
+
+      expect(response.statusCode).toBe(200)
+    })
+
+    it('refuses to let a center administrator mint a platform superadmin', async () => {
+      // The sibling route has always refused this; creating a user did not,
+      // which made it an escalation rather than a boundary.
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/v1/users',
+        headers: asAdmin(),
+        payload: {
+          email: 'escalation-attempt@demo.uacademic.test',
+          firstName: 'Cap',
+          lastName: 'Escalada',
+          locale: 'ca',
+          role: 'SUPERADMIN',
+        },
+      })
+
+      expect(response.statusCode).toBe(403)
+
+      const created = await prisma.user.findUnique({
+        where: { email: 'escalation-attempt@demo.uacademic.test' },
+      })
+      expect(created).toBeNull()
+    })
+
     it('lists only people with a role in the active center', async () => {
       const response = await app.inject({
         method: 'GET',

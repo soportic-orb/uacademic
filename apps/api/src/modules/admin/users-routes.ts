@@ -1,4 +1,5 @@
 import {
+  isSuperadmin,
   listQuerySchema,
   paginate,
   roleSchema,
@@ -25,7 +26,17 @@ const listQuery = listQuerySchema(['lastName', 'email', 'status', 'createdAt'], 
   role: roleSchema.optional(),
 })
 
-const CENTER_MANAGER_ROLES = ['CENTER_ADMIN'] as const
+/**
+ * Who may manage the people in a center.
+ *
+ * The platform administrator is here for a reason that is easy to miss until
+ * it bites: a fresh installation has exactly one account, and it is a
+ * SUPERADMIN. Without this they could create universities and centers and
+ * then nobody at all — not even the center administrator who would have been
+ * allowed to create everybody else. Every query below is still scoped to the
+ * active center, so this widens who may act, never what they can see (R2).
+ */
+const CENTER_MANAGER_ROLES = ['SUPERADMIN', 'CENTER_ADMIN'] as const
 
 export function registerUserRoutes(app: FastifyInstance): void {
   app.get('/api/v1/users', { config: { roles: CENTER_MANAGER_ROLES } }, async (request) => {
@@ -89,6 +100,12 @@ export function registerUserRoutes(app: FastifyInstance): void {
     const { centerId } = requireCenterScope(request)
     const actor = requireUser(request)
     const input = parseWith(userInputSchema.extend({ role: roleSchema }), request.body)
+
+    // Only a platform administrator hands out platform administration. The
+    // sibling route below has always refused this; creating a user did not,
+    // so a center administrator could grant it on the way in.
+    if (input.role === 'SUPERADMIN' && !isSuperadmin(actor)) throw AppError.forbidden()
+
     const client = prisma()
 
     const existing = await client.user.findUnique({ where: { email: input.email.toLowerCase() } })
@@ -219,7 +236,7 @@ export function registerUserRoutes(app: FastifyInstance): void {
       const client = prisma()
 
       // A center administrator cannot mint platform superadmins.
-      if (input.role === 'SUPERADMIN') throw AppError.forbidden()
+      if (input.role === 'SUPERADMIN' && !isSuperadmin(actor)) throw AppError.forbidden()
       await requireUserExists(id)
 
       const existing = await client.userCenterRole.findFirst({

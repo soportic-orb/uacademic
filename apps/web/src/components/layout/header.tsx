@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 
 import { useSession } from '../../auth/session'
+import { Logo } from '../brand/logo'
 import { NotificationBell } from '../../features/notifications/notification-bell'
 import { useToast } from '../../hooks/use-toast'
 import { clearApiCache } from '../../app/service-worker'
@@ -47,7 +48,7 @@ export function Header({ user, onOpenSearch, onToggleSidebar }: HeaderProps) {
         <Menu className="size-5" aria-hidden="true" />
       </Button>
 
-      <span className="text-base font-semibold text-primary md:hidden">{t('common.appName')}</span>
+      <Logo className="text-base md:hidden" title={t('common.appName')} />
 
       {/* Center selector: only shown when the user actually has more than one */}
       {uniqueCenters.length > 1 ? (

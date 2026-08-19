@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { NavLink } from 'react-router'
 
 import { navItemsForRoles } from '../../app/navigation'
+import { Logo } from '../brand/logo'
 import { cn } from '../../lib/cn'
 
 export interface SidebarProps {
@@ -31,10 +32,10 @@ export function Sidebar({ roles, collapsed, onToggle }: SidebarProps) {
           collapsed && 'justify-center px-0',
         )}
       >
-        {collapsed ? null : (
-          <span className="text-lg font-semibold tracking-tight text-primary">
-            {t('common.appName')}
-          </span>
+        {collapsed ? (
+          <Logo variant="mark" className="text-2xl" title={t('common.appName')} />
+        ) : (
+          <Logo className="text-lg" title={t('common.appName')} />
         )}
       </div>
 
