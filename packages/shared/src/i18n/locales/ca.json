@@ -944,7 +944,8 @@
       "passwordMismatch": "Les contrasenyes no coincideixen.",
       "passwordReused": "La contrasenya nova ha de ser diferent de l'actual.",
       "localNotAvailable": "Aquest compte no té accés local.",
-      "entraNotConfigured": "L’inici de sessió amb Microsoft no està configurat en aquesta instal·lació."
+      "entraNotConfigured": "L’inici de sessió amb Microsoft no està configurat en aquesta instal·lació.",
+      "microsoft": "No s'ha pogut entrar amb Microsoft. {{detail}}"
     }
   },
   "admin": {

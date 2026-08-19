@@ -1,7 +1,10 @@
 import {
   type AccountInfo,
+  AuthError,
+  BrowserAuthErrorCodes,
   type Configuration,
   InteractionRequiredAuthError,
+  LogLevel,
   PublicClientApplication,
 } from '@azure/msal-browser'
 
@@ -71,6 +74,21 @@ function buildConfiguration(config: { clientId: string; authority: string }): Co
       // session too, and our own session lives in an httpOnly cookie anyway.
       cacheLocation: 'sessionStorage',
     },
+    system: {
+      // MSAL replaces the text of its own errors with a link to its docs, so
+      // the thrown object no longer carries what Microsoft actually said. Its
+      // logger still does, and on the console that is the difference between
+      // "invalid_request" and the AADSTS line naming the redirect URI.
+      loggerOptions: {
+        logLevel: LogLevel.Warning,
+        piiLoggingEnabled: false,
+        loggerCallback: (level, message, containsPii) => {
+          if (containsPii) return
+          if (level === LogLevel.Error) console.error(message)
+          else console.warn(message)
+        },
+      },
+    },
   }
 }
 
@@ -121,6 +139,40 @@ export async function acquireTokenSilently(): Promise<string | null> {
     if (error instanceof InteractionRequiredAuthError) return null
     throw error
   }
+}
+
+/**
+ * What went wrong, in words an operator can act on.
+ *
+ * Everything Microsoft refuses arrives here as one of a handful of codes, and
+ * they are the difference between "add the redirect URI" and "expose the API
+ * scope". Reporting all of them as an unexpected error — which is what happens
+ * when the caller only knows how to read our own API errors — leaves whoever
+ * registered the application with nothing to go on.
+ */
+export interface EntraFailure {
+  /** The person closed the window. Nothing failed; say nothing. */
+  cancelled: boolean
+  detail: string
+}
+
+export function describeEntraFailure(error: unknown): EntraFailure {
+  if (error instanceof AuthError) {
+    const cancelled =
+      error.errorCode === BrowserAuthErrorCodes.userCancelled ||
+      error.errorCode === BrowserAuthErrorCodes.interactionInProgressCancelled
+    // The server messages carry the AADSTS code and a sentence explaining it;
+    // that sentence is the useful half, and it is long, so it is trimmed to
+    // what fits a toast without losing the code at the front.
+    const message = (error.errorMessage || error.message || '').split(/\r?\n/)[0] ?? ''
+    return {
+      cancelled,
+      detail: message ? `${error.errorCode}: ${message}`.slice(0, 300) : error.errorCode,
+    }
+  }
+
+  if (error instanceof Error) return { cancelled: false, detail: error.message }
+  return { cancelled: false, detail: String(error) }
 }
 
 export async function signOutFromMicrosoft(): Promise<void> {

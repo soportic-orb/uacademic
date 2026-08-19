@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Navigate, useLocation } from 'react-router'
 
 import { useAuthConfig } from '../auth/config'
+import { describeEntraFailure } from '../auth/msal'
 import { useSession } from '../auth/session'
 import { Logo } from '../components/brand/logo'
 import { Button } from '../components/ui/button'
@@ -54,7 +55,18 @@ export function LoginPage() {
     try {
       await signInWithEntra()
     } catch (error) {
-      handleError(error)
+      // Our own API errors already come localized; anything else came from
+      // Microsoft, and saying which of its refusals it was is the whole
+      // difference between a fixable registration and a shrug.
+      if (error instanceof ApiRequestError) {
+        toast.raw({ variant: 'error', message: error.localizedMessage })
+      } else {
+        const failure = describeEntraFailure(error)
+        if (!failure.cancelled) {
+          console.error('Microsoft sign-in failed', error)
+          toast.error('auth.errors.microsoft', { params: { detail: failure.detail } })
+        }
+      }
     } finally {
       setBusy(false)
     }

@@ -944,7 +944,8 @@
       "passwordMismatch": "The passwords do not match.",
       "passwordReused": "The new password must differ from the current one.",
       "localNotAvailable": "This account has no local access.",
-      "entraNotConfigured": "Signing in with Microsoft is not configured on this installation."
+      "entraNotConfigured": "Signing in with Microsoft is not configured on this installation.",
+      "microsoft": "Microsoft sign-in failed. {{detail}}"
     }
   },
   "admin": {
