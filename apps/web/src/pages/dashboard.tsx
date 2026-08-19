@@ -1,6 +1,6 @@
 import { type LoadStatus, formatHours, formatPercent } from '@uacademic/shared'
 import { useTranslation } from 'react-i18next'
-import { Link } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 
 import { LoadBadge } from '../components/data/load-badge'
 import { CardSkeleton, EmptyState, ErrorState } from '../components/feedback/states'
@@ -16,8 +16,10 @@ const STATUSES: LoadStatus[] = ['under', 'optimal', 'limit', 'over']
 
 export function DashboardPage() {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const roles = useRoles()
   const canSeeCenter = roles.some((role) => role === 'CENTER_ADMIN' || role === 'COORDINATOR')
+  const canManageYears = roles.includes('CENTER_ADMIN')
   // The platform administrator manages universities, centers and tenants; they
   // have no teaching load and no center of their own to summarise. Asking the
   // teacher endpoint about them is how a new installation greeted its first
@@ -47,6 +49,24 @@ export function DashboardPage() {
           </div>
         ) : centerLoad.isError ? (
           <ErrorState onRetry={() => void centerLoad.refetch()} />
+        ) : centerLoad.data.academicYearId === null ? (
+          // A center whose year has not been created yet has nothing to teach
+          // and therefore no load. Four zeroes would be true and useless; the
+          // one thing worth saying is what has to happen first — and only to
+          // somebody who can do it, since academic years are the center
+          // administrator's screen and a coordinator sent there finds a door.
+          <EmptyState
+            title={t('dashboard.noYearTitle')}
+            description={
+              canManageYears ? t('dashboard.noYearBody') : t('dashboard.noYearBodyCoordinator')
+            }
+            {...(canManageYears
+              ? {
+                  actionLabel: t('dashboard.noYearAction'),
+                  onAction: () => void navigate('/admin/academic-years'),
+                }
+              : {})}
+          />
         ) : (
           <>
             <div className="grid gap-4 md:grid-cols-3">

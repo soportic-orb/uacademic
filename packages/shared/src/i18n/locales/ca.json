@@ -138,7 +138,11 @@
     "conflicts": "Conflictes detectats",
     "viewAll": "Ho vull veure tot",
     "noLoadTitle": "Encara no tens docència assignada",
-    "noLoadBody": "Quan la coordinació t’assigni assignatures, aquí veuràs les teves hores."
+    "noLoadBody": "Quan la coordinació t’assigni assignatures, aquí veuràs les teves hores.",
+    "noYearTitle": "Aquest centre encara no té cap curs acadèmic actiu",
+    "noYearBody": "La càrrega docent es calcula sempre dins d'un curs. Crea'n un i marca'l com a actiu; a partir d'aquí aquesta pantalla mostrarà l'estat de la docència del centre.",
+    "noYearAction": "Ves a Cursos acadèmics",
+    "noYearBodyCoordinator": "La càrrega docent es calcula sempre dins d'un curs. Demana a l'administració del centre que en creï un i el marqui com a actiu."
   },
   "teachers": {
     "title": "Professorat",

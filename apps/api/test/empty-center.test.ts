@@ -56,6 +56,34 @@ describe.skipIf(!hasDatabase)('a center with nothing in it yet', () => {
     expect(response.json().items).toEqual([])
   })
 
+  /**
+   * What a coordinator sees on opening the product. This answered 404, the
+   * dashboard turned it into "something went wrong", and the person had no
+   * way of knowing that what was missing was an academic year.
+   */
+  it('summarises a teaching load of nothing rather than failing', async () => {
+    const response = await app.inject({ method: 'GET', url: '/api/v1/teachers/load', headers })
+
+    expect(response.statusCode).toBe(200)
+    expect(response.json().academicYearId).toBeNull()
+    expect(response.json().teachers).toEqual([])
+    expect(response.json().summary).toMatchObject({
+      teachers: 0,
+      byStatus: { under: 0, optimal: 0, limit: 0, over: 0 },
+    })
+  })
+
+  it('exports that same empty table instead of refusing to', async () => {
+    const response = await app.inject({
+      method: 'GET',
+      url: '/api/v1/teachers/load/export',
+      headers,
+    })
+
+    expect(response.statusCode).toBe(200)
+    expect(response.headers['content-type']).toContain('spreadsheetml')
+  })
+
   it('opens the document library without a single error', async () => {
     // Exactly what that screen asks for on load. One rejected call is one
     // red toast in front of somebody's first impression of the platform.
@@ -64,6 +92,7 @@ describe.skipIf(!hasDatabase)('a center with nothing in it yet', () => {
       '/api/v1/admin/academic-years?pageSize=50',
       '/api/v1/admin/degrees?pageSize=100',
       '/api/v1/subjects',
+      '/api/v1/teachers/load',
     ]
 
     const statuses = await Promise.all(

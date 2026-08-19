@@ -39,7 +39,19 @@ export interface TeacherContext {
 }
 
 /** The active academic year plus the center's own parameters. */
-export async function teacherContext(request: FastifyRequest): Promise<TeacherContext> {
+/**
+ * The same, for the screens where having no academic year yet is an answer
+ * rather than a fault.
+ *
+ * A center on its first day has no year, therefore no teaching, therefore no
+ * load — and a summary of nothing is a legitimate thing to show. Returning 404
+ * instead put "something went wrong" on the dashboard of every coordinator at
+ * a center whose year had not been created, which is exactly the moment they
+ * are most likely to be looking.
+ */
+export async function optionalTeacherContext(
+  request: FastifyRequest,
+): Promise<TeacherContext | null> {
   const user = requireUser(request)
   const { centerId, db } = requireCenterScope(request)
 
@@ -47,7 +59,7 @@ export async function teacherContext(request: FastifyRequest): Promise<TeacherCo
     where: { status: 'active' },
     orderBy: { startDate: 'desc' },
   })
-  if (!academicYear) throw AppError.notFound()
+  if (!academicYear) return null
 
   const center = await prisma().center.findUnique({ where: { id: centerId } })
   const settings = parseCenterSettings(center?.settingsJson)
@@ -60,6 +72,17 @@ export async function teacherContext(request: FastifyRequest): Promise<TeacherCo
     thresholds: settings.load.thresholds,
     academicYearId: academicYear.id,
   }
+}
+
+/**
+ * For everything addressed at something inside a year — one teacher's card,
+ * one reduction, one availability slot. With no year there is no such thing to
+ * address, and 404 is the honest answer.
+ */
+export async function teacherContext(request: FastifyRequest): Promise<TeacherContext> {
+  const context = await optionalTeacherContext(request)
+  if (!context) throw AppError.notFound()
+  return context
 }
 
 const MANAGER_ROLES: readonly Role[] = ['CENTER_ADMIN', 'COORDINATOR']

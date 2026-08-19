@@ -21,7 +21,8 @@ function useRequestContext() {
 }
 
 export interface TeacherLoadResponse {
-  academicYearId: string
+  /** Null when the center has no active year, and so nothing to summarise. */
+  academicYearId: string | null
   teachers: TeacherLoadDto[]
   summary: CenterLoadSummaryDto
 }

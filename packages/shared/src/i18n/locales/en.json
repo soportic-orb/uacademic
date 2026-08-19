@@ -138,7 +138,11 @@
     "conflicts": "Detected conflicts",
     "viewAll": "View all",
     "noLoadTitle": "You have no teaching assigned yet",
-    "noLoadBody": "Once coordination assigns you subjects, your hours will appear here."
+    "noLoadBody": "Once coordination assigns you subjects, your hours will appear here.",
+    "noYearTitle": "This center has no active academic year yet",
+    "noYearBody": "Teaching load is always computed inside a year. Create one and mark it active; from then on this screen shows the state of teaching across the center.",
+    "noYearAction": "Go to Academic years",
+    "noYearBodyCoordinator": "Teaching load is always computed inside a year. Ask your center administration to create one and mark it active."
   },
   "teachers": {
     "title": "Teachers",

@@ -138,7 +138,11 @@
     "conflicts": "Conflictos detectados",
     "viewAll": "Ver todo",
     "noLoadTitle": "Todavía no tienes docencia asignada",
-    "noLoadBody": "Cuando la coordinación te asigne asignaturas, aquí verás tus horas."
+    "noLoadBody": "Cuando la coordinación te asigne asignaturas, aquí verás tus horas.",
+    "noYearTitle": "Este centro todavía no tiene ningún curso académico activo",
+    "noYearBody": "La carga docente se calcula siempre dentro de un curso. Crea uno y márcalo como activo; a partir de ahí esta pantalla mostrará el estado de la docencia del centro.",
+    "noYearAction": "Ir a Cursos académicos",
+    "noYearBodyCoordinator": "La carga docente se calcula siempre dentro de un curso. Pide a la administración del centro que cree uno y lo marque como activo."
   },
   "teachers": {
     "title": "Profesorado",

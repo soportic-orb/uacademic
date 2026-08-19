@@ -9,6 +9,7 @@ import {
   type Weekday,
   availabilityExceptionInputSchema,
   availabilityHoursByLevel,
+  defaultCenterSettings,
   filterLoadRows,
   loadQuerySchema,
   reductionInputSchema,
@@ -28,6 +29,7 @@ import {
   canEditAvailability,
   loadRows,
   resolveTeacherProfileId,
+  optionalTeacherContext,
   teacherContext,
   teacherProfile,
   teacherWorkload,
@@ -35,7 +37,8 @@ import {
 import { loadWorkbook } from './export.js'
 
 interface LoadListResponse {
-  academicYearId: string
+  /** Null when the center has no active year, and so nothing to summarise. */
+  academicYearId: string | null
   teachers: TeacherLoadDto[]
   summary: CenterLoadSummaryDto
   /** Distinct values the filters can offer, computed over the unfiltered set. */
@@ -51,7 +54,18 @@ export function registerTeacherRoutes(app: FastifyInstance): void {
     '/api/v1/teachers/load',
     { config: { roles: ['CENTER_ADMIN', 'COORDINATOR'] } },
     async (request): Promise<LoadListResponse> => {
-      const context = await teacherContext(request)
+      const context = await optionalTeacherContext(request)
+      // No year yet: nothing is taught, so nothing is over- or under-loaded.
+      // The screen says that far better than an error does.
+      if (!context) {
+        return {
+          academicYearId: null,
+          teachers: [],
+          summary: summarizeLoads([]),
+          facets: { categories: [], degrees: [] },
+        }
+      }
+
       const query = parseWith(loadQuerySchema, request.query)
       const rows = await loadRows(context)
 
@@ -91,7 +105,23 @@ export function registerTeacherRoutes(app: FastifyInstance): void {
     '/api/v1/teachers/load/export',
     { config: { roles: ['CENTER_ADMIN', 'COORDINATOR'] } },
     async (request, reply): Promise<FastifyReply> => {
-      const context = await teacherContext(request)
+      const context = await optionalTeacherContext(request)
+      // An empty workbook rather than an error: what is downloaded is what was
+      // on screen, and what is on screen is an empty table.
+      if (!context) {
+        const empty = await loadWorkbook([], {
+          locale: request.locale,
+          thresholds: defaultCenterSettings.load.thresholds,
+        })
+        return reply
+          .header(
+            'content-type',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          )
+          .header('content-disposition', `attachment; filename="uacademic-load.xlsx"`)
+          .send(empty)
+      }
+
       const query = parseWith(loadQuerySchema, request.query)
       const rows = sortLoadRows(
         filterLoadRows(await loadRows(context), {
