@@ -16,11 +16,33 @@ import { UsersPage } from '../src/features/admin/users-page'
  */
 const posted = vi.hoisted(() => ({ calls: [] as { path: string; body: unknown }[] }))
 
+const ROW = {
+  id: 'u1',
+  email: 'marta@uni.test',
+  firstName: 'Marta',
+  lastName: 'Puig',
+  locale: 'ca',
+  status: 'invited',
+  linkedToEntra: false,
+  lastLoginAt: null,
+  roles: ['TEACHER'],
+  grants: [{ id: 'g1', role: 'TEACHER' }],
+}
+
+const listed = vi.hoisted(() => ({ rows: [] as unknown[] }))
+const deleted = vi.hoisted(() => ({ calls: [] as string[] }))
+
 vi.mock('../src/lib/api', async (importOriginal) => {
   const actual = await importOriginal<typeof ApiModule>()
   return {
     ...actual,
-    apiFetch: vi.fn(async () => ({ items: [], total: 0, page: 1, pageSize: 25 })),
+    apiFetch: vi.fn(async (path: string, init?: RequestInit) => {
+      if (init?.method === 'DELETE') {
+        deleted.calls.push(path)
+        return {}
+      }
+      return { items: listed.rows, total: listed.rows.length, page: 1, pageSize: 25 }
+    }),
     apiJson: vi.fn(async (path: string, _method: string, body: unknown) => {
       posted.calls.push({ path, body })
       return { id: 'new-user', email: 'x', created: true }
@@ -42,6 +64,8 @@ function view(node: ReactNode) {
 
 afterEach(() => {
   posted.calls = []
+  deleted.calls = []
+  listed.rows = []
 })
 
 describe('the users screen', () => {
@@ -70,5 +94,38 @@ describe('the users screen', () => {
     view(<UsersPage />)
 
     expect(screen.queryByLabelText('Correu electrònic')).not.toBeInTheDocument()
+  })
+
+  describe('what it offers for somebody already there', () => {
+    it('offers to invite again whoever has never signed in', async () => {
+      listed.rows = [ROW]
+      view(<UsersPage />)
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Torna a convidar' }))
+
+      await waitFor(() => expect(posted.calls).toHaveLength(1))
+      expect(posted.calls[0]?.path).toBe('/api/v1/users/u1/invite')
+    })
+
+    it('does not offer it to somebody who has already arrived', async () => {
+      listed.rows = [{ ...ROW, linkedToEntra: true }]
+      view(<UsersPage />)
+
+      expect(await screen.findByRole('button', { name: 'Edita' })).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Torna a convidar' })).not.toBeInTheDocument()
+    })
+
+    it('takes a role away by its grant, not by its name', async () => {
+      // Two people can hold the same role; only the grant identifies which
+      // one is being removed.
+      listed.rows = [ROW]
+      view(<UsersPage />)
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Edita' }))
+      await userEvent.click(screen.getByRole('button', { name: 'Retira el rol Professorat' }))
+
+      await waitFor(() => expect(deleted.calls).toHaveLength(1))
+      expect(deleted.calls[0]).toBe('/api/v1/users/u1/roles/g1')
+    })
   })
 })

@@ -1011,7 +1011,16 @@
     "invite": "Invita",
     "userInvited": "Usuario invitado. Podrá entrar con la cuenta de su universidad.",
     "emailHint": "El de la universidad: es el que debe coincidir con su cuenta de Microsoft.",
-    "userCreatedNoMail": "Usuario creado, pero no se ha enviado ningún correo: el servidor SMTP no está configurado. Avísale tú mismo."
+    "userCreatedNoMail": "Usuario creado, pero no se ha enviado ningún correo: el servidor SMTP no está configurado. Avísale tú mismo.",
+    "resendInvite": "Vuelve a invitar",
+    "inviteResent": "Invitación reenviada.",
+    "rolesInCenter": "Roles en este centro",
+    "grantRole": "Añade el rol",
+    "roleGranted": "Rol añadido.",
+    "roleRevoked": "Rol retirado.",
+    "revokeRole": "Retira el rol {{role}}",
+    "revokeHint": "Retirarle el último rol lo deja sin acceso a este centro. La cuenta no se borra: puede tener roles en otros centros y su historial se conserva.",
+    "saved": "Cambios guardados."
   },
   "imports": {
     "title": "Importación masiva",

@@ -1,8 +1,8 @@
 import type { ListResult } from '@uacademic/shared'
 import { formatDate, formatPersonName } from '@uacademic/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { UserPlus } from 'lucide-react'
-import { useState } from 'react'
+import { Pencil, Send, UserPlus, X } from 'lucide-react'
+import { Fragment, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { EmptyState, ErrorState, TableSkeleton } from '../../components/feedback/states'
@@ -21,6 +21,7 @@ interface UserRow {
   linkedToEntra: boolean
   lastLoginAt: string | null
   roles: string[]
+  grants: { id: string; role: string }[]
 }
 
 const ROLES = ['CENTER_ADMIN', 'COORDINATOR', 'TEACHER'] as const
@@ -75,6 +76,62 @@ export function UsersPage() {
         toast.raw({ variant: 'error', message: error.localizedMessage })
       else toast.error('errors.generic')
     },
+  })
+
+  // Which row has its panel open. One at a time: this is a table, not a form.
+  const [editing, setEditing] = useState<string | null>(null)
+  const [draft, setDraft] = useState({ firstName: '', lastName: '', status: 'active' })
+  const [grantRole, setGrantRole] = useState('COORDINATOR')
+
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['admin-users'] })
+
+  const reportError = (error: unknown) => {
+    if (error instanceof ApiRequestError)
+      toast.raw({ variant: 'error', message: error.localizedMessage })
+    else toast.error('errors.generic')
+  }
+
+  const reinvite = useMutation({
+    mutationFn: (id: string) =>
+      apiJson<{ sent: boolean }>(`/api/v1/users/${id}/invite`, 'POST', {}),
+    onSuccess: (result) => {
+      if (result.sent) toast.success('admin.inviteResent')
+      else toast.warning('admin.userCreatedNoMail', { durationMs: 10_000 })
+    },
+    onError: reportError,
+  })
+
+  const save = useMutation({
+    mutationFn: ({ id, input }: { id: string; input: typeof draft }) =>
+      apiJson(`/api/v1/users/${id}`, 'PATCH', input),
+    onSuccess: async () => {
+      toast.success('admin.saved')
+      setEditing(null)
+      await invalidate()
+    },
+    onError: reportError,
+  })
+
+  const grant = useMutation({
+    mutationFn: ({ id, role }: { id: string; role: string }) =>
+      apiJson(`/api/v1/users/${id}/roles`, 'POST', { role }),
+    onSuccess: async () => {
+      toast.success('admin.roleGranted')
+      await invalidate()
+    },
+    onError: reportError,
+  })
+
+  const revoke = useMutation({
+    mutationFn: ({ id, grantId }: { id: string; grantId: string }) =>
+      apiFetch(`/api/v1/users/${id}/roles/${grantId}`, { method: 'DELETE' }),
+    onSuccess: async () => {
+      // Losing the last role means losing the center, which is what "remove
+      // from this center" means for a person who may work in another.
+      toast.success('admin.roleRevoked')
+      await invalidate()
+    },
+    onError: reportError,
   })
 
   const activate = useMutation({
@@ -247,34 +304,181 @@ export function UsersPage() {
                   </thead>
                   <tbody>
                     {query.data.items.map((user) => (
-                      <tr key={user.id} className="border-b border-border/60">
-                        <th scope="row" className="py-3 pr-4 text-left font-medium text-text">
-                          {formatPersonName(user.firstName, user.lastName)}
-                          <span className="block text-xs font-normal text-text-muted">
-                            {user.email}
-                          </span>
-                        </th>
-                        <td className="py-3 pr-4 text-text-muted">
-                          {user.roles.map((item) => t(`roles.${item}`)).join(', ')}
-                        </td>
-                        <td className="py-3 pr-4 text-text-muted">
-                          {t(`userStatus.${user.status}`)}
-                        </td>
-                        <td className="py-3 pr-4 text-text-muted">
-                          {user.linkedToEntra
-                            ? user.lastLoginAt
-                              ? formatDate(locale, new Date(user.lastLoginAt))
-                              : t('common.yes')
-                            : t('common.no')}
-                        </td>
-                        <td className="py-3 text-right">
-                          {user.status === 'pending_activation' ? (
-                            <Button size="sm" onClick={() => activate.mutate(user.id)}>
-                              {t('admin.activate')}
-                            </Button>
-                          ) : null}
-                        </td>
-                      </tr>
+                      <Fragment key={user.id}>
+                        <tr className="border-b border-border/60">
+                          <th scope="row" className="py-3 pr-4 text-left font-medium text-text">
+                            {formatPersonName(user.firstName, user.lastName)}
+                            <span className="block text-xs font-normal text-text-muted">
+                              {user.email}
+                            </span>
+                          </th>
+                          <td className="py-3 pr-4 text-text-muted">
+                            {user.roles.map((item) => t(`roles.${item}`)).join(', ')}
+                          </td>
+                          <td className="py-3 pr-4 text-text-muted">
+                            {t(`userStatus.${user.status}`)}
+                          </td>
+                          <td className="py-3 pr-4 text-text-muted">
+                            {user.linkedToEntra
+                              ? user.lastLoginAt
+                                ? formatDate(locale, new Date(user.lastLoginAt))
+                                : t('common.yes')
+                              : t('common.no')}
+                          </td>
+                          <td className="py-3 text-right">
+                            <div className="flex flex-wrap justify-end gap-2">
+                              {user.status === 'pending_activation' ? (
+                                <Button size="sm" onClick={() => activate.mutate(user.id)}>
+                                  {t('admin.activate')}
+                                </Button>
+                              ) : null}
+
+                              {/*
+                              Only worth offering to somebody who has never
+                              arrived: once they have signed in, an invitation
+                              tells them nothing they do not know.
+                            */}
+                              {user.linkedToEntra ? null : (
+                                <Button
+                                  variant="secondary"
+                                  size="sm"
+                                  disabled={reinvite.isPending}
+                                  onClick={() => reinvite.mutate(user.id)}
+                                >
+                                  <Send className="size-4" aria-hidden="true" />
+                                  {t('admin.resendInvite')}
+                                </Button>
+                              )}
+
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                aria-expanded={editing === user.id}
+                                onClick={() => {
+                                  setEditing(editing === user.id ? null : user.id)
+                                  setDraft({
+                                    firstName: user.firstName,
+                                    lastName: user.lastName,
+                                    status: user.status,
+                                  })
+                                }}
+                              >
+                                <Pencil className="size-4" aria-hidden="true" />
+                                {t('admin.edit')}
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+
+                        {editing === user.id ? (
+                          <tr className="border-b border-border/60 bg-surface-muted">
+                            <td colSpan={5} className="p-4">
+                              <div className="grid gap-6 lg:grid-cols-2">
+                                <form
+                                  className="grid gap-4 sm:grid-cols-2"
+                                  onSubmit={(event) => {
+                                    event.preventDefault()
+                                    save.mutate({ id: user.id, input: draft })
+                                  }}
+                                >
+                                  <Field label={t('admin.fields.firstName')}>
+                                    <Input
+                                      value={draft.firstName}
+                                      onChange={(value) => setDraft({ ...draft, firstName: value })}
+                                      required
+                                    />
+                                  </Field>
+
+                                  <Field label={t('admin.fields.lastName')}>
+                                    <Input
+                                      value={draft.lastName}
+                                      onChange={(value) => setDraft({ ...draft, lastName: value })}
+                                      required
+                                    />
+                                  </Field>
+
+                                  <Field label={t('admin.fields.status')}>
+                                    <select
+                                      value={draft.status}
+                                      onChange={(event) =>
+                                        setDraft({ ...draft, status: event.target.value })
+                                      }
+                                      className="h-10 w-full rounded-control border border-border bg-surface px-2 text-sm text-text"
+                                    >
+                                      {STATUSES.map((option) => (
+                                        <option key={option} value={option}>
+                                          {t(`userStatus.${option}`)}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </Field>
+
+                                  <div className="flex items-end">
+                                    <Button type="submit" disabled={save.isPending}>
+                                      {save.isPending ? t('common.saving') : t('common.save')}
+                                    </Button>
+                                  </div>
+                                </form>
+
+                                <div className="space-y-3">
+                                  <h3 className="text-sm font-medium text-text">
+                                    {t('admin.rolesInCenter')}
+                                  </h3>
+
+                                  <ul className="flex flex-wrap gap-2">
+                                    {user.grants.map((held) => (
+                                      <li
+                                        key={held.id}
+                                        className="flex items-center gap-2 rounded-control border border-border bg-surface px-2 py-1 text-xs text-text"
+                                      >
+                                        {t(`roles.${held.role}`)}
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            revoke.mutate({ id: user.id, grantId: held.id })
+                                          }
+                                          className="text-text-muted hover:text-danger"
+                                          aria-label={t('admin.revokeRole', {
+                                            role: t(`roles.${held.role}`),
+                                          })}
+                                        >
+                                          <X className="size-3.5" aria-hidden="true" />
+                                        </button>
+                                      </li>
+                                    ))}
+                                  </ul>
+
+                                  <div className="flex flex-wrap items-end gap-2">
+                                    <Field label={t('admin.fields.role')}>
+                                      <select
+                                        value={grantRole}
+                                        onChange={(event) => setGrantRole(event.target.value)}
+                                        className="h-10 rounded-control border border-border bg-surface px-2 text-sm text-text"
+                                      >
+                                        {ROLES.map((option) => (
+                                          <option key={option} value={option}>
+                                            {t(`roles.${option}`)}
+                                          </option>
+                                        ))}
+                                      </select>
+                                    </Field>
+
+                                    <Button
+                                      variant="secondary"
+                                      disabled={grant.isPending}
+                                      onClick={() => grant.mutate({ id: user.id, role: grantRole })}
+                                    >
+                                      {t('admin.grantRole')}
+                                    </Button>
+                                  </div>
+
+                                  <p className="text-xs text-text-muted">{t('admin.revokeHint')}</p>
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        ) : null}
+                      </Fragment>
                     ))}
                   </tbody>
                 </table>

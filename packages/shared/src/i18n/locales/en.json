@@ -1011,7 +1011,16 @@
     "invite": "Invite",
     "userInvited": "User invited. They can sign in with their university account.",
     "emailHint": "Their university address: this is what must match their Microsoft account.",
-    "userCreatedNoMail": "User created, but no email was sent: SMTP is not configured. Let them know yourself."
+    "userCreatedNoMail": "User created, but no email was sent: SMTP is not configured. Let them know yourself.",
+    "resendInvite": "Invite again",
+    "inviteResent": "Invitation sent again.",
+    "rolesInCenter": "Roles in this center",
+    "grantRole": "Add role",
+    "roleGranted": "Role added.",
+    "roleRevoked": "Role removed.",
+    "revokeRole": "Remove the {{role}} role",
+    "revokeHint": "Removing their last role leaves them without access to this center. The account is not deleted: they may hold roles in other centers, and their history is kept.",
+    "saved": "Changes saved."
   },
   "imports": {
     "title": "Bulk import",

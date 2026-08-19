@@ -88,6 +88,12 @@ export function registerUserRoutes(app: FastifyInstance): void {
         linkedToEntra: Boolean(user.entraOid),
         lastLoginAt: user.lastLoginAt?.toISOString() ?? null,
         roles: user.centerRoles.map((membership) => membership.role),
+        // The grants themselves, because revoking one needs its id and a
+        // screen that can only name roles cannot offer to take one away.
+        grants: user.centerRoles.map((membership) => ({
+          id: membership.id,
+          role: membership.role,
+        })),
       })),
       total,
       query.page,
@@ -180,6 +186,48 @@ export function registerUserRoutes(app: FastifyInstance): void {
       invitationSent: mailConfigured(),
     }
   })
+
+  /**
+   * Sending the invitation again.
+   *
+   * Needed more often than it looks: the first one goes out the moment the
+   * account is created, which is exactly when an installation is most likely
+   * to have no working mail server yet.
+   */
+  app.post(
+    '/api/v1/users/:id/invite',
+    { config: { roles: CENTER_MANAGER_ROLES } },
+    async (request) => {
+      const { centerId } = requireCenterScope(request)
+      const actor = requireUser(request)
+      const { id } = request.params as { id: string }
+      const client = prisma()
+
+      const user = await requireMember(id, centerId)
+      const center = await client.center.findUnique({ where: { id: centerId } })
+
+      await enqueueJob(client, 'user.invite', {
+        email: user.email,
+        locale: user.locale,
+        firstName: user.firstName,
+        centerName: center?.name ?? '',
+        url: env().APP_URL,
+      })
+
+      await writeAuditLog(client, {
+        centerId,
+        userId: actor.userId,
+        entity: 'user',
+        entityId: user.id,
+        action: 'invite',
+        after: { email: user.email },
+        source: 'user',
+        ip: request.ip,
+      })
+
+      return { sent: mailConfigured() }
+    },
+  )
 
   app.patch('/api/v1/users/:id', { config: { roles: CENTER_MANAGER_ROLES } }, async (request) => {
     const { centerId } = requireCenterScope(request)
