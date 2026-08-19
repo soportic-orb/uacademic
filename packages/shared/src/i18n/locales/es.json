@@ -745,7 +745,9 @@
     "testSent": "Correo de prueba enviado a {{to}}. Mira la bandeja de entrada.",
     "testFailed": "El servidor de correo ha respondido: {{detail}}",
     "mailUser": "Usuario de autenticación",
-    "mailFrom": "Remitente"
+    "mailFrom": "Remitente",
+    "rolledBackWhy": "La actualización ha fallado y se ha vuelto a la versión anterior. El servidor ha dicho: {{detail}}",
+    "failedWhy": "La actualización ha fallado. El servidor ha dicho: {{detail}}"
   },
   "assistant": {
     "title": "Asistente IA",

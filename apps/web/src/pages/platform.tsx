@@ -100,6 +100,22 @@ export function PlatformPage() {
   const update = useMutation({
     mutationFn: () => apiJson<UpdateResult>('/api/v1/platform/update', 'POST', {}),
     onSuccess: async (result) => {
+      // The reason, not just the verdict. A rollback that says only "it went
+      // back" leaves an administrator with a working platform and no idea
+      // what to fix before pressing the button again.
+      if (result.error) {
+        toast.raw({
+          variant: 'error',
+          message: t(
+            result.status === 'rolled_back' ? 'platform.rolledBackWhy' : 'platform.failedWhy',
+            { detail: result.error },
+          ),
+          durationMs: 20_000,
+        })
+        void queryClient.invalidateQueries({ queryKey: ['platform-version'] })
+        return
+      }
+
       if (result.status === 'applied') {
         toast.success('platform.applied', { params: { version: result.version } })
       } else if (result.status === 'rolled_back') {

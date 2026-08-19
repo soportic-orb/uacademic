@@ -745,7 +745,9 @@
     "testSent": "Correu de prova enviat a {{to}}. Mira la safata d’entrada.",
     "testFailed": "El servidor de correu ha respost: {{detail}}",
     "mailUser": "Usuari d'autenticació",
-    "mailFrom": "Remitent"
+    "mailFrom": "Remitent",
+    "rolledBackWhy": "L'actualització ha fallat i s'ha tornat a la versió anterior. El servidor ha dit: {{detail}}",
+    "failedWhy": "L'actualització ha fallat. El servidor ha dit: {{detail}}"
   },
   "assistant": {
     "title": "Assistent IA",

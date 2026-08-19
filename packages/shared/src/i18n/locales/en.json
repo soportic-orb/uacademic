@@ -745,7 +745,9 @@
     "testSent": "Test email sent to {{to}}. Check the inbox.",
     "testFailed": "The mail server answered: {{detail}}",
     "mailUser": "Authenticating as",
-    "mailFrom": "Sender"
+    "mailFrom": "Sender",
+    "rolledBackWhy": "The update failed and the previous version was restored. The server said: {{detail}}",
+    "failedWhy": "The update failed. The server said: {{detail}}"
   },
   "assistant": {
     "title": "AI assistant",

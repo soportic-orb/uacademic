@@ -240,7 +240,21 @@ function run(command: string, args: string[], cwd?: string): Promise<string> {
 
     child.stdout.on('data', (chunk: Buffer) => output.push(chunk))
     child.stderr.on('data', (chunk: Buffer) => output.push(chunk))
-    child.on('error', reject)
+    child.on('error', (error) => {
+      // `spawn pnpm ENOENT` names the symptom; the operator needs the cause.
+      // The API runs under a process manager whose environment is not the
+      // login shell's, so a tool installed for the user is routinely absent
+      // here and present everywhere the operator looks.
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+        reject(
+          new Error(
+            `${command} was not found on the PATH this process has: ${process.env.PATH ?? '(empty)'}`,
+          ),
+        )
+        return
+      }
+      reject(error)
+    })
     child.on('close', (code) => {
       const text = Buffer.concat(output).toString()
       if (code === 0) resolve(text)
