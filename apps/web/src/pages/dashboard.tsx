@@ -1,9 +1,11 @@
 import { type LoadStatus, formatHours, formatPercent } from '@uacademic/shared'
 import { useTranslation } from 'react-i18next'
+import { Link } from 'react-router'
 
 import { LoadBadge } from '../components/data/load-badge'
-import { CardSkeleton, ErrorState } from '../components/feedback/states'
+import { CardSkeleton, EmptyState, ErrorState } from '../components/feedback/states'
 import { Card, CardBody } from '../components/ui/card'
+import { resourcesForRoles } from '../features/admin/resource-config'
 import { InstallPrompt } from '../features/pwa/install-prompt'
 import { OfflineBanner } from '../features/pwa/offline-banner'
 import { useOwnLoad, useTeacherLoad } from '../hooks/use-api'
@@ -16,9 +18,14 @@ export function DashboardPage() {
   const { t } = useTranslation()
   const roles = useRoles()
   const canSeeCenter = roles.some((role) => role === 'CENTER_ADMIN' || role === 'COORDINATOR')
+  // The platform administrator manages universities, centers and tenants; they
+  // have no teaching load and no center of their own to summarise. Asking the
+  // teacher endpoint about them is how a new installation greeted its first
+  // user with an error.
+  const isPlatformAdmin = !canSeeCenter && roles.includes('SUPERADMIN')
 
   const centerLoad = useTeacherLoad(canSeeCenter)
-  const ownLoad = useOwnLoad(!canSeeCenter)
+  const ownLoad = useOwnLoad(!canSeeCenter && !isPlatformAdmin)
   const locale = currentLocale()
 
   return (
@@ -79,10 +86,15 @@ export function DashboardPage() {
             </Card>
           </>
         )
+      ) : isPlatformAdmin ? (
+        <PlatformShortcuts roles={roles} />
       ) : ownLoad.isPending ? (
         <CardSkeleton />
       ) : ownLoad.isError ? (
         <ErrorState onRetry={() => void ownLoad.refetch()} />
+      ) : !ownLoad.data ? (
+        // Signed in, but nobody has given this person any teaching yet.
+        <EmptyState title={t('dashboard.noLoadTitle')} description={t('dashboard.noLoadBody')} />
       ) : (
         <div className="grid gap-4 md:grid-cols-3">
           <Metric
@@ -107,6 +119,44 @@ export function DashboardPage() {
         </div>
       )}
     </div>
+  )
+}
+
+/**
+ * What a platform administrator opens the product to do. Links rather than
+ * figures: the numbers that matter to them live inside each screen, and an
+ * installation minutes old has none of them yet.
+ */
+function PlatformShortcuts({ roles }: { roles: readonly string[] }) {
+  const { t } = useTranslation()
+  const resources = resourcesForRoles(roles as Parameters<typeof resourcesForRoles>[0])
+
+  return (
+    <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {resources.map((resource) => (
+        <li key={resource.key}>
+          <Card>
+            <CardBody>
+              <Link
+                to={`/admin/${resource.key}`}
+                className="text-base font-medium text-primary hover:underline"
+              >
+                {t(resource.titleKey)}
+              </Link>
+            </CardBody>
+          </Card>
+        </li>
+      ))}
+      <li>
+        <Card>
+          <CardBody>
+            <Link to="/platform" className="text-base font-medium text-primary hover:underline">
+              {t('nav.platform')}
+            </Link>
+          </CardBody>
+        </Card>
+      </li>
+    </ul>
   )
 }
 

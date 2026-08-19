@@ -45,7 +45,10 @@ export const WEB_APP_CSP = {
   scriptSrc: ["'self'"],
   styleSrc: ["'self'", "'unsafe-inline'"],
   imgSrc: ["'self'", 'data:', 'blob:'],
-  fontSrc: ["'self'"],
+  // FullCalendar ships its icon font inlined in its own stylesheet as a
+  // `data:` URI, so refusing them means the calendar's controls lose their
+  // glyphs. A font cannot make a request; this costs nothing.
+  fontSrc: ["'self'", 'data:'],
   connectSrc: ["'self'", 'https://login.microsoftonline.com'],
   frameAncestors: ["'none'"],
   baseUri: ["'self'"],

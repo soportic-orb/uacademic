@@ -135,7 +135,9 @@
     "coverage": "Group coverage",
     "openRequests": "Open requests",
     "conflicts": "Detected conflicts",
-    "viewAll": "View all"
+    "viewAll": "View all",
+    "noLoadTitle": "You have no teaching assigned yet",
+    "noLoadBody": "Once coordination assigns you subjects, your hours will appear here."
   },
   "teachers": {
     "title": "Teachers",

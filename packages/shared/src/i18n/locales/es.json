@@ -135,7 +135,9 @@
     "coverage": "Cobertura de grupos",
     "openRequests": "Solicitudes abiertas",
     "conflicts": "Conflictos detectados",
-    "viewAll": "Ver todo"
+    "viewAll": "Ver todo",
+    "noLoadTitle": "Todavía no tienes docencia asignada",
+    "noLoadBody": "Cuando la coordinación te asigne asignaturas, aquí verás tus horas."
   },
   "teachers": {
     "title": "Profesorado",

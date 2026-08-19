@@ -135,7 +135,9 @@
     "coverage": "Cobertura de grups",
     "openRequests": "Sol·licituds obertes",
     "conflicts": "Conflictes detectats",
-    "viewAll": "Ho vull veure tot"
+    "viewAll": "Ho vull veure tot",
+    "noLoadTitle": "Encara no tens docència assignada",
+    "noLoadBody": "Quan la coordinació t’assigni assignatures, aquí veuràs les teves hores."
   },
   "teachers": {
     "title": "Professorat",

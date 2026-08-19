@@ -22,7 +22,7 @@ server {
     # The SPA loads only its own bundle, talks only to this origin, and pulls
     # no third-party script. `connect-src` also allows the Microsoft login
     # endpoints, which MSAL contacts from the browser.
-    add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://login.microsoftonline.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" always;
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://login.microsoftonline.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'" always;
 
     client_max_body_size 30m;
     gzip on;

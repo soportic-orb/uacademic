@@ -6,7 +6,7 @@ import type {
 } from '@uacademic/shared'
 import { useQuery } from '@tanstack/react-query'
 
-import { apiFetch } from '../lib/api'
+import { ApiRequestError, apiFetch } from '../lib/api'
 import { useSessionStore } from '../stores/session'
 
 /**
@@ -36,12 +36,27 @@ export function useTeacherLoad(enabled = true) {
   })
 }
 
+/**
+ * The signed-in person's own teaching load, or `null` when they have none.
+ *
+ * Not everybody who signs in teaches: an administrator has no teaching profile
+ * and the endpoint says so with a 404, which is an answer rather than a
+ * failure. Turning it into one put "we could not find the resource" in front
+ * of the first person to open a new installation.
+ */
 export function useOwnLoad(enabled = true) {
   const context = useRequestContext()
 
   return useQuery({
     queryKey: ['own-load', context.mockUserEmail, context.centerId],
-    queryFn: () => apiFetch<TeacherLoadDto>('/api/v1/teachers/me/load'),
+    queryFn: async (): Promise<TeacherLoadDto | null> => {
+      try {
+        return await apiFetch<TeacherLoadDto>('/api/v1/teachers/me/load')
+      } catch (error) {
+        if (error instanceof ApiRequestError && error.status === 404) return null
+        throw error
+      }
+    },
     enabled: enabled && Boolean(context.centerId),
   })
 }
