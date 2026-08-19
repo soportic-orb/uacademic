@@ -399,6 +399,28 @@ d'aplicació que et proposa (`api://<client-id>`) i afegeix un àmbit anomenat
 demana el navegador, i el testimoni que en surt és el que verifica el servidor;
 sense això l'entrada s'atura amb `AADSTS65005`.
 
+**Instal·lar-la a cada universitat.** L'aplicació viu al tenant on es va
+registrar. Qualsevol altra organització l'ha d'instal·lar una vegada, i fins
+que no ho fa, Microsoft hi rebutja tothom amb:
+
+```
+AADSTS500011: The resource principal named api://<client-id> was not found in
+the tenant named <universitat>.
+```
+
+No hi ha cap pantalla de consentiment per acceptar — el recurs no existeix en
+aquell tenant per poder-hi demanar res —, o sigui que algú que pugui
+administrar _aquell_ directori ha d'obrir una vegada l'enllaç de
+consentiment:
+
+```
+https://login.microsoftonline.com/<tenant>/adminconsent?client_id=<client-id>&redirect_uri=https://uacademic.cat/auth-callback.html
+```
+
+**Administració → Tenants** mostra aquest enllaç a cada fila, construït amb la
+configuració de la mateixa instal·lació; envia'l al servei informàtic de la
+universitat. Un cop l'accepten, tothom d'aquell tenant ja hi pot entrar.
+
 **Tenants.** Cada organització de Microsoft del món passa la verificació de
 signatura del punt final `/organizations`. Per això el servidor valida el `tid`
 contra la llista de tenants registrats i respon 403 si no hi és. Dona d'alta

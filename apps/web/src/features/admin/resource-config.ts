@@ -12,7 +12,7 @@ export interface ColumnConfig {
   sortable?: boolean
   align?: 'left' | 'right'
   /** `enum` looks the value up in the catalog under `enumPrefix`. */
-  render?: 'text' | 'enum' | 'date' | 'number' | 'boolean'
+  render?: 'text' | 'enum' | 'date' | 'number' | 'boolean' | 'entraConsent'
   enumPrefix?: string
 }
 
@@ -94,6 +94,7 @@ export const ADMIN_RESOURCES: ResourceConfig[] = [
       { key: 'displayName', labelKey: 'admin.fields.name', sortable: true },
       { key: 'tenantId', labelKey: 'admin.fields.tenantId' },
       { key: 'status', labelKey: 'admin.fields.status', render: 'enum', enumPrefix: 'userStatus' },
+      { key: 'consent', labelKey: 'admin.fields.consent', render: 'entraConsent' },
     ],
     fields: [
       {

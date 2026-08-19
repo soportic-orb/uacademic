@@ -1010,7 +1010,8 @@
       "firstName": "Nombre",
       "lastName": "Apellidos",
       "email": "Correo electrónico",
-      "role": "Rol"
+      "role": "Rol",
+      "consent": "Consentimiento"
     },
     "newUser": "Nuevo usuario",
     "newUserHint": "La cuenta se enlaza con su identidad de Microsoft la primera vez que entre.",
@@ -1034,7 +1035,8 @@
     "userSuspended": "El usuario tiene historial en la plataforma: la cuenta se ha suspendido en lugar de eliminarse",
     "errors": {
       "cannotDeleteSelf": "No puedes eliminar tu propia cuenta."
-    }
+    },
+    "grantConsent": "Instalar en la organización"
   },
   "imports": {
     "title": "Importación masiva",

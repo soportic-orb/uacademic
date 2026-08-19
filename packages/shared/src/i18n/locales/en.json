@@ -1010,7 +1010,8 @@
       "firstName": "First name",
       "lastName": "Last name",
       "email": "Email",
-      "role": "Role"
+      "role": "Role",
+      "consent": "Consent"
     },
     "newUser": "New user",
     "newUserHint": "The account is linked to their Microsoft identity the first time they sign in.",
@@ -1034,7 +1035,8 @@
     "userSuspended": "This user has a history on the platform, so the account was suspended rather than deleted",
     "errors": {
       "cannotDeleteSelf": "You cannot delete your own account."
-    }
+    },
+    "grantConsent": "Install in the organisation"
   },
   "imports": {
     "title": "Bulk import",

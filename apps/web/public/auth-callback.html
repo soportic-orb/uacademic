@@ -5,16 +5,31 @@
     <title>UAcademic</title>
     <meta name="robots" content="noindex" />
   </head>
-  <body>
+  <body
+    style="
+      margin: 0;
+      min-height: 100dvh;
+      display: grid;
+      place-items: center;
+      font:
+        14px/1.5 Inter,
+        system-ui,
+        sans-serif;
+      color: #475569;
+      background: #f8fafc;
+    "
+  >
     <!--
-      Microsoft returns here, and nothing else happens: the window that opened
-      this one reads the response out of the address bar and closes it.
+      Microsoft returns here. Normally nothing happens: the window that opened
+      this one reads the response out of the address bar and closes it before
+      anybody reads the line below — which is there for the other arrival, an
+      administrator coming back from granting consent in their own tenant.
 
       It is deliberately not the application. Pointing the redirect at the site
       root boots the whole SPA inside the pop-up — a white window while React,
-      the translations and the service worker load, in a window the user is
-      supposed to see for a fraction of a second — and the pop-up can be closed
-      out from under a half-started app.
+      the translations and the service worker load — and a service-worker
+      update waiting there reloads the window and throws the response away.
     -->
+    <p>UAcademic · Ja pots tancar aquesta finestra · Ya puedes cerrar esta ventana</p>
   </body>
 </html>

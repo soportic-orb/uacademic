@@ -1010,7 +1010,8 @@
       "firstName": "Nom",
       "lastName": "Cognoms",
       "email": "Correu electrònic",
-      "role": "Rol"
+      "role": "Rol",
+      "consent": "Consentiment"
     },
     "newUser": "Nou usuari",
     "newUserHint": "El compte s'enllaça amb la seva identitat de Microsoft la primera vegada que entri.",
@@ -1034,7 +1035,8 @@
     "userSuspended": "L'usuari té historial a la plataforma: el compte s'ha suspès en lloc d'eliminar-se",
     "errors": {
       "cannotDeleteSelf": "No pots eliminar el teu propi compte."
-    }
+    },
+    "grantConsent": "Instal·la a l'organització"
   },
   "imports": {
     "title": "Importació massiva",

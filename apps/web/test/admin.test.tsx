@@ -70,12 +70,22 @@ describe('resource table', () => {
     vi.unstubAllGlobals()
   })
 
+  // The tenants table also asks which Entra application this installation signs
+  // in against, so the mock answers that one separately.
   const respondWith = (body: unknown) =>
-    fetchMock.mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: async () => body,
-    } as Response)
+    fetchMock.mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input)
+      const payload = url.includes('/auth/config')
+        ? {
+            mode: 'entra',
+            entra: {
+              clientId: 'test-client',
+              authority: 'https://login.microsoftonline.com/organizations',
+            },
+          }
+        : body
+      return Promise.resolve({ ok: true, status: 200, json: async () => payload } as Response)
+    })
 
   it('asks the server for the page, the sort and the search term', async () => {
     const user = userEvent.setup()
@@ -83,10 +93,10 @@ describe('resource table', () => {
 
     render(wrap(<ResourcePage resource={resourceByKey('spaces')!} />))
 
-    await waitFor(() => expect(fetchMock).toHaveBeenCalled())
-    expect(String(fetchMock.mock.calls[0]?.[0])).toContain(
-      '/api/v1/admin/spaces?page=1&pageSize=25',
-    )
+    await waitFor(() => {
+      const urls = fetchMock.mock.calls.map((call) => String(call[0]))
+      expect(urls.some((url) => url.includes('/api/v1/admin/spaces?page=1&pageSize=25'))).toBe(true)
+    })
 
     await user.type(screen.getByPlaceholderText('Cerca…'), 'aula')
 
@@ -112,6 +122,36 @@ describe('resource table', () => {
     expect(await screen.findByText('Aula 1.1')).toBeInTheDocument()
     // Scoped to the table: the same label also exists in the type filter.
     expect(within(screen.getByRole('table')).getByText("Aula d'informàtica")).toBeInTheDocument()
+  })
+
+  /**
+   * A multi-tenant application exists only where it was registered. Every other
+   * university has to install it once, and until they do Microsoft refuses
+   * everybody there with AADSTS500011 and shows no prompt to click through —
+   * so the superadmin registering the tenant is handed the link to pass on.
+   */
+  it('hands the superadmin the link that installs the app in a tenant', async () => {
+    respondWith({
+      items: [
+        { id: '1', displayName: 'UVic', tenantId: 'uvic.cat', status: 'active' },
+        { id: '2', displayName: 'Sense tenant', tenantId: '', status: 'active' },
+      ],
+      page: 1,
+      pageSize: 25,
+      total: 2,
+      totalPages: 1,
+    })
+
+    render(wrap(<ResourcePage resource={resourceByKey('entra-tenants')!} />))
+
+    const link = await screen.findByRole('link', { name: "Instal·la a l'organització" })
+    expect(link).toHaveAttribute(
+      'href',
+      expect.stringContaining('login.microsoftonline.com/uvic.cat/adminconsent'),
+    )
+    expect(link).toHaveAttribute('href', expect.stringContaining('client_id=test-client'))
+    // The row with no tenant identifier has nothing to link to.
+    expect(screen.getAllByRole('link', { name: "Instal·la a l'organització" })).toHaveLength(1)
   })
 
   it('offers the empty state with a create action when nothing matches', async () => {

@@ -5,6 +5,8 @@ import { ArrowDown, ArrowUp, Pencil, Plus, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { useAuthConfig } from '../../auth/config'
+import { adminConsentUrl } from '../../auth/consent'
 import { EmptyState, ErrorState, TableSkeleton } from '../../components/feedback/states'
 import { Button } from '../../components/ui/button'
 import { Card, CardBody } from '../../components/ui/card'
@@ -27,6 +29,8 @@ export function ResourcePage({ resource }: { resource: ResourceConfig }) {
   const toast = useToast()
   const queryClient = useQueryClient()
   const locale = currentLocale()
+  // Only the tenants table uses it, and only to name the application in a link.
+  const entraClientId = useAuthConfig().data?.entra?.clientId ?? null
 
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(25)
@@ -113,6 +117,34 @@ export function ResourcePage({ resource }: { resource: ResourceConfig }) {
   }
 
   const renderCell = (row: Row, column: ResourceConfig['columns'][number]) => {
+    /*
+      Not a field of the row: a link built from it. A multi-tenant application
+      exists only in the tenant it was registered in, so until an administrator
+      of *this* organisation installs it, Microsoft refuses everyone here with
+      AADSTS500011 and shows no consent prompt to click — there is no resource
+      in that tenant to prompt about. This is the link that fixes it, and the
+      superadmin registering the tenant is exactly who has to send it on.
+    */
+    if (column.render === 'entraConsent') {
+      const tenantId = row.tenantId
+      if (!entraClientId || typeof tenantId !== 'string' || !tenantId) return '—'
+
+      return (
+        <a
+          href={adminConsentUrl({
+            clientId: entraClientId,
+            tenantId,
+            origin: window.location.origin,
+          })}
+          target="_blank"
+          rel="noreferrer"
+          className="text-primary underline underline-offset-2 hover:text-primary-600"
+        >
+          {t('admin.grantConsent')}
+        </a>
+      )
+    }
+
     const value = row[column.key]
     if (value === null || value === undefined || value === '') return '—'
 

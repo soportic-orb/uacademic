@@ -392,6 +392,27 @@ by admins and users. That is the scope the browser asks for, and the token it
 returns is what the server verifies; without it sign-in stops at
 `AADSTS65005`.
 
+**Installing it in each university.** The application lives in the tenant it
+was registered in. Every other organisation has to install it once, and until
+they do, Microsoft refuses everybody there with:
+
+```
+AADSTS500011: The resource principal named api://<client-id> was not found in
+the tenant named <university>.
+```
+
+There is no consent prompt to click through — the resource does not exist in
+that tenant to prompt about — so somebody who can administer _that_ directory
+has to open the consent link once:
+
+```
+https://login.microsoftonline.com/<tenant>/adminconsent?client_id=<client-id>&redirect_uri=https://uacademic.example.edu/auth-callback.html
+```
+
+**Administration → Tenants** shows that link on each row, built from this
+installation's own configuration; send it to the university's IT department.
+After they accept, everybody in that tenant can sign in.
+
 **Tenants.** Every Microsoft organisation in the world passes signature
 verification at the `/organizations` endpoint. That is why the server validates
 `tid` against the list of registered tenants and answers 403 when it is not

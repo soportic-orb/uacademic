@@ -404,6 +404,27 @@ aplicación que te propone (`api://<client-id>`) y añade un ámbito llamado
 que pide el navegador, y el token resultante es el que verifica el servidor; sin
 esto la entrada se detiene con `AADSTS65005`.
 
+**Instalarla en cada universidad.** La aplicación vive en el tenant donde se
+registró. Cualquier otra organización tiene que instalarla una vez, y hasta que
+no lo hace, Microsoft rechaza allí a todo el mundo con:
+
+```
+AADSTS500011: The resource principal named api://<client-id> was not found in
+the tenant named <universidad>.
+```
+
+No hay ninguna pantalla de consentimiento que aceptar — el recurso no existe en
+ese tenant para poder preguntar nada —, así que alguien que pueda administrar
+_ese_ directorio tiene que abrir una vez el enlace de consentimiento:
+
+```
+https://login.microsoftonline.com/<tenant>/adminconsent?client_id=<client-id>&redirect_uri=https://uacademic.cat/auth-callback.html
+```
+
+**Administración → Tenants** muestra ese enlace en cada fila, construido con la
+configuración de la propia instalación; envíalo al servicio informático de la
+universidad. Una vez lo aceptan, todo el mundo de ese tenant ya puede entrar.
+
 **Tenants.** Cada organización de Microsoft del mundo pasa la verificación de
 firma del endpoint `/organizations`. Por eso el servidor valida el `tid` contra
 la lista de tenants registrados y responde 403 si no está. Da de alta cada
