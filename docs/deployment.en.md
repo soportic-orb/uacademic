@@ -310,12 +310,20 @@ and is the normal way to start, but the update button has nowhere to put a
 release. Move to it once, before enabling updates:
 
 ```bash
-cd /var/www/uacademic                       # your deploy root
-mkdir -p releases/$(cat repo/VERSION 2>/dev/null || echo 0.1.0) shared backups
-mv repo/* releases/*/ 2>/dev/null || cp -a repo/. releases/*/
-ln -sfn "$PWD"/releases/* current
-pm2 delete all && pm2 start current/ecosystem.config.cjs --update-env && pm2 save
+cd /var/www/uacademic/repo                  # your checkout
+pnpm build                                  # promotion copies a build, not sources
+scripts/deploy/promote.sh
 ```
+
+It copies the build beside the checkout as `releases/<version>`, moves the
+configuration to `shared/.env` if it was still inside the checkout, installs
+from the lockfile, moves `current`, restarts PM2 from there and health-checks.
+It refuses rather than half-finishing, and the checkout is left alone — it is
+still what you `git pull` into.
+
+Do not copy the checkout by hand. `cp -a` brings `.git` with it, whose object
+directories are read-only, so it creates them unwritable and then cannot write
+the objects into them — failing halfway with hundreds of "Permission denied".
 
 From then on PM2 follows `current`, and each update moves it.
 

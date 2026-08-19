@@ -313,12 +313,21 @@ I la instal·lació ha de tenir l'estructura de l'apartat 2 — `releases/`,
 release. Fes el canvi una vegada, abans d'activar les actualitzacions:
 
 ```bash
-cd /var/www/uacademic                       # la teva arrel de desplegament
-mkdir -p releases/$(cat repo/VERSION 2>/dev/null || echo 0.1.0) shared backups
-mv repo/* releases/*/ 2>/dev/null || cp -a repo/. releases/*/
-ln -sfn "$PWD"/releases/* current
-pm2 delete all && pm2 start current/ecosystem.config.cjs --update-env && pm2 save
+cd /var/www/uacademic/repo                  # el teu checkout
+pnpm build                                  # la promoció copia una construcció, no codi font
+scripts/deploy/promote.sh
 ```
+
+Copia la construcció al costat del checkout com a `releases/<versió>`, mou la
+configuració a `shared/.env` si encara era dins del checkout, instal·la des del
+lockfile, mou `current`, reinicia PM2 des d'allà i comprova la salut. Es nega
+abans que quedar a mitges, i el checkout no es toca: continua sent on fas
+`git pull`.
+
+No copiïs el checkout a mà. `cp -a` s'emporta també `.git`, i els seus
+directoris d'objectes són de només lectura: els crea sense permís d'escriptura i
+després no hi pot escriure els objectes, i falla a mitges amb centenars de
+«Permission denied».
 
 A partir d'aquí PM2 segueix `current`, i cada actualització el mou.
 

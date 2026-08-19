@@ -317,12 +317,21 @@ es la forma habitual de empezar, pero el botón de actualizar no tiene dónde
 dejar la release. Haz el cambio una vez, antes de activar las actualizaciones:
 
 ```bash
-cd /var/www/uacademic                       # tu raíz de despliegue
-mkdir -p releases/$(cat repo/VERSION 2>/dev/null || echo 0.1.0) shared backups
-mv repo/* releases/*/ 2>/dev/null || cp -a repo/. releases/*/
-ln -sfn "$PWD"/releases/* current
-pm2 delete all && pm2 start current/ecosystem.config.cjs --update-env && pm2 save
+cd /var/www/uacademic/repo                  # tu checkout
+pnpm build                                  # la promoción copia una construcción, no fuentes
+scripts/deploy/promote.sh
 ```
+
+Copia la construcción junto al checkout como `releases/<versión>`, mueve la
+configuración a `shared/.env` si aún estaba dentro del checkout, instala desde
+el lockfile, mueve `current`, reinicia PM2 desde ahí y comprueba la salud. Se
+niega antes que quedarse a medias, y el checkout no se toca: sigue siendo donde
+haces `git pull`.
+
+No copies el checkout a mano. `cp -a` se lleva también `.git`, y sus
+directorios de objetos son de solo lectura: los crea sin permiso de escritura y
+después no puede escribir los objetos dentro, fallando a medias con cientos de
+«Permission denied».
 
 A partir de ahí PM2 sigue `current`, y cada actualización lo mueve.
 
