@@ -742,7 +742,9 @@
     "mailNotConfigured": "No configurat: la plataforma escriu els correus al log en comptes d'enviar-los.",
     "sendTest": "Envia un correu de prova",
     "testSent": "Correu de prova enviat a {{to}}. Mira la safata d’entrada.",
-    "testFailed": "El servidor de correu ha respost: {{detail}}"
+    "testFailed": "El servidor de correu ha respost: {{detail}}",
+    "mailUser": "Usuari d'autenticació",
+    "mailFrom": "Remitent"
   },
   "assistant": {
     "title": "Assistent IA",

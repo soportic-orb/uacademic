@@ -27,6 +27,7 @@ interface MailStatus {
   host: string | null
   port: number
   secure: boolean
+  user: string | null
   from: string
 }
 
@@ -241,11 +242,20 @@ export function PlatformPage() {
           }
           description={
             mail.data?.configured
-              ? `${mail.data.host}:${mail.data.port} · ${mail.data.from}`
+              ? `${mail.data.host}:${mail.data.port} · ${mail.data.secure ? 'SSL' : 'STARTTLS'}`
               : t('platform.mailNotConfigured')
           }
         />
-        <CardBody>
+        <CardBody className="space-y-4">
+          {mail.data?.configured ? (
+            <dl className="grid gap-1 text-xs text-text-muted sm:grid-cols-[auto_1fr] sm:gap-x-3">
+              <dt>{t('platform.mailUser')}</dt>
+              <dd className="break-all font-mono">{mail.data.user ?? '—'}</dd>
+              <dt>{t('platform.mailFrom')}</dt>
+              <dd className="break-all font-mono">{mail.data.from}</dd>
+            </dl>
+          ) : null}
+
           <Button
             variant="secondary"
             disabled={!mail.data?.configured || testMail.isPending}

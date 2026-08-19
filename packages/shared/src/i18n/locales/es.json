@@ -742,7 +742,9 @@
     "mailNotConfigured": "No configurado: la plataforma escribe los correos en el log en vez de enviarlos.",
     "sendTest": "Envía un correo de prueba",
     "testSent": "Correo de prueba enviado a {{to}}. Mira la bandeja de entrada.",
-    "testFailed": "El servidor de correo ha respondido: {{detail}}"
+    "testFailed": "El servidor de correo ha respondido: {{detail}}",
+    "mailUser": "Usuario de autenticación",
+    "mailFrom": "Remitente"
   },
   "assistant": {
     "title": "Asistente IA",

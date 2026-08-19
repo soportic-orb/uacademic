@@ -38,10 +38,14 @@ export function registerPlatformRoutes(app: FastifyInstance): void {
 
     return {
       configured: mailConfigured(),
-      // Enough to recognise a wrong server, and no credential.
+      // Enough to recognise a wrong server and a wrong account, and no
+      // credential. The user is where the mistakes are: a provider that wants
+      // the whole address given a bare name, or the sender address given
+      // instead of the login, both come back as the same 535.
       host: configuration.SMTP_HOST ?? null,
       port: configuration.SMTP_PORT,
       secure: configuration.SMTP_SECURE,
+      user: configuration.SMTP_USER ?? null,
       from: configuration.SMTP_FROM,
     }
   })

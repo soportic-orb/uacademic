@@ -742,7 +742,9 @@
     "mailNotConfigured": "Not configured: the platform writes messages to the log instead of sending them.",
     "sendTest": "Send a test email",
     "testSent": "Test email sent to {{to}}. Check the inbox.",
-    "testFailed": "The mail server answered: {{detail}}"
+    "testFailed": "The mail server answered: {{detail}}",
+    "mailUser": "Authenticating as",
+    "mailFrom": "Sender"
   },
   "assistant": {
     "title": "AI assistant",
