@@ -25,6 +25,15 @@ import { writeAuditLog } from '../lib/audit.js'
  */
 export const INVITATION_TTL_HOURS = 7 * 24
 
+/**
+ * Two hours for a reset somebody asked for themselves.
+ *
+ * The invitation's week is sized for a mailbox nobody has opened yet; a person
+ * who has just clicked "I forgot my password" is reading their mail now, and a
+ * link that stays live for a week is a week of somebody else's chances.
+ */
+export const PASSWORD_RESET_TTL_HOURS = 2
+
 export function generateInvitationToken(): string {
   return randomBytes(32).toString('hex')
 }
@@ -48,6 +57,7 @@ export interface IssuedInvitation {
 export async function issueInvitation(
   prisma: PrismaClient,
   userId: string,
+  options: { ttlHours?: number } = {},
 ): Promise<IssuedInvitation> {
   await prisma.userInvitation.updateMany({
     where: { userId, acceptedAt: null, revokedAt: null },
@@ -55,7 +65,7 @@ export async function issueInvitation(
   })
 
   const token = generateInvitationToken()
-  const expiresAt = new Date(Date.now() + INVITATION_TTL_HOURS * 3_600_000)
+  const expiresAt = new Date(Date.now() + (options.ttlHours ?? INVITATION_TTL_HOURS) * 3_600_000)
 
   await prisma.userInvitation.create({
     data: { userId, tokenHash: hashInvitationToken(token), expiresAt },

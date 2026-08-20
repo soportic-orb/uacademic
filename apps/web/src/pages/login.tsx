@@ -9,7 +9,7 @@ import { Logo } from '../components/brand/logo'
 import { Button } from '../components/ui/button'
 import { Card, CardBody, CardHeader } from '../components/ui/card'
 import { useToast } from '../hooks/use-toast'
-import { ApiRequestError } from '../lib/api'
+import { ApiRequestError, apiJson } from '../lib/api'
 
 /**
  * Two doors, and both are ordinary ones.
@@ -36,6 +36,8 @@ export function LoginPage() {
   // an installation a minute old has no authenticator app behind it.
   const [totpRequired, setTotpRequired] = useState(false)
   const totpRef = useRef<HTMLInputElement>(null)
+  const [resetting, setResetting] = useState(false)
+  const [resetSent, setResetSent] = useState(false)
 
   // The form just grew a field in answer to what was submitted; moving focus
   // there is the whole point, and it is what a screen reader needs too.
@@ -98,6 +100,21 @@ export function LoginPage() {
     }
   }
 
+  const onReset = async (event: React.FormEvent) => {
+    event.preventDefault()
+    setBusy(true)
+    try {
+      await apiJson('/api/v1/auth/password-reset', 'POST', { email: form.email })
+      // The same answer whether or not the address is one of ours, because
+      // the screen must not become a way of finding out who has an account.
+      setResetSent(true)
+    } catch (error) {
+      handleError(error)
+    } finally {
+      setBusy(false)
+    }
+  }
+
   return (
     <main className="flex min-h-dvh items-center justify-center bg-bg px-4 py-12">
       <div className="w-full max-w-md space-y-6">
@@ -135,7 +152,56 @@ export function LoginPage() {
           </CardBody>
         </Card>
 
-        {showLocal ? (
+        {resetting ? (
+          <Card>
+            <CardHeader
+              title={t('auth.forgotPassword')}
+              description={t('auth.forgotPasswordHint')}
+            />
+            <CardBody>
+              {resetSent ? (
+                <div className="space-y-4">
+                  <p className="text-sm text-text">{t('auth.resetSent')}</p>
+                  <Button
+                    variant="secondary"
+                    className="w-full"
+                    onClick={() => {
+                      setResetting(false)
+                      setResetSent(false)
+                    }}
+                  >
+                    {t('auth.backToSignIn')}
+                  </Button>
+                </div>
+              ) : (
+                <form className="space-y-4" onSubmit={(event) => void onReset(event)}>
+                  <Field label={t('auth.email')}>
+                    <input
+                      type="email"
+                      required
+                      autoComplete="username"
+                      value={form.email}
+                      onChange={(event) => setForm({ ...form, email: event.target.value })}
+                      className="h-10 w-full rounded-control border border-border bg-surface px-3 text-sm text-text"
+                    />
+                  </Field>
+
+                  <Button type="submit" className="w-full" disabled={busy}>
+                    {t('auth.sendResetLink')}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="w-full"
+                    onClick={() => setResetting(false)}
+                  >
+                    {t('common.cancel')}
+                  </Button>
+                </form>
+              )}
+            </CardBody>
+          </Card>
+        ) : showLocal ? (
           <Card>
             <CardHeader title={t('auth.withPassword')} description={t('auth.withPasswordHint')} />
             <CardBody>
@@ -182,6 +248,15 @@ export function LoginPage() {
                   {t('auth.submit')}
                 </Button>
               </form>
+
+              {/*
+                Deliberately below the form, not beside the password field: it
+                is the way out of a dead end, and putting it in the way of
+                somebody who does remember their password helps nobody.
+              */}
+              <Button variant="link" className="mt-4 w-full" onClick={() => setResetting(true)}>
+                {t('auth.forgotPassword')}
+              </Button>
             </CardBody>
           </Card>
         ) : null}

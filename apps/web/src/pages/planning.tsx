@@ -1,13 +1,18 @@
+import { Plus } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { AssistantLauncher } from '../features/assistant/assistant-launcher'
 
-import { CardSkeleton, EmptyState, ErrorState } from '../components/feedback/states'
+import { CardSkeleton, ErrorState } from '../components/feedback/states'
+import { Button } from '../components/ui/button'
+import { Card, CardBody, CardHeader } from '../components/ui/card'
+import { useToast } from '../hooks/use-toast'
+import { ApiRequestError } from '../lib/api'
 import { CompareView } from '../features/planner/compare-view'
 import { GeneratePanel } from '../features/planner/generate-panel'
 import { PlannerGrid } from '../features/planner/planner-grid'
-import { useVersion, useVersions } from '../features/planner/queries'
+import { useCreateVersion, useVersion, useVersions } from '../features/planner/queries'
 import { VersionBar } from '../features/planner/version-bar'
 
 /**
@@ -30,9 +35,10 @@ export function PlanningPage() {
   if (versions.isError) return <ErrorState onRetry={() => void versions.refetch()} />
 
   if (items.length === 0) {
-    return (
-      <EmptyState title={t('planning.empty.title')} description={t('planning.empty.description')} />
-    )
+    // The empty state said what was missing and offered no way to make it: the
+    // button that creates a version lives on the version bar, which is not
+    // rendered until there is a version for it to be about.
+    return <FirstVersion />
   }
 
   return (
@@ -76,5 +82,62 @@ export function PlanningPage() {
         </>
       )}
     </div>
+  )
+}
+
+/**
+ * The first draft of a year's timetable.
+ *
+ * Nothing is planned in the open: a version is a draft of the whole week that
+ * is worked on and then published, so the very first thing a coordinator does
+ * is make one. Later ones are branched from an existing version, which is why
+ * the control for those lives on the version bar.
+ */
+function FirstVersion() {
+  const { t } = useTranslation()
+  const toast = useToast()
+  const create = useCreateVersion()
+  const [name, setName] = useState('')
+
+  return (
+    <Card className="mx-auto max-w-xl">
+      <CardHeader title={t('planning.empty.title')} description={t('planning.empty.description')} />
+      <CardBody>
+        <form
+          className="flex flex-wrap items-end gap-2"
+          onSubmit={(event) => {
+            event.preventDefault()
+            create.mutate(
+              { name },
+              {
+                onError: (error) => {
+                  if (error instanceof ApiRequestError)
+                    toast.raw({ variant: 'error', message: error.localizedMessage })
+                  else toast.error('errors.generic')
+                },
+              },
+            )
+          }}
+        >
+          <label className="flex-1 text-sm">
+            <span className="mb-1 block text-xs text-text-muted">{t('planner.version.name')}</span>
+            <input
+              type="text"
+              required
+              minLength={3}
+              value={name}
+              placeholder={t('planner.version.namePlaceholder')}
+              onChange={(event) => setName(event.target.value)}
+              className="h-10 w-full rounded-control border border-border bg-surface px-3 text-text"
+            />
+          </label>
+
+          <Button type="submit" disabled={create.isPending}>
+            <Plus className="size-4" aria-hidden="true" />
+            {create.isPending ? t('common.saving') : t('planner.version.createFirst')}
+          </Button>
+        </form>
+      </CardBody>
+    </Card>
   )
 }

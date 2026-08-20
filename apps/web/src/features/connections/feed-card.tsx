@@ -11,6 +11,7 @@ import { AlertTriangle, Copy, Link2, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { QrCode } from '../../components/data/qr-code'
 import { Button } from '../../components/ui/button'
 import { Card, CardBody, CardHeader } from '../../components/ui/card'
 import { useToast } from '../../hooks/use-toast'
@@ -67,28 +68,37 @@ export function FeedCard({ feed }: { feed: FeedStatus }) {
 
       <CardBody className="space-y-4">
         {url ? (
-          <div className="flex flex-wrap items-end gap-2">
-            <label className="flex-1 text-sm">
-              <span className="mb-1 block text-xs text-text-muted">
-                {t('calendar.subscribe.url')}
-              </span>
-              <input
-                readOnly
-                value={url}
-                onFocus={(event) => event.currentTarget.select()}
-                className="h-10 w-full rounded-control border border-border bg-surface-muted px-3 font-mono text-xs text-text"
-              />
-            </label>
-            <Button
-              variant="secondary"
-              onClick={() => {
-                void navigator.clipboard?.writeText(url)
-                toast.success('calendar.subscribe.copied')
-              }}
-            >
-              <Copy className="size-4" aria-hidden="true" />
-              {t('common.copy')}
-            </Button>
+          <div className="flex flex-wrap items-start gap-4">
+            <div className="text-center">
+              <QrCode value={url} />
+              <p className="mt-2 max-w-44 text-xs text-text-muted">
+                {t('calendar.subscribe.qrHint')}
+              </p>
+            </div>
+
+            <div className="flex flex-1 flex-wrap items-end gap-2">
+              <label className="flex-1 text-sm">
+                <span className="mb-1 block text-xs text-text-muted">
+                  {t('calendar.subscribe.url')}
+                </span>
+                <input
+                  readOnly
+                  value={url}
+                  onFocus={(event) => event.currentTarget.select()}
+                  className="h-10 w-full rounded-control border border-border bg-surface-muted px-3 font-mono text-xs text-text"
+                />
+              </label>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  void navigator.clipboard?.writeText(url)
+                  toast.success('calendar.subscribe.copied')
+                }}
+              >
+                <Copy className="size-4" aria-hidden="true" />
+                {t('common.copy')}
+              </Button>
+            </div>
           </div>
         ) : (
           <p className="text-sm text-text-muted">

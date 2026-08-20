@@ -900,7 +900,11 @@
     "inviteAction": "Crea la contrasenya",
     "testSubject": "Prova de correu de UAcademic",
     "testTitle": "El correu funciona",
-    "testBody": "Si llegeixes això, la plataforma envia correu correctament a través de {{host}}."
+    "testBody": "Si llegeixes això, la plataforma envia correu correctament a través de {{host}}.",
+    "resetSubject": "Restableix la contrasenya de UAcademic",
+    "resetTitle": "Hola, {{name}}",
+    "resetBody": "Algú ha demanat una contrasenya nova per al teu compte. Obre l'enllaç per crear-la; caduca d'aquí a {{hours}} hores. Si no has estat tu, no cal que facis res: la contrasenya actual segueix funcionant.",
+    "resetAction": "Crea una contrasenya nova"
   },
   "push": {
     "changeRequestTitle": "Sol·licitud de canvi",
@@ -982,7 +986,11 @@
     "passwordRule": "Com a mínim 12 caràcters, amb majúscules, minúscules i xifres.",
     "backToSignIn": "Torna a la pantalla d'entrada",
     "withPassword": "Entra amb correu i contrasenya",
-    "withPasswordHint": "La contrasenya es crea des de l'enllaç de la invitació que has rebut per correu."
+    "withPasswordHint": "La contrasenya es crea des de l'enllaç de la invitació que has rebut per correu.",
+    "forgotPassword": "Has oblidat la contrasenya?",
+    "forgotPasswordHint": "Escriu el teu correu i t'enviarem un enllaç per crear-ne una de nova.",
+    "sendResetLink": "Envia'm l'enllaç",
+    "resetSent": "Si aquest correu té un compte a la plataforma, hi arribarà un enllaç d'aquí a un moment. Caduca en dues hores."
   },
   "admin": {
     "title": "Administració",
@@ -1359,7 +1367,8 @@
         "reviewRequired": "Aquest centre exigeix passar per revisió abans de publicar.",
         "blockingViolations": "Hi ha conflictes sense resoldre: no es pot publicar.",
         "notEditable": "Aquesta versió ja no es pot modificar."
-      }
+      },
+      "createFirst": "Crea la primera versió"
     },
     "compare": {
       "title": "Compara versions",
@@ -1425,7 +1434,8 @@
       "revoked": "Adreça revocada",
       "revokeConfirm": "Si la revoques, els calendaris que hi estiguin subscrits deixaran de rebre l'horari. Vols continuar?",
       "warning": "Qui tingui aquesta adreça pot veure el teu horari. No la comparteixis.",
-      "none": "Encara no has generat cap adreça."
+      "none": "Encara no has generat cap adreça.",
+      "qrHint": "Escaneja-ho amb el mòbil per subscriure-hi el calendari."
     },
     "export": {
       "pdf": "Exporta a PDF",

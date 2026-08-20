@@ -900,7 +900,11 @@
     "inviteAction": "Crea la contraseña",
     "testSubject": "Prueba de correo de UAcademic",
     "testTitle": "El correo funciona",
-    "testBody": "Si lees esto, la plataforma envía correo correctamente a través de {{host}}."
+    "testBody": "Si lees esto, la plataforma envía correo correctamente a través de {{host}}.",
+    "resetSubject": "Restablece la contraseña de UAcademic",
+    "resetTitle": "Hola, {{name}}",
+    "resetBody": "Alguien ha pedido una contraseña nueva para tu cuenta. Abre el enlace para crearla; caduca dentro de {{hours}} horas. Si no has sido tú, no hace falta que hagas nada: la contraseña actual sigue funcionando.",
+    "resetAction": "Crear una contraseña nueva"
   },
   "push": {
     "changeRequestTitle": "Solicitud de cambio",
@@ -982,7 +986,11 @@
     "passwordRule": "Como mínimo 12 caracteres, con mayúsculas, minúsculas y cifras.",
     "backToSignIn": "Volver a la pantalla de entrada",
     "withPassword": "Entrar con correo y contraseña",
-    "withPasswordHint": "La contraseña se crea desde el enlace de la invitación que has recibido por correo."
+    "withPasswordHint": "La contraseña se crea desde el enlace de la invitación que has recibido por correo.",
+    "forgotPassword": "¿Has olvidado la contraseña?",
+    "forgotPasswordHint": "Escribe tu correo y te enviaremos un enlace para crear una nueva.",
+    "sendResetLink": "Enviarme el enlace",
+    "resetSent": "Si ese correo tiene una cuenta en la plataforma, recibirá un enlace en un momento. Caduca en dos horas."
   },
   "admin": {
     "title": "Administración",
@@ -1359,7 +1367,8 @@
         "reviewRequired": "Este centro exige pasar por revisión antes de publicar.",
         "blockingViolations": "Hay conflictos sin resolver: no se puede publicar.",
         "notEditable": "Esta versión ya no se puede modificar."
-      }
+      },
+      "createFirst": "Crear la primera versión"
     },
     "compare": {
       "title": "Comparar versiones",
@@ -1425,7 +1434,8 @@
       "revoked": "Dirección revocada",
       "revokeConfirm": "Si la revocas, los calendarios suscritos dejarán de recibir el horario. ¿Quieres continuar?",
       "warning": "Quien tenga esta dirección puede ver tu horario. No la compartas.",
-      "none": "Todavía no has generado ninguna dirección."
+      "none": "Todavía no has generado ninguna dirección.",
+      "qrHint": "Escanéalo con el móvil para suscribir el calendario."
     },
     "export": {
       "pdf": "Exportar a PDF",

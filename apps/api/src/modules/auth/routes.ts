@@ -5,6 +5,7 @@ import {
   entraSessionRequestSchema,
   invitationAcceptSchema,
   localLoginRequestSchema,
+  passwordResetRequestSchema,
   localPasswordChangeSchema,
 } from '@uacademic/shared'
 import type { CookieSerializeOptions } from '@fastify/cookie'
@@ -25,7 +26,13 @@ import {
   revokeAllUserSessions,
   revokeSession,
 } from '../../services/auth-service.js'
-import { acceptInvitation, readInvitation } from '../../services/invitations.js'
+import { enqueueJob } from '../../jobs/worker.js'
+import {
+  PASSWORD_RESET_TTL_HOURS,
+  acceptInvitation,
+  issueInvitation,
+  readInvitation,
+} from '../../services/invitations.js'
 import { buildSessionUser, requireUser } from '../../plugins/context.js'
 
 export function registerAuthRoutes(app: FastifyInstance, env: Env): void {
@@ -209,6 +216,60 @@ export function registerAuthRoutes(app: FastifyInstance, env: Env): void {
       void reply.setCookie(SESSION_COOKIE, session.id, cookieOptions(env.SESSION_TTL_HOURS * 3600))
 
       return buildSessionUser(userId, 'local', session.expiresAt, null)
+    },
+  )
+
+  /**
+   * Asking for a link to set a new password.
+   *
+   * Answers the same thing whoever asks, and whether or not the address is one
+   * of ours: an endpoint that says "no such account" is an endpoint that lists
+   * everybody's accounts to anybody patient enough to ask.
+   *
+   * The link is the invitation mechanism with a shorter fuse — the same
+   * one-time token and the same screen — because "set a password you have
+   * never had" and "set a new one" are the same act.
+   */
+  app.post(
+    '/api/v1/auth/password-reset',
+    { config: { public: true } },
+    async (request, reply): Promise<{ requested: true }> => {
+      const body = parseWith(passwordResetRequestSchema, request.body)
+      const client = prisma()
+
+      const user = await client.user.findUnique({
+        where: { email: body.email.toLowerCase() },
+        include: { centerRoles: { include: { center: { select: { name: true } } } } },
+      })
+
+      // Suspended accounts are not reset back into existence.
+      if (user && user.status !== 'suspended') {
+        const { token } = await issueInvitation(client, user.id, {
+          ttlHours: PASSWORD_RESET_TTL_HOURS,
+        })
+
+        await enqueueJob(client, 'user.passwordReset', {
+          email: user.email,
+          locale: user.locale,
+          firstName: user.firstName,
+          centerName: user.centerRoles[0]?.center.name ?? '',
+          url: `${env.APP_URL.replace(/\/$/, '')}/activate?token=${token}`,
+        })
+
+        await writeAuditLog(client, {
+          centerId: null,
+          userId: user.id,
+          entity: 'auth',
+          entityId: user.id,
+          action: 'password_reset_requested',
+          after: { email: user.email },
+          source: 'user',
+          ip: request.ip,
+        })
+      }
+
+      void reply.status(202)
+      return { requested: true }
     },
   )
 

@@ -900,7 +900,11 @@
     "inviteAction": "Create your password",
     "testSubject": "UAcademic mail test",
     "testTitle": "Email works",
-    "testBody": "If you are reading this, the platform sends mail correctly through {{host}}."
+    "testBody": "If you are reading this, the platform sends mail correctly through {{host}}.",
+    "resetSubject": "Reset your UAcademic password",
+    "resetTitle": "Hello, {{name}}",
+    "resetBody": "Somebody asked for a new password for your account. Open the link to set one; it expires in {{hours}} hours. If it was not you, there is nothing to do — your current password still works.",
+    "resetAction": "Set a new password"
   },
   "push": {
     "changeRequestTitle": "Change request",
@@ -982,7 +986,11 @@
     "passwordRule": "At least 12 characters, with upper case, lower case and digits.",
     "backToSignIn": "Back to the sign-in screen",
     "withPassword": "Sign in with email and password",
-    "withPasswordHint": "The password is set from the invitation link you received by email."
+    "withPasswordHint": "The password is set from the invitation link you received by email.",
+    "forgotPassword": "Forgotten your password?",
+    "forgotPasswordHint": "Type your email and we will send a link to set a new one.",
+    "sendResetLink": "Send me the link",
+    "resetSent": "If that address has an account here, a link is on its way. It expires in two hours."
   },
   "admin": {
     "title": "Administration",
@@ -1359,7 +1367,8 @@
         "reviewRequired": "This center requires the review step before publishing.",
         "blockingViolations": "There are unresolved conflicts: it cannot be published.",
         "notEditable": "This version can no longer be modified."
-      }
+      },
+      "createFirst": "Create the first version"
     },
     "compare": {
       "title": "Compare versions",
@@ -1425,7 +1434,8 @@
       "revoked": "Address revoked",
       "revokeConfirm": "Revoking it stops every subscribed calendar from receiving your timetable. Continue?",
       "warning": "Anyone holding this address can see your timetable. Do not share it.",
-      "none": "You have not generated an address yet."
+      "none": "You have not generated an address yet.",
+      "qrHint": "Scan it with your phone to subscribe your calendar."
     },
     "export": {
       "pdf": "Export to PDF",

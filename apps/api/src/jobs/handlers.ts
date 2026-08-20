@@ -30,7 +30,7 @@ import { purgeExpiredTombstones } from '../services/calendar/tombstones.js'
 import { indexDocument } from '../services/documents/index-service.js'
 import { invalidateVectorCache } from '../services/documents/retrieval.js'
 import { createBackup } from '../services/backup.js'
-import { INVITATION_TTL_HOURS } from '../services/invitations.js'
+import { INVITATION_TTL_HOURS, PASSWORD_RESET_TTL_HOURS } from '../services/invitations.js'
 import { sendMail } from '../services/mailer.js'
 import { type ReleaseInfo, applyUpdate } from '../services/updates.js'
 import { applyRetention } from '../services/privacy.js'
@@ -110,6 +110,47 @@ export function buildJobHandlers(client: PrismaClient, logger: Logger): Record<s
         logger.warn(
           { to: job.email },
           'user.invite: no SMTP host, the invitation was logged and not sent',
+        )
+      }
+    },
+
+    /**
+     * The link somebody asked for after forgetting their password.
+     *
+     * Its own type rather than reusing the invitation: the subject line and
+     * the sentence differ, and telling somebody they have been "given access"
+     * when they asked to get back into an account they already have is the
+     * kind of small wrongness that makes people distrust a mail.
+     */
+    'user.passwordReset': async (payload) => {
+      const job = payload as {
+        email: string
+        locale: string
+        firstName: string
+        centerName: string
+        url: string
+      }
+      const locale = localeOf(job.locale)
+
+      const result = await sendMail({
+        to: job.email,
+        locale,
+        subject: translate(locale, 'email.resetSubject'),
+        blocks: [
+          {
+            title: translate(locale, 'email.resetTitle', { name: job.firstName }),
+            body: translate(locale, 'email.resetBody', {
+              hours: PASSWORD_RESET_TTL_HOURS,
+            }),
+          },
+        ],
+        action: { label: translate(locale, 'email.resetAction'), url: job.url },
+      })
+
+      if (result.simulated) {
+        logger.warn(
+          { to: job.email },
+          'user.passwordReset: no SMTP host, the link was logged and not sent',
         )
       }
     },

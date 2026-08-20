@@ -59,6 +59,12 @@ export const localPasswordChangeSchema = z
   })
 export type LocalPasswordChange = z.infer<typeof localPasswordChangeSchema>
 
+/** Asking for a reset link. Answered the same way whoever is asking. */
+export const passwordResetRequestSchema = z.object({
+  email: z.email().max(255),
+})
+export type PasswordResetRequest = z.infer<typeof passwordResetRequestSchema>
+
 /**
  * What the activation screen may show before anybody has proved anything.
  *
