@@ -34,6 +34,15 @@ interface UserRow {
   }[]
 }
 
+interface CreateResult {
+  id: string
+  email: string
+  created: boolean
+  grantsAdded: number
+  invitationSent: boolean
+  alreadyCouldSignIn: boolean
+}
+
 interface GrantableCenters {
   universities: {
     id: string
@@ -87,11 +96,13 @@ export function UsersPage() {
   const [pending, setPending] = useState({ centerId: '', role: 'TEACHER' })
 
   const [page, setPage] = useState(1)
+  const [centerFilter, setCenterFilter] = useState('')
   const [search, setSearch] = useState('')
   const [role, setRole] = useState('')
   const [status, setStatus] = useState('')
 
   const params = new URLSearchParams({ page: String(page), pageSize: '25' })
+  if (centerFilter) params.set('centerId', centerFilter)
   if (search.trim()) params.set('q', search.trim())
   if (role) params.set('role', role)
   if (status) params.set('status', status)
@@ -102,15 +113,26 @@ export function UsersPage() {
   })
 
   const create = useMutation({
-    mutationFn: (input: typeof EMPTY) =>
-      apiJson<{ invitationSent: boolean }>('/api/v1/users', 'POST', input),
+    mutationFn: (input: typeof EMPTY) => apiJson<CreateResult>('/api/v1/users', 'POST', input),
     onSuccess: async (result) => {
-      // "Invited" rather than "created": the account is linked to their
-      // Microsoft identity the first time they sign in, not now. And it only
-      // says invited when somebody was actually written to — with no mail
-      // server the message goes to a log nobody reads.
-      if (result.invitationSent) toast.success('admin.userInvited')
+      /*
+        Four different things can have happened, and saying the wrong one is
+        worse than saying nothing. This used to read `invitationSent` off a
+        response that did not always carry it, so adding somebody to a second
+        center reported a perfectly good mail server as unconfigured.
+      */
+      if (!result.created) {
+        if (result.alreadyCouldSignIn) toast.success('admin.accessGrantedExisting')
+        else if (result.invitationSent) toast.success('admin.accessGranted')
+        else toast.warning('admin.accessGrantedNoMail', { durationMs: 10_000 })
+      } else if (result.invitationSent) toast.success('admin.userInvited')
       else toast.warning('admin.userCreatedNoMail', { durationMs: 10_000 })
+
+      // Look at where they were actually put, so somebody placed in another of
+      // this administrator's centers does not vanish from the screen that just
+      // said it created them.
+      const target = form.grants[0]?.centerId
+      if (target && target !== centerFilter) setCenterFilter(target)
       setForm(EMPTY)
       setPending({ centerId: '', role: 'TEACHER' })
       setCreating(false)
@@ -369,6 +391,38 @@ export function UsersPage() {
                 className="h-10 w-full min-w-48 rounded-control border border-border bg-surface px-3 text-sm text-text"
               />
             </label>
+
+            {/*
+              Which center's people are listed. Only shown to somebody who
+              administers more than one — otherwise it is a control with a
+              single answer, and the answer is already on screen.
+            */}
+            {allCenters.length > 1 ? (
+              <label>
+                <span className="mb-1 block text-xs text-text-muted">
+                  {t('admin.centerFilter')}
+                </span>
+                <select
+                  value={centerFilter}
+                  onChange={(event) => {
+                    setCenterFilter(event.target.value)
+                    setPage(1)
+                  }}
+                  className="h-10 max-w-56 rounded-control border border-border bg-surface px-2 text-sm text-text"
+                >
+                  <option value="">{t('admin.allMyCenters')}</option>
+                  {(grantable.data?.universities ?? []).map((university) => (
+                    <optgroup key={university.id} label={university.name}>
+                      {university.centers.map((center) => (
+                        <option key={center.id} value={center.id}>
+                          {center.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
+              </label>
+            ) : null}
 
             <label>
               <span className="mb-1 block text-xs text-text-muted">{t('admin.roles')}</span>

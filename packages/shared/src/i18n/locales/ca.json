@@ -1051,7 +1051,8 @@
     "userDeleted": "Usuari eliminat",
     "userSuspended": "L'usuari té historial a la plataforma: el compte s'ha suspès en lloc d'eliminar-se",
     "errors": {
-      "cannotDeleteSelf": "No pots eliminar el teu propi compte."
+      "cannotDeleteSelf": "No pots eliminar el teu propi compte.",
+      "alreadyHasAccess": "Aquesta persona ja té aquest rol en aquest centre."
     },
     "grantConsent": "Instal·la a l'organització",
     "accessTitle": "Accés a universitats i centres",
@@ -1060,7 +1061,12 @@
     "addAccess": "Afegeix accés",
     "removeAccess": "Treu l'accés a {{center}} com a {{role}}",
     "chooseCenter": "Tria un centre…",
-    "rolesAndCenters": "Rols i centres"
+    "rolesAndCenters": "Rols i centres",
+    "accessGranted": "Accés afegit. Ja té l'enllaç per crear la contrasenya.",
+    "accessGrantedNoMail": "Accés afegit, però no s'ha enviat cap correu: el servidor SMTP no està configurat.",
+    "accessGrantedExisting": "Accés afegit. Aquesta persona ja podia entrar, així que no li hem enviat cap invitació.",
+    "centerFilter": "Centre de la llista",
+    "allMyCenters": "Centre actiu"
   },
   "imports": {
     "title": "Importació massiva",

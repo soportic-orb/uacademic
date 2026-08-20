@@ -141,6 +141,128 @@ describe.skipIf(!hasDatabase)('granting access to centers', () => {
     expect(roles).toHaveLength(2)
   })
 
+  /**
+   * Adding somebody to a second center used to send nothing at all — the
+   * screen said the user was created and the person was never told — and the
+   * answer carried no `invitationSent`, which the screen read as a mail server
+   * that is not configured. On an installation whose mail works, that is a
+   * false statement about the installation.
+   */
+  it('invites somebody who is added to a center and cannot sign in yet', async () => {
+    const email = 'sense.entrada@demo.uacademic.test'
+    await prisma.user.deleteMany({ where: { email } })
+    // The queue outlives a test run, so the count below has to start at zero.
+    await prisma.job.deleteMany({
+      where: { type: 'user.invite', payloadJson: { path: '$.email', equals: email } },
+    })
+
+    const first = await create(asSuperadmin(), {
+      email,
+      firstName: 'Sense',
+      lastName: 'Entrada',
+      grants: [{ centerId, role: 'TEACHER' }],
+    })
+    created.push(first.json().id)
+
+    const second = await create(asSuperadmin(), {
+      email,
+      firstName: 'Sense',
+      lastName: 'Entrada',
+      grants: [{ centerId: FOREIGN.centerId, role: 'TEACHER' }],
+    })
+
+    expect(second.statusCode).toBe(201)
+    expect(second.json().created).toBe(false)
+    expect(second.json().grantsAdded).toBe(1)
+    // The field is always there, whichever branch answered.
+    expect(second.json()).toHaveProperty('invitationSent')
+    expect(second.json().alreadyCouldSignIn).toBe(false)
+
+    const invites = await prisma.job.count({
+      where: { type: 'user.invite', payloadJson: { path: '$.email', equals: email } },
+    })
+    expect(invites).toBe(2)
+  })
+
+  it('sends no invitation to somebody who can already sign in', async () => {
+    const user = await prisma.user.findFirstOrThrow({ where: { email: SEED.teacherEmail } })
+    await prisma.userCenterRole.deleteMany({
+      where: { userId: user.id, centerId: FOREIGN.centerId },
+    })
+    const before = await prisma.job.count({ where: { type: 'user.invite' } })
+
+    const response = await create(asSuperadmin(), {
+      email: SEED.teacherEmail,
+      firstName: 'Marta',
+      lastName: 'Puig',
+      grants: [{ centerId: FOREIGN.centerId, role: 'TEACHER' }],
+    })
+
+    expect(response.statusCode).toBe(201)
+    expect(response.json().alreadyCouldSignIn).toBe(true)
+    expect(response.json().invitationSent).toBe(false)
+    expect(await prisma.job.count({ where: { type: 'user.invite' } })).toBe(before)
+
+    await prisma.userCenterRole.deleteMany({
+      where: { userId: user.id, centerId: FOREIGN.centerId },
+    })
+  })
+
+  it('says what the conflict is when somebody already has that access', async () => {
+    const email = 'ja.hi.es@demo.uacademic.test'
+    await prisma.user.deleteMany({ where: { email } })
+    const body = {
+      email,
+      firstName: 'Ja',
+      lastName: 'Hi És',
+      grants: [{ centerId, role: 'TEACHER' }],
+    }
+
+    const first = await create(asSuperadmin(), body)
+    created.push(first.json().id)
+
+    const again = await create(asSuperadmin(), body)
+
+    expect(again.statusCode).toBe(409)
+    // "The action conflicts with the current state" told nobody anything.
+    expect(again.json().error.messageKey).toBe('admin.errors.alreadyHasAccess')
+  })
+
+  it('finds somebody placed in another of the administrator’s centers', async () => {
+    const email = 'a.laltre.centre@demo.uacademic.test'
+    await prisma.user.deleteMany({ where: { email } })
+
+    const response = await create(asSuperadmin(), {
+      email,
+      firstName: 'A',
+      lastName: 'Altre Centre',
+      grants: [{ centerId: FOREIGN.centerId, role: 'TEACHER' }],
+    })
+    created.push(response.json().id)
+
+    const headers = { 'x-mock-user': SEED.superadminEmail, 'x-center-id': centerId }
+    const here = await app.inject({ method: 'GET', url: '/api/v1/users?pageSize=100', headers })
+    expect(here.json().items.map((row: { email: string }) => row.email)).not.toContain(email)
+
+    // Naming the center is how the row is found rather than silently missing.
+    const there = await app.inject({
+      method: 'GET',
+      url: `/api/v1/users?pageSize=100&centerId=${FOREIGN.centerId}`,
+      headers,
+    })
+    expect(there.json().items.map((row: { email: string }) => row.email)).toContain(email)
+  })
+
+  it('refuses to list a center the administrator does not administer', async () => {
+    const response = await app.inject({
+      method: 'GET',
+      url: `/api/v1/users?centerId=${FOREIGN.centerId}`,
+      headers: asAdmin(),
+    })
+
+    expect(response.statusCode).toBe(403)
+  })
+
   it('offers a center administrator only the centers they administer', async () => {
     const response = await app.inject({
       method: 'GET',

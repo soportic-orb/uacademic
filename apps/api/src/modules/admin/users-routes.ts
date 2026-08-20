@@ -45,6 +45,15 @@ async function invitationUrl(client: PrismaClient, userId: string): Promise<stri
 const listQuery = listQuerySchema(['lastName', 'email', 'status', 'createdAt'], {
   status: z.string().trim().min(1).optional(),
   role: roleSchema.optional(),
+  /**
+   * Which center's people to list. Defaults to the active one.
+   *
+   * An administrator of two faculties has to be able to look at either without
+   * changing what the whole application is pointed at — and, more to the point,
+   * somebody they have just placed in the other one has to be findable. It was
+   * not: the row simply did not appear, with nothing saying where it went.
+   */
+  centerId: uuidSchema.optional(),
 })
 
 /**
@@ -115,9 +124,15 @@ function assertMayGrant(actor: RequestUser, centerId: string, role: string): voi
 
 export function registerUserRoutes(app: FastifyInstance): void {
   app.get('/api/v1/users', { config: { roles: CENTER_MANAGER_ROLES } }, async (request) => {
-    const { centerId } = requireCenterScope(request)
+    const actor = requireUser(request)
+    const activeCenterId = requireCenterScope(request).centerId
     const query = parseWith(listQuery, request.query)
     const client = prisma()
+
+    // Asking about another center is allowed only for one this person
+    // administers; the check is the same one that governs writing (R2).
+    const centerId = query.centerId ?? activeCenterId
+    if (centerId !== activeCenterId) assertMayGrant(actor, centerId, 'TEACHER')
 
     const where = {
       // The membership filter *is* the tenant boundary for this table.
@@ -136,7 +151,7 @@ export function registerUserRoutes(app: FastifyInstance): void {
         : {}),
     }
 
-    const visibleCenterIds = (await grantableCenters(requireUser(request))).flatMap((university) =>
+    const visibleCenterIds = (await grantableCenters(actor)).flatMap((university) =>
       university.centers.map((center) => center.id),
     )
     // The selected center is always among them: a center administrator manages
@@ -248,7 +263,11 @@ export function registerUserRoutes(app: FastifyInstance): void {
               membership.centerId === grant.centerId && membership.role === grant.role,
           ),
       )
-      if (fresh.length === 0) throw AppError.conflict()
+      if (fresh.length === 0) {
+        // "The action conflicts with the current state" tells nobody anything.
+        // This person is already where you are trying to put them.
+        throw new AppError(409, 'CONFLICT', 'admin.errors.alreadyHasAccess')
+      }
 
       await client.userCenterRole.createMany({
         data: fresh.map((grant) => ({
@@ -270,8 +289,42 @@ export function registerUserRoutes(app: FastifyInstance): void {
         })
       }
 
+      /*
+        And an invitation, if they still have no way in.
+
+        Adding somebody to a second center used to send nothing at all: the
+        screen said "user created" and the person was never told. Somebody who
+        already signs in — with Microsoft or with a password they have set —
+        needs no invitation and would only be confused by one, so this asks
+        rather than assumes.
+      */
+      const canAlreadySignIn =
+        existing.entraOid !== null ||
+        (await client.localCredential.findUnique({ where: { userId: existing.id } })) !== null
+
+      if (!canAlreadySignIn) {
+        const center = await client.center.findUnique({ where: { id: fresh[0]!.centerId } })
+        await enqueueJob(client, 'user.invite', {
+          email: existing.email,
+          locale: existing.locale,
+          firstName: existing.firstName,
+          centerName: center?.name ?? '',
+          url: await invitationUrl(client, existing.id),
+        })
+      }
+
       void reply.status(201)
-      return { id: existing.id, email: existing.email, created: false }
+      return {
+        id: existing.id,
+        email: existing.email,
+        created: false,
+        grantsAdded: fresh.length,
+        // Always present, so the screen never has to guess from a missing
+        // field — which is how it came to report a working mail server as
+        // unconfigured.
+        invitationSent: canAlreadySignIn ? false : mailConfigured(),
+        alreadyCouldSignIn: canAlreadySignIn,
+      }
     }
 
     const created = await client.user.create({
@@ -316,7 +369,9 @@ export function registerUserRoutes(app: FastifyInstance): void {
       id: created.id,
       email: created.email,
       created: true,
+      grantsAdded: input.grants.length,
       invitationSent: mailConfigured(),
+      alreadyCouldSignIn: false,
     }
   })
 

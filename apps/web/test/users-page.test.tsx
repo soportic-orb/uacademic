@@ -55,6 +55,17 @@ const GRANTABLE = {
 }
 
 const listed = vi.hoisted(() => ({ rows: [] as unknown[] }))
+/** Every list URL asked for, so a test can see which center was listed. */
+const fetched = vi.hoisted(() => ({ urls: [] as string[] }))
+/** What POST /users answers; each branch says a different thing on screen. */
+const answer = vi.hoisted(() => ({
+  create: {
+    created: true,
+    grantsAdded: 1,
+    invitationSent: true,
+    alreadyCouldSignIn: false,
+  } as Record<string, unknown>,
+}))
 const deleted = vi.hoisted(() => ({ calls: [] as string[] }))
 
 vi.mock('../src/lib/api', async (importOriginal) => {
@@ -67,11 +78,12 @@ vi.mock('../src/lib/api', async (importOriginal) => {
         return {}
       }
       if (path.includes('grantable-centers')) return GRANTABLE
+      fetched.urls.push(path)
       return { items: listed.rows, total: listed.rows.length, page: 1, pageSize: 25 }
     }),
     apiJson: vi.fn(async (path: string, _method: string, body: unknown) => {
       posted.calls.push({ path, body })
-      return { id: 'new-user', email: 'x', created: true }
+      return { id: 'new-user', email: 'x', ...answer.create }
     }),
   }
 })
@@ -92,6 +104,13 @@ afterEach(() => {
   posted.calls = []
   deleted.calls = []
   listed.rows = []
+  fetched.urls = []
+  answer.create = {
+    created: true,
+    grantsAdded: 1,
+    invitationSent: true,
+    alreadyCouldSignIn: false,
+  }
 })
 
 describe('the users screen', () => {
@@ -141,6 +160,55 @@ describe('the users screen', () => {
         { centerId: 'c2', role: 'TEACHER' },
       ],
     })
+  })
+
+  /**
+   * Adding somebody who already exists answered without an `invitationSent`
+   * field at all, and the screen read the missing field as "no mail server" —
+   * telling an administrator whose mail works perfectly that it does not.
+   */
+  it('does not blame the mail server when access was simply added', async () => {
+    answer.create = {
+      created: false,
+      grantsAdded: 1,
+      invitationSent: false,
+      alreadyCouldSignIn: true,
+    }
+
+    await openFormAndFillIdentity()
+    await userEvent.selectOptions(await screen.findByLabelText('Centre'), 'c1')
+    await userEvent.click(screen.getByRole('button', { name: 'Afegeix accés' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Convida' }))
+
+    expect(await screen.findByText(/ja podia entrar/)).toBeInTheDocument()
+    expect(screen.queryByText(/SMTP/)).not.toBeInTheDocument()
+  })
+
+  it('says the mail server is unconfigured only when it actually is', async () => {
+    answer.create = {
+      created: true,
+      grantsAdded: 1,
+      invitationSent: false,
+      alreadyCouldSignIn: false,
+    }
+
+    await openFormAndFillIdentity()
+    await userEvent.selectOptions(await screen.findByLabelText('Centre'), 'c1')
+    await userEvent.click(screen.getByRole('button', { name: 'Afegeix accés' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Convida' }))
+
+    expect(await screen.findByText(/SMTP/)).toBeInTheDocument()
+  })
+
+  it('looks at the center somebody was put in, so the new row is on screen', async () => {
+    await openFormAndFillIdentity()
+    await userEvent.selectOptions(await screen.findByLabelText('Centre'), 'c2')
+    await userEvent.click(screen.getByRole('button', { name: 'Afegeix accés' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Convida' }))
+
+    // Created into the other faculty, so the list follows: otherwise the row
+    // is simply absent from the screen that just said it was created.
+    await waitFor(() => expect(fetched.urls.some((url) => url.includes('centerId=c2'))).toBe(true))
   })
 
   it('will not invite somebody into nowhere', async () => {

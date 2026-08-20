@@ -1051,7 +1051,8 @@
     "userDeleted": "User deleted",
     "userSuspended": "This user has a history on the platform, so the account was suspended rather than deleted",
     "errors": {
-      "cannotDeleteSelf": "You cannot delete your own account."
+      "cannotDeleteSelf": "You cannot delete your own account.",
+      "alreadyHasAccess": "This person already holds that role in that center."
     },
     "grantConsent": "Install in the organisation",
     "accessTitle": "Access to universities and centers",
@@ -1060,7 +1061,12 @@
     "addAccess": "Add access",
     "removeAccess": "Remove access to {{center}} as {{role}}",
     "chooseCenter": "Choose a center…",
-    "rolesAndCenters": "Roles and centers"
+    "rolesAndCenters": "Roles and centers",
+    "accessGranted": "Access added. They now have the link to set a password.",
+    "accessGrantedNoMail": "Access added, but no email was sent: no SMTP server is configured.",
+    "accessGrantedExisting": "Access added. This person could already sign in, so no invitation was sent.",
+    "centerFilter": "Center shown",
+    "allMyCenters": "Active center"
   },
   "imports": {
     "title": "Bulk import",

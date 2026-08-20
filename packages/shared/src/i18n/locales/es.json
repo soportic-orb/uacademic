@@ -1051,7 +1051,8 @@
     "userDeleted": "Usuario eliminado",
     "userSuspended": "El usuario tiene historial en la plataforma: la cuenta se ha suspendido en lugar de eliminarse",
     "errors": {
-      "cannotDeleteSelf": "No puedes eliminar tu propia cuenta."
+      "cannotDeleteSelf": "No puedes eliminar tu propia cuenta.",
+      "alreadyHasAccess": "Esta persona ya tiene ese rol en ese centro."
     },
     "grantConsent": "Instalar en la organización",
     "accessTitle": "Acceso a universidades y centros",
@@ -1060,7 +1061,12 @@
     "addAccess": "Añadir acceso",
     "removeAccess": "Quitar el acceso a {{center}} como {{role}}",
     "chooseCenter": "Elige un centro…",
-    "rolesAndCenters": "Roles y centros"
+    "rolesAndCenters": "Roles y centros",
+    "accessGranted": "Acceso añadido. Ya tiene el enlace para crear la contraseña.",
+    "accessGrantedNoMail": "Acceso añadido, pero no se ha enviado ningún correo: el servidor SMTP no está configurado.",
+    "accessGrantedExisting": "Acceso añadido. Esta persona ya podía entrar, así que no le hemos enviado ninguna invitación.",
+    "centerFilter": "Centro de la lista",
+    "allMyCenters": "Centro activo"
   },
   "imports": {
     "title": "Importación masiva",
