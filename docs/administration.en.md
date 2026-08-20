@@ -32,9 +32,33 @@ where they choose their own password. The link:
   row), which is also how a **forgotten password is reset**;
 - leaves the account active and the person already inside on their first visit.
 
+**Which centers they get.** Creating a user asks for one or more centers, each
+with a role. An account is global; what belongs to a center is the role. The
+same person can coordinate at one faculty and teach at another, at two different
+universities, and it stays **one account with one password** — not two.
+
+Who may grant what:
+
+| Who            | Where they may grant                        |
+| -------------- | ------------------------------------------- |
+| `SUPERADMIN`   | Any center of any university                |
+| `CENTER_ADMIN` | Only the centers they administer themselves |
+
+The center picker lists only what you may grant, grouped by university, and the
+server checks it again on the way in: administering _some_ center is not enough
+to put somebody into another one.
+
 From then on they can sign in either way: with their email and the password
 they chose, or with their Microsoft account if their university's tenant is
 registered. It is not a choice between two accounts — it is one identity.
+
+**Switching center and role.** Anybody with access to more than one center
+picks it from the header, grouped by university. Anybody holding more than one
+role in the same center — teaching and coordinating, say — gets a second
+selector to switch between them and see each role's screens on their own,
+instead of both menus fused together. The chosen role changes only what is
+drawn: what that person may actually do is decided by the server, every time,
+from the database.
 
 If the users screen tells you the invitation was not sent, this installation
 has no mail server configured yet (Platform → Mail). The account exists all the

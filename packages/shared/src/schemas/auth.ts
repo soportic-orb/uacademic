@@ -108,6 +108,13 @@ export const sessionUserSchema = z.object({
       username: z.email().nullable(),
     })
     .nullable(),
+  /**
+   * Every role this person holds, in every center of every university.
+   *
+   * The university travels with the center because somebody who works at two
+   * of them needs to see which is which — two faculties called "Educació" are
+   * not an unusual thing to find on one platform.
+   */
   memberships: z.array(
     z.object({
       centerId: uuidSchema,
@@ -115,6 +122,8 @@ export const sessionUserSchema = z.object({
       centerCode: z.string(),
       /** The zone this center's instants are shown in (CLAUDE.md §5). */
       centerTimezone: z.string(),
+      universityId: uuidSchema,
+      universityName: z.string(),
       role: roleSchema,
     }),
   ),

@@ -272,7 +272,7 @@ describe.skipIf(!hasDatabase)('admin CRUD', () => {
           firstName: 'Cap',
           lastName: 'Escalada',
           locale: 'ca',
-          role: 'SUPERADMIN',
+          grants: [{ centerId, role: 'SUPERADMIN' }],
         },
       })
 

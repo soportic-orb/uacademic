@@ -84,7 +84,8 @@
     "searchPlaceholder": "Search subjects, teachers or spaces",
     "commandHint": "Press ⌘K to search",
     "signOut": "Sign out",
-    "demoUser": "Demo user"
+    "demoUser": "Demo user",
+    "roleSelector": "Active role"
   },
   "theme": {
     "label": "Appearance",
@@ -1026,7 +1027,8 @@
       "lastName": "Last name",
       "email": "Email",
       "role": "Role",
-      "consent": "Consent"
+      "consent": "Consent",
+      "center": "Center"
     },
     "newUser": "New user",
     "newUserHint": "The account is linked to their Microsoft identity the first time they sign in.",
@@ -1051,7 +1053,14 @@
     "errors": {
       "cannotDeleteSelf": "You cannot delete your own account."
     },
-    "grantConsent": "Install in the organisation"
+    "grantConsent": "Install in the organisation",
+    "accessTitle": "Access to universities and centers",
+    "accessHint": "Add a center for each role this person should have. They can have several, at different universities.",
+    "accessRequired": "At least one center is needed before this person can sign in.",
+    "addAccess": "Add access",
+    "removeAccess": "Remove access to {{center}} as {{role}}",
+    "chooseCenter": "Choose a center…",
+    "rolesAndCenters": "Roles and centers"
   },
   "imports": {
     "title": "Bulk import",

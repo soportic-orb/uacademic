@@ -1,11 +1,14 @@
 import {
+  canGrantInCenter,
   isSuperadmin,
   listQuerySchema,
   paginate,
   roleSchema,
   toListResult,
+  userCreateSchema,
   userInputSchema,
   userRoleInputSchema,
+  uuidSchema,
 } from '@uacademic/shared'
 import type { PrismaClient } from '@uacademic/db'
 import type { FastifyInstance } from 'fastify'
@@ -17,7 +20,7 @@ import { writeAuditLog } from '../../lib/audit.js'
 import { AppError } from '../../lib/errors.js'
 import { prisma } from '../../lib/prisma.js'
 import { parseWith } from '../../lib/validate.js'
-import { requireCenterScope, requireUser } from '../../plugins/context.js'
+import { type RequestUser, requireCenterScope, requireUser } from '../../plugins/context.js'
 import { issueInvitation } from '../../services/invitations.js'
 import { mailConfigured } from '../../services/mailer.js'
 
@@ -56,6 +59,60 @@ const listQuery = listQuerySchema(['lastName', 'email', 'status', 'createdAt'], 
  */
 const CENTER_MANAGER_ROLES = ['SUPERADMIN', 'CENTER_ADMIN'] as const
 
+/**
+ * The centers this person may staff, grouped by university, for the picker on
+ * the users screen.
+ *
+ * The superadmin sees the platform. A center administrator sees the centers
+ * they administer and nothing else — not the other faculties of the same
+ * university, and not the ones where they merely teach (R2).
+ */
+async function grantableCenters(actor: RequestUser) {
+  const administered = actor.memberships
+    .filter((membership) => membership.role === 'CENTER_ADMIN')
+    .map((membership) => membership.centerId)
+
+  const centers = await prisma().center.findMany({
+    where: isSuperadmin(actor) ? {} : { id: { in: administered } },
+    orderBy: [{ university: { name: 'asc' } }, { name: 'asc' }],
+    select: {
+      id: true,
+      name: true,
+      code: true,
+      university: { select: { id: true, name: true } },
+    },
+  })
+
+  const universities = new Map<
+    string,
+    { id: string; name: string; centers: { id: string; name: string; code: string }[] }
+  >()
+  for (const center of centers) {
+    const entry = universities.get(center.university.id) ?? {
+      id: center.university.id,
+      name: center.university.name,
+      centers: [],
+    }
+    entry.centers.push({ id: center.id, name: center.name, code: center.code })
+    universities.set(center.university.id, entry)
+  }
+
+  return [...universities.values()]
+}
+
+/**
+ * Refuses a grant into a center this person does not administer.
+ *
+ * The route guard only proves they administer *some* center; without this, a
+ * center administrator could name any center id in the payload and staff a
+ * faculty that is nothing to do with them (R2).
+ */
+function assertMayGrant(actor: RequestUser, centerId: string, role: string): void {
+  if (!canGrantInCenter(actor, centerId)) throw AppError.forbidden()
+  // Only a platform administrator hands out platform administration.
+  if (role === 'SUPERADMIN' && !isSuperadmin(actor)) throw AppError.forbidden()
+}
+
 export function registerUserRoutes(app: FastifyInstance): void {
   app.get('/api/v1/users', { config: { roles: CENTER_MANAGER_ROLES } }, async (request) => {
     const { centerId } = requireCenterScope(request)
@@ -79,6 +136,13 @@ export function registerUserRoutes(app: FastifyInstance): void {
         : {}),
     }
 
+    const visibleCenterIds = (await grantableCenters(requireUser(request))).flatMap((university) =>
+      university.centers.map((center) => center.id),
+    )
+    // The selected center is always among them: a center administrator manages
+    // it, and the list itself is already filtered to its people.
+    if (!visibleCenterIds.includes(centerId)) visibleCenterIds.push(centerId)
+
     const { skip, take } = paginate(query.page, query.pageSize)
     const [users, total] = await Promise.all([
       client.user.findMany({
@@ -86,7 +150,24 @@ export function registerUserRoutes(app: FastifyInstance): void {
         orderBy: { [query.sort ?? 'lastName']: query.order },
         skip,
         take,
-        include: { centerRoles: { where: { centerId }, select: { id: true, role: true } } },
+        include: {
+          // Every grant the person asking is entitled to see, not just the
+          // ones in the center they happen to have selected: an administrator
+          // of two faculties needs to know somebody is already in both before
+          // adding them again. Centers they do not administer stay invisible
+          // to them (R2).
+          centerRoles: {
+            where: { centerId: { in: visibleCenterIds } },
+            select: {
+              id: true,
+              role: true,
+              centerId: true,
+              center: {
+                select: { name: true, university: { select: { id: true, name: true } } },
+              },
+            },
+          },
+        },
       }),
       client.user.count({ where }),
     ])
@@ -103,12 +184,18 @@ export function registerUserRoutes(app: FastifyInstance): void {
         /** Whether this person has ever signed in with Microsoft. */
         linkedToEntra: Boolean(user.entraOid),
         lastLoginAt: user.lastLoginAt?.toISOString() ?? null,
-        roles: user.centerRoles.map((membership) => membership.role),
+        roles: user.centerRoles
+          .filter((membership) => membership.centerId === centerId)
+          .map((membership) => membership.role),
         // The grants themselves, because revoking one needs its id and a
         // screen that can only name roles cannot offer to take one away.
         grants: user.centerRoles.map((membership) => ({
           id: membership.id,
           role: membership.role,
+          centerId: membership.centerId,
+          centerName: membership.center.name,
+          universityId: membership.center.university.id,
+          universityName: membership.center.university.name,
         })),
       })),
       total,
@@ -118,42 +205,70 @@ export function registerUserRoutes(app: FastifyInstance): void {
   })
 
   /**
-   * Creating a user here does not create a password: they will sign in through
-   * their organization, and the account is linked on first sign-in by `oid`.
+   * The universities and centers this person may put somebody into. The picker
+   * on the users screen is built from it, and every write re-checks it.
+   */
+  app.get(
+    '/api/v1/users/grantable-centers',
+    { config: { roles: CENTER_MANAGER_ROLES } },
+    async (request) => ({ universities: await grantableCenters(requireUser(request)) }),
+  )
+
+  /**
+   * Creating a user does not create a password: the invitation does that
+   * (`services/invitations.ts`), and somebody signing in through their
+   * organization is linked on first sign-in by `oid` instead.
+   *
+   * The account is global; what belongs to a center is the role it is given —
+   * and one account can be given several. The same person coordinating at one
+   * faculty and teaching at another is one identity, not two, and asking them
+   * to keep two passwords for it would be our filing showing through.
    */
   app.post('/api/v1/users', { config: { roles: CENTER_MANAGER_ROLES } }, async (request, reply) => {
-    const { centerId } = requireCenterScope(request)
     const actor = requireUser(request)
-    const input = parseWith(userInputSchema.extend({ role: roleSchema }), request.body)
+    const input = parseWith(userCreateSchema, request.body)
 
-    // Only a platform administrator hands out platform administration. The
-    // sibling route below has always refused this; creating a user did not,
-    // so a center administrator could grant it on the way in.
-    if (input.role === 'SUPERADMIN' && !isSuperadmin(actor)) throw AppError.forbidden()
+    for (const grant of input.grants) assertMayGrant(actor, grant.centerId, grant.role)
 
     const client = prisma()
+    // The audit trail hangs off a center being granted rather than whichever
+    // one happened to be selected in the header when the form was submitted.
+    const primaryCenterId = input.grants[0]?.centerId ?? requireCenterScope(request).centerId
 
     const existing = await client.user.findUnique({ where: { email: input.email.toLowerCase() } })
     if (existing) {
-      // Already known to the platform: grant the role instead of duplicating.
-      const already = await client.userCenterRole.findFirst({
-        where: { userId: existing.id, centerId, role: input.role },
-      })
-      if (already) throw AppError.conflict()
+      // Already known to the platform: add the roles rather than duplicate the
+      // person. Roles they already hold are skipped, so adding somebody to a
+      // second center is not refused because of the first.
+      const held = await client.userCenterRole.findMany({ where: { userId: existing.id } })
+      const fresh = input.grants.filter(
+        (grant) =>
+          !held.some(
+            (membership) =>
+              membership.centerId === grant.centerId && membership.role === grant.role,
+          ),
+      )
+      if (fresh.length === 0) throw AppError.conflict()
 
-      await client.userCenterRole.create({
-        data: { userId: existing.id, centerId, role: input.role },
+      await client.userCenterRole.createMany({
+        data: fresh.map((grant) => ({
+          userId: existing.id,
+          centerId: grant.centerId,
+          role: grant.role,
+        })),
       })
-      await writeAuditLog(client, {
-        centerId,
-        userId: actor.userId,
-        entity: 'user_center_role',
-        entityId: existing.id,
-        action: 'grant',
-        after: { role: input.role },
-        source: 'user',
-        ip: request.ip,
-      })
+      for (const grant of fresh) {
+        await writeAuditLog(client, {
+          centerId: grant.centerId,
+          userId: actor.userId,
+          entity: 'user_center_role',
+          entityId: existing.id,
+          action: 'grant',
+          after: { role: grant.role },
+          source: 'user',
+          ip: request.ip,
+        })
+      }
 
       void reply.status(201)
       return { id: existing.id, email: existing.email, created: false }
@@ -166,24 +281,26 @@ export function registerUserRoutes(app: FastifyInstance): void {
         lastName: input.lastName,
         locale: input.locale,
         status: input.status,
-        centerRoles: { create: { centerId, role: input.role } },
+        centerRoles: {
+          create: input.grants.map((grant) => ({ centerId: grant.centerId, role: grant.role })),
+        },
       },
     })
 
     await writeAuditLog(client, {
-      centerId,
+      centerId: primaryCenterId,
       userId: actor.userId,
       entity: 'user',
       entityId: created.id,
       action: 'create',
-      after: { email: created.email, role: input.role, status: created.status },
+      after: { email: created.email, grants: input.grants, status: created.status },
       source: 'user',
       ip: request.ip,
     })
 
     // The invitation itself. Queued rather than sent inline: an SMTP server
     // that hangs must not hang the request that created the account.
-    const center = await client.center.findUnique({ where: { id: centerId } })
+    const center = await client.center.findUnique({ where: { id: primaryCenterId } })
     await enqueueJob(client, 'user.invite', {
       email: created.email,
       locale: created.locale,
@@ -314,14 +431,18 @@ export function registerUserRoutes(app: FastifyInstance): void {
     '/api/v1/users/:id/roles',
     { config: { roles: CENTER_MANAGER_ROLES } },
     async (request) => {
-      const { centerId } = requireCenterScope(request)
       const actor = requireUser(request)
       const { id } = request.params as { id: string }
-      const input = parseWith(userRoleInputSchema.omit({ userId: true }), request.body)
+      const input = parseWith(
+        // The center is optional so the existing screens keep working; naming
+        // one is how somebody is added to a second center of their own.
+        userRoleInputSchema.omit({ userId: true }).extend({ centerId: uuidSchema.optional() }),
+        request.body,
+      )
       const client = prisma()
 
-      // A center administrator cannot mint platform superadmins.
-      if (input.role === 'SUPERADMIN' && !isSuperadmin(actor)) throw AppError.forbidden()
+      const centerId = input.centerId ?? requireCenterScope(request).centerId
+      assertMayGrant(actor, centerId, input.role)
       await requireUserExists(id)
 
       const existing = await client.userCenterRole.findFirst({
@@ -358,20 +479,22 @@ export function registerUserRoutes(app: FastifyInstance): void {
     '/api/v1/users/:id/roles/:roleId',
     { config: { roles: CENTER_MANAGER_ROLES } },
     async (request) => {
-      const { centerId } = requireCenterScope(request)
       const actor = requireUser(request)
       const { id, roleId } = request.params as { id: string; roleId: string }
       const client = prisma()
 
+      // Found by its own id, then checked: an administrator of two centers
+      // takes a role away from either, and from no third one.
       const membership = await client.userCenterRole.findFirst({
-        where: { id: roleId, userId: id, centerId },
+        where: { id: roleId, userId: id },
       })
       if (!membership) throw AppError.notFound()
+      assertMayGrant(actor, membership.centerId, membership.role)
 
       await client.userCenterRole.delete({ where: { id: roleId } })
 
       await writeAuditLog(client, {
-        centerId,
+        centerId: membership.centerId,
         userId: actor.userId,
         entity: 'user_center_role',
         entityId: roleId,

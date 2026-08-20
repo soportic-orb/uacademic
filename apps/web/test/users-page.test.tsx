@@ -26,7 +26,32 @@ const ROW = {
   linkedToEntra: false,
   lastLoginAt: null,
   roles: ['TEACHER'],
-  grants: [{ id: 'g1', role: 'TEACHER' }],
+  grants: [
+    {
+      id: 'g1',
+      role: 'TEACHER',
+      centerId: 'c1',
+      centerName: "Facultat d'Educació",
+      universityId: 'uni1',
+      universityName: 'Universitat de Vic',
+    },
+  ],
+}
+
+/** What this administrator may staff: two faculties, two universities. */
+const GRANTABLE = {
+  universities: [
+    {
+      id: 'uni1',
+      name: 'Universitat de Vic',
+      centers: [{ id: 'c1', name: "Facultat d'Educació", code: 'FEC' }],
+    },
+    {
+      id: 'uni2',
+      name: 'Universitat Veïna',
+      centers: [{ id: 'c2', name: 'Facultat Veïna', code: 'FVE' }],
+    },
+  ],
 }
 
 const listed = vi.hoisted(() => ({ rows: [] as unknown[] }))
@@ -41,6 +66,7 @@ vi.mock('../src/lib/api', async (importOriginal) => {
         deleted.calls.push(path)
         return {}
       }
+      if (path.includes('grantable-centers')) return GRANTABLE
       return { items: listed.rows, total: listed.rows.length, page: 1, pageSize: 25 }
     }),
     apiJson: vi.fn(async (path: string, _method: string, body: unknown) => {
@@ -69,15 +95,20 @@ afterEach(() => {
 })
 
 describe('the users screen', () => {
-  it('invites somebody with the role they will hold in this center', async () => {
+  async function openFormAndFillIdentity() {
     view(<UsersPage />)
-
     await userEvent.click(screen.getByRole('button', { name: 'Nou usuari' }))
-
     await userEvent.type(screen.getByLabelText('Nom'), 'Marta')
     await userEvent.type(screen.getByLabelText('Cognoms'), 'Puig Serra')
     await userEvent.type(screen.getByLabelText('Correu electrònic'), 'marta.puig@uni.test')
+  }
+
+  it('invites somebody with the center and role they will hold', async () => {
+    await openFormAndFillIdentity()
+
+    await userEvent.selectOptions(await screen.findByLabelText('Centre'), 'c1')
     await userEvent.selectOptions(screen.getByLabelText('Rol'), 'COORDINATOR')
+    await userEvent.click(screen.getByRole('button', { name: 'Afegeix accés' }))
     await userEvent.click(screen.getByRole('button', { name: 'Convida' }))
 
     await waitFor(() => expect(posted.calls).toHaveLength(1))
@@ -86,8 +117,50 @@ describe('the users screen', () => {
       email: 'marta.puig@uni.test',
       firstName: 'Marta',
       lastName: 'Puig Serra',
-      role: 'COORDINATOR',
+      grants: [{ centerId: 'c1', role: 'COORDINATOR' }],
     })
+  })
+
+  it('gives one person roles at two universities in one invitation', async () => {
+    await openFormAndFillIdentity()
+
+    await userEvent.selectOptions(await screen.findByLabelText('Centre'), 'c1')
+    await userEvent.selectOptions(screen.getByLabelText('Rol'), 'COORDINATOR')
+    await userEvent.click(screen.getByRole('button', { name: 'Afegeix accés' }))
+
+    await userEvent.selectOptions(screen.getByLabelText('Centre'), 'c2')
+    await userEvent.selectOptions(screen.getByLabelText('Rol'), 'TEACHER')
+    await userEvent.click(screen.getByRole('button', { name: 'Afegeix accés' }))
+
+    await userEvent.click(screen.getByRole('button', { name: 'Convida' }))
+
+    await waitFor(() => expect(posted.calls).toHaveLength(1))
+    expect(posted.calls[0]?.body).toMatchObject({
+      grants: [
+        { centerId: 'c1', role: 'COORDINATOR' },
+        { centerId: 'c2', role: 'TEACHER' },
+      ],
+    })
+  })
+
+  it('will not invite somebody into nowhere', async () => {
+    await openFormAndFillIdentity()
+
+    // An account with no role anywhere can sign in and see nothing.
+    expect(screen.getByRole('button', { name: 'Convida' })).toBeDisabled()
+    expect(screen.getByText(/com a mínim un centre/)).toBeInTheDocument()
+  })
+
+  it('offers only the centers this administrator may staff', async () => {
+    await openFormAndFillIdentity()
+
+    const select = await screen.findByLabelText('Centre')
+    // The university is the group label, which is how two faculties with the
+    // same name stay tellable apart.
+    const groups = [...select.querySelectorAll('optgroup')].map((group) => group.label)
+    expect(groups).toEqual(['Universitat de Vic', 'Universitat Veïna'])
+    expect(select).toHaveTextContent("Facultat d'Educació")
+    expect(select).not.toHaveTextContent('Facultat Aliena')
   })
 
   it('keeps the form out of the way of somebody who came only to look', async () => {

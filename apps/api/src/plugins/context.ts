@@ -28,7 +28,16 @@ export interface RequestUser extends Principal {
   avatarUrl: string | null
   status: 'active' | 'invited' | 'pending_activation' | 'suspended'
   entraOid: string | null
-  centerNames: Map<string, { name: string; code: string; timezone: string }>
+  centerNames: Map<string, CenterFacts>
+}
+
+/** What a screen needs to name a center: itself, and whose it is. */
+interface CenterFacts {
+  name: string
+  code: string
+  timezone: string
+  universityId: string
+  universityName: string
 }
 
 export interface MicrosoftAccount {
@@ -69,7 +78,17 @@ function findUser(where: { id: string } | { email: string }) {
     where: where as { id: string },
     include: {
       centerRoles: {
-        include: { center: { select: { id: true, name: true, code: true, timezone: true } } },
+        include: {
+          center: {
+            select: {
+              id: true,
+              name: true,
+              code: true,
+              timezone: true,
+              university: { select: { id: true, name: true } },
+            },
+          },
+        },
       },
     },
   })
@@ -80,12 +99,14 @@ type UserRow = Awaited<ReturnType<typeof findUser>>
 function hydrate(user: UserRow): RequestUser | null {
   if (!user) return null
 
-  const centerNames = new Map<string, { name: string; code: string; timezone: string }>()
+  const centerNames = new Map<string, CenterFacts>()
   for (const membership of user.centerRoles) {
     centerNames.set(membership.centerId, {
       name: membership.center.name,
       code: membership.center.code,
       timezone: membership.center.timezone,
+      universityId: membership.center.university.id,
+      universityName: membership.center.university.name,
     })
   }
 
@@ -146,13 +167,18 @@ export async function buildSessionUser(
     status: user.status,
     authMethod: method,
     microsoftAccount,
-    memberships: user.memberships.map((membership) => ({
-      centerId: membership.centerId,
-      centerName: user.centerNames.get(membership.centerId)?.name ?? '',
-      centerCode: user.centerNames.get(membership.centerId)?.code ?? '',
-      centerTimezone: user.centerNames.get(membership.centerId)?.timezone ?? DEFAULT_TIMEZONE,
-      role: membership.role,
-    })),
+    memberships: user.memberships.map((membership) => {
+      const center = user.centerNames.get(membership.centerId)
+      return {
+        centerId: membership.centerId,
+        centerName: center?.name ?? '',
+        centerCode: center?.code ?? '',
+        centerTimezone: center?.timezone ?? DEFAULT_TIMEZONE,
+        universityId: center?.universityId ?? '',
+        universityName: center?.universityName ?? '',
+        role: membership.role,
+      }
+    }),
     expiresAt: expiresAt.toISOString(),
   }
 }

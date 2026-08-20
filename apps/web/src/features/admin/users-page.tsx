@@ -23,7 +23,23 @@ interface UserRow {
   linkedToEntra: boolean
   lastLoginAt: string | null
   roles: string[]
-  grants: { id: string; role: string }[]
+  /** Every grant the person looking is entitled to see, across their centers. */
+  grants: {
+    id: string
+    role: string
+    centerId: string
+    centerName: string
+    universityId: string
+    universityName: string
+  }[]
+}
+
+interface GrantableCenters {
+  universities: {
+    id: string
+    name: string
+    centers: { id: string; name: string; code: string }[]
+  }[]
 }
 
 const ROLES = ['CENTER_ADMIN', 'COORDINATOR', 'TEACHER'] as const
@@ -41,8 +57,34 @@ export function UsersPage() {
   const locale = currentLocale()
 
   const [creating, setCreating] = useState(false)
-  const EMPTY = { email: '', firstName: '', lastName: '', role: 'COORDINATOR', locale: 'ca' }
+  const EMPTY = {
+    email: '',
+    firstName: '',
+    lastName: '',
+    locale: 'ca',
+    grants: [] as { centerId: string; role: string }[],
+  }
   const [form, setForm] = useState(EMPTY)
+
+  /*
+    The centers this administrator may put somebody into, grouped by
+    university. A superadmin sees the platform; a center administrator sees the
+    centers they administer — which is also what the API enforces on the way in,
+    so the picker is a convenience and never the boundary itself (R2).
+  */
+  const grantable = useQuery({
+    queryKey: ['grantable-centers'],
+    queryFn: () => apiFetch<GrantableCenters>('/api/v1/users/grantable-centers'),
+  })
+  const allCenters = (grantable.data?.universities ?? []).flatMap((university) =>
+    university.centers.map((center) => ({
+      ...center,
+      universityName: university.name,
+    })),
+  )
+
+  // What the "add" row is holding before it is added to the list.
+  const [pending, setPending] = useState({ centerId: '', role: 'TEACHER' })
 
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
@@ -70,6 +112,7 @@ export function UsersPage() {
       if (result.invitationSent) toast.success('admin.userInvited')
       else toast.warning('admin.userCreatedNoMail', { durationMs: 10_000 })
       setForm(EMPTY)
+      setPending({ centerId: '', role: 'TEACHER' })
       setCreating(false)
       await queryClient.invalidateQueries({ queryKey: ['admin-users'] })
     },
@@ -84,6 +127,7 @@ export function UsersPage() {
   const [editing, setEditing] = useState<string | null>(null)
   const [draft, setDraft] = useState({ firstName: '', lastName: '', status: 'active' })
   const [grantRole, setGrantRole] = useState('COORDINATOR')
+  const [grantCenterId, setGrantCenterId] = useState('')
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['admin-users'] })
 
@@ -115,8 +159,8 @@ export function UsersPage() {
   })
 
   const grant = useMutation({
-    mutationFn: ({ id, role }: { id: string; role: string }) =>
-      apiJson(`/api/v1/users/${id}/roles`, 'POST', { role }),
+    mutationFn: ({ id, role, centerId }: { id: string; role: string; centerId: string }) =>
+      apiJson(`/api/v1/users/${id}/roles`, 'POST', { role, centerId }),
     onSuccess: async () => {
       toast.success('admin.roleGranted')
       await invalidate()
@@ -213,24 +257,96 @@ export function UsersPage() {
                 />
               </Field>
 
-              <Field label={t('admin.fields.role')}>
-                <select
-                  value={form.role}
-                  onChange={(event) => setForm({ ...form, role: event.target.value })}
-                  className="h-10 w-full rounded-control border border-border bg-surface px-2 text-sm text-text"
-                >
-                  {ROLES.map((option) => (
-                    <option key={option} value={option}>
-                      {t(`roles.${option}`)}
-                    </option>
-                  ))}
-                </select>
-              </Field>
+              {/*
+                Where this person gets to work, and as what. More than one is
+                allowed on purpose: somebody who coordinates at one faculty and
+                teaches at another is one account, not two.
+              */}
+              <fieldset className="sm:col-span-2">
+                <legend className="mb-2 text-sm font-medium text-text">
+                  {t('admin.accessTitle')}
+                </legend>
+                <p className="mb-3 text-xs text-text-muted">{t('admin.accessHint')}</p>
+
+                {form.grants.length > 0 ? (
+                  <ul className="mb-3 flex flex-wrap gap-2">
+                    {form.grants.map((grantRow) => {
+                      const center = allCenters.find((entry) => entry.id === grantRow.centerId)
+                      return (
+                        <li
+                          key={`${grantRow.centerId}:${grantRow.role}`}
+                          className="flex items-center gap-2 rounded-control border border-border bg-surface px-2 py-1 text-xs text-text"
+                        >
+                          <span className="text-text-muted">{center?.universityName}</span>
+                          {center?.name} · {t(`roles.${grantRow.role}`)}
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setForm({
+                                ...form,
+                                grants: form.grants.filter((entry) => entry !== grantRow),
+                              })
+                            }
+                            className="text-text-muted hover:text-danger"
+                            aria-label={t('admin.removeAccess', {
+                              center: center?.name ?? '',
+                              role: t(`roles.${grantRow.role}`),
+                            })}
+                          >
+                            <X className="size-3.5" aria-hidden="true" />
+                          </button>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                ) : null}
+
+                <div className="flex flex-wrap items-end gap-2">
+                  <Field label={t('admin.fields.center')}>
+                    <CenterSelect
+                      universities={grantable.data?.universities ?? []}
+                      value={pending.centerId}
+                      onChange={(centerId) => setPending({ ...pending, centerId })}
+                    />
+                  </Field>
+
+                  <Field label={t('admin.fields.role')}>
+                    <select
+                      value={pending.role}
+                      onChange={(event) => setPending({ ...pending, role: event.target.value })}
+                      className="h-10 rounded-control border border-border bg-surface px-2 text-sm text-text"
+                    >
+                      {ROLES.map((option) => (
+                        <option key={option} value={option}>
+                          {t(`roles.${option}`)}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+
+                  <Button
+                    variant="secondary"
+                    disabled={
+                      !pending.centerId ||
+                      form.grants.some(
+                        (entry) =>
+                          entry.centerId === pending.centerId && entry.role === pending.role,
+                      )
+                    }
+                    onClick={() => setForm({ ...form, grants: [...form.grants, { ...pending }] })}
+                  >
+                    {t('admin.addAccess')}
+                  </Button>
+                </div>
+              </fieldset>
 
               <div className="sm:col-span-2">
-                <Button type="submit" disabled={create.isPending}>
+                <Button type="submit" disabled={create.isPending || form.grants.length === 0}>
                   {create.isPending ? t('common.saving') : t('admin.invite')}
                 </Button>
+                {form.grants.length === 0 ? (
+                  <p className="mt-2 text-xs text-text-muted">{t('admin.accessRequired')}</p>
+                ) : null}
               </div>
             </form>
           </CardBody>
@@ -466,7 +582,7 @@ export function UsersPage() {
 
                                 <div className="space-y-3">
                                   <h3 className="text-sm font-medium text-text">
-                                    {t('admin.rolesInCenter')}
+                                    {t('admin.rolesAndCenters')}
                                   </h3>
 
                                   <ul className="flex flex-wrap gap-2">
@@ -475,6 +591,10 @@ export function UsersPage() {
                                         key={held.id}
                                         className="flex items-center gap-2 rounded-control border border-border bg-surface px-2 py-1 text-xs text-text"
                                       >
+                                        {/* Which center, because this person
+                                            may hold roles in several and a bare
+                                            "Coordinator" would not say where. */}
+                                        <span className="text-text-muted">{held.centerName}</span>
                                         {t(`roles.${held.role}`)}
                                         <button
                                           type="button"
@@ -493,6 +613,14 @@ export function UsersPage() {
                                   </ul>
 
                                   <div className="flex flex-wrap items-end gap-2">
+                                    <Field label={t('admin.fields.center')}>
+                                      <CenterSelect
+                                        universities={grantable.data?.universities ?? []}
+                                        value={grantCenterId}
+                                        onChange={setGrantCenterId}
+                                      />
+                                    </Field>
+
                                     <Field label={t('admin.fields.role')}>
                                       <select
                                         value={grantRole}
@@ -509,8 +637,14 @@ export function UsersPage() {
 
                                     <Button
                                       variant="secondary"
-                                      disabled={grant.isPending}
-                                      onClick={() => grant.mutate({ id: user.id, role: grantRole })}
+                                      disabled={grant.isPending || !grantCenterId}
+                                      onClick={() =>
+                                        grant.mutate({
+                                          id: user.id,
+                                          role: grantRole,
+                                          centerId: grantCenterId,
+                                        })
+                                      }
                                     >
                                       {t('admin.grantRole')}
                                     </Button>
@@ -601,5 +735,43 @@ function Input({
       onChange={(event) => onChange(event.target.value)}
       className="h-10 w-full rounded-control border border-border bg-surface px-3 text-sm text-text"
     />
+  )
+}
+
+/**
+ * A center, named under its university.
+ *
+ * Grouped even when there is only one university on the platform: the group
+ * label is what tells an administrator of two institutions which "Facultat
+ * d'Educació" they are about to give somebody.
+ */
+function CenterSelect({
+  universities,
+  value,
+  onChange,
+}: {
+  universities: GrantableCenters['universities']
+  value: string
+  onChange: (centerId: string) => void
+}) {
+  const { t } = useTranslation()
+
+  return (
+    <select
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+      className="h-10 max-w-64 rounded-control border border-border bg-surface px-2 text-sm text-text"
+    >
+      <option value="">{t('admin.chooseCenter')}</option>
+      {universities.map((university) => (
+        <optgroup key={university.id} label={university.name}>
+          {university.centers.map((center) => (
+            <option key={center.id} value={center.id}>
+              {center.name}
+            </option>
+          ))}
+        </optgroup>
+      ))}
+    </select>
   )
 }

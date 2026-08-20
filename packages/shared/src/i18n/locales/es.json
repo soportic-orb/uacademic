@@ -84,7 +84,8 @@
     "searchPlaceholder": "Busca asignaturas, profesorado o espacios",
     "commandHint": "Pulsa ⌘K para buscar",
     "signOut": "Cerrar sesión",
-    "demoUser": "Usuario de demostración"
+    "demoUser": "Usuario de demostración",
+    "roleSelector": "Rol activo"
   },
   "theme": {
     "label": "Apariencia",
@@ -1026,7 +1027,8 @@
       "lastName": "Apellidos",
       "email": "Correo electrónico",
       "role": "Rol",
-      "consent": "Consentimiento"
+      "consent": "Consentimiento",
+      "center": "Centro"
     },
     "newUser": "Nuevo usuario",
     "newUserHint": "La cuenta se enlaza con su identidad de Microsoft la primera vez que entre.",
@@ -1051,7 +1053,14 @@
     "errors": {
       "cannotDeleteSelf": "No puedes eliminar tu propia cuenta."
     },
-    "grantConsent": "Instalar en la organización"
+    "grantConsent": "Instalar en la organización",
+    "accessTitle": "Acceso a universidades y centros",
+    "accessHint": "Añade un centro por cada rol que debe tener esta persona. Puede tener más de uno, en universidades distintas.",
+    "accessRequired": "Hay que indicar como mínimo un centro para que el usuario pueda entrar.",
+    "addAccess": "Añadir acceso",
+    "removeAccess": "Quitar el acceso a {{center}} como {{role}}",
+    "chooseCenter": "Elige un centro…",
+    "rolesAndCenters": "Roles y centros"
   },
   "imports": {
     "title": "Importación masiva",

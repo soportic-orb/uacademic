@@ -138,6 +138,24 @@ export const userInputSchema = z.object({
 })
 export type UserInput = z.infer<typeof userInputSchema>
 
+/**
+ * Which centers a new account gets, and as what.
+ *
+ * At least one, because an account with no role anywhere can sign in and see
+ * nothing. Each is checked against what the person creating it may grant: a
+ * center administrator staffs their own centers, and no others.
+ */
+export const userGrantSchema = z.object({
+  centerId: uuidSchema,
+  role: roleSchema,
+})
+export type UserGrant = z.infer<typeof userGrantSchema>
+
+export const userCreateSchema = userInputSchema.extend({
+  grants: z.array(userGrantSchema).min(1).max(50),
+})
+export type UserCreate = z.infer<typeof userCreateSchema>
+
 export const userRoleInputSchema = z.object({
   userId: uuidSchema,
   role: roleSchema,

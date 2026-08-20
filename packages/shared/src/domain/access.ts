@@ -37,6 +37,29 @@ export function canAccessCenter(principal: Principal, centerId: string): boolean
   return isSuperadmin(principal) || rolesInCenter(principal, centerId).length > 0
 }
 
+/**
+ * Who may give somebody a role in a center, and take it away.
+ *
+ * The superadmin anywhere — it is the only role that crosses centers — and a
+ * center administrator in the centers they administer, and nowhere else. Being
+ * a coordinator of a center does not make you able to staff it.
+ */
+export function canGrantInCenter(principal: Principal, centerId: string): boolean {
+  return isSuperadmin(principal) || rolesInCenter(principal, centerId).includes('CENTER_ADMIN')
+}
+
+/**
+ * Most privileged first.
+ *
+ * Somebody who both coordinates and teaches opens the product on the
+ * coordinator's screens, because that is the work the other role cannot do —
+ * and they can switch to the teacher's view whenever they want to see what
+ * their own week looks like.
+ */
+export function sortRolesByRank(roles: readonly Role[]): Role[] {
+  return [...roles].sort((a, b) => ROLES.indexOf(a) - ROLES.indexOf(b))
+}
+
 /** Only coordinators use the assistant — the one role that can act on it. */
 export function canUseAiAssistant(principal: Principal, centerId: string): boolean {
   return rolesInCenter(principal, centerId).includes('COORDINATOR')

@@ -32,9 +32,34 @@ on tria la seva pròpia contrasenya. L'enllaç:
   l'usuari), cosa que també serveix per **restablir una contrasenya oblidada**;
 - deixa el compte actiu i la persona ja dins a la primera visita.
 
+**A quins centres té accés.** En crear l'usuari indiques un o més centres, cada
+un amb el seu rol. Un compte és únic i global; el que és de cada centre és el
+rol. La mateixa persona pot coordinar a una facultat i fer classe a una altra,
+fins i tot de dues universitats diferents, i segueix sent **un sol compte amb
+una sola contrasenya** — no dos.
+
+Qui pot donar accés a què:
+
+| Qui ho fa      | On pot donar accés                          |
+| -------------- | ------------------------------------------- |
+| `SUPERADMIN`   | Qualsevol centre de qualsevol universitat   |
+| `CENTER_ADMIN` | Només els centres que administra ell mateix |
+
+El desplegable de centres ja només ensenya els que pots donar, agrupats per
+universitat, i el servidor ho torna a comprovar en rebre la petició: no n'hi ha
+prou d'administrar _algun_ centre per posar algú en un altre.
+
 A partir d'aquí aquella persona pot entrar de dues maneres: amb el seu correu i
 la contrasenya que ha triat, o amb el compte de Microsoft si la seva universitat
 té el tenant registrat. No cal escollir-ne una: són la mateixa identitat.
+
+**Canviar de centre i de rol.** Qui té accés a més d'un centre el tria al
+desplegable de la barra superior, agrupat per universitat. I qui té més d'un rol
+en un mateix centre —fer classe i coordinar, per exemple— hi troba un segon
+desplegable per canviar de rol i veure les pantalles de cada un per separat, en
+lloc dels dos menús barrejats. El rol triat només canvia el que es mostra: el
+que aquella persona pot fer el decideix el servidor, sempre, a partir de la base
+de dades.
 
 Si la pantalla d'usuaris et diu que la invitació no s'ha enviat, és que la
 instal·lació encara no té servidor de correu configurat (Plataforma → Correu).

@@ -33,9 +33,34 @@ donde elige su propia contraseña. El enlace:
   usuario), lo que sirve también para **restablecer una contraseña olvidada**;
 - deja la cuenta activa y a la persona ya dentro en la primera visita.
 
+**A qué centros tiene acceso.** Al crear el usuario indicas uno o más centros,
+cada uno con su rol. Una cuenta es única y global; lo que es de cada centro es
+el rol. La misma persona puede coordinar en una facultad y dar clase en otra,
+incluso de dos universidades distintas, y sigue siendo **una sola cuenta con una
+sola contraseña** — no dos.
+
+Quién puede dar acceso a qué:
+
+| Quién lo hace  | Dónde puede dar acceso                    |
+| -------------- | ----------------------------------------- |
+| `SUPERADMIN`   | Cualquier centro de cualquier universidad |
+| `CENTER_ADMIN` | Solo los centros que administra él mismo  |
+
+El desplegable de centros solo muestra los que puedes dar, agrupados por
+universidad, y el servidor lo vuelve a comprobar al recibir la petición: no
+basta con administrar _algún_ centro para poner a alguien en otro.
+
 A partir de ahí esa persona puede entrar de dos maneras: con su correo y la
 contraseña que ha elegido, o con la cuenta de Microsoft si su universidad tiene
 el tenant registrado. No hay que escoger una: son la misma identidad.
+
+**Cambiar de centro y de rol.** Quien tiene acceso a más de un centro lo elige
+en el desplegable de la barra superior, agrupado por universidad. Y quien tiene
+más de un rol en un mismo centro —dar clase y coordinar, por ejemplo— encuentra
+un segundo desplegable para cambiar de rol y ver las pantallas de cada uno por
+separado, en lugar de los dos menús mezclados. El rol elegido solo cambia lo que
+se muestra: lo que esa persona puede hacer lo decide el servidor, siempre, a
+partir de la base de datos.
 
 Si la pantalla de usuarios te dice que la invitación no se ha enviado, es que la
 instalación todavía no tiene servidor de correo configurado (Plataforma →

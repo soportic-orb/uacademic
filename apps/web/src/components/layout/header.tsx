@@ -1,4 +1,4 @@
-import type { SessionUser } from '@uacademic/shared'
+import type { Role, SessionUser } from '@uacademic/shared'
 import { formatPersonName } from '@uacademic/shared'
 import { LogOut, Menu, Search } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -15,6 +15,10 @@ import { Button } from '../ui/button'
 
 export interface HeaderProps {
   user: SessionUser | undefined
+  /** Every role this person holds in the active center, most privileged first. */
+  heldRoles: Role[]
+  /** The one the interface is currently drawn for. */
+  activeRole: Role | undefined
   onOpenSearch: () => void
   onToggleSidebar: () => void
 }
@@ -22,19 +26,42 @@ export interface HeaderProps {
 /** Development and e2e only; the API refuses this mode in production. */
 const MOCK_AUTH = import.meta.env.VITE_UACADEMIC_AUTH_MODE === 'mock'
 
-export function Header({ user, onOpenSearch, onToggleSidebar }: HeaderProps) {
+export function Header({
+  user,
+  heldRoles,
+  activeRole,
+  onOpenSearch,
+  onToggleSidebar,
+}: HeaderProps) {
   const { t } = useTranslation()
   const toast = useToast()
   const { signOut } = useSession()
   const centerId = useSessionStore((state) => state.centerId)
   const setCenterId = useSessionStore((state) => state.setCenterId)
+  const setActiveRole = useSessionStore((state) => state.setActiveRole)
   const mockUserEmail = useSessionStore((state) => state.mockUserEmail)
   const setMockUserEmail = useSessionStore((state) => state.setMockUserEmail)
 
-  const centers = user?.memberships ?? []
-  const uniqueCenters = centers.filter(
-    (membership, index) =>
-      centers.findIndex((other) => other.centerId === membership.centerId) === index,
+  /*
+    One row per center, grouped under its university. Somebody who works at two
+    of them has to be able to tell which "Facultat d'Educació" is which, and
+    the university name is the only thing that does it.
+  */
+  const memberships = user?.memberships ?? []
+  const universities = new Map<string, { name: string; centers: { id: string; name: string }[] }>()
+  for (const membership of memberships) {
+    const entry = universities.get(membership.universityId) ?? {
+      name: membership.universityName,
+      centers: [],
+    }
+    if (!entry.centers.some((center) => center.id === membership.centerId)) {
+      entry.centers.push({ id: membership.centerId, name: membership.centerName })
+    }
+    universities.set(membership.universityId, entry)
+  }
+  const centerCount = [...universities.values()].reduce(
+    (total, university) => total + university.centers.length,
+    0,
   )
 
   return (
@@ -51,8 +78,8 @@ export function Header({ user, onOpenSearch, onToggleSidebar }: HeaderProps) {
 
       <Logo className="text-base md:hidden" title={t('common.appName')} />
 
-      {/* Center selector: only shown when the user actually has more than one */}
-      {uniqueCenters.length > 1 ? (
+      {/* Only shown when there is a choice to make. */}
+      {centerCount > 1 ? (
         <label className="hidden items-center gap-2 md:flex">
           <span className="sr-only">{t('layout.centerSelector')}</span>
           <select
@@ -62,11 +89,35 @@ export function Header({ user, onOpenSearch, onToggleSidebar }: HeaderProps) {
               clearApiCache()
               setCenterId(event.target.value)
             }}
+            className="h-9 max-w-56 rounded-control border border-border bg-surface px-2 text-sm text-text"
+          >
+            {[...universities.entries()].map(([universityId, university]) => (
+              // Grouped even when there is only one university: the group
+              // label is what tells somebody which institution this is.
+              <optgroup key={universityId} label={university.name}>
+                {university.centers.map((center) => (
+                  <option key={center.id} value={center.id}>
+                    {center.name}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+        </label>
+      ) : null}
+
+      {/* Same again for the role, when this person holds more than one here. */}
+      {heldRoles.length > 1 ? (
+        <label className="hidden items-center gap-2 md:flex">
+          <span className="sr-only">{t('layout.roleSelector')}</span>
+          <select
+            value={activeRole ?? heldRoles[0]}
+            onChange={(event) => setActiveRole(event.target.value)}
             className="h-9 rounded-control border border-border bg-surface px-2 text-sm text-text"
           >
-            {uniqueCenters.map((membership) => (
-              <option key={membership.centerId} value={membership.centerId}>
-                {membership.centerName}
+            {heldRoles.map((role) => (
+              <option key={role} value={role}>
+                {t(`roles.${role}`)}
               </option>
             ))}
           </select>

@@ -43,7 +43,12 @@ describe.skipIf(!hasDatabase)('removing a user', () => {
       method: 'POST',
       url: '/api/v1/users',
       headers: { ...asAdmin(), 'content-type': 'application/json' },
-      payload: { email, firstName: 'Nova', lastName: 'Persona', role: 'TEACHER' },
+      payload: {
+        email,
+        firstName: 'Nova',
+        lastName: 'Persona',
+        grants: [{ centerId, role: 'TEACHER' }],
+      },
     })
     expect(response.statusCode).toBe(201)
     return response.json().id as string

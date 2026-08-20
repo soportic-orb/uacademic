@@ -84,7 +84,8 @@
     "searchPlaceholder": "Cerca assignatures, professorat o espais",
     "commandHint": "Prem ⌘K per cercar",
     "signOut": "Tanca la sessió",
-    "demoUser": "Usuari de demostració"
+    "demoUser": "Usuari de demostració",
+    "roleSelector": "Rol actiu"
   },
   "theme": {
     "label": "Aparença",
@@ -1026,7 +1027,8 @@
       "lastName": "Cognoms",
       "email": "Correu electrònic",
       "role": "Rol",
-      "consent": "Consentiment"
+      "consent": "Consentiment",
+      "center": "Centre"
     },
     "newUser": "Nou usuari",
     "newUserHint": "El compte s'enllaça amb la seva identitat de Microsoft la primera vegada que entri.",
@@ -1051,7 +1053,14 @@
     "errors": {
       "cannotDeleteSelf": "No pots eliminar el teu propi compte."
     },
-    "grantConsent": "Instal·la a l'organització"
+    "grantConsent": "Instal·la a l'organització",
+    "accessTitle": "Accés a universitats i centres",
+    "accessHint": "Afegeix un centre per cada rol que ha de tenir aquesta persona. Pot tenir-ne més d'un, a universitats diferents.",
+    "accessRequired": "Cal indicar com a mínim un centre perquè l'usuari pugui entrar.",
+    "addAccess": "Afegeix accés",
+    "removeAccess": "Treu l'accés a {{center}} com a {{role}}",
+    "chooseCenter": "Tria un centre…",
+    "rolesAndCenters": "Rols i centres"
   },
   "imports": {
     "title": "Importació massiva",

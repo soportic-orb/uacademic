@@ -1,4 +1,5 @@
 import type { Role } from '@uacademic/shared'
+import { sortRolesByRank } from '@uacademic/shared'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Outlet } from 'react-router'
@@ -16,6 +17,7 @@ export function AppShell() {
   const { t } = useTranslation()
   const { user, isLoading: isPending } = useSession()
   const centerId = useSessionStore((state) => state.centerId)
+  const activeRole = useSessionStore((state) => state.activeRole)
   const [collapsed, setCollapsed] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
 
@@ -36,9 +38,23 @@ export function AppShell() {
   }, [])
 
   // Roles are always the ones the server resolved for the active center (R3).
-  const roles: Role[] = (user?.memberships ?? [])
-    .filter((membership) => !centerId || membership.centerId === centerId)
-    .map((membership) => membership.role)
+  const held: Role[] = sortRolesByRank(
+    (user?.memberships ?? [])
+      .filter((membership) => !centerId || membership.centerId === centerId)
+      .map((membership) => membership.role),
+  )
+
+  /*
+    What the interface shows: one role at a time when this person holds more
+    than one here, defaulting to the most privileged. It narrows the menu, it
+    never widens it — a role that is not held is not selectable, and the server
+    re-checks every request against the database regardless of what is drawn.
+  */
+  const roles: Role[] = held.includes(activeRole as Role)
+    ? [activeRole as Role]
+    : held.length > 1
+      ? [held[0] as Role]
+      : held
 
   /*
     The viewport is the frame, not the page: the shell is exactly one screen
@@ -59,6 +75,8 @@ export function AppShell() {
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <Header
           user={user}
+          heldRoles={held}
+          activeRole={roles[0]}
           onOpenSearch={() => setSearchOpen(true)}
           onToggleSidebar={() => setCollapsed((v) => !v)}
         />
