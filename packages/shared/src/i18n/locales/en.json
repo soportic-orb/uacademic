@@ -318,7 +318,7 @@
     "search": "Search the messages",
     "searchEmpty": "No message matches the search.",
     "readByAll": "Read by everyone",
-    "sent": "Sent",
+    "sent": "Message sent",
     "announcementReadOnly": "This is an announcements channel: only coordination can post.",
     "members": "Members",
     "attachments": {
@@ -333,7 +333,17 @@
       "group": "Group",
       "subject": "Subject",
       "announcement": "Center announcements"
-    }
+    },
+    "newTitle": "New message",
+    "newHint": "Choose who you are writing to and start the conversation.",
+    "scope": "Scope",
+    "scopeCenter": "This center",
+    "scopeUniversity": "The university",
+    "searchPeople": "Search by name or email",
+    "noPeople": "Nobody in that scope matches the search.",
+    "removeRecipient": "Remove {{name}} from the recipients",
+    "subject": "Subject",
+    "message": "Message"
   },
   "documents": {
     "title": "Documents",

@@ -318,7 +318,7 @@
     "search": "Buscar en los mensajes",
     "searchEmpty": "Ningún mensaje coincide con la búsqueda.",
     "readByAll": "Leído por todos",
-    "sent": "Enviado",
+    "sent": "Mensaje enviado",
     "announcementReadOnly": "Este canal es solo de anuncios: solo coordinación puede escribir.",
     "members": "Participantes",
     "attachments": {
@@ -333,7 +333,17 @@
       "group": "Grupo",
       "subject": "Asignatura",
       "announcement": "Anuncios del centro"
-    }
+    },
+    "newTitle": "Mensaje nuevo",
+    "newHint": "Elige a quién escribes y empieza la conversación.",
+    "scope": "Ámbito",
+    "scopeCenter": "Del centro",
+    "scopeUniversity": "De la universidad",
+    "searchPeople": "Busca por nombre o correo",
+    "noPeople": "No hay nadie que coincida con la búsqueda en ese ámbito.",
+    "removeRecipient": "Quitar a {{name}} de los destinatarios",
+    "subject": "Asunto",
+    "message": "Mensaje"
   },
   "documents": {
     "title": "Documentos",

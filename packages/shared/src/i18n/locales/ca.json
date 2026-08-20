@@ -318,7 +318,7 @@
     "search": "Cerca als missatges",
     "searchEmpty": "Cap missatge coincideix amb la cerca.",
     "readByAll": "Llegit per tothom",
-    "sent": "Enviat",
+    "sent": "Missatge enviat",
     "announcementReadOnly": "Aquest canal és només d’anuncis: només coordinació hi pot escriure.",
     "members": "Participants",
     "attachments": {
@@ -333,7 +333,17 @@
       "group": "Grup",
       "subject": "Assignatura",
       "announcement": "Anuncis del centre"
-    }
+    },
+    "newTitle": "Missatge nou",
+    "newHint": "Tria a qui escrius i comença la conversa.",
+    "scope": "Àmbit",
+    "scopeCenter": "Del centre",
+    "scopeUniversity": "De la universitat",
+    "searchPeople": "Cerca per nom o correu",
+    "noPeople": "No hi ha ningú que coincideixi amb la cerca en aquest àmbit.",
+    "removeRecipient": "Treu {{name}} dels destinataris",
+    "subject": "Assumpte",
+    "message": "Missatge"
   },
   "documents": {
     "title": "Documents",

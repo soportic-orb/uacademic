@@ -130,6 +130,85 @@ export function registerMessagingRoutes(app: FastifyInstance, bus: RealtimeTrans
     return { items: sortConversations(summaries) as typeof summaries }
   })
 
+  /**
+   * Who this person can write to.
+   *
+   * Two scopes, because both are real: the people in this center, and the
+   * people anywhere in the same university. A university is not itself a
+   * tenant — everything else here belongs to a center — so this is the one
+   * deliberate widening, and it goes no further: somebody at another
+   * university is not listed, searched for, or reachable.
+   */
+  app.get('/api/v1/conversations/recipients', async (request) => {
+    const user = requireUser(request)
+    const { centerId } = requireCenterScope(request)
+    const query = parseWith(
+      z.object({
+        scope: z.enum(['center', 'university']).default('center'),
+        q: z.string().trim().max(120).optional(),
+      }),
+      request.query,
+    )
+
+    const client = prisma()
+    const here = await client.center.findUniqueOrThrow({
+      where: { id: centerId },
+      select: { universityId: true },
+    })
+
+    const centerIds =
+      query.scope === 'center'
+        ? [centerId]
+        : (
+            await client.center.findMany({
+              where: { universityId: here.universityId },
+              select: { id: true },
+            })
+          ).map((center) => center.id)
+
+    const people = await client.user.findMany({
+      where: {
+        id: { not: user.userId },
+        status: { in: ['active', 'invited', 'pending_activation'] },
+        centerRoles: { some: { centerId: { in: centerIds } } },
+        ...(query.q
+          ? {
+              OR: [
+                { firstName: { contains: query.q } },
+                { lastName: { contains: query.q } },
+                { email: { contains: query.q } },
+              ],
+            }
+          : {}),
+      },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        avatarUrl: true,
+        centerRoles: {
+          where: { centerId: { in: centerIds } },
+          select: { role: true, center: { select: { id: true, name: true } } },
+        },
+      },
+      orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
+      take: 100,
+    })
+
+    return {
+      items: people.map((person) => ({
+        id: person.id,
+        firstName: person.firstName,
+        lastName: person.lastName,
+        email: person.email,
+        avatarUrl: person.avatarUrl,
+        centerName: person.centerRoles[0]?.center.name ?? '',
+        roles: [...new Set(person.centerRoles.map((membership) => membership.role))],
+      })),
+    }
+  })
+
   app.post('/api/v1/conversations', async (request, reply) => {
     const user = requireUser(request)
     const { centerId, db } = requireCenterScope(request)

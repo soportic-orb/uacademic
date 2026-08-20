@@ -185,16 +185,34 @@ describe.skipIf(!hasDatabase)('granting access to centers', () => {
   })
 
   it('sends no invitation to somebody who can already sign in', async () => {
-    const user = await prisma.user.findFirstOrThrow({ where: { email: SEED.teacherEmail } })
-    await prisma.userCenterRole.deleteMany({
-      where: { userId: user.id, centerId: FOREIGN.centerId },
+    /*
+      A user of this suite's own rather than a seeded one.
+
+      Borrowing the seeded lecturer put a third role on her for the length of
+      this test, and the Entra suite — running in parallel — asserts exactly
+      which two roles she holds. Test files share a database; anything that
+      touches a row somebody else asserts on is a failure waiting for a busy
+      machine.
+    */
+    const email = 'ja.pot.entrar@demo.uacademic.test'
+    await prisma.user.deleteMany({ where: { email } })
+    const user = await prisma.user.create({
+      data: {
+        email,
+        firstName: 'Ja',
+        lastName: 'Pot Entrar',
+        status: 'active',
+        entraOid: '0198f0d2-8f2a-7000-8000-0000000000ab',
+        centerRoles: { create: { centerId, role: 'TEACHER' } },
+      },
     })
+    created.push(user.id)
     const before = await prisma.job.count({ where: { type: 'user.invite' } })
 
     const response = await create(asSuperadmin(), {
-      email: SEED.teacherEmail,
-      firstName: 'Marta',
-      lastName: 'Puig',
+      email,
+      firstName: 'Ja',
+      lastName: 'Pot Entrar',
       grants: [{ centerId: FOREIGN.centerId, role: 'TEACHER' }],
     })
 
@@ -202,10 +220,6 @@ describe.skipIf(!hasDatabase)('granting access to centers', () => {
     expect(response.json().alreadyCouldSignIn).toBe(true)
     expect(response.json().invitationSent).toBe(false)
     expect(await prisma.job.count({ where: { type: 'user.invite' } })).toBe(before)
-
-    await prisma.userCenterRole.deleteMany({
-      where: { userId: user.id, centerId: FOREIGN.centerId },
-    })
   })
 
   it('says what the conflict is when somebody already has that access', async () => {

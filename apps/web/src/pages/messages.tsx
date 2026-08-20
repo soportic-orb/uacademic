@@ -5,14 +5,16 @@
  * Unread first, then most recent — the order is the pure `sortConversations`
  * the API applies, so both ends agree on what "top of the list" means.
  */
-import { MessageSquare, Search } from 'lucide-react'
+import { MessageSquare, PenSquare, Search } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router'
 
 import { EmptyState, ErrorState, TableSkeleton } from '../components/feedback/states'
+import { Button } from '../components/ui/button'
 import { Card, CardBody, CardHeader } from '../components/ui/card'
 import { useConversations, useMessageSearch } from '../features/collaboration/queries'
+import { ComposeMessage } from '../features/messaging/compose'
 import { ThreadView } from '../features/messaging/thread-view'
 
 export function MessagesPage() {
@@ -21,6 +23,7 @@ export function MessagesPage() {
   const navigate = useNavigate()
   const conversations = useConversations()
   const [query, setQuery] = useState('')
+  const [composing, setComposing] = useState(false)
   const search = useMessageSearch(query)
 
   const items = conversations.data?.items ?? []
@@ -28,9 +31,21 @@ export function MessagesPage() {
 
   return (
     <div className="space-y-6">
-      <header>
+      <header className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-2xl font-semibold text-text">{t('messages.title')}</h1>
+
+        {/*
+          The screen listed the threads somebody was already in and had no door
+          into a new one, so the only conversations that existed were the ones
+          the platform opened by itself.
+        */}
+        <Button onClick={() => setComposing(true)}>
+          <PenSquare className="size-4" aria-hidden="true" />
+          {t('messages.newTitle')}
+        </Button>
       </header>
+
+      {composing ? <ComposeMessage onClose={() => setComposing(false)} /> : null}
 
       <div className="grid gap-6 lg:grid-cols-[22rem_1fr]">
         <div className="space-y-4">
