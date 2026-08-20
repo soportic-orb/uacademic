@@ -38,6 +38,7 @@ interface CenterFacts {
   timezone: string
   universityId: string
   universityName: string
+  universityLogoUrl: string | null
 }
 
 export interface MicrosoftAccount {
@@ -85,7 +86,7 @@ function findUser(where: { id: string } | { email: string }) {
               name: true,
               code: true,
               timezone: true,
-              university: { select: { id: true, name: true } },
+              university: { select: { id: true, name: true, logoUrl: true } },
             },
           },
         },
@@ -107,6 +108,7 @@ function hydrate(user: UserRow): RequestUser | null {
       timezone: membership.center.timezone,
       universityId: membership.center.university.id,
       universityName: membership.center.university.name,
+      universityLogoUrl: membership.center.university.logoUrl,
     })
   }
 
@@ -176,6 +178,7 @@ export async function buildSessionUser(
         centerTimezone: center?.timezone ?? DEFAULT_TIMEZONE,
         universityId: center?.universityId ?? '',
         universityName: center?.universityName ?? '',
+        universityLogoUrl: center?.universityLogoUrl ?? null,
         role: membership.role,
       }
     }),

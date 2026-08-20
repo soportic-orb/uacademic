@@ -124,6 +124,8 @@ export const sessionUserSchema = z.object({
       centerTimezone: z.string(),
       universityId: uuidSchema,
       universityName: z.string(),
+      /** Shown in the header, so somebody can see whose platform they are in. */
+      universityLogoUrl: z.string().nullable(),
       role: roleSchema,
     }),
   ),

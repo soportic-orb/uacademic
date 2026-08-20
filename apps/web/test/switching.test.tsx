@@ -43,6 +43,7 @@ const user = {
       centerTimezone: 'Europe/Madrid',
       universityId: 'uni1',
       universityName: 'Universitat de Vic',
+      universityLogoUrl: null,
       role: 'COORDINATOR',
     },
     {
@@ -52,6 +53,7 @@ const user = {
       centerTimezone: 'Europe/Madrid',
       universityId: 'uni1',
       universityName: 'Universitat de Vic',
+      universityLogoUrl: null,
       role: 'TEACHER',
     },
     {
@@ -61,6 +63,34 @@ const user = {
       centerTimezone: 'Europe/Madrid',
       universityId: 'uni2',
       universityName: 'Universitat Veïna',
+      universityLogoUrl: null,
+      role: 'TEACHER',
+    },
+  ],
+} as unknown as SessionUser
+
+/** One university, two of its faculties: the center list has work to do. */
+const twoCentersOneUniversity = {
+  ...user,
+  memberships: [
+    {
+      centerId: 'c1',
+      centerName: "Facultat d'Educació",
+      centerCode: 'FEC',
+      centerTimezone: 'Europe/Madrid',
+      universityId: 'uni1',
+      universityName: 'Universitat de Vic',
+      universityLogoUrl: null,
+      role: 'TEACHER',
+    },
+    {
+      centerId: 'c3',
+      centerName: 'Facultat de Ciències de la Salut',
+      centerCode: 'FCS',
+      centerTimezone: 'Europe/Madrid',
+      universityId: 'uni1',
+      universityName: 'Universitat de Vic',
+      universityLogoUrl: null,
       role: 'TEACHER',
     },
   ],
@@ -91,26 +121,44 @@ const props = {
 }
 
 describe('moving between centers and roles', () => {
-  it('lists every center under the university it belongs to', () => {
+  it('names the university whose rules are in force', () => {
     view(<Header user={user} {...props} heldRoles={[...props.heldRoles]} />)
 
-    const select = screen.getByLabelText('Centre actiu')
-    const groups = [...select.querySelectorAll('optgroup')].map((group) => group.label)
+    expect(screen.getByRole('button', { name: 'Universitat' })).toBeInTheDocument()
+    expect(screen.getByText('Universitat de Vic')).toBeInTheDocument()
+  })
 
-    expect(groups).toEqual(['Universitat de Vic', 'Universitat Veïna'])
-    // The same center appears once, however many roles are held in it.
+  it('offers only the centers of the university being worked in', () => {
+    // Both faculties are in the same university here, so both are listed.
+    useSessionStore.setState({ centerId: 'c1' })
+    view(<Header user={twoCentersOneUniversity} {...props} heldRoles={['TEACHER']} />)
+
+    const select = screen.getByLabelText('Centre actiu')
     expect(select.querySelectorAll('option')).toHaveLength(2)
   })
 
-  it('changes the active center, and forgets the role that belonged to the old one', async () => {
+  it('hides the center list when this university has only one', () => {
     view(<Header user={user} {...props} heldRoles={[...props.heldRoles]} />)
 
-    useSessionStore.setState({ activeRole: 'COORDINATOR' })
-    await userEvent.selectOptions(screen.getByLabelText('Centre actiu'), 'c2')
+    // The person also works at another university, but not at another of this
+    // one's centers — so there is nothing to choose between.
+    expect(screen.queryByLabelText('Centre actiu')).not.toBeInTheDocument()
+  })
+
+  it('moves to another university, landing in one of its centers', async () => {
+    view(<Header user={user} {...props} heldRoles={[...props.heldRoles]} />)
+
+    await userEvent.click(screen.getByRole('button', { name: 'Universitat' }))
+    await userEvent.click(screen.getByRole('button', { name: /Universitat Veïna/ }))
 
     expect(useSessionStore.getState().centerId).toBe('c2')
-    // Coordinating at one faculty says nothing about the other.
-    expect(useSessionStore.getState().activeRole).toBeUndefined()
+  })
+
+  it('does not offer the dialog to somebody who belongs to one university', () => {
+    view(<Header user={twoCentersOneUniversity} {...props} heldRoles={['TEACHER']} />)
+
+    expect(screen.queryByRole('button', { name: 'Universitat' })).not.toBeInTheDocument()
+    expect(screen.getByText('Universitat de Vic')).toBeInTheDocument()
   })
 
   it('offers the roles held here, and switches between them', async () => {

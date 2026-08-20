@@ -1,6 +1,7 @@
 import type { Role, SessionUser } from '@uacademic/shared'
 import { formatPersonName } from '@uacademic/shared'
-import { LogOut, Menu, Search } from 'lucide-react'
+import { ChevronDown, LogOut, Menu, Search } from 'lucide-react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 
@@ -11,6 +12,7 @@ import { useToast } from '../../hooks/use-toast'
 import { clearApiCache } from '../../app/service-worker'
 import { DEMO_IDENTITIES, useSessionStore } from '../../stores/session'
 import { Avatar } from '../ui/avatar'
+import { UniversityDialog, UniversityMark, universitiesOf } from './university-switcher'
 import { Button } from '../ui/button'
 
 export interface HeaderProps {
@@ -39,30 +41,32 @@ export function Header({
   const centerId = useSessionStore((state) => state.centerId)
   const setCenterId = useSessionStore((state) => state.setCenterId)
   const setActiveRole = useSessionStore((state) => state.setActiveRole)
+  const [universityOpen, setUniversityOpen] = useState(false)
   const mockUserEmail = useSessionStore((state) => state.mockUserEmail)
   const setMockUserEmail = useSessionStore((state) => state.setMockUserEmail)
 
   /*
-    One row per center, grouped under its university. Somebody who works at two
-    of them has to be able to tell which "Facultat d'Educació" is which, and
-    the university name is the only thing that does it.
+    The university whose rules are in force, and the centers of that university
+    this person can move between.
+
+    Scoped to one university on purpose: a list mixing the faculties of two
+    institutions makes somebody read every line to find theirs, and two
+    faculties called "Educació" are not an unusual thing to find on one
+    platform. The university is chosen first, in the dialog behind the mark.
   */
   const memberships = user?.memberships ?? []
-  const universities = new Map<string, { name: string; centers: { id: string; name: string }[] }>()
-  for (const membership of memberships) {
-    const entry = universities.get(membership.universityId) ?? {
-      name: membership.universityName,
-      centers: [],
-    }
-    if (!entry.centers.some((center) => center.id === membership.centerId)) {
-      entry.centers.push({ id: membership.centerId, name: membership.centerName })
-    }
-    universities.set(membership.universityId, entry)
-  }
-  const centerCount = [...universities.values()].reduce(
-    (total, university) => total + university.centers.length,
-    0,
-  )
+  const universities = universitiesOf(user)
+  const activeMembership = memberships.find((membership) => membership.centerId === centerId)
+  const activeUniversity =
+    universities.find((university) => university.id === activeMembership?.universityId) ??
+    universities[0]
+
+  const centersHere = memberships
+    .filter((membership) => membership.universityId === activeUniversity?.id)
+    .filter(
+      (membership, index, all) =>
+        all.findIndex((other) => other.centerId === membership.centerId) === index,
+    )
 
   return (
     <header className="z-30 flex h-16 shrink-0 items-center gap-2 border-b border-border bg-surface px-4">
@@ -78,8 +82,32 @@ export function Header({
 
       <Logo className="text-base md:hidden" title={t('common.appName')} />
 
-      {/* Only shown when there is a choice to make. */}
-      {centerCount > 1 ? (
+      {/*
+        Whose platform this is. A button only when there is somewhere else to
+        go: with one university it is a label, because a control that cannot
+        change anything wastes the click it invites.
+      */}
+      {activeUniversity ? (
+        universities.length > 1 ? (
+          <button
+            type="button"
+            onClick={() => setUniversityOpen(true)}
+            className="hidden items-center gap-2 rounded-control px-2 py-1 hover:bg-surface-muted md:flex"
+            aria-haspopup="dialog"
+            aria-label={t('layout.universitySelector')}
+          >
+            <UniversityMark name={activeUniversity.name} logoUrl={activeUniversity.logoUrl} />
+            <ChevronDown className="size-4 text-text-muted" aria-hidden="true" />
+          </button>
+        ) : (
+          <span className="hidden items-center px-2 md:flex">
+            <UniversityMark name={activeUniversity.name} logoUrl={activeUniversity.logoUrl} />
+          </span>
+        )
+      ) : null}
+
+      {/* The centers of that university, when there is more than one. */}
+      {centersHere.length > 1 ? (
         <label className="hidden items-center gap-2 md:flex">
           <span className="sr-only">{t('layout.centerSelector')}</span>
           <select
@@ -91,16 +119,10 @@ export function Header({
             }}
             className="h-9 max-w-56 rounded-control border border-border bg-surface px-2 text-sm text-text"
           >
-            {[...universities.entries()].map(([universityId, university]) => (
-              // Grouped even when there is only one university: the group
-              // label is what tells somebody which institution this is.
-              <optgroup key={universityId} label={university.name}>
-                {university.centers.map((center) => (
-                  <option key={center.id} value={center.id}>
-                    {center.name}
-                  </option>
-                ))}
-              </optgroup>
+            {centersHere.map((membership) => (
+              <option key={membership.centerId} value={membership.centerId}>
+                {membership.centerName}
+              </option>
             ))}
           </select>
         </label>
@@ -194,6 +216,20 @@ export function Header({
           <LogOut className="size-5" aria-hidden="true" />
         </Button>
       </div>
+      {universityOpen ? (
+        <UniversityDialog
+          universities={universities}
+          activeId={activeUniversity?.id}
+          onPick={(university) => {
+            // Landing on one of that university's centers, because a
+            // university is not itself a scope: everything below is a center's.
+            clearApiCache()
+            setCenterId(university.firstCenterId)
+            setUniversityOpen(false)
+          }}
+          onClose={() => setUniversityOpen(false)}
+        />
+      ) : null}
     </header>
   )
 }

@@ -85,7 +85,9 @@
     "commandHint": "Press ⌘K to search",
     "signOut": "Sign out",
     "demoUser": "Demo user",
-    "roleSelector": "Active role"
+    "roleSelector": "Active role",
+    "universitySelector": "University",
+    "universityHint": "Pick the university and you land in one of its centers; you can switch center from there."
   },
   "theme": {
     "label": "Appearance",
@@ -151,7 +153,7 @@
     "name": "Name",
     "category": "Category",
     "dedication": "Dedication",
-    "contracted": "Contracted",
+    "contracted": "Teaching staff added",
     "assigned": "Assigned",
     "status": "Status",
     "empty": {
@@ -254,7 +256,17 @@
       "share": "Share",
       "empty": "You have no assigned hours in this year yet.",
       "chartLabel": "Workload distribution by concept"
-    }
+    },
+    "errors": {
+      "notALecturer": "This person does not hold the lecturer role in this center. Grant it first from Administration → Users.",
+      "alreadyContracted": "This person already has a contract for the active year."
+    },
+    "newTitle": "Add teaching staff",
+    "newHint": "Give a contract for the active year to somebody who already holds the lecturer role in this center.",
+    "noCandidates": "Everybody with the lecturer role already has a contract for the active year. To add more, grant the lecturer role from Administration → Users.",
+    "person": "Person",
+    "choosePerson": "Choose a person…",
+    "contract": "Give a contract"
   },
   "subjects": {
     "title": "Subjects",

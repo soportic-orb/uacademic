@@ -85,7 +85,9 @@
     "commandHint": "Prem ⌘K per cercar",
     "signOut": "Tanca la sessió",
     "demoUser": "Usuari de demostració",
-    "roleSelector": "Rol actiu"
+    "roleSelector": "Rol actiu",
+    "universitySelector": "Universitat",
+    "universityHint": "Tries la universitat i entres al seu centre; des d’allà pots canviar de centre."
   },
   "theme": {
     "label": "Aparença",
@@ -151,7 +153,7 @@
     "name": "Nom",
     "category": "Categoria",
     "dedication": "Dedicació",
-    "contracted": "Contractades",
+    "contracted": "Professorat afegit",
     "assigned": "Assignades",
     "status": "Estat",
     "empty": {
@@ -254,7 +256,17 @@
       "share": "Percentatge",
       "empty": "Encara no tens hores assignades en aquest curs.",
       "chartLabel": "Distribució de l'encàrrec docent per concepte"
-    }
+    },
+    "errors": {
+      "notALecturer": "Aquesta persona no té el rol de professorat en aquest centre. Dona-li'l primer des d'Administració → Usuaris.",
+      "alreadyContracted": "Aquesta persona ja té contracte per al curs actiu."
+    },
+    "newTitle": "Afegeix professorat",
+    "newHint": "Dona contracte per al curs actiu a algú que ja té el rol de professorat al centre.",
+    "noCandidates": "Tot el professorat del centre ja té contracte per al curs actiu. Per afegir-ne, dona el rol de professorat a algú des d'Administració → Usuaris.",
+    "person": "Persona",
+    "choosePerson": "Tria una persona…",
+    "contract": "Dona-li contracte"
   },
   "subjects": {
     "title": "Assignatures",

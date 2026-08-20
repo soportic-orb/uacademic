@@ -15,6 +15,8 @@ import {
   reductionInputSchema,
   saveAvailabilitySchema,
   sortLoadRows,
+  teacherProfileInputSchema,
+  teacherProfileUpdateSchema,
   summarizeLoads,
   teacherSkillsInputSchema,
 } from '@uacademic/shared'
@@ -24,6 +26,7 @@ import { writeAuditLog } from '../../lib/audit.js'
 import { AppError } from '../../lib/errors.js'
 import { prisma } from '../../lib/prisma.js'
 import { parseWith } from '../../lib/validate.js'
+import { requireUser } from '../../plugins/context.js'
 import {
   type TeacherContext,
   canEditAvailability,
@@ -35,6 +38,19 @@ import {
   teacherWorkload,
 } from './service.js'
 import { loadWorkbook } from './export.js'
+
+/** Somebody the center could contract for this year, and has not. */
+interface TeacherCandidateDto {
+  userId: string
+  email: string
+  firstName: string
+  lastName: string
+  avatarUrl: string | null
+  status: string
+}
+
+/** Who may staff a year: the same people who may look at the whole center. */
+const MANAGER_ROLES = ['CENTER_ADMIN', 'COORDINATOR'] as const
 
 interface LoadListResponse {
   /** Null when the center has no active year, and so nothing to summarise. */
@@ -172,6 +188,164 @@ export function registerTeacherRoutes(app: FastifyInstance): void {
     async (request: FastifyRequest<{ Params: { id: string } }>): Promise<TeacherProfileDto> => {
       const context = await teacherContext(request)
       const profileId = await resolveTeacherProfileId(context, request.params.id)
+      return teacherProfile(context, profileId)
+    },
+  )
+
+  /**
+   * People this center could give a contract to, and has not yet.
+   *
+   * Everybody holding the lecturer role here without a profile for the year in
+   * force. The two halves are created at different moments — invited when they
+   * join, contracted when the year is planned — and until now the second half
+   * could only be written by importing a spreadsheet, so a center could not
+   * add one teacher by hand at all.
+   */
+  app.get(
+    '/api/v1/teachers/candidates',
+    { config: { roles: MANAGER_ROLES } },
+    async (request): Promise<{ items: TeacherCandidateDto[] }> => {
+      const context = await optionalTeacherContext(request)
+      if (!context) return { items: [] }
+
+      const held = await prisma().userCenterRole.findMany({
+        where: { centerId: context.centerId, role: 'TEACHER' },
+        include: {
+          user: {
+            select: {
+              id: true,
+              email: true,
+              firstName: true,
+              lastName: true,
+              avatarUrl: true,
+              status: true,
+            },
+          },
+        },
+        orderBy: { user: { lastName: 'asc' } },
+      })
+
+      const contracted = new Set(
+        (
+          await context.db.teacherProfile.findMany({
+            where: { academicYearId: context.academicYearId },
+            select: { userId: true },
+          })
+        ).map((profile) => profile.userId),
+      )
+
+      return {
+        items: held
+          .filter((membership) => !contracted.has(membership.userId))
+          .map((membership) => ({
+            userId: membership.user.id,
+            email: membership.user.email,
+            firstName: membership.user.firstName,
+            lastName: membership.user.lastName,
+            avatarUrl: membership.user.avatarUrl,
+            status: membership.user.status,
+          })),
+      }
+    },
+  )
+
+  /** Giving somebody a contract for the year in force. */
+  app.post(
+    '/api/v1/teachers',
+    { config: { roles: MANAGER_ROLES } },
+    async (request, reply): Promise<TeacherProfileDto> => {
+      const context = await teacherContext(request)
+      const actor = requireUser(request)
+      const input = parseWith(teacherProfileInputSchema, request.body)
+      const client = prisma()
+
+      // A contract only means something for somebody this center has made a
+      // lecturer; the role is granted on the users screen, deliberately not
+      // here, so that access and workload stay separate decisions (R2).
+      const membership = await client.userCenterRole.findFirst({
+        where: { userId: input.userId, centerId: context.centerId, role: 'TEACHER' },
+      })
+      if (!membership) throw AppError.badRequest('teachers.errors.notALecturer')
+
+      const existing = await context.db.teacherProfile.findFirst({
+        where: { userId: input.userId, academicYearId: context.academicYearId },
+      })
+      if (existing) throw new AppError(409, 'CONFLICT', 'teachers.errors.alreadyContracted')
+
+      const profile = await client.teacherProfile.create({
+        data: {
+          userId: input.userId,
+          centerId: context.centerId,
+          academicYearId: context.academicYearId,
+          category: input.category,
+          dedication: input.dedication,
+          contractedHours: input.contractedHours,
+          notes: input.notes ?? null,
+        },
+      })
+
+      await writeAuditLog(client, {
+        centerId: context.centerId,
+        userId: actor.userId,
+        entity: 'teacher_profile',
+        entityId: profile.id,
+        action: 'create',
+        after: {
+          userId: input.userId,
+          category: input.category,
+          dedication: input.dedication,
+          contractedHours: input.contractedHours,
+        },
+        source: 'user',
+        ip: request.ip,
+      })
+
+      void reply.status(201)
+      return teacherProfile(context, profile.id)
+    },
+  )
+
+  /** Changing a contract: hours, category, dedication. */
+  app.patch(
+    '/api/v1/teachers/:id',
+    { config: { roles: MANAGER_ROLES } },
+    async (request: FastifyRequest<{ Params: { id: string } }>): Promise<TeacherProfileDto> => {
+      const context = await teacherContext(request)
+      const actor = requireUser(request)
+      const profileId = await resolveTeacherProfileId(context, request.params.id)
+      const input = parseWith(teacherProfileUpdateSchema, request.body)
+      const client = prisma()
+
+      const before = await context.db.teacherProfile.findFirstOrThrow({ where: { id: profileId } })
+
+      await client.teacherProfile.update({
+        where: { id: profileId },
+        data: {
+          ...(input.category ? { category: input.category } : {}),
+          ...(input.dedication ? { dedication: input.dedication } : {}),
+          ...(input.contractedHours !== undefined
+            ? { contractedHours: input.contractedHours }
+            : {}),
+          ...(input.notes !== undefined ? { notes: input.notes ?? null } : {}),
+        },
+      })
+
+      await writeAuditLog(client, {
+        centerId: context.centerId,
+        userId: actor.userId,
+        entity: 'teacher_profile',
+        entityId: profileId,
+        action: 'update',
+        before: {
+          category: before.category,
+          dedication: before.dedication,
+          contractedHours: Number(before.contractedHours),
+        },
+        after: input,
+        source: 'user',
+        ip: request.ip,
+      })
+
       return teacherProfile(context, profileId)
     },
   )

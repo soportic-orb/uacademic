@@ -171,6 +171,36 @@ export const centerSettingsPatchSchema = z.object({
 })
 export type CenterSettingsPatch = z.infer<typeof centerSettingsPatchSchema>
 
+/**
+ * A teacher's contract for one academic year.
+ *
+ * The account and the contract are different things and are created at
+ * different moments: somebody is invited as a lecturer when they join the
+ * center, and gets contracted hours when the year is being planned. This is
+ * the second half, and until now the only way to write it was a spreadsheet
+ * import — which meant a center could not add a single teacher by hand.
+ */
+export const teacherProfileInputSchema = z.object({
+  userId: uuidSchema,
+  category: z.enum([
+    'full_professor',
+    'associate_professor',
+    'assistant_professor',
+    'lecturer',
+    'adjunct',
+    'visiting',
+    'external',
+  ]),
+  dedication: z.enum(['full_time', 'part_time', 'hourly']),
+  contractedHours: z.coerce.number().min(0).max(9999.99),
+  notes: z.string().trim().max(1000).nullish(),
+})
+export type TeacherProfileInput = z.infer<typeof teacherProfileInputSchema>
+
+/** Editing one: the person it belongs to never changes. */
+export const teacherProfileUpdateSchema = teacherProfileInputSchema.omit({ userId: true }).partial()
+export type TeacherProfileUpdate = z.infer<typeof teacherProfileUpdateSchema>
+
 export const userRoleInputSchema = z.object({
   userId: uuidSchema,
   role: roleSchema,

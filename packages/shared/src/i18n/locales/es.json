@@ -85,7 +85,9 @@
     "commandHint": "Pulsa ⌘K para buscar",
     "signOut": "Cerrar sesión",
     "demoUser": "Usuario de demostración",
-    "roleSelector": "Rol activo"
+    "roleSelector": "Rol activo",
+    "universitySelector": "Universidad",
+    "universityHint": "Eliges la universidad y entras en su centro; desde ahí puedes cambiar de centro."
   },
   "theme": {
     "label": "Apariencia",
@@ -151,7 +153,7 @@
     "name": "Nombre",
     "category": "Categoría",
     "dedication": "Dedicación",
-    "contracted": "Contratadas",
+    "contracted": "Profesorado añadido",
     "assigned": "Asignadas",
     "status": "Estado",
     "empty": {
@@ -254,7 +256,17 @@
       "share": "Porcentaje",
       "empty": "Todavía no tienes horas asignadas en este curso.",
       "chartLabel": "Distribución del encargo docente por concepto"
-    }
+    },
+    "errors": {
+      "notALecturer": "Esta persona no tiene el rol de profesorado en este centro. Dáselo primero desde Administración → Usuarios.",
+      "alreadyContracted": "Esta persona ya tiene contrato para el curso activo."
+    },
+    "newTitle": "Añadir profesorado",
+    "newHint": "Da contrato para el curso activo a alguien que ya tiene el rol de profesorado en el centro.",
+    "noCandidates": "Todo el profesorado del centro ya tiene contrato para el curso activo. Para añadir más, da el rol de profesorado a alguien desde Administración → Usuarios.",
+    "person": "Persona",
+    "choosePerson": "Elige una persona…",
+    "contract": "Dar contrato"
   },
   "subjects": {
     "title": "Asignaturas",

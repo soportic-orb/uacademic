@@ -7,16 +7,18 @@
  * drifts from it.
  */
 import { formatHours, formatPercent, formatPersonName } from '@uacademic/shared'
-import { ArrowDown, ArrowUp, Download } from 'lucide-react'
+import { ArrowDown, ArrowUp, Download, UserPlus } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 
+import { useRoles } from '../../app/use-roles'
 import { LoadBadge } from '../../components/data/load-badge'
 import { EmptyState, ErrorState, TableSkeleton } from '../../components/feedback/states'
 import { Avatar } from '../../components/ui/avatar'
 import { Button } from '../../components/ui/button'
 import { Card, CardBody } from '../../components/ui/card'
+import { ContractTeacher } from './contract-teacher'
 import { useToast } from '../../hooks/use-toast'
 import { currentLocale } from '../../i18n'
 import { ApiRequestError, apiDownload } from '../../lib/api'
@@ -38,6 +40,9 @@ export function LoadPanel() {
 
   const [filters, setFilters] = useState<LoadPanelFilters>({ sort: 'name', order: 'asc' })
   const [exporting, setExporting] = useState(false)
+  const [contracting, setContracting] = useState(false)
+  const roles = useRoles()
+  const canContract = roles.some((role) => role === 'CENTER_ADMIN' || role === 'COORDINATOR')
   const query = useCenterLoad(filters)
 
   const toggleSort = (key: string) =>
@@ -77,11 +82,30 @@ export function LoadPanel() {
           <h1 className="text-2xl font-semibold text-text">{t('teachers.panel.title')}</h1>
           <p className="mt-1 text-sm text-text-muted">{t('teachers.panel.subtitle')}</p>
         </div>
-        <Button onClick={() => void download()} disabled={exporting || !query.data}>
-          <Download className="size-4" aria-hidden="true" />
-          {exporting ? t('teachers.panel.exporting') : t('load.export')}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          {/*
+            The screen listed contracts and offered no way to write one: a
+            center could only add teaching staff by importing a spreadsheet.
+          */}
+          {canContract ? (
+            <Button onClick={() => setContracting(true)}>
+              <UserPlus className="size-4" aria-hidden="true" />
+              {t('teachers.newTitle')}
+            </Button>
+          ) : null}
+
+          <Button
+            variant="secondary"
+            onClick={() => void download()}
+            disabled={exporting || !query.data}
+          >
+            <Download className="size-4" aria-hidden="true" />
+            {exporting ? t('teachers.panel.exporting') : t('load.export')}
+          </Button>
+        </div>
       </header>
+
+      {contracting ? <ContractTeacher onDone={() => setContracting(false)} /> : null}
 
       {query.data ? <LoadSummary summary={query.data.summary} /> : null}
 
