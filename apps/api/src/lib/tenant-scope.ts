@@ -12,6 +12,7 @@ import { AppError } from './errors.js'
 /** Models whose rows always belong to exactly one center. */
 export const TENANT_SCOPED_MODELS: readonly string[] = [
   'AcademicYear',
+  'AcademicCalendarEntry',
   'UserCenterRole',
   'Degree',
   'Subject',

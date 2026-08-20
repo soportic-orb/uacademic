@@ -12,7 +12,9 @@ export interface ColumnConfig {
   sortable?: boolean
   align?: 'left' | 'right'
   /** `enum` looks the value up in the catalog under `enumPrefix`. */
-  render?: 'text' | 'enum' | 'date' | 'number' | 'boolean' | 'entraConsent'
+  render?: 'text' | 'enum' | 'date' | 'number' | 'boolean' | 'entraConsent' | 'nameWithCode'
+  /** `nameWithCode` only: the column holding the short code, shown in brackets. */
+  codeKey?: string
   enumPrefix?: string
 }
 
@@ -24,7 +26,15 @@ export interface FieldOption {
 export interface FieldConfig {
   name: string
   labelKey: string
-  type: 'text' | 'number' | 'select' | 'date' | 'checkbox' | 'url' | 'image'
+  type: 'text' | 'number' | 'select' | 'date' | 'checkbox' | 'url' | 'image' | 'dateRange'
+  /**
+   * `dateRange` only: the field holding the end of the range.
+   *
+   * Rendered as one control with a "single day" tick, because most of what
+   * goes in an academic calendar is one day and asking for the same date twice
+   * is asking somebody to do the computer's work.
+   */
+  rangeEnd?: string
   required?: boolean
   /**
    * `image` only: the sub-path the picture is posted to and deleted from,
@@ -234,7 +244,12 @@ export const ADMIN_RESOURCES: ResourceConfig[] = [
     labelField: 'nameCa',
     columns: [
       ...TRILINGUAL_COLUMNS,
-      { key: 'degreeCode', labelKey: 'admin.fields.degree' },
+      {
+        key: 'degreeName',
+        labelKey: 'admin.fields.degree',
+        render: 'nameWithCode',
+        codeKey: 'degreeCode',
+      },
       { key: 'ects', labelKey: 'admin.fields.ects', render: 'number', align: 'right' },
       {
         key: 'year',
@@ -329,7 +344,12 @@ export const ADMIN_RESOURCES: ResourceConfig[] = [
     labelField: 'code',
     columns: [
       { key: 'code', labelKey: 'admin.fields.code', sortable: true },
-      { key: 'subjectCode', labelKey: 'subjects.title' },
+      {
+        key: 'subjectName',
+        labelKey: 'subjects.title',
+        render: 'nameWithCode',
+        codeKey: 'subjectCode',
+      },
       { key: 'type', labelKey: 'admin.fields.type', render: 'enum', enumPrefix: 'groupType' },
       {
         key: 'plannedHours',
@@ -463,6 +483,7 @@ export const ADMIN_RESOURCES: ResourceConfig[] = [
         labelKey: 'admin.fields.type',
         options: enumOptions('calendarType', [
           'holiday',
+          'vacation',
           'non_teaching',
           'exam_period',
           'term_start',
@@ -487,6 +508,7 @@ export const ADMIN_RESOURCES: ResourceConfig[] = [
         required: true,
         options: enumOptions('calendarType', [
           'holiday',
+          'vacation',
           'non_teaching',
           'exam_period',
           'term_start',
@@ -495,8 +517,14 @@ export const ADMIN_RESOURCES: ResourceConfig[] = [
         ]),
       },
       { name: 'isTeachingDay', labelKey: 'admin.fields.isTeachingDay', type: 'checkbox' },
-      { name: 'dateFrom', labelKey: 'admin.fields.dateFrom', type: 'date', required: true },
-      { name: 'dateTo', labelKey: 'admin.fields.dateTo', type: 'date', required: true },
+      {
+        name: 'dateFrom',
+        labelKey: 'admin.fields.dates',
+        type: 'dateRange',
+        rangeEnd: 'dateTo',
+        required: true,
+        full: true,
+      },
       ...TRILINGUAL_FIELDS,
     ],
   },

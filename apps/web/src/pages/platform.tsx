@@ -130,6 +130,14 @@ export function PlatformPage() {
 
   return (
     <div className="space-y-6">
+      {/*
+        While a release is being installed the screen is not usable, and it is
+        important that it does not look as though it is: the API is about to
+        restart under it, so anything clicked in the meantime either fails or,
+        worse, half-succeeds.
+      */}
+      {awaiting ? <UpdatingOverlay version={awaiting} /> : null}
+
       <header>
         <h1 className="text-2xl font-semibold text-text">{t('platform.title')}</h1>
         <p className="mt-1 text-sm text-text-muted">{t('platform.subtitle')}</p>
@@ -322,6 +330,36 @@ export function PlatformPage() {
           )}
         </CardBody>
       </Card>
+    </div>
+  )
+}
+
+/**
+ * The screen, while the platform is replacing itself underneath it.
+ *
+ * `aria-live` rather than a dialog: nothing here is a question, and a screen
+ * reader should say what is happening without being asked. It goes away by
+ * itself — either the version lands and the page reloads into it, or the
+ * rollback finishes and the panel says so.
+ */
+function UpdatingOverlay({ version }: { version: string }) {
+  const { t } = useTranslation()
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+      role="status"
+      aria-live="polite"
+    >
+      <div className="mx-4 max-w-sm rounded-card border border-border bg-surface-raised p-8 text-center shadow-overlay">
+        <Loader2
+          className="mx-auto size-8 animate-spin text-primary motion-reduce:animate-none"
+          aria-hidden="true"
+        />
+        <p className="mt-4 text-base font-medium text-text">{t('platform.updating')}</p>
+        <p className="mt-1 tabular text-sm text-text-muted">{version}</p>
+        <p className="mt-4 text-xs text-text-muted">{t('platform.updatingHint')}</p>
+      </div>
     </div>
   )
 }

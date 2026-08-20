@@ -434,7 +434,7 @@ export function UsersPage() {
                 }}
                 className="h-10 rounded-control border border-border bg-surface px-2 text-sm text-text"
               >
-                <option value="">{t('common.optional')}</option>
+                <option value="">{t('common.all')}</option>
                 {ROLES.map((option) => (
                   <option key={option} value={option}>
                     {t(`roles.${option}`)}
@@ -453,7 +453,7 @@ export function UsersPage() {
                 }}
                 className="h-10 rounded-control border border-border bg-surface px-2 text-sm text-text"
               >
-                <option value="">{t('common.optional')}</option>
+                <option value="">{t('common.all')}</option>
                 {STATUSES.map((option) => (
                   <option key={option} value={option}>
                     {t(`userStatus.${option}`)}

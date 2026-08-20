@@ -154,7 +154,7 @@ export function ResourceForm({
                       aria-invalid={Boolean(errorKey)}
                       className="h-10 w-full rounded-control border border-border bg-surface px-2 text-sm text-text"
                     >
-                      <option value="">{t('common.optional')}</option>
+                      <option value="">{t('common.choose')}</option>
                       {optionsFor(field).map((option) => (
                         <option key={option.value} value={option.value}>
                           {option.label}
@@ -170,6 +170,20 @@ export function ResourceForm({
                         setValues({ ...values, [field.name]: event.target.checked })
                       }
                       className="size-5 rounded border-border"
+                    />
+                  ) : field.type === 'dateRange' ? (
+                    <DateRangeField
+                      inputId={inputId}
+                      required={field.required}
+                      from={String(values[field.name] ?? '')}
+                      to={String(values[field.rangeEnd ?? ''] ?? '')}
+                      onChange={(from, to) =>
+                        setValues({
+                          ...values,
+                          [field.name]: from,
+                          ...(field.rangeEnd ? { [field.rangeEnd]: to } : {}),
+                        })
+                      }
                     />
                   ) : field.type === 'image' ? (
                     <ImageField
@@ -327,4 +341,76 @@ function cleanValues(fields: FieldConfig[], values: Values): Values {
     cleaned[field.name] = field.type === 'number' ? Number(value) : value
   }
   return cleaned
+}
+
+/**
+ * A date, or a stretch of them.
+ *
+ * Most of what goes in an academic calendar is a single day — a public
+ * holiday, the first day of term — and asking for the same date twice is
+ * asking somebody to do the computer's work. The tick decides which it is, and
+ * a single day is simply a range whose ends agree, so nothing downstream has
+ * to know the difference.
+ */
+function DateRangeField({
+  inputId,
+  required,
+  from,
+  to,
+  onChange,
+}: {
+  inputId: string
+  required?: boolean
+  from: string
+  to: string
+  onChange: (from: string, to: string) => void
+}) {
+  const { t } = useTranslation()
+  // A row being edited says what it is by whether its ends agree; a new one
+  // starts as a single day, which is the commoner case.
+  const [singleDay, setSingleDay] = useState(from === '' || from === to)
+
+  return (
+    <div className="space-y-2">
+      <label className="flex items-center gap-2 text-sm text-text">
+        <input
+          type="checkbox"
+          checked={singleDay}
+          onChange={(event) => {
+            setSingleDay(event.target.checked)
+            if (event.target.checked) onChange(from, from)
+          }}
+          className="size-4 rounded border-border"
+        />
+        {t('admin.fields.singleDay')}
+      </label>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          id={inputId}
+          type="date"
+          required={required}
+          value={from}
+          onChange={(event) => onChange(event.target.value, singleDay ? event.target.value : to)}
+          className="h-10 rounded-control border border-border bg-surface px-3 text-sm text-text"
+        />
+
+        {singleDay ? null : (
+          <>
+            <span className="text-sm text-text-muted">{t('common.to')}</span>
+            <label>
+              <span className="sr-only">{t('admin.fields.dateTo')}</span>
+              <input
+                type="date"
+                required={required}
+                value={to}
+                onChange={(event) => onChange(from, event.target.value)}
+                className="h-10 rounded-control border border-border bg-surface px-3 text-sm text-text"
+              />
+            </label>
+          </>
+        )}
+      </div>
+    </div>
+  )
 }

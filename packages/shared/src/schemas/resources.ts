@@ -118,7 +118,15 @@ export type SpaceInput = z.infer<typeof spaceInputSchema>
 export const calendarEntryInputSchema = trilingualNameSchema
   .extend({
     academicYearId: uuidSchema,
-    type: z.enum(['holiday', 'non_teaching', 'exam_period', 'term_start', 'term_end', 'event']),
+    type: z.enum([
+      'holiday',
+      'vacation',
+      'non_teaching',
+      'exam_period',
+      'term_start',
+      'term_end',
+      'event',
+    ]),
     dateFrom: isoDateSchema,
     dateTo: isoDateSchema,
     isTeachingDay: z.boolean().default(false),

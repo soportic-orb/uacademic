@@ -4,12 +4,13 @@
  * one implementation, so an answer never depends on where it was asked from.
  */
 import { formatDate } from '@uacademic/shared'
-import { MessagesSquare } from 'lucide-react'
+import { MessagesSquare, Sparkles } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { useRoles } from '../app/use-roles'
 import { EmptyState } from '../components/feedback/states'
+import { Button } from '../components/ui/button'
 import { Card, CardBody, CardHeader } from '../components/ui/card'
 import { AssistantPanel } from '../features/assistant/assistant-panel'
 import { useAssistantStatus, useConversations } from '../features/assistant/queries'
@@ -36,9 +37,22 @@ export function AssistantPage() {
 
   return (
     <div className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold text-text">{t('assistant.title')}</h1>
-        <p className="mt-1 text-sm text-text-muted">{t('assistant.subtitle')}</p>
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold text-text">{t('assistant.title')}</h1>
+          <p className="mt-1 text-sm text-text-muted">{t('assistant.subtitle')}</p>
+        </div>
+
+        {/*
+          Closing the panel used to be a one-way door: nothing on the screen
+          opened it again, and the only way back was to leave and return.
+        */}
+        {open ? null : (
+          <Button onClick={() => setOpen(true)}>
+            <Sparkles className="size-4" aria-hidden="true" />
+            {t('assistant.reopen')}
+          </Button>
+        )}
       </header>
 
       {status.data && !status.data.available ? (

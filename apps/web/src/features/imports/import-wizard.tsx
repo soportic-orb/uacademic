@@ -211,7 +211,7 @@ export function ImportWizard() {
                 onChange={(event) => setAcademicYearId(event.target.value)}
                 className="h-10 w-full rounded-control border border-border bg-surface px-2 text-sm text-text"
               >
-                <option value="">{t('common.optional')}</option>
+                <option value="">{t('common.choose')}</option>
                 {(years.data?.items ?? []).map((year) => (
                   <option key={year.id} value={year.id}>
                     {year.name}

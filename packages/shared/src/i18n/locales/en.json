@@ -43,7 +43,8 @@
     "note": "Note",
     "attach": "Attach",
     "unread": "Unread",
-    "saving": "Saving…"
+    "saving": "Saving…",
+    "choose": "Choose…"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -733,7 +734,7 @@
     "unknown": "Unknown",
     "changelog": "Changes",
     "update": "Update now",
-    "updating": "Updating… keep this page open.",
+    "updating": "Updating the platform…",
     "applied": "Updated to version {{version}}",
     "rolledBack": "The update failed and the previous version was restored.",
     "failed": "The update could not be applied. Nothing was changed.",
@@ -771,7 +772,8 @@
     "mailFrom": "Sender",
     "rolledBackWhy": "The update failed and the previous version was restored. The server said: {{detail}}",
     "failedWhy": "The update failed. The server said: {{detail}}",
-    "started": "The update to {{version}} has started. It can take a couple of minutes; this screen will keep itself up to date."
+    "started": "The update to {{version}} has started. It can take a couple of minutes; this screen will keep itself up to date.",
+    "updatingHint": "Leave this window open. It unlocks by itself when the release lands, and says how it went."
   },
   "assistant": {
     "title": "AI assistant",
@@ -839,7 +841,8 @@
       "alreadyResolved": "This proposal has already been resolved.",
       "staleProposal": "The timetable changed since the proposal: ask for it again.",
       "noChannel": "There is no channel to publish the announcement in."
-    }
+    },
+    "reopen": "Open the assistant"
   },
   "states": {
     "loadingLabel": "Loading content",
@@ -1045,7 +1048,9 @@
       "email": "Email",
       "role": "Role",
       "consent": "Consent",
-      "center": "Center"
+      "center": "Center",
+      "dates": "Dates",
+      "singleDay": "A single day"
     },
     "newUser": "New user",
     "newUserHint": "The account is linked to their Microsoft identity the first time they sign in.",
@@ -1164,7 +1169,8 @@
     "exam_period": "Exam period",
     "term_start": "Term start",
     "term_end": "Term end",
-    "event": "Event"
+    "event": "Event",
+    "vacation": "Holiday period"
   },
   "degreeLevel": {
     "bachelor": "Bachelor",

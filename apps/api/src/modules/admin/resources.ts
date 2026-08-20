@@ -165,7 +165,7 @@ export function registerAdminResources(app: FastifyInstance): void {
     defaultSort: 'code',
     searchFields: ['code', 'nameCa', 'nameEs', 'nameEn'],
     filterFields: ['academicYearId', 'degreeId', 'term', 'type'],
-    include: { degree: { select: { code: true } } },
+    include: { degree: { select: { code: true, nameCa: true } } },
     serialize: (row) => ({
       id: asString(row.id),
       code: asString(row.code),
@@ -178,6 +178,9 @@ export function registerAdminResources(app: FastifyInstance): void {
       academicYearId: asString(row.academicYearId),
       degreeId: asString(row.degreeId),
       degreeCode: asString((row.degree as { code?: string } | undefined)?.code),
+      // The name as well as the code: "GEP" tells somebody who already knows
+      // the catalogue which degree this is, and nobody else.
+      degreeName: asString((row.degree as { nameCa?: string } | undefined)?.nameCa),
     }),
   } satisfies CrudResource<typeof subjectInputSchema>)
 

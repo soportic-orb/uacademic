@@ -69,6 +69,9 @@ enum AuthMethod {
 
 enum CalendarEntryType {
   holiday
+  /// A closure that runs for weeks — Christmas, Easter, summer — as opposed to
+  /// a single public holiday, which is what `holiday` is for.
+  vacation
   non_teaching
   exam_period
   term_start

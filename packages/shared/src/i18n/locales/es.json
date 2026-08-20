@@ -43,7 +43,8 @@
     "note": "Nota",
     "attach": "Adjuntar",
     "unread": "No leído",
-    "saving": "Guardando…"
+    "saving": "Guardando…",
+    "choose": "Selecciona…"
   },
   "nav": {
     "dashboard": "Panel",
@@ -733,7 +734,7 @@
     "unknown": "Desconocida",
     "changelog": "Cambios",
     "update": "Actualiza ahora",
-    "updating": "Actualizando… no cierres esta página.",
+    "updating": "Actualizando la plataforma…",
     "applied": "Actualizada a la versión {{version}}",
     "rolledBack": "La actualización ha fallado y se ha vuelto a la versión anterior.",
     "failed": "No se ha podido actualizar. No se ha cambiado nada.",
@@ -771,7 +772,8 @@
     "mailFrom": "Remitente",
     "rolledBackWhy": "La actualización ha fallado y se ha vuelto a la versión anterior. El servidor ha dicho: {{detail}}",
     "failedWhy": "La actualización ha fallado. El servidor ha dicho: {{detail}}",
-    "started": "Se ha iniciado la actualización a {{version}}. Puede tardar un par de minutos; esta pantalla se irá actualizando."
+    "started": "Se ha iniciado la actualización a {{version}}. Puede tardar un par de minutos; esta pantalla se irá actualizando.",
+    "updatingHint": "No cierres la ventana. Cuando termine, la pantalla se desbloqueará sola y te dirá cómo ha ido."
   },
   "assistant": {
     "title": "Asistente IA",
@@ -839,7 +841,8 @@
       "alreadyResolved": "Esta propuesta ya se ha resuelto.",
       "staleProposal": "El horario ha cambiado desde la propuesta: vuelve a pedirla.",
       "noChannel": "No hay ningún canal donde publicar el anuncio."
-    }
+    },
+    "reopen": "Abrir el asistente"
   },
   "states": {
     "loadingLabel": "Cargando contenido",
@@ -1045,7 +1048,9 @@
       "email": "Correo electrónico",
       "role": "Rol",
       "consent": "Consentimiento",
-      "center": "Centro"
+      "center": "Centro",
+      "dates": "Fechas",
+      "singleDay": "Es un día único"
     },
     "newUser": "Nuevo usuario",
     "newUserHint": "La cuenta se enlaza con su identidad de Microsoft la primera vez que entre.",
@@ -1164,7 +1169,8 @@
     "exam_period": "Periodo de exámenes",
     "term_start": "Inicio de periodo",
     "term_end": "Fin de periodo",
-    "event": "Evento"
+    "event": "Evento",
+    "vacation": "Periodo vacacional"
   },
   "degreeLevel": {
     "bachelor": "Grado",

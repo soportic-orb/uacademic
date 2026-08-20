@@ -43,7 +43,8 @@
     "note": "Nota",
     "attach": "Adjunta",
     "unread": "No llegit",
-    "saving": "S’està desant…"
+    "saving": "S’està desant…",
+    "choose": "Selecciona…"
   },
   "nav": {
     "dashboard": "Tauler",
@@ -733,7 +734,7 @@
     "unknown": "Desconeguda",
     "changelog": "Canvis",
     "update": "Actualitza ara",
-    "updating": "Actualitzant… no tanquis aquesta pàgina.",
+    "updating": "Actualitzant la plataforma…",
     "applied": "Actualitzada a la versió {{version}}",
     "rolledBack": "L’actualització ha fallat i s’ha tornat a la versió anterior.",
     "failed": "No s’ha pogut actualitzar. No s’ha canviat res.",
@@ -771,7 +772,8 @@
     "mailFrom": "Remitent",
     "rolledBackWhy": "L'actualització ha fallat i s'ha tornat a la versió anterior. El servidor ha dit: {{detail}}",
     "failedWhy": "L'actualització ha fallat. El servidor ha dit: {{detail}}",
-    "started": "S'ha iniciat l'actualització a {{version}}. Pot trigar un parell de minuts; aquesta pantalla s'anirà actualitzant."
+    "started": "S'ha iniciat l'actualització a {{version}}. Pot trigar un parell de minuts; aquesta pantalla s'anirà actualitzant.",
+    "updatingHint": "No tanquis la finestra. Quan acabi, la pantalla es desbloquejarà sola i et dirà com ha anat."
   },
   "assistant": {
     "title": "Assistent IA",
@@ -839,7 +841,8 @@
       "alreadyResolved": "Aquesta proposta ja s’ha resolt.",
       "staleProposal": "L’horari ha canviat des de la proposta: torna-la a demanar.",
       "noChannel": "No hi ha cap canal on publicar l’anunci."
-    }
+    },
+    "reopen": "Obre l'assistent"
   },
   "states": {
     "loadingLabel": "Carregant contingut",
@@ -1045,7 +1048,9 @@
       "email": "Correu electrònic",
       "role": "Rol",
       "consent": "Consentiment",
-      "center": "Centre"
+      "center": "Centre",
+      "dates": "Dates",
+      "singleDay": "És un dia únic"
     },
     "newUser": "Nou usuari",
     "newUserHint": "El compte s'enllaça amb la seva identitat de Microsoft la primera vegada que entri.",
@@ -1164,7 +1169,8 @@
     "exam_period": "Període d'exàmens",
     "term_start": "Inici de període",
     "term_end": "Fi de període",
-    "event": "Esdeveniment"
+    "event": "Esdeveniment",
+    "vacation": "Període vacacional"
   },
   "degreeLevel": {
     "bachelor": "Grau",

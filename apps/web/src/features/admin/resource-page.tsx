@@ -146,6 +146,18 @@ export function ResourcePage({ resource }: { resource: ResourceConfig }) {
     }
 
     const value = row[column.key]
+
+    // The code alone identifies a subject only to somebody who has the
+    // catalogue memorised; the name alone is ambiguous between two years of
+    // the same one. Both, together, are what a person reads.
+    if (column.render === 'nameWithCode') {
+      const code = column.codeKey ? row[column.codeKey] : undefined
+      if (!value && !code) return '—'
+      if (!code) return String(value)
+      if (!value) return String(code)
+      return `${String(value)} (${String(code)})`
+    }
+
     if (value === null || value === undefined || value === '') return '—'
 
     switch (column.render) {
@@ -203,7 +215,7 @@ export function ResourcePage({ resource }: { resource: ResourceConfig }) {
                   }}
                   className="h-10 rounded-control border border-border bg-surface px-2 text-sm text-text"
                 >
-                  <option value="">{t('common.optional')}</option>
+                  <option value="">{t('common.all')}</option>
                   {filter.options.map((option) => (
                     <option key={option.value} value={option.value}>
                       {t(option.labelKey)}
