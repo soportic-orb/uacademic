@@ -1449,7 +1449,10 @@
     "warnings": {
       "unavailable": "{{name}} ha indicado que no tiene disponibilidad de {{start}} a {{end}}. No se ha asignado.",
       "avoid": "{{name}} ha indicado que prefiere no dar clase de {{start}} a {{end}}. Se ha asignado igualmente."
-    }
+    },
+    "closedOn": "El centro está cerrado: {{name}}",
+    "closedLegend": "Centro cerrado",
+    "closedLegendHint": "Festivo o periodo vacacional del calendario académico. Puedes planificar igualmente: la semana es una plantilla y ese día se salta al generar las clases."
   },
   "calendar": {
     "title": "Mi calendario",

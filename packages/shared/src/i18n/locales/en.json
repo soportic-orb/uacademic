@@ -1449,7 +1449,10 @@
     "warnings": {
       "unavailable": "{{name}} said they are not available from {{start}} to {{end}}. Not assigned.",
       "avoid": "{{name}} asked to avoid teaching from {{start}} to {{end}}. Assigned anyway."
-    }
+    },
+    "closedOn": "The center is closed: {{name}}",
+    "closedLegend": "Center closed",
+    "closedLegendHint": "A holiday or holiday period from the academic calendar. You can still plan on it: the week is a template, and that date is skipped when the classes are generated."
   },
   "calendar": {
     "title": "My calendar",

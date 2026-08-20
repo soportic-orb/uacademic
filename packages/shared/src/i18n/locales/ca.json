@@ -1449,7 +1449,10 @@
     "warnings": {
       "unavailable": "{{name}} ha indicat que no té disponibilitat de {{start}} a {{end}}. No s'ha assignat.",
       "avoid": "{{name}} ha indicat que prefereix no fer classe de {{start}} a {{end}}. S’ha assignat igualment."
-    }
+    },
+    "closedOn": "El centre és tancat: {{name}}",
+    "closedLegend": "Centre tancat",
+    "closedLegendHint": "Festiu o període vacacional del calendari acadèmic. Pots planificar-hi igualment: la setmana és una plantilla i aquell dia se salta quan es generen les classes."
   },
   "calendar": {
     "title": "El meu calendari",

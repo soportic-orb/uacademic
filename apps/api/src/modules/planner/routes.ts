@@ -580,6 +580,20 @@ async function versionDetail(context: PlannerContext, versionId: string) {
   const rows = await loadSessions(context, versionId)
   const sessions = rows.map(toPlannedSession)
 
+  /*
+    The days the center is shut, for the week on screen.
+
+    The planner is a weekly template — a session on Monday repeats over every
+    Monday of the term — and the engine already skips closures when it
+    materialises the term. What was missing was saying so on the grid, which is
+    where somebody is deciding whether to put a class there at all.
+  */
+  const calendar = await context.db.academicCalendarEntry.findMany({
+    where: { academicYearId: context.academicYearId },
+    select: { dateFrom: true, dateTo: true, type: true, nameCa: true, isTeachingDay: true },
+    orderBy: { dateFrom: 'asc' },
+  })
+
   const requirements = await sessionRequirements(context)
   const pending = Math.max(0, requirements.length - sessions.length)
   const score = scoreSchedule(sessions, context.schedule)
@@ -600,6 +614,13 @@ async function versionDetail(context: PlannerContext, versionId: string) {
       groups: [...context.schedule.groups.values()],
       // Names and capacities, for the column of colleagues beside the week.
       directory: context.directory,
+      calendar: calendar.map((entry) => ({
+        dateFrom: entry.dateFrom.toISOString().slice(0, 10),
+        dateTo: entry.dateTo.toISOString().slice(0, 10),
+        type: entry.type,
+        name: entry.nameCa,
+        isTeachingDay: entry.isTeachingDay,
+      })),
     },
     publishedAt: version.publishedAt?.toISOString() ?? null,
     parentVersionId: version.parentVersionId,

@@ -8,7 +8,12 @@
  * a soft constraint (with the reason in the tooltip), red when it is
  * impossible.
  */
-import { type CellEvaluation, effectiveAvailability } from '@uacademic/shared'
+import {
+  type CellEvaluation,
+  closuresInRange,
+  effectiveAvailability,
+  isoDateOf,
+} from '@uacademic/shared'
 import { Trash2, Undo2, Redo2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -103,6 +108,20 @@ export function PlannerGrid({
    * has started yet.
    */
   const [weekStart, setWeekStart] = useState(() => mondayOf(new Date()))
+
+  /*
+    The days the center is shut, for the week on screen.
+
+    Shown rather than enforced: a coordinator may well want a session on the
+    template that falls on Christmas in one week and on an ordinary Monday in
+    the other thirteen. The engine already skips the closed dates when it turns
+    the template into actual classes; the shading is so nobody plans a whole
+    afternoon into a fortnight that does not exist.
+  */
+  const closures = useMemo(() => {
+    const dates = geometry.weekdays.map((weekday) => isoDateOf(dateOfWeekday(weekStart, weekday)))
+    return closuresInRange(dates, context.calendar ?? [])
+  }, [context.calendar, geometry.weekdays, weekStart])
 
   /** Picking a colleague dims everybody else's classes, rather than hiding them. */
   const [teacherFilter, setTeacherFilter] = useState<string | null>(null)
@@ -400,12 +419,16 @@ export function PlannerGrid({
                     {geometry.weekdays.map((weekday) => {
                       const date = dateOfWeekday(weekStart, weekday)
                       const isToday = isoDate(date) === isoDate(new Date())
+                      const closed = closures.get(isoDateOf(date))
 
                       return (
                         <th
                           key={weekday}
                           scope="col"
-                          className="py-1 font-medium text-text-muted"
+                          className={cn(
+                            'py-1 font-medium text-text-muted',
+                            closed && 'bg-surface-muted',
+                          )}
                           aria-current={isToday ? 'date' : undefined}
                         >
                           <span className="block">{weekdayName(weekday)}</span>
@@ -417,6 +440,16 @@ export function PlannerGrid({
                           >
                             {date.getDate()}
                           </span>
+                          {closed ? (
+                            // The name, not just a shade: "why is Thursday
+                            // grey" is a question the grid should answer.
+                            <span
+                              className="block truncate text-xs font-normal text-text-muted"
+                              title={closed.name}
+                            >
+                              {closed.name}
+                            </span>
+                          ) : null}
                         </th>
                       )
                     })}
@@ -435,6 +468,7 @@ export function PlannerGrid({
                         const key = cellKey(weekday, slot.start)
                         const session = occupied.get(key)
                         const starts = session?.startTime === slot.start
+                        const closed = closures.get(isoDateOf(dateOfWeekday(weekStart, weekday)))
 
                         if (session && !starts) return null
 
@@ -484,7 +518,13 @@ export function PlannerGrid({
                         }
 
                         return (
-                          <td key={weekday} className="p-0">
+                          <td
+                            key={weekday}
+                            // Shaded, not disabled: the week is a template, and
+                            // this same Monday slot is an ordinary Monday in
+                            // the other thirteen weeks of the term.
+                            className={cn('p-0', closed && 'bg-surface-muted')}
+                          >
                             <button
                               type="button"
                               tabIndex={isCursor ? 0 : -1}
@@ -501,7 +541,11 @@ export function PlannerGrid({
                                       start: slot.start,
                                     })
                               }
-                              title={reasonFor(evaluation, t)}
+                              title={
+                                closed
+                                  ? t('planner.closedOn', { name: closed.name })
+                                  : reasonFor(evaluation, t)
+                              }
                               onFocus={() => setCursor({ day: dayIndex, slot: slotIndex })}
                               onKeyDown={(event) => {
                                 if (event.key === ' ' || event.key === 'Enter') {
@@ -525,7 +569,11 @@ export function PlannerGrid({
                               )}
                             >
                               <span className="sr-only">
-                                {evaluation ? t(`planner.status.${evaluation.status}`) : slot.start}
+                                {closed
+                                  ? t('planner.closedOn', { name: closed.name })
+                                  : evaluation
+                                    ? t(`planner.status.${evaluation.status}`)
+                                    : slot.start}
                               </span>
                             </button>
                           </td>
@@ -596,6 +644,15 @@ function Legend() {
           </span>
         </li>
       ))}
+
+      {/* The shading is a fourth thing the grid says, so it says so here. */}
+      <li className="flex items-center gap-2">
+        <span aria-hidden="true" className="inline-block size-3 rounded-sm bg-surface-muted" />
+        <span>
+          <span className="font-medium text-text">{t('planner.closedLegend')}</span>{' '}
+          {t('planner.closedLegendHint')}
+        </span>
+      </li>
     </ul>
   )
 }

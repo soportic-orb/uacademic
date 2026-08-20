@@ -8,6 +8,7 @@
  * violations it recomputed.
  */
 import type {
+  CalendarDayEntry,
   CellEvaluation,
   CenterSettings,
   GroupResource,
@@ -35,6 +36,8 @@ export interface PlannerContextDto {
   teachers: TeacherResource[]
   spaces: SpaceResource[]
   groups: GroupResource[]
+  /** The academic calendar of the year, for shading the days it closes. */
+  calendar?: CalendarDayEntry[]
   /** Who the teachers are; the engine's own list is deliberately anonymous. */
   directory: TeacherDirectoryEntry[]
 }
