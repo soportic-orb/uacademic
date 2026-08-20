@@ -42,7 +42,14 @@ describe.skipIf(!hasDatabase)('granting access to centers', () => {
   const asAdmin = () => ({ 'x-mock-user': SEED.adminEmail, 'x-center-id': centerId })
   const asSuperadmin = () => ({ 'x-mock-user': SEED.superadminEmail, 'x-center-id': centerId })
 
-  const create = (headers: Record<string, string>, body: unknown) =>
+  interface NewUser {
+    email: string
+    firstName: string
+    lastName: string
+    grants: { centerId: string; role: string }[]
+  }
+
+  const create = (headers: Record<string, string>, body: NewUser) =>
     app.inject({ method: 'POST', url: '/api/v1/users', headers, payload: body })
 
   it('creates one account holding roles in several centers at once', async () => {
