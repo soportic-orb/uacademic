@@ -705,6 +705,11 @@
       "value": "Current value: {{value}}",
       "noSource": "This parameter comes from no regulation: it is a default, or the center’s own decision.",
       "open": "Open the regulation"
+    },
+    "manual": {
+      "edit": "Edit manually",
+      "hint": "Parameters the assistant reads from a regulation arrive with their citation. You can correct them, or set them by hand when you need to.",
+      "saved": "Parameters saved"
     }
   },
   "platform": {
@@ -1130,6 +1135,15 @@
       "emptyFile": "The file has no rows.",
       "tooManyRows": "The file exceeds the maximum of {{max}} rows.",
       "duplicateInFile": "This value appears more than once in the file."
+    },
+    "template": {
+      "guideSheet": "Column guide",
+      "column": "Column",
+      "required": "Required",
+      "example": "Example",
+      "accepts": "Header spellings recognised automatically",
+      "download": "Download a sample spreadsheet",
+      "downloadHint": "It carries the columns already in place, one example row, and a guide to what each accepts."
     }
   },
   "calendarType": {

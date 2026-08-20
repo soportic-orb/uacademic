@@ -156,6 +156,21 @@ export const userCreateSchema = userInputSchema.extend({
 })
 export type UserCreate = z.infer<typeof userCreateSchema>
 
+/**
+ * Editing the center's parameters by hand.
+ *
+ * A map of dot paths to values rather than a whole settings object: an
+ * administrator changing the maximum teaching hours should not have to send —
+ * and risk overwriting — the ninety parameters they did not touch. Which paths
+ * exist, and whether the result is coherent, is decided by the settings schema
+ * on the server.
+ */
+export const centerSettingsPatchSchema = z.object({
+  values: z.record(z.string(), z.unknown()),
+  notes: z.string().trim().max(500).optional(),
+})
+export type CenterSettingsPatch = z.infer<typeof centerSettingsPatchSchema>
+
 export const userRoleInputSchema = z.object({
   userId: uuidSchema,
   role: roleSchema,

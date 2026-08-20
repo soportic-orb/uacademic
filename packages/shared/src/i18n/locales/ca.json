@@ -705,6 +705,11 @@
       "value": "Valor actual: {{value}}",
       "noSource": "Aquest paràmetre no ve de cap normativa: és un valor per defecte o una decisió del centre.",
       "open": "Obre la normativa"
+    },
+    "manual": {
+      "edit": "Edita manualment",
+      "hint": "Els paràmetres que llegeix l'assistent d'una normativa arriben amb la citació. Els pots corregir o posar a mà quan calgui.",
+      "saved": "Paràmetres desats"
     }
   },
   "platform": {
@@ -1130,6 +1135,15 @@
       "emptyFile": "El fitxer no conté cap fila.",
       "tooManyRows": "El fitxer supera el màxim de {{max}} files.",
       "duplicateInFile": "Aquest valor apareix més d'una vegada al fitxer."
+    },
+    "template": {
+      "guideSheet": "Guia de columnes",
+      "column": "Columna",
+      "required": "Obligatòria",
+      "example": "Exemple",
+      "accepts": "Noms de columna que es reconeixen sols",
+      "download": "Descarrega un excel de mostra",
+      "downloadHint": "Porta les columnes ja posades, una fila d'exemple i una guia del que accepta cada una."
     }
   },
   "calendarType": {

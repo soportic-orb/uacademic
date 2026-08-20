@@ -1,10 +1,21 @@
 import type { CenterSettings } from '@uacademic/shared'
-import type { FastifyInstance } from 'fastify'
+import {
+  centerSettingsPatchSchema,
+  centerSettingsSchema,
+  settingParam,
+  withSettingValue,
+} from '@uacademic/shared'
+import type { FastifyInstance, FastifyRequest } from 'fastify'
 
 import { AppError } from '../../lib/errors.js'
 import { prisma } from '../../lib/prisma.js'
+import { parseWith } from '../../lib/validate.js'
 import { requireCenterScope, requireUser } from '../../plugins/context.js'
-import { currentSettings, currentVersionId } from '../../services/settings/versions.js'
+import {
+  currentSettings,
+  currentVersionId,
+  publishSettingsVersion,
+} from '../../services/settings/versions.js'
 
 interface CenterDto {
   id: string
@@ -50,7 +61,8 @@ export function registerCenterRoutes(app: FastifyInstance): void {
     }
   })
 
-  app.get('/api/v1/centers/settings', async (request): Promise<SettingsDto> => {
+  /** What the settings screen reads, after a GET and after an edit alike. */
+  async function settingsDto(request: FastifyRequest): Promise<SettingsDto> {
     const { centerId, db } = requireCenterScope(request)
 
     const center = await prisma().center.findUnique({ where: { id: centerId } })
@@ -79,5 +91,67 @@ export function registerCenterRoutes(app: FastifyInstance): void {
         quote: record.quote,
       })),
     }
-  })
+  }
+
+  app.get('/api/v1/centers/settings', async (request): Promise<SettingsDto> => settingsDto(request))
+
+  /**
+   * Editing the parameters by hand.
+   *
+   * Reading a regulation with the assistant is the path that carries citations
+   * with it, and it is the better one — but it is not the only way a center
+   * knows its own rules. A center whose maximum teaching hours are simply
+   * known, or whose document the extraction could not read, had no way to say
+   * so at all: every parameter on the screen was read-only.
+   *
+   * Only the parameters named are touched; everything else is carried forward,
+   * citations included, by `publishSettingsVersion`.
+   */
+  app.patch(
+    '/api/v1/centers/settings',
+    { config: { roles: ['CENTER_ADMIN'] } },
+    async (request): Promise<SettingsDto> => {
+      const { centerId } = requireCenterScope(request)
+      const actor = requireUser(request)
+      const input = parseWith(centerSettingsPatchSchema, request.body)
+      const client = prisma()
+
+      const unknownKeys = Object.keys(input.values).filter((key) => !settingParam(key))
+      if (unknownKeys.length > 0) {
+        throw AppError.validation(
+          unknownKeys.map((key) => ({ path: `values.${key}`, messageKey: 'validation.unknown' })),
+        )
+      }
+
+      const current = await currentSettings(client, centerId)
+      let draft: unknown = current
+      for (const [key, value] of Object.entries(input.values)) {
+        draft = withSettingValue(draft as CenterSettings, key, value)
+      }
+
+      // The schema is the authority on what a parameter may be (R9): a
+      // negative session length or a threshold above 1000 is refused here
+      // rather than discovered by the planner three screens later.
+      const parsed = centerSettingsSchema.safeParse(draft)
+      if (!parsed.success) {
+        throw AppError.validation(
+          parsed.error.issues.map((issue) => ({
+            path: issue.path.join('.'),
+            messageKey: issue.message,
+          })),
+        )
+      }
+
+      await publishSettingsVersion(client, {
+        centerId,
+        settings: parsed.data,
+        source: 'manual',
+        approvedBy: actor.userId,
+        notes: input.notes ?? null,
+        ip: request.ip,
+      })
+
+      return settingsDto(request)
+    },
+  )
 }

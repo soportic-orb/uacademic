@@ -9,7 +9,7 @@ import {
   validateMapping,
   validateRow,
 } from '@uacademic/shared'
-import type { FastifyInstance } from 'fastify'
+import type { FastifyInstance, FastifyReply } from 'fastify'
 import { z } from 'zod'
 
 import type { Env } from '../../config/env.js'
@@ -19,6 +19,7 @@ import { toJson } from '../../lib/json.js'
 import { prisma } from '../../lib/prisma.js'
 import { isSupportedUpload, parseTabular } from '../../lib/tabular.js'
 import { parseWith } from '../../lib/validate.js'
+import { SPREADSHEET_CONTENT_TYPE, importTemplateWorkbook } from './template.js'
 import { requireCenterScope, requireUser } from '../../plugins/context.js'
 
 const IMPORTER_ROLES = ['CENTER_ADMIN'] as const
@@ -40,6 +41,29 @@ const rowsQuerySchema = z.object({
  * the apply step trusts.
  */
 export function registerImportRoutes(app: FastifyInstance, env: Env): void {
+  /**
+   * A spreadsheet with the columns already in it.
+   *
+   * Built from the same specifications the importer validates against, so it
+   * cannot describe columns the importer does not accept — which is the whole
+   * reason for shipping one rather than documenting the format in prose.
+   */
+  app.get(
+    '/api/v1/imports/template/:kind',
+    { config: { roles: IMPORTER_ROLES } },
+    async (request, reply): Promise<FastifyReply> => {
+      const { kind } = request.params as { kind: string }
+      if (kind !== 'teachers' && kind !== 'subjects') throw AppError.notFound()
+
+      const workbook = await importTemplateWorkbook(kind, request.locale)
+
+      return reply
+        .header('content-type', SPREADSHEET_CONTENT_TYPE)
+        .header('content-disposition', `attachment; filename="uacademic-${kind}.xlsx"`)
+        .send(workbook)
+    },
+  )
+
   app.post('/api/v1/imports', { config: { roles: IMPORTER_ROLES } }, async (request, reply) => {
     const { centerId, db } = requireCenterScope(request)
     const user = requireUser(request)

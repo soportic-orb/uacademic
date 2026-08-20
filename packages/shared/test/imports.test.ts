@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { translate } from '../src/i18n/index.js'
 import {
   SUBJECT_IMPORT_FIELDS,
   TEACHER_IMPORT_FIELDS,
@@ -220,5 +221,39 @@ describe('dry-run summary', () => {
     expect(fieldsFor('teachers')).toBe(TEACHER_IMPORT_FIELDS)
     expect(fieldsFor('subjects')).toBe(SUBJECT_IMPORT_FIELDS)
     expect(keyFieldFor('subjects')).toBe('code')
+  })
+})
+
+/**
+ * The sample workbook an administrator downloads is built from these values.
+ * One that this very field would reject would hand somebody a template that
+ * fails validation the moment they upload it back.
+ */
+describe('the values that fill the sample workbook', () => {
+  it('are accepted by the field they are an example of', () => {
+    for (const kind of ['teachers', 'subjects'] as const) {
+      for (const field of fieldsFor(kind)) {
+        const result = field.parse(field.example)
+        expect(result, `${kind}.${field.key} rejected "${field.example}"`).toMatchObject({
+          ok: true,
+        })
+      }
+    }
+  })
+
+  it('are recognised from the localized headers the sample carries', () => {
+    // The sample writes human headers; the mapping step has to find them
+    // again without anybody touching a dropdown.
+    for (const kind of ['teachers', 'subjects'] as const) {
+      const fields = fieldsFor(kind)
+      const headers = fields.map((field) => translate('ca', field.labelKey))
+      const mapping = suggestMapping(headers, fields)
+
+      fields.forEach((field, index) => {
+        expect(mapping[field.key], `${kind}.${field.key} did not map from its own label`).toBe(
+          index,
+        )
+      })
+    }
   })
 })

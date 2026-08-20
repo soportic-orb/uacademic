@@ -1,12 +1,13 @@
 import type { ImportKind, ListResult } from '@uacademic/shared'
 import { useQuery } from '@tanstack/react-query'
+import { Download } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { Button } from '../../components/ui/button'
 import { Card, CardBody, CardHeader } from '../../components/ui/card'
 import { useToast } from '../../hooks/use-toast'
-import { ApiRequestError, apiFetch, apiJson, apiUpload } from '../../lib/api'
+import { ApiRequestError, apiDownload, apiFetch, apiJson, apiUpload } from '../../lib/api'
 import { cn } from '../../lib/cn'
 
 interface UploadResult {
@@ -54,6 +55,23 @@ export function ImportWizard() {
   const [summary, setSummary] = useState<Summary | null>(null)
   const [rows, setRows] = useState<RowReport[]>([])
   const [busy, setBusy] = useState(false)
+
+  /** The sample workbook for whichever kind is selected above. */
+  const downloadTemplate = async () => {
+    try {
+      const blob = await apiDownload(`/api/v1/imports/template/${kind}`)
+      const url = URL.createObjectURL(blob)
+      const anchor = document.createElement('a')
+      anchor.href = url
+      anchor.download = `uacademic-${kind}.xlsx`
+      anchor.click()
+      URL.revokeObjectURL(url)
+    } catch (error) {
+      if (error instanceof ApiRequestError)
+        toast.raw({ variant: 'error', message: error.localizedMessage })
+      else toast.error('errors.generic')
+    }
+  }
 
   const years = useQuery({
     queryKey: ['import-years'],
@@ -201,6 +219,18 @@ export function ImportWizard() {
                 ))}
               </select>
             </label>
+
+            {/*
+              Offered before the file picker, because this is where somebody
+              realises they do not know what the columns are supposed to be.
+            */}
+            <div className="rounded-control border border-dashed border-border-strong p-3">
+              <Button variant="secondary" onClick={() => void downloadTemplate()}>
+                <Download className="size-4" aria-hidden="true" />
+                {t('imports.template.download')}
+              </Button>
+              <p className="mt-2 text-xs text-text-muted">{t('imports.template.downloadHint')}</p>
+            </div>
 
             <label className="block">
               <span className="mb-1 block text-sm font-medium text-text">

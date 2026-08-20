@@ -705,6 +705,11 @@
       "value": "Valor actual: {{value}}",
       "noSource": "Este parámetro no viene de ninguna normativa: es un valor por defecto o una decisión del centro.",
       "open": "Abre la normativa"
+    },
+    "manual": {
+      "edit": "Editar manualmente",
+      "hint": "Los parámetros que el asistente lee de una normativa llegan con la cita. Puedes corregirlos o ponerlos a mano cuando haga falta.",
+      "saved": "Parámetros guardados"
     }
   },
   "platform": {
@@ -1130,6 +1135,15 @@
       "emptyFile": "El archivo no contiene ninguna fila.",
       "tooManyRows": "El archivo supera el máximo de {{max}} filas.",
       "duplicateInFile": "Este valor aparece más de una vez en el archivo."
+    },
+    "template": {
+      "guideSheet": "Guía de columnas",
+      "column": "Columna",
+      "required": "Obligatoria",
+      "example": "Ejemplo",
+      "accepts": "Nombres de columna que se reconocen solos",
+      "download": "Descargar un excel de muestra",
+      "downloadHint": "Trae las columnas ya puestas, una fila de ejemplo y una guía de lo que acepta cada una."
     }
   },
   "calendarType": {

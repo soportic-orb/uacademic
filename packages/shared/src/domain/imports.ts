@@ -29,6 +29,15 @@ export interface ImportFieldSpec {
   /** Header names recognised automatically, lower-cased and accent-stripped. */
   aliases: readonly string[]
   parse: (raw: string) => FieldParseResult
+  /**
+   * A value that fills this column in the sample workbook.
+   *
+   * Written as somebody would type it, not as it is stored: the point of the
+   * sample is to show what a spreadsheet may say, so the accepted synonyms are
+   * discoverable. `test/imports.test.ts` parses every one of them, so an
+   * example that this field would reject cannot survive.
+   */
+  example: string
 }
 
 function normalizeHeader(header: string): string {
@@ -92,6 +101,7 @@ const enumeration =
 export const TEACHER_IMPORT_FIELDS: readonly ImportFieldSpec[] = [
   {
     key: 'email',
+    example: 'marta.puig@universitat.cat',
     labelKey: 'imports.fields.email',
     required: true,
     aliases: ['email', 'correo', 'correu', 'mail', 'emailaddress'],
@@ -99,6 +109,7 @@ export const TEACHER_IMPORT_FIELDS: readonly ImportFieldSpec[] = [
   },
   {
     key: 'firstName',
+    example: 'Marta',
     labelKey: 'imports.fields.firstName',
     required: true,
     aliases: ['firstname', 'nombre', 'nom', 'name'],
@@ -106,6 +117,7 @@ export const TEACHER_IMPORT_FIELDS: readonly ImportFieldSpec[] = [
   },
   {
     key: 'lastName',
+    example: 'Puig Serra',
     labelKey: 'imports.fields.lastName',
     required: true,
     aliases: ['lastname', 'apellidos', 'cognoms', 'surname', 'apellido'],
@@ -113,6 +125,7 @@ export const TEACHER_IMPORT_FIELDS: readonly ImportFieldSpec[] = [
   },
   {
     key: 'category',
+    example: 'Agregat',
     labelKey: 'imports.fields.category',
     required: true,
     aliases: ['category', 'categoria', 'categoría'],
@@ -145,6 +158,7 @@ export const TEACHER_IMPORT_FIELDS: readonly ImportFieldSpec[] = [
   },
   {
     key: 'dedication',
+    example: 'Completa',
     labelKey: 'imports.fields.dedication',
     required: true,
     aliases: ['dedication', 'dedicacion', 'dedicació', 'dedicacio', 'jornada'],
@@ -161,6 +175,7 @@ export const TEACHER_IMPORT_FIELDS: readonly ImportFieldSpec[] = [
   },
   {
     key: 'contractedHours',
+    example: '240',
     labelKey: 'imports.fields.contractedHours',
     required: true,
     aliases: ['contractedhours', 'horas', 'hores', 'horascontratadas', 'horescontractades'],
@@ -168,9 +183,17 @@ export const TEACHER_IMPORT_FIELDS: readonly ImportFieldSpec[] = [
   },
   {
     key: 'knowledgeArea',
+    example: 'Didàctica de les matemàtiques',
     labelKey: 'imports.fields.knowledgeArea',
     required: false,
-    aliases: ['knowledgearea', 'area', 'àrea', 'areaconocimiento', 'areadeconeixement'],
+    aliases: [
+      'knowledgearea',
+      'area',
+      'àrea',
+      'areaconocimiento',
+      'areadeconeixement',
+      'areadeconocimiento',
+    ],
     parse: text(150),
   },
 ]
@@ -178,6 +201,7 @@ export const TEACHER_IMPORT_FIELDS: readonly ImportFieldSpec[] = [
 export const SUBJECT_IMPORT_FIELDS: readonly ImportFieldSpec[] = [
   {
     key: 'code',
+    example: 'MAT101',
     labelKey: 'imports.fields.code',
     required: true,
     aliases: ['code', 'codigo', 'codi', 'subjectcode'],
@@ -185,34 +209,56 @@ export const SUBJECT_IMPORT_FIELDS: readonly ImportFieldSpec[] = [
   },
   {
     key: 'nameCa',
+    example: 'Fonaments de matemàtiques',
     labelKey: 'imports.fields.nameCa',
     required: true,
-    aliases: ['nameca', 'nomca', 'catala', 'nomcatala'],
+    aliases: ['nameca', 'nomca', 'catala', 'nomcatala', 'nombrecatalan', 'namecatalan'],
     parse: text(200),
   },
   {
     key: 'nameEs',
+    example: 'Fundamentos de matemáticas',
     labelKey: 'imports.fields.nameEs',
     required: true,
-    aliases: ['namees', 'nombrees', 'castellano', 'nombrecastellano'],
+    aliases: [
+      'namees',
+      'nombrees',
+      'castellano',
+      'nombrecastellano',
+      'nomcastella',
+      'namespanish',
+      'nombreespanol',
+    ],
     parse: text(200),
   },
   {
     key: 'nameEn',
+    example: 'Foundations of mathematics',
     labelKey: 'imports.fields.nameEn',
     required: true,
-    aliases: ['nameen', 'english', 'nombreingles', 'nomangles'],
+    aliases: ['nameen', 'english', 'nombreingles', 'nomangles', 'nameenglish'],
     parse: text(200),
   },
   {
     key: 'degreeCode',
+    example: 'GEP',
     labelKey: 'imports.fields.degreeCode',
     required: true,
-    aliases: ['degreecode', 'titulacion', 'titulacio', 'grado', 'grau', 'degree'],
+    aliases: [
+      'degreecode',
+      'titulacion',
+      'titulacio',
+      'grado',
+      'grau',
+      'degree',
+      'codidetitulacio',
+      'codigodetitulacion',
+    ],
     parse: text(32),
   },
   {
     key: 'ects',
+    example: '6',
     labelKey: 'imports.fields.ects',
     required: true,
     aliases: ['ects', 'credits', 'creditos', 'credits_ects'],
@@ -220,6 +266,7 @@ export const SUBJECT_IMPORT_FIELDS: readonly ImportFieldSpec[] = [
   },
   {
     key: 'year',
+    example: '1',
     labelKey: 'imports.fields.year',
     required: true,
     aliases: ['year', 'curso', 'curs'],
@@ -227,6 +274,7 @@ export const SUBJECT_IMPORT_FIELDS: readonly ImportFieldSpec[] = [
   },
   {
     key: 'term',
+    example: 'S1',
     labelKey: 'imports.fields.term',
     required: true,
     aliases: ['term', 'periodo', 'periode', 'semestre'],
@@ -255,6 +303,7 @@ export const SUBJECT_IMPORT_FIELDS: readonly ImportFieldSpec[] = [
   },
   {
     key: 'type',
+    example: 'Obligatòria',
     labelKey: 'imports.fields.type',
     required: true,
     aliases: ['type', 'tipo', 'tipus'],
@@ -273,9 +322,17 @@ export const SUBJECT_IMPORT_FIELDS: readonly ImportFieldSpec[] = [
   },
   {
     key: 'teachingLanguage',
+    example: 'Català',
     labelKey: 'imports.fields.teachingLanguage',
     required: false,
-    aliases: ['teachinglanguage', 'idioma', 'llengua', 'language'],
+    aliases: [
+      'teachinglanguage',
+      'idioma',
+      'llengua',
+      'language',
+      'idiomadedocencia',
+      'llenguadedocencia',
+    ],
     parse: enumeration(['ca', 'es', 'en', 'other'], {
       catala: 'ca',
       catalan: 'ca',
