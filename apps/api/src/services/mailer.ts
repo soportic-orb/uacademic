@@ -26,6 +26,14 @@ export interface MailInput {
   blocks: MailBlock[]
   /** Label and URL of the single call to action. */
   action?: { label: string; url: string }
+  /**
+   * Files to send with it.
+   *
+   * A timetable is the one thing worth attaching rather than linking: it is
+   * read on a phone, printed, and pinned above a desk, and a link asks
+   * somebody to sign in before they can see when they teach.
+   */
+  attachments?: { filename: string; content: Buffer; contentType: string }[]
 }
 
 let transporter: Transporter | null = null
@@ -154,6 +162,9 @@ export async function sendMail(input: MailInput): Promise<MailResult> {
     from: env().SMTP_FROM,
     to: input.to,
     subject: input.subject,
+    ...(input.attachments && input.attachments.length > 0
+      ? { attachments: input.attachments }
+      : {}),
     html,
     text,
   })

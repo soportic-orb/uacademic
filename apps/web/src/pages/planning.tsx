@@ -12,6 +12,7 @@ import { ApiRequestError } from '../lib/api'
 import { CompareView } from '../features/planner/compare-view'
 import { GeneratePanel } from '../features/planner/generate-panel'
 import { PlannerGrid } from '../features/planner/planner-grid'
+import { ScheduleExport } from '../features/capacity/schedule-export'
 import { useCreateVersion, useVersion, useVersions } from '../features/planner/queries'
 import { VersionBar } from '../features/planner/version-bar'
 
@@ -79,6 +80,10 @@ export function PlanningPage() {
           <PlannerGrid version={version.data} context={version.data.context} />
 
           <GeneratePanel versionId={version.data.id} editable={version.data.editable} />
+
+          {/* Sending happens after publishing, so it sits at the foot of the
+              screen where the work ends rather than competing with the grid. */}
+          <ScheduleExport canSendToEveryone />
         </>
       )}
     </div>

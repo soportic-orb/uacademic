@@ -280,6 +280,16 @@
       "added": "Grupo asignado",
       "removed": "Asignación retirada",
       "remove": "Retirar la asignación del grupo {{group}} de {{subject}}"
+    },
+    "schedule": {
+      "title": "Calendario de clases",
+      "hint": "Elige las fechas y descarga el calendario de clases en PDF.",
+      "hintAll": "Una vez publicada la planificación, envía a cada docente su calendario de clases por correo.",
+      "download": "Descargar el PDF",
+      "sendAll": "Enviarlo a todo el profesorado",
+      "sent": "Se están enviando {{count}} calendarios.",
+      "sentNoMail": "No se han enviado: esta instalación no tiene servidor de correo configurado.",
+      "format": "A4 apaisado, un mes por página. Solo salen las clases de la versión publicada."
     }
   },
   "subjects": {
@@ -933,7 +943,10 @@
     "resetSubject": "Restablece la contraseña de UAcademic",
     "resetTitle": "Hola, {{name}}",
     "resetBody": "Alguien ha pedido una contraseña nueva para tu cuenta. Abre el enlace para crearla; caduca dentro de {{hours}} horas. Si no has sido tú, no hace falta que hagas nada: la contraseña actual sigue funcionando.",
-    "resetAction": "Crear una contraseña nueva"
+    "resetAction": "Crear una contraseña nueva",
+    "scheduleSubject": "Tu calendario de clases",
+    "scheduleTitle": "Hola, {{name}}",
+    "scheduleBody": "Adjuntamos tu calendario de clases del {{from}} al {{to}}, en PDF y con un mes por página. Si el horario cambia, recibirás uno nuevo."
   },
   "push": {
     "changeRequestTitle": "Solicitud de cambio",

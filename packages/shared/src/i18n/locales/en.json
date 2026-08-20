@@ -280,6 +280,16 @@
       "added": "Group assigned",
       "removed": "Assignment removed",
       "remove": "Remove the assignment of group {{group}} in {{subject}}"
+    },
+    "schedule": {
+      "title": "Teaching calendar",
+      "hint": "Pick the dates and download the teaching calendar as a PDF.",
+      "hintAll": "Once the planning is published, email every teacher their own teaching calendar.",
+      "download": "Download the PDF",
+      "sendAll": "Send it to all teaching staff",
+      "sent": "{{count}} calendars are on their way.",
+      "sentNoMail": "Nothing was sent: this installation has no mail server configured.",
+      "format": "A4 landscape, one month per page. Only classes from the published version appear."
     }
   },
   "subjects": {
@@ -933,7 +943,10 @@
     "resetSubject": "Reset your UAcademic password",
     "resetTitle": "Hello, {{name}}",
     "resetBody": "Somebody asked for a new password for your account. Open the link to set one; it expires in {{hours}} hours. If it was not you, there is nothing to do — your current password still works.",
-    "resetAction": "Set a new password"
+    "resetAction": "Set a new password",
+    "scheduleSubject": "Your teaching calendar",
+    "scheduleTitle": "Hello, {{name}}",
+    "scheduleBody": "Attached is your teaching calendar from {{from}} to {{to}}, as a PDF with one month per page. If the timetable changes, you will get a new one."
   },
   "push": {
     "changeRequestTitle": "Change request",

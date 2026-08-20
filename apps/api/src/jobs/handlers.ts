@@ -25,12 +25,14 @@ import { spawn } from 'node:child_process'
 
 import { env } from '../config/env.js'
 import { toJson } from '../lib/json.js'
+import { scopedPrisma } from '../lib/prisma.js'
 import { type ConnectionRow, pullBusy, syncConnection } from '../services/calendar/sync.js'
 import { purgeExpiredTombstones } from '../services/calendar/tombstones.js'
 import { indexDocument } from '../services/documents/index-service.js'
 import { invalidateVectorCache } from '../services/documents/retrieval.js'
 import { createBackup } from '../services/backup.js'
 import { INVITATION_TTL_HOURS, PASSWORD_RESET_TTL_HOURS } from '../services/invitations.js'
+import { buildSchedulePdf } from '../services/schedule-pdf.js'
 import { sendMail } from '../services/mailer.js'
 import { type ReleaseInfo, applyUpdate } from '../services/updates.js'
 import { applyRetention } from '../services/privacy.js'
@@ -151,6 +153,59 @@ export function buildJobHandlers(client: PrismaClient, logger: Logger): Record<s
         logger.warn(
           { to: job.email },
           'user.passwordReset: no SMTP host, the link was logged and not sent',
+        )
+      }
+    },
+
+    /**
+     * A teacher's own timetable, printed and posted to them.
+     *
+     * Built here rather than in the request that asked for it: a center with
+     * ninety lecturers is ninety documents, and a coordinator pressing send
+     * should not be holding a connection open while they are drawn.
+     */
+    'teacher.schedule': async (payload) => {
+      const job = payload as {
+        teacherProfileId: string
+        centerId: string
+        email: string
+        firstName: string
+        locale: string
+        from: string
+        to: string
+      }
+      const locale = localeOf(job.locale)
+
+      const pdf = await buildSchedulePdf(
+        { centerId: job.centerId, db: scopedPrisma(client, job.centerId) },
+        job.teacherProfileId,
+        { from: job.from, to: job.to },
+        locale,
+      )
+
+      const result = await sendMail({
+        to: job.email,
+        locale,
+        subject: translate(locale, 'email.scheduleSubject'),
+        blocks: [
+          {
+            title: translate(locale, 'email.scheduleTitle', { name: job.firstName }),
+            body: translate(locale, 'email.scheduleBody', { from: job.from, to: job.to }),
+          },
+        ],
+        attachments: [
+          {
+            filename: `uacademic-${job.from}.pdf`,
+            content: pdf.buffer,
+            contentType: 'application/pdf',
+          },
+        ],
+      })
+
+      if (result.simulated) {
+        logger.warn(
+          { to: job.email },
+          'teacher.schedule: no SMTP host, the timetable was logged and not sent',
         )
       }
     },

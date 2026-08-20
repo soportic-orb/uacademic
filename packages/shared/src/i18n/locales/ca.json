@@ -280,6 +280,16 @@
       "added": "Grup assignat",
       "removed": "Assignació retirada",
       "remove": "Retira l'assignació del grup {{group}} de {{subject}}"
+    },
+    "schedule": {
+      "title": "Calendari de classes",
+      "hint": "Tria les dates i descarrega el calendari de classes en PDF.",
+      "hintAll": "Un cop publicada la planificació, envia a cada docent el seu calendari de classes per correu.",
+      "download": "Descarrega el PDF",
+      "sendAll": "Envia’l a tot el professorat",
+      "sent": "S'estan enviant {{count}} calendaris.",
+      "sentNoMail": "No s'han enviat: aquesta instal·lació no té servidor de correu configurat.",
+      "format": "A4 apaïsat, un mes per pàgina. Només hi surten les classes de la versió publicada."
     }
   },
   "subjects": {
@@ -933,7 +943,10 @@
     "resetSubject": "Restableix la contrasenya de UAcademic",
     "resetTitle": "Hola, {{name}}",
     "resetBody": "Algú ha demanat una contrasenya nova per al teu compte. Obre l'enllaç per crear-la; caduca d'aquí a {{hours}} hores. Si no has estat tu, no cal que facis res: la contrasenya actual segueix funcionant.",
-    "resetAction": "Crea una contrasenya nova"
+    "resetAction": "Crea una contrasenya nova",
+    "scheduleSubject": "El teu calendari de classes",
+    "scheduleTitle": "Hola, {{name}}",
+    "scheduleBody": "Adjuntem el teu calendari de classes del {{from}} al {{to}}, en PDF i amb un mes per pàgina. Si l'horari canvia, en rebràs un de nou."
   },
   "push": {
     "changeRequestTitle": "Sol·licitud de canvi",

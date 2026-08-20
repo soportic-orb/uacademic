@@ -405,7 +405,7 @@ function toIcsSession(session: CalendarSession): IcsSession {
   }
 }
 
-function expand(
+export function expand(
   sessions: readonly CalendarSession[],
   from: string,
   to: string,
@@ -440,16 +440,33 @@ function distinctSubjects(sessions: readonly CalendarSession[]) {
  * The teacher's sessions in the published version. Drafts never reach a
  * calendar: publishing is what makes a timetable real.
  */
-async function publishedSessionsFor(
+export async function publishedSessionsFor(
   client: PrismaClient,
   userId: string,
   subjectId?: string,
 ): Promise<CalendarSession[]> {
+  return publishedSessionsWhere(client, {
+    teacherProfile: { userId },
+    ...(subjectId ? { group: { subjectId } } : {}),
+  })
+}
+
+/** The same, addressed by the contract rather than by the person. */
+export async function publishedSessionsForProfile(
+  client: PrismaClient,
+  teacherProfileId: string,
+): Promise<CalendarSession[]> {
+  return publishedSessionsWhere(client, { teacherProfileId })
+}
+
+async function publishedSessionsWhere(
+  client: PrismaClient,
+  where: Record<string, unknown>,
+): Promise<CalendarSession[]> {
   const rows = (await client.classSession.findMany({
     where: {
       scheduleVersion: { status: 'published' },
-      teacherProfile: { userId },
-      ...(subjectId ? { group: { subjectId } } : {}),
+      ...where,
     },
     include: {
       group: {
@@ -492,7 +509,11 @@ async function publishedSessionsFor(
 }
 
 /** Holidays and closures: the days a weekly class does not happen. */
-async function nonTeachingDates(client: PrismaClient, from: string, to: string): Promise<string[]> {
+export async function nonTeachingDates(
+  client: PrismaClient,
+  from: string,
+  to: string,
+): Promise<string[]> {
   const entries = await client.academicCalendarEntry.findMany({
     where: {
       isTeachingDay: false,

@@ -220,6 +220,31 @@ export const teacherAssignmentSchema = z.object({
 })
 export type TeacherAssignment = z.infer<typeof teacherAssignmentSchema>
 
+/**
+ * The range a timetable is printed or sent for.
+ *
+ * Asked for every time rather than defaulted to the whole year: a term, a
+ * month before an exam period, the fortnight somebody is covering for a
+ * colleague — the useful ranges are all shorter than the year, and a
+ * ninety-page PDF is one nobody prints.
+ */
+export const scheduleRangeSchema = z
+  .object({
+    from: isoDateSchema,
+    to: isoDateSchema,
+  })
+  .refine((range) => range.to >= range.from, {
+    message: 'validation.invalidDateRange',
+    path: ['to'],
+  })
+export type ScheduleRange = z.infer<typeof scheduleRangeSchema>
+
+/** Sending them out: everybody contracted this year unless named otherwise. */
+export const sendSchedulesSchema = scheduleRangeSchema.safeExtend({
+  teacherProfileIds: z.array(uuidSchema).max(500).optional(),
+})
+export type SendSchedules = z.infer<typeof sendSchedulesSchema>
+
 /** Editing one: the person it belongs to never changes. */
 export const teacherProfileUpdateSchema = teacherProfileInputSchema.omit({ userId: true }).partial()
 export type TeacherProfileUpdate = z.infer<typeof teacherProfileUpdateSchema>

@@ -14,6 +14,8 @@ import {
   loadQuerySchema,
   reductionInputSchema,
   saveAvailabilitySchema,
+  scheduleRangeSchema,
+  sendSchedulesSchema,
   sortLoadRows,
   teacherAssignmentSchema,
   teacherProfileInputSchema,
@@ -23,11 +25,14 @@ import {
 } from '@uacademic/shared'
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 
+import { enqueueJob } from '../../jobs/worker.js'
 import { writeAuditLog } from '../../lib/audit.js'
 import { AppError } from '../../lib/errors.js'
 import { prisma } from '../../lib/prisma.js'
 import { parseWith } from '../../lib/validate.js'
 import { requireUser } from '../../plugins/context.js'
+import { mailConfigured } from '../../services/mailer.js'
+import { buildSchedulePdf } from '../../services/schedule-pdf.js'
 import {
   type TeacherContext,
   canEditAvailability,
@@ -489,6 +494,82 @@ export function registerTeacherRoutes(app: FastifyInstance): void {
       })
 
       return teacherProfile(context, profileId)
+    },
+  )
+
+  /**
+   * A teacher's timetable as a printable PDF: A4 landscape, a month a page.
+   *
+   * Their own by right; anybody else's only for the people who plan the
+   * center, which is the same line the profile card draws.
+   */
+  app.get(
+    '/api/v1/teachers/:id/schedule.pdf',
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply): Promise<FastifyReply> => {
+      const context = await teacherContext(request)
+      const profileId = await resolveTeacherProfileId(context, request.params.id)
+      const range = parseWith(scheduleRangeSchema, request.query)
+
+      const pdf = await buildSchedulePdf(context, profileId, range, request.locale)
+
+      return reply
+        .header('content-type', 'application/pdf')
+        .header('content-disposition', `attachment; filename="uacademic-${range.from}.pdf"`)
+        .send(pdf.buffer)
+    },
+  )
+
+  /**
+   * Sending those PDFs out.
+   *
+   * Queued rather than built inline: a center with ninety lecturers is ninety
+   * documents and ninety messages, and a coordinator should not be watching a
+   * spinner for either. Everybody with a contract this year is included unless
+   * the request names who.
+   */
+  app.post(
+    '/api/v1/teachers/schedules/send',
+    { config: { roles: MANAGER_ROLES } },
+    async (request): Promise<{ queued: number; mailConfigured: boolean }> => {
+      const context = await teacherContext(request)
+      const actor = requireUser(request)
+      const input = parseWith(sendSchedulesSchema, request.body)
+      const client = prisma()
+
+      const profiles = await context.db.teacherProfile.findMany({
+        where: {
+          academicYearId: context.academicYearId,
+          ...(input.teacherProfileIds && input.teacherProfileIds.length > 0
+            ? { id: { in: input.teacherProfileIds } }
+            : {}),
+        },
+        select: { id: true, user: { select: { email: true, locale: true, firstName: true } } },
+      })
+
+      for (const profile of profiles) {
+        await enqueueJob(client, 'teacher.schedule', {
+          teacherProfileId: profile.id,
+          centerId: context.centerId,
+          email: profile.user.email,
+          firstName: profile.user.firstName,
+          locale: profile.user.locale,
+          from: input.from,
+          to: input.to,
+        })
+      }
+
+      await writeAuditLog(client, {
+        centerId: context.centerId,
+        userId: actor.userId,
+        entity: 'teacher_schedule',
+        entityId: context.academicYearId,
+        action: 'send',
+        after: { from: input.from, to: input.to, teachers: profiles.length },
+        source: 'user',
+        ip: request.ip,
+      })
+
+      return { queued: profiles.length, mailConfigured: mailConfigured() }
     },
   )
 

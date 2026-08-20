@@ -7,6 +7,7 @@ import { AvailabilityEditor } from '../features/capacity/availability-editor'
 import { ExceptionsPanel } from '../features/capacity/exceptions-panel'
 import { AssignmentsPanel } from '../features/capacity/assignments-panel'
 import { ProfileCard } from '../features/capacity/profile-card'
+import { ScheduleExport } from '../features/capacity/schedule-export'
 import { useAvailability, useTeacherProfile } from '../features/capacity/queries'
 import { useRoles } from '../app/use-roles'
 
@@ -57,6 +58,7 @@ export function TeacherDetailPage() {
             canManageSkills={isManager}
           />
           <AssignmentsPanel teacherId={teacherId} profile={profile.data} canManage={isManager} />
+          <ScheduleExport teacherId={teacherId} />
         </>
       )}
 
