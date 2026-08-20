@@ -22,11 +22,21 @@ import { useCallback, useMemo, useState } from 'react'
 
 import type { PlannerSessionDto, VersionDetailDto } from './queries'
 
+export interface TeacherDirectoryEntry {
+  teacherProfileId: string
+  name: string
+  avatarUrl: string | null
+  capacityHours: number
+  weeklyCapacityHours: number | null
+}
+
 export interface PlannerContextDto {
   settings: CenterSettings
   teachers: TeacherResource[]
   spaces: SpaceResource[]
   groups: GroupResource[]
+  /** Who the teachers are; the engine's own list is deliberately anonymous. */
+  directory: TeacherDirectoryEntry[]
 }
 
 export function buildScheduleContext(context: PlannerContextDto): ScheduleContext {

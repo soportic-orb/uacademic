@@ -1433,6 +1433,21 @@
       "apply": "Aplicar al borrador",
       "applied": "Propuesta aplicada al borrador",
       "timedOut": "Se ha agotado el tiempo: te mostramos la mejor propuesta encontrada."
+    },
+    "week": {
+      "previous": "Semana anterior",
+      "next": "Semana siguiente",
+      "today": "Hoy"
+    },
+    "teachers": {
+      "title": "Profesorado",
+      "hint": "Horas de esta versión, a medida que colocas clases.",
+      "none": "Todavía no hay profesorado con contrato para el curso activo."
+    },
+    "assignTeacher": "Asignar docente",
+    "warnings": {
+      "unavailable": "{{name}} ha indicado que no tiene disponibilidad de {{start}} a {{end}}. No se ha asignado.",
+      "avoid": "{{name}} ha indicado que prefiere no dar clase de {{start}} a {{end}}. Se ha asignado igualmente."
     }
   },
   "calendar": {

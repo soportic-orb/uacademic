@@ -1433,6 +1433,21 @@
       "apply": "Aplica a l'esborrany",
       "applied": "Proposta aplicada a l'esborrany",
       "timedOut": "S'ha esgotat el temps: et mostrem la millor proposta trobada."
+    },
+    "week": {
+      "previous": "Setmana anterior",
+      "next": "Setmana següent",
+      "today": "Avui"
+    },
+    "teachers": {
+      "title": "Professorat",
+      "hint": "Hores d'aquesta versió, a mesura que hi col·loques classes.",
+      "none": "Encara no hi ha professorat amb contracte per al curs actiu."
+    },
+    "assignTeacher": "Assigna docent",
+    "warnings": {
+      "unavailable": "{{name}} ha indicat que no té disponibilitat de {{start}} a {{end}}. No s'ha assignat.",
+      "avoid": "{{name}} ha indicat que prefereix no fer classe de {{start}} a {{end}}. S’ha assignat igualment."
     }
   },
   "calendar": {

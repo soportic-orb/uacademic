@@ -598,6 +598,8 @@ async function versionDetail(context: PlannerContext, versionId: string) {
       teachers: [...context.schedule.teachers.values()],
       spaces: [...context.schedule.spaces.values()],
       groups: [...context.schedule.groups.values()],
+      // Names and capacities, for the column of colleagues beside the week.
+      directory: context.directory,
     },
     publishedAt: version.publishedAt?.toISOString() ?? null,
     parentVersionId: version.parentVersionId,

@@ -112,9 +112,14 @@ describe('availability editor', () => {
       const put = fetchMock.mock.calls.find((call) => (call[1] as RequestInit)?.method === 'PUT')
       expect(put).toBeDefined()
       const body = JSON.parse(String((put?.[1] as RequestInit).body))
+      // The refusals are written out rather than left implicit: an absent
+      // entry now means "never asked", which reads back as available, so a
+      // day somebody left blank has to say so.
       expect(body.entries).toEqual([
         { weekday: 1, startTime: '08:00', endTime: '09:00', level: 'available' },
         { weekday: 1, startTime: '09:00', endTime: '11:00', level: 'preferred' },
+        { weekday: 2, startTime: '08:00', endTime: '11:00', level: 'unavailable' },
+        { weekday: 3, startTime: '08:00', endTime: '11:00', level: 'unavailable' },
       ])
     })
   })

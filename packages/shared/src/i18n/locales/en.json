@@ -1433,6 +1433,21 @@
       "apply": "Apply to the draft",
       "applied": "Proposal applied to the draft",
       "timedOut": "Time ran out: this is the best proposal found."
+    },
+    "week": {
+      "previous": "Previous week",
+      "next": "Next week",
+      "today": "Today"
+    },
+    "teachers": {
+      "title": "Teaching staff",
+      "hint": "Hours in this version, as you place classes.",
+      "none": "Nobody is contracted for the active year yet."
+    },
+    "assignTeacher": "Assign a teacher",
+    "warnings": {
+      "unavailable": "{{name}} said they are not available from {{start}} to {{end}}. Not assigned.",
+      "avoid": "{{name}} asked to avoid teaching from {{start}} to {{end}}. Assigned anyway."
     }
   },
   "calendar": {

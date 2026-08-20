@@ -66,10 +66,24 @@ export interface WeeklySlot extends TimeInterval {
 
 export interface EffectiveAvailabilityOptions {
   /**
-   * Level applied to the part of the slot no entry covers. Defaults to
-   * `unavailable`: silence is not consent when we are placing someone's class.
+   * Level applied to the part of the slot no entry covers.
+   *
+   * Defaults to `defaultFallback` below rather than to a fixed level.
    */
   fallback?: AvailabilityLevel
+}
+
+/**
+ * What an hour nobody has spoken about means.
+ *
+ * Once somebody has said anything about their week, the gaps between what they
+ * said are not consent: we are placing their class, and they left that hour
+ * out. But somebody who has never opened the screen has not withheld anything
+ * — they have simply not been asked — and treating that as a refusal made
+ * every new teacher unplannable and their whole week red.
+ */
+export function defaultFallback(entries: readonly AvailabilityEntry[]): AvailabilityLevel {
+  return entries.length === 0 ? 'available' : 'unavailable'
 }
 
 /**
@@ -81,7 +95,7 @@ export function effectiveAvailability(
   entries: readonly AvailabilityEntry[],
   options: EffectiveAvailabilityOptions = {},
 ): AvailabilityLevel {
-  const fallback = options.fallback ?? 'unavailable'
+  const fallback = options.fallback ?? defaultFallback(entries)
   const { start, end } = toMinuteInterval(slot)
   const slotMinutes = end - start
   if (slotMinutes <= 0) return fallback
@@ -234,7 +248,7 @@ export function buildAvailabilityGrid(
   options: AvailabilityGridOptions,
   entries: readonly AvailabilityEntry[] = [],
 ): AvailabilityGrid {
-  const fallback = options.fallback ?? 'unavailable'
+  const fallback = options.fallback ?? defaultFallback(entries)
   const weekdays = [...(options.weekdays ?? WORKING_WEEKDAYS)]
   const slots = slotsBetween(options.dayStart, options.dayEnd, options.slotMinutes)
 
@@ -306,8 +320,14 @@ export function cellsInRectangle(
 
 export interface GridToEntriesOptions {
   /**
-   * Level that is not stored, because it is what an absent entry already means.
-   * Defaults to `unavailable`, matching the fallback of `effectiveAvailability`.
+   * A level to leave unstored, when the caller knows an absent entry already
+   * means it.
+   *
+   * Nothing is omitted by default. It used to drop `unavailable`, which was
+   * exactly right while an absent entry meant unavailable — but now that
+   * having said nothing at all means *available* (see `defaultFallback`),
+   * somebody painting their whole week red would have saved zero rows and been
+   * read back as free every hour of it.
    */
   omitLevel?: AvailabilityLevel | null
 }
@@ -321,7 +341,7 @@ export function gridToEntries(
   grid: AvailabilityGrid,
   options: GridToEntriesOptions = {},
 ): AvailabilityEntry[] {
-  const omitLevel = options.omitLevel === undefined ? 'unavailable' : options.omitLevel
+  const omitLevel = options.omitLevel ?? null
   const entries: AvailabilityEntry[] = []
 
   for (const row of grid.rows) {

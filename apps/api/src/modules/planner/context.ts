@@ -38,6 +38,23 @@ export interface PlannerContext {
   academicYearId: string
   academicYear: { startDate: Date; endDate: Date }
   schedule: ScheduleContext
+  /**
+   * Who the teachers are, as opposed to what the engine needs of them.
+   *
+   * `TeacherResource` is deliberately anonymous — the solver has no business
+   * knowing anybody's name — but the planner is a screen a person reads, and a
+   * column of profile ids is not a column of colleagues.
+   */
+  directory: TeacherDirectoryEntry[]
+}
+
+export interface TeacherDirectoryEntry {
+  teacherProfileId: string
+  name: string
+  avatarUrl: string | null
+  /** Contracted hours for the year, less approved reductions. */
+  capacityHours: number
+  weeklyCapacityHours: number | null
 }
 
 function stringList(value: unknown): string[] {
@@ -66,6 +83,7 @@ export async function plannerContext(request: FastifyRequest): Promise<PlannerCo
       include: {
         availability: true,
         reductions: { select: { hours: true, status: true } },
+        user: { select: { firstName: true, lastName: true, avatarUrl: true } },
       },
     }),
     db.space.findMany(),
@@ -127,6 +145,25 @@ export async function plannerContext(request: FastifyRequest): Promise<PlannerCo
   )
 
   return {
+    directory: profiles.map((profile) => {
+      const load = computeTeacherLoad({
+        contractedHours: Number(profile.contractedHours),
+        reductions: profile.reductions.map((reduction) => ({
+          hours: Number(reduction.hours),
+          approved: reduction.status === 'approved',
+        })),
+        assignments: [],
+      })
+
+      return {
+        teacherProfileId: profile.id,
+        name: `${profile.user.firstName} ${profile.user.lastName}`.trim(),
+        avatarUrl: profile.user.avatarUrl,
+        capacityHours: load.capacityHours,
+        weeklyCapacityHours:
+          load.capacityHours > 0 ? weeklyCapacityFrom(load.capacityHours, settings) : null,
+      }
+    }),
     centerId,
     db,
     user,

@@ -1,13 +1,15 @@
 import type { CenterSettings } from '@uacademic/shared'
 import { parseCenterSettings } from '@uacademic/shared'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { ReactNode } from 'react'
 import { MemoryRouter } from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { Toaster } from '../src/components/feedback/toaster'
 import { PlannerGrid } from '../src/features/planner/planner-grid'
+import { mondayOf } from '../src/features/planner/week-dates'
 import type { VersionDetailDto } from '../src/features/planner/queries'
 import { useSessionStore } from '../src/stores/session'
 
@@ -15,7 +17,11 @@ function wrap(children: ReactNode) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return (
     <QueryClientProvider client={client}>
-      <MemoryRouter>{children}</MemoryRouter>
+      <MemoryRouter>
+        {children}
+        {/* Warnings are toasts, and a warning nobody can see is not one. */}
+        <Toaster />
+      </MemoryRouter>
     </QueryClientProvider>
   )
 }
@@ -32,6 +38,22 @@ const SETTINGS: CenterSettings = parseCenterSettings({
 
 const CONTEXT = {
   settings: SETTINGS,
+  directory: [
+    {
+      teacherProfileId: 'p1',
+      name: 'Marta Puig',
+      avatarUrl: null,
+      capacityHours: 240,
+      weeklyCapacityHours: 8,
+    },
+    {
+      teacherProfileId: 'p2',
+      name: 'Sergi Vila',
+      avatarUrl: null,
+      capacityHours: 120,
+      weeklyCapacityHours: 4,
+    },
+  ],
   teachers: [
     {
       teacherProfileId: 'p1',
@@ -40,6 +62,21 @@ const CONTEXT = {
         { weekday: 2 as const, startTime: '09:00', endTime: '10:00', level: 'available' as const },
       ],
       weeklyCapacityHours: 8,
+    },
+    {
+      teacherProfileId: 'p2',
+      availability: [
+        // Monday morning is refused outright; the afternoon is only something
+        // they would rather avoid.
+        {
+          weekday: 1 as const,
+          startTime: '09:00',
+          endTime: '10:00',
+          level: 'unavailable' as const,
+        },
+        { weekday: 1 as const, startTime: '15:00', endTime: '18:00', level: 'avoid' as const },
+      ],
+      weeklyCapacityHours: 4,
     },
   ],
   spaces: [
@@ -220,8 +257,11 @@ describe('the visual planner', () => {
     expect(fetchMock.mock.calls.some((call) => (call[1] as RequestInit)?.method === 'PATCH')).toBe(
       false,
     )
-    // The refusal is announced politely rather than swallowed.
-    expect(screen.getByText(/No es pot col·locar aquí/)).toBeInTheDocument()
+    // The refusal is announced politely rather than swallowed. Scoped to the
+    // toast: the same sentence is also the cell's own tooltip.
+    expect(
+      within(screen.getByRole('status')).getByText(/No es pot col·locar aquí/),
+    ).toBeInTheDocument()
   })
 
   it('cancels the move on Escape', async () => {
@@ -295,5 +335,61 @@ describe('the visual planner', () => {
       screen.getByText('Aquesta versió està publicada: només es pot consultar.'),
     ).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /MAT101 T1, Dilluns/ })).toBeDisabled()
+  })
+
+  describe('putting somebody in front of a class', () => {
+    it('refuses an hour the teacher said they cannot do, and does not send it', async () => {
+      const user = userEvent.setup()
+      render(wrap(<PlannerGrid version={VERSION} context={CONTEXT} />))
+
+      await user.selectOptions(screen.getByLabelText('Assigna docent'), 'p2')
+
+      expect(await screen.findByText(/no té disponibilitat/)).toBeInTheDocument()
+      // Nothing was written: the refusal is the answer, not a warning after it.
+      const writes = fetchMock.mock.calls.filter(
+        (call) => (call[1] as RequestInit | undefined)?.method === 'PATCH',
+      )
+      expect(writes).toHaveLength(0)
+    })
+
+    it('names the teacher in the week beside the grid, with their hours', () => {
+      render(wrap(<PlannerGrid version={VERSION} context={CONTEXT} />))
+
+      const rail = screen.getByRole('button', { name: /Marta Puig/ })
+      // One placed hour of the eight this contract leaves for a week.
+      expect(rail).toHaveTextContent('1')
+      expect(rail).toHaveTextContent('8')
+    })
+
+    it('shows who is teaching each class, not only the subject code', () => {
+      render(wrap(<PlannerGrid version={VERSION} context={CONTEXT} />))
+
+      const assigned = screen.getByLabelText('Assigna docent') as HTMLSelectElement
+      expect(assigned.value).toBe('p1')
+    })
+  })
+
+  describe('moving through the year', () => {
+    it('puts the day of the month under each weekday', () => {
+      render(wrap(<PlannerGrid version={VERSION} context={CONTEXT} />))
+
+      const monday = mondayOf(new Date())
+      expect(
+        within(screen.getByRole('grid')).getByText(String(monday.getDate())),
+      ).toBeInTheDocument()
+    })
+
+    it('steps a week at a time, across the end of a month', () => {
+      render(wrap(<PlannerGrid version={VERSION} context={CONTEXT} />))
+
+      const before = mondayOf(new Date())
+      fireEvent.click(screen.getByRole('button', { name: 'Setmana següent' }))
+
+      const expected = new Date(before)
+      expected.setDate(expected.getDate() + 7)
+      expect(
+        within(screen.getByRole('grid')).getByText(String(expected.getDate())),
+      ).toBeInTheDocument()
+    })
   })
 })

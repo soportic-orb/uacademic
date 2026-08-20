@@ -8,7 +8,7 @@
  * a soft constraint (with the reason in the tooltip), red when it is
  * impossible.
  */
-import type { CellEvaluation } from '@uacademic/shared'
+import { type CellEvaluation, effectiveAvailability } from '@uacademic/shared'
 import { Trash2, Undo2, Redo2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -27,6 +27,10 @@ import {
   useDeleteSession,
   useUpdateSession,
 } from './queries'
+import { TeacherRail } from './teacher-rail'
+import type { TeacherDirectoryEntry } from './use-planner'
+import { dateOfWeekday, isoDate, mondayOf } from './week-dates'
+import { WeekNavigator } from './week-navigator'
 import {
   type HeldSession,
   type PlannerContextDto,
@@ -88,6 +92,74 @@ export function PlannerGrid({
   }
 
   const weekdayName = (weekday: number) => t(`weekday.${weekday}`)
+
+  /**
+   * Which week is on screen.
+   *
+   * The grid itself is still weekly — a timetable repeats, and a month laid
+   * out as a month has nowhere to put an hour axis — but a coordinator
+   * planning in February should not have to work out which week they are
+   * looking at, or hold the date of a session in their head to know whether it
+   * has started yet.
+   */
+  const [weekStart, setWeekStart] = useState(() => mondayOf(new Date()))
+
+  /** Picking a colleague dims everybody else's classes, rather than hiding them. */
+  const [teacherFilter, setTeacherFilter] = useState<string | null>(null)
+
+  /**
+   * Puts somebody in front of a class that is already on the grid.
+   *
+   * The slot is checked against what that person said about their week before
+   * the change is sent: an hour they marked as one they cannot do is refused
+   * outright, and one they asked to avoid goes through with a warning. Both
+   * read the same rules the engine uses, so the planner and the generator
+   * cannot disagree about what is allowed.
+   */
+  const assignTeacher = async (session: PlannerSessionDto, teacherProfileId: string | null) => {
+    if (teacherProfileId) {
+      const teacher = context.teachers.find((entry) => entry.teacherProfileId === teacherProfileId)
+      const level = teacher
+        ? effectiveAvailability(
+            {
+              weekday: session.weekday,
+              start: session.startTime,
+              end: session.endTime,
+            },
+            teacher.availability,
+          )
+        : 'available'
+
+      const name =
+        context.directory.find((entry) => entry.teacherProfileId === teacherProfileId)?.name ?? ''
+
+      if (level === 'unavailable') {
+        toast.error('planner.warnings.unavailable', {
+          params: { name, start: session.startTime, end: session.endTime },
+          durationMs: 8_000,
+        })
+        return
+      }
+
+      if (level === 'avoid') {
+        toast.warning('planner.warnings.avoid', {
+          params: { name, start: session.startTime, end: session.endTime },
+          durationMs: 8_000,
+        })
+      }
+    }
+
+    try {
+      await updateSession.mutateAsync({
+        sessionId: session.id,
+        values: { teacherProfileId },
+      })
+    } catch (error) {
+      if (error instanceof ApiRequestError)
+        toast.raw({ variant: 'error', message: error.localizedMessage })
+      else toast.error('errors.generic')
+    }
+  }
 
   /** Commits a placement, recording how to take it back. */
   const place = async (target: { weekday: number; start: string }) => {
@@ -244,34 +316,50 @@ export function PlannerGrid({
   return (
     <div className="space-y-4">
       <div className="grid gap-4 lg:grid-cols-[18rem_1fr]">
-        <PendingColumn
-          pending={version.pending}
-          held={held}
-          editable={version.editable}
-          onPick={(item) => {
-            setHeld({
-              kind: 'pending',
-              sessionId: null,
-              groupId: item.groupId,
-              label: `${item.subjectCode} ${item.groupCode}`,
-              durationMinutes: item.durationMinutes,
-              teacherProfileId: item.candidateTeacherIds[0] ?? null,
-              spaceId: item.candidateSpaceIds[0] ?? null,
-              dateFrom: version.sessions[0]?.dateFrom ?? new Date().toISOString().slice(0, 10),
-              dateTo: version.sessions[0]?.dateTo ?? new Date().toISOString().slice(0, 10),
-            })
-            setAnnouncement(
-              t('planner.holding', { group: `${item.subjectCode} ${item.groupCode}` }),
-            )
-          }}
-        />
+        <div className="space-y-4">
+          <PendingColumn
+            pending={version.pending}
+            held={held}
+            editable={version.editable}
+            onPick={(item) => {
+              setHeld({
+                kind: 'pending',
+                sessionId: null,
+                groupId: item.groupId,
+                label: `${item.subjectCode} ${item.groupCode}`,
+                durationMinutes: item.durationMinutes,
+                teacherProfileId: item.candidateTeacherIds[0] ?? null,
+                spaceId: item.candidateSpaceIds[0] ?? null,
+                dateFrom: version.sessions[0]?.dateFrom ?? new Date().toISOString().slice(0, 10),
+                dateTo: version.sessions[0]?.dateTo ?? new Date().toISOString().slice(0, 10),
+              })
+              setAnnouncement(
+                t('planner.holding', { group: `${item.subjectCode} ${item.groupCode}` }),
+              )
+            }}
+          />
+
+          {/*
+            Who is being loaded up, counted from what is on screen: the question
+            is "if I put this here, who ends up over?", and an answer that only
+            arrives after publishing is not an answer.
+          */}
+          <TeacherRail
+            directory={context.directory}
+            sessions={version.sessions}
+            selectedId={teacherFilter}
+            onSelect={setTeacherFilter}
+          />
+        </div>
 
         <Card>
           <CardHeader
             title={t('planner.title')}
             description={version.editable ? t('planner.subtitle') : t('planner.readOnly')}
             action={
-              <div className="flex gap-1">
+              <div className="flex flex-wrap items-center gap-1">
+                <WeekNavigator weekStart={weekStart} onChange={setWeekStart} />
+
                 <Button
                   variant="ghost"
                   size="icon"
@@ -309,11 +397,29 @@ export function PlannerGrid({
                     <th scope="col" className="w-16 py-1 text-left font-medium text-text-muted">
                       {t('common.hoursShort')}
                     </th>
-                    {geometry.weekdays.map((weekday) => (
-                      <th key={weekday} scope="col" className="py-1 font-medium text-text-muted">
-                        {weekdayName(weekday)}
-                      </th>
-                    ))}
+                    {geometry.weekdays.map((weekday) => {
+                      const date = dateOfWeekday(weekStart, weekday)
+                      const isToday = isoDate(date) === isoDate(new Date())
+
+                      return (
+                        <th
+                          key={weekday}
+                          scope="col"
+                          className="py-1 font-medium text-text-muted"
+                          aria-current={isToday ? 'date' : undefined}
+                        >
+                          <span className="block">{weekdayName(weekday)}</span>
+                          <span
+                            className={cn(
+                              'tabular block text-sm',
+                              isToday ? 'font-semibold text-primary' : 'text-text',
+                            )}
+                          >
+                            {date.getDate()}
+                          </span>
+                        </th>
+                      )
+                    })}
                   </tr>
                 </thead>
                 <tbody>
@@ -353,6 +459,13 @@ export function PlannerGrid({
                                 session={session}
                                 held={held?.sessionId === session.id}
                                 editable={version.editable}
+                                dimmed={Boolean(
+                                  teacherFilter && session.teacherProfileId !== teacherFilter,
+                                )}
+                                directory={context.directory}
+                                onAssign={(teacherProfileId) =>
+                                  void assignTeacher(session, teacherProfileId)
+                                }
                                 onPick={() => {
                                   setHeld(heldFromSession(session))
                                   setCursor({ day: dayIndex, slot: slotIndex })
@@ -491,17 +604,24 @@ function SessionBlock({
   session,
   held,
   editable,
+  dimmed,
+  directory,
   onPick,
   onDrop,
   onRemove,
+  onAssign,
   onKeyDown,
 }: {
   session: PlannerSessionDto
   held: boolean
   editable: boolean
+  /** Somebody else's class, while a colleague is selected in the rail. */
+  dimmed: boolean
+  directory: TeacherDirectoryEntry[]
   onPick: () => void
   onDrop: () => void
   onRemove: () => void
+  onAssign: (teacherProfileId: string | null) => void
   onKeyDown: (event: React.KeyboardEvent) => void
 }) {
   const { t } = useTranslation()
@@ -511,6 +631,7 @@ function SessionBlock({
       className={cn(
         'group relative flex h-full flex-col gap-0.5 rounded-sm border border-primary/30 bg-primary-surface p-1 text-left',
         held && 'ring-2 ring-ring',
+        dimmed && 'opacity-40',
       )}
     >
       <button
@@ -537,12 +658,48 @@ function SessionBlock({
         }}
         className="flex-1 text-left focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring"
       >
-        <span className="block font-medium text-text">{session.subjectCode}</span>
+        {/*
+          Subject, group, teacher and room. The subject code alone identified a
+          class only to somebody who had the catalogue memorised, and the one
+          thing a coordinator most needs to see at a glance — who is teaching
+          it — was not on the card at all.
+        */}
+        <span className="block font-medium text-text" title={session.subjectName}>
+          {session.subjectCode}
+        </span>
         <span className="block text-text-muted">{session.groupCode}</span>
         <span className="block truncate text-text-muted">
           {session.spaceName ?? t('planner.unassignedSpace')}
         </span>
       </button>
+
+      {/*
+        The teacher, chosen here rather than only by dragging from the pending
+        column: a class that is already placed still needs somebody to teach it,
+        and there was nowhere in the planner to say who.
+      */}
+      {editable ? (
+        <label className="block">
+          <span className="sr-only">{t('planner.assignTeacher')}</span>
+          <select
+            value={session.teacherProfileId ?? ''}
+            onChange={(event) => onAssign(event.target.value || null)}
+            onClick={(event) => event.stopPropagation()}
+            className="w-full truncate rounded-sm border border-border bg-surface px-1 py-0.5 text-xs text-text"
+          >
+            <option value="">{t('planner.unassignedTeacher')}</option>
+            {directory.map((teacher) => (
+              <option key={teacher.teacherProfileId} value={teacher.teacherProfileId}>
+                {teacher.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : (
+        <span className="block truncate text-text-muted">
+          {session.teacherName ?? t('planner.unassignedTeacher')}
+        </span>
+      )}
 
       {editable ? (
         <button

@@ -6,6 +6,7 @@ import {
   availabilityHoursByLevel,
   buildAvailabilityGrid,
   cellsInRectangle,
+  defaultFallback,
   effectiveAvailability,
   effectiveAvailabilityOnDate,
   gridToEntries,
@@ -174,7 +175,8 @@ describe('the editor grid', () => {
     const painted = paintCells(grid, [{ weekday: 1, start: '08:00' }], 'preferred')
 
     expect(painted.rows[0]?.cells[0]?.level).toBe('preferred')
-    expect(grid.rows[0]?.cells[0]?.level).toBe('unavailable')
+    // An empty grid starts available: nobody has been asked yet.
+    expect(grid.rows[0]?.cells[0]?.level).toBe('available')
     expect(paintCells(grid, [], 'preferred')).toBe(grid)
   })
 
@@ -195,10 +197,12 @@ describe('the editor grid', () => {
       'preferred',
     )
 
-    // Four painted half-days must not become four rows, and the gap at 10:00
-    // is dropped: an absent entry already means unavailable.
+    // Four painted half-days must not become four rows. The gap at 10:00 is
+    // written out rather than dropped: saying nothing at all now means
+    // available, so an unstated hour inside a stated week would invert.
     expect(gridToEntries(painted)).toEqual([
       { weekday: 1, startTime: '08:00', endTime: '10:00', level: 'preferred' },
+      { weekday: 1, startTime: '10:00', endTime: '11:00', level: 'available' },
       { weekday: 1, startTime: '11:00', endTime: '12:00', level: 'preferred' },
     ])
   })
@@ -228,16 +232,18 @@ describe('the editor grid', () => {
     ])
   })
 
-  it('can store the unavailable cells too, when a center wants them explicit', () => {
+  it('can still leave one level unstored, when a caller knows it is the default', () => {
     const grid = buildAvailabilityGrid({
       dayStart: '08:00',
       dayEnd: '09:00',
       slotMinutes: 60,
       weekdays: [1],
     })
-    expect(gridToEntries(grid, { omitLevel: null })).toEqual([
-      { weekday: 1, startTime: '08:00', endTime: '09:00', level: 'unavailable' },
+
+    expect(gridToEntries(grid)).toEqual([
+      { weekday: 1, startTime: '08:00', endTime: '09:00', level: 'available' },
     ])
+    expect(gridToEntries(grid, { omitLevel: 'available' })).toEqual([])
   })
 
   it('survives the round trip: entries → grid → entries', () => {
@@ -249,6 +255,67 @@ describe('the editor grid', () => {
       { dayStart: '08:00', dayEnd: '20:00', slotMinutes: 30, weekdays: [1, 2] },
       entries,
     )
-    expect(gridToEntries(grid)).toEqual(entries)
+
+    // What was stated comes back, and the hours around it come back as the
+    // refusal they are: this teacher has spoken, so the gaps are not consent.
+    expect(gridToEntries(grid)).toEqual([
+      { weekday: 1, startTime: '08:00', endTime: '12:00', level: 'preferred' },
+      { weekday: 1, startTime: '12:00', endTime: '20:00', level: 'unavailable' },
+      { weekday: 2, startTime: '08:00', endTime: '15:00', level: 'unavailable' },
+      { weekday: 2, startTime: '15:00', endTime: '18:00', level: 'avoid' },
+      { weekday: 2, startTime: '18:00', endTime: '20:00', level: 'unavailable' },
+    ])
+  })
+})
+
+/**
+ * What silence means, and when.
+ *
+ * A teacher who has never opened the screen has not withheld anything — they
+ * have not been asked. Treating that as a refusal painted every new teacher's
+ * week red and made them unplannable, which is not what "no availability
+ * recorded" ought to mean.
+ */
+describe('a teacher who has said nothing', () => {
+  it('is available, rather than refused', () => {
+    expect(defaultFallback([])).toBe('available')
+    expect(effectiveAvailability({ weekday: 1, start: '09:00', end: '11:00' }, [])).toBe(
+      'available',
+    )
+  })
+
+  it('is not, once they have said something about their week', () => {
+    const entries: AvailabilityEntry[] = [
+      { weekday: 1, startTime: '09:00', endTime: '11:00', level: 'available' },
+    ]
+
+    expect(defaultFallback(entries)).toBe('unavailable')
+    // The hour they left out of what they said is not consent.
+    expect(effectiveAvailability({ weekday: 2, start: '09:00', end: '11:00' }, entries)).toBe(
+      'unavailable',
+    )
+  })
+
+  it('keeps a week painted entirely red, instead of reading it back as free', () => {
+    const grid = buildAvailabilityGrid(
+      { dayStart: '09:00', dayEnd: '11:00', slotMinutes: 60, weekdays: [1] },
+      [],
+    )
+    const allRed = {
+      ...grid,
+      rows: grid.rows.map((row) => ({
+        ...row,
+        cells: row.cells.map((cell) => ({ ...cell, level: 'unavailable' as const })),
+      })),
+    }
+
+    const entries = gridToEntries(allRed)
+
+    // Dropping these rows as "the same as saying nothing" would invert them:
+    // saying nothing now means available.
+    expect(entries.length).toBeGreaterThan(0)
+    expect(effectiveAvailability({ weekday: 1, start: '09:00', end: '10:00' }, entries)).toBe(
+      'unavailable',
+    )
   })
 })
