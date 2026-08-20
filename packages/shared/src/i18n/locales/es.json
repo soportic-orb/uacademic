@@ -68,7 +68,8 @@
     "notifications": "Notificaciones",
     "audit": "Auditoría",
     "connections": "Conexiones de calendario",
-    "privacy": "Privacidad"
+    "privacy": "Privacidad",
+    "guide": "Guía"
   },
   "layout": {
     "skipToContent": "Ir al contenido principal",
@@ -2044,6 +2045,150 @@
       "unsupportedType": "El formato de la imagen no es compatible. Usa PNG, JPEG, WEBP o GIF.",
       "tooLarge": "La imagen es demasiado grande. El máximo son 4 MB.",
       "empty": "El archivo está vacío."
+    }
+  },
+  "guide": {
+    "title": "Guía",
+    "subtitle": "Los pasos, en el orden en que el sistema los pide.",
+    "forRole": "Guía para {{role}}",
+    "otherRoles": "Ver la guía de otro rol",
+    "intro": "Cada paso necesita el anterior. La mayoría de pantallas que parecen rotas a alguien que acaba de llegar son un paso de más arriba que todavía no se ha hecho.",
+    "stepOf": "Paso {{index}} de {{total}}",
+    "openScreen": "Abrir la pantalla",
+    "done": "Hecho",
+    "markDone": "Marcar como hecho",
+    "progress": "{{done}} de {{total}} pasos marcados",
+    "resetProgress": "Empezar de nuevo",
+    "progressHint": "Las marcas se guardan en este navegador. Son para ti, no cambian nada del sistema.",
+    "steps": {
+      "profile": {
+        "title": "Completa tu perfil",
+        "body": "Pon tu nombre como quieres que lo vea el resto y, si quieres, una fotografía: aparece a tu lado en todas partes, y en un centro grande es lo que hace que la gente te reconozca en las listas. Aquí también está el idioma y el tema claro u oscuro."
+      },
+      "language": {
+        "title": "Elige el idioma y la apariencia",
+        "body": "La plataforma habla catalán, castellano e inglés. Lo que elijas vale para todo: pantallas, correos y avisos. El tema claro u oscuro también está aquí y se recuerda en el navegador."
+      },
+      "notifications": {
+        "title": "Decide de qué quieres que te avisen",
+        "body": "Puedes recibir avisos por correo, en el navegador o solo dentro de la plataforma, y elegirlo para cada tipo de cosa. Vale la pena mirarlo una vez al principio: por defecto se avisa de lo que te afecta directamente."
+      },
+      "universities": {
+        "title": "Da de alta las universidades",
+        "body": "Una universidad es el paraguas de sus centros. Aquí subes el logotipo, que es lo que después se ve en la barra superior de quien trabaja en ella."
+      },
+      "centers": {
+        "title": "Crea los centros",
+        "body": "El centro es la unidad que lo separa todo: asignaturas, profesorado, espacios y horarios pertenecen a un centro, y ninguna consulta cruza dos. Indica el código y la zona horaria."
+      },
+      "tenants": {
+        "title": "Registra los tenants de Microsoft",
+        "body": "Solo si queréis entrada con cuentas de la universidad. Cada organización debe darse de alta antes de que nadie de allí pueda entrar, y cada una debe instalar la aplicación en su directorio: la pantalla te da el enlace para enviar a su servicio informático. Sin esto, la gente entra igualmente con correo y contraseña."
+      },
+      "mail": {
+        "title": "Comprueba el correo",
+        "body": "Sin servidor de correo configurado, las invitaciones y los restablecimientos de contraseña se escriben en el registro y no llegan a nadie. Haz la prueba de envío antes de invitar a la primera persona."
+      },
+      "updates": {
+        "title": "Aprende a actualizar",
+        "body": "La pantalla de plataforma dice qué versión corre, cuál hay disponible e instala la nueva con un botón. Hace copia de la base de datos antes y vuelve atrás sola si la versión nueva no arranca."
+      },
+      "academicYear": {
+        "title": "Abre un curso académico y márcalo como activo",
+        "body": "Es lo primero que debe existir del centro. Toda la docencia vive dentro de un curso: sin un curso activo, el panel no tiene carga que resumir y las asignaturas no tienen dónde colgar."
+      },
+      "people": {
+        "title": "Da de alta a las personas",
+        "body": "Crear un usuario pide nombre, correo y uno o más centros con su rol. Recibirá una invitación con un enlace para crearse la contraseña; el enlace sirve una vez y caduca a los siete días. Volver a invitar a alguien es también la manera de restablecerle la contraseña."
+      },
+      "degrees": {
+        "title": "Introduce las titulaciones",
+        "body": "Los grados y másteres que imparte el centro. Las asignaturas cuelgan de una titulación, así que van primero."
+      },
+      "subjects": {
+        "title": "Introduce las asignaturas",
+        "body": "Con el código, los créditos, el curso y el periodo. Si tienes muchas, no las pongas a mano: usa la importación, que acepta un excel y lo valida antes de escribir nada."
+      },
+      "groups": {
+        "title": "Crea los grupos de cada asignatura",
+        "body": "Una asignatura no se planifica: se planifican sus grupos. Cada grupo tiene un tipo —teoría, seminario, laboratorio— y las horas previstas, que son las que después cuentan en la carga de quien lo dé."
+      },
+      "spaces": {
+        "title": "Da de alta los espacios",
+        "body": "Aulas, laboratorios y seminarios, con capacidad y equipamiento. El planificador no coloca un grupo en un espacio donde no cabe o que no tiene lo que necesita, así que vale la pena que esto sea fiel."
+      },
+      "calendar": {
+        "title": "Marca el calendario académico",
+        "body": "Festivos, periodos vacacionales, días no lectivos, exámenes. El planificador los evita, y el calendario de cada uno los muestra. Un item puede ser de un día único o de un periodo."
+      },
+      "imports": {
+        "title": "Importa en vez de teclear",
+        "body": "Profesorado y asignaturas se pueden subir en excel o csv. Descárgate primero el excel de muestra: trae las columnas ya puestas y una guía de lo que acepta cada una. La importación valida antes de escribir y te dice fila por fila qué pasará."
+      },
+      "parameters": {
+        "title": "Ajusta los parámetros del centro",
+        "body": "Horas máximas de docencia, duración estándar de una sesión, umbrales de carga, si el coordinador debe aprobar los cambios. Los puedes poner a mano, o dejar que el asistente los lea de una normativa en PDF: entonces cada parámetro queda con su cita, y el sistema puede explicar por qué bloquea algo."
+      },
+      "staff": {
+        "title": "Da contrato al profesorado",
+        "body": "Tener el rol de profesorado y tener contrato son dos cosas distintas. El rol da acceso; el contrato dice la categoría, la dedicación y las horas del curso, que son las que hacen el cálculo de carga. Se hace desde Profesorado → Añadir profesorado."
+      },
+      "coordination": {
+        "title": "Asigna quién coordina cada asignatura",
+        "body": "Sin coordinación asignada, nadie puede planificar esa asignatura ni usar el asistente en ella. Es un paso fácil de olvidar y es el que suele explicar que un coordinador no vea nada."
+      },
+      "assignments": {
+        "title": "Reparte los grupos entre el profesorado",
+        "body": "Desde la ficha de cada docente, o directamente en el planificador. A medida que repartes, su carga sube y el semáforo te dice si va corto, justo, al límite o pasado."
+      },
+      "version": {
+        "title": "Crea una versión de horario",
+        "body": "No se toca el horario en vivo. Se trabaja sobre una versión de borrador y, cuando está lista, se publica: entonces pasa a ser el horario oficial y la anterior queda archivada."
+      },
+      "place": {
+        "title": "Coloca las sesiones",
+        "body": "Arrastra los grupos pendientes de la columna izquierda a la cuadrícula, o hazlo con el teclado: espacio para coger, flechas para mover, espacio para soltar. Los colores te dicen sobre la marcha si la posición es buena, si rompe una preferencia o si es imposible, y el motivo."
+      },
+      "generate": {
+        "title": "Prueba el generador automático",
+        "body": "Le das un tiempo y te devuelve propuestas ordenadas, diciendo de cada una qué ha tenido que sacrificar. Ninguna se aplica sola: eliges la que te gusta y la revisas."
+      },
+      "publish": {
+        "title": "Publica cuando esté",
+        "body": "Publicar avisa solo al profesorado afectado. Antes puedes comparar dos versiones para ver exactamente qué cambia y para quién."
+      },
+      "assistant": {
+        "title": "Usa el asistente",
+        "body": "Le puedes preguntar en lenguaje natural y también pedirle cambios. Nunca escribe nada solo: te propone el cambio con los conflictos detectados y espera que lo confirmes."
+      },
+      "changes": {
+        "title": "Resuelve las peticiones de cambio",
+        "body": "El profesorado pide cambios de clase desde su pantalla. Aquí los apruebas o los rechazas, y el sistema comprueba solo que el cambio no rompa nada antes de dejarlo pasar."
+      },
+      "availability": {
+        "title": "Indica tu disponibilidad",
+        "body": "Pinta la semana diciendo cuándo prefieres dar clase, cuándo puedes, cuándo preferirías no darla y cuándo no puedes. Si no dices nada, el sistema entiende que puedes a cualquier hora — y planificará en consecuencia, así que vale la pena dedicarle cinco minutos."
+      },
+      "ownLoad": {
+        "title": "Mira tu carga",
+        "body": "Compara las horas que tienes contratadas con las que te van asignando, desglosadas por asignatura y por concepto. Si ves algo que no cuadra, háblalo con la coordinación antes de que se publique el horario."
+      },
+      "calendarFeed": {
+        "title": "Llévate el horario al móvil",
+        "body": "Puedes generar una dirección de suscripción y escanear su código QR con el móvil: las clases aparecen en el calendario del teléfono y se actualizan solas cuando cambia el horario. La dirección es personal; no la compartas."
+      },
+      "askChange": {
+        "title": "Pide un cambio de clase",
+        "body": "Si necesitas mover una clase, pídelo desde Cambios de clase. Indica el motivo y la nueva hora; la coordinación lo revisa y el sistema comprueba que no choque con nada."
+      },
+      "absences": {
+        "title": "Comunica una ausencia",
+        "body": "Las ausencias se comunican aquí. Si el centro lo tiene configurado, el sistema propone quién podría sustituirte mirando quién tiene disponibilidad y conoce la materia."
+      },
+      "messages": {
+        "title": "Habla con el resto",
+        "body": "Mensajes nuevos con quien quieras del centro o de la universidad. Es el canal de dentro de la plataforma: queda ligado al contexto y no se pierde en una bandeja llena."
+      }
     }
   }
 }

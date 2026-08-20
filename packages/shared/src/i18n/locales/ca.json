@@ -68,7 +68,8 @@
     "notifications": "Notificacions",
     "audit": "Auditoria",
     "connections": "Connexions de calendari",
-    "privacy": "Privacitat"
+    "privacy": "Privacitat",
+    "guide": "Guia"
   },
   "layout": {
     "skipToContent": "Ves al contingut principal",
@@ -2044,6 +2045,150 @@
       "unsupportedType": "El format de la imatge no és compatible. Fes servir PNG, JPEG, WEBP o GIF.",
       "tooLarge": "La imatge és massa gran. El màxim són 4 MB.",
       "empty": "El fitxer és buit."
+    }
+  },
+  "guide": {
+    "title": "Guia",
+    "subtitle": "Els passos, en l'ordre que el sistema els demana.",
+    "forRole": "Guia per a {{role}}",
+    "otherRoles": "Veure la guia d'un altre rol",
+    "intro": "Cada pas necessita l'anterior. La majoria de pantalles que semblen espatllades a algú que acaba d'arribar són un pas de més amunt que encara no s'ha fet.",
+    "stepOf": "Pas {{index}} de {{total}}",
+    "openScreen": "Obre la pantalla",
+    "done": "Fet",
+    "markDone": "Marca com a fet",
+    "progress": "{{done}} de {{total}} passos marcats",
+    "resetProgress": "Torna a començar",
+    "progressHint": "Les marques es guarden en aquest navegador. Són per a tu, no canvien res del sistema.",
+    "steps": {
+      "profile": {
+        "title": "Completa el teu perfil",
+        "body": "Posa-hi el teu nom com vols que et vegi la resta i, si vols, una fotografia: apareix al costat teu a tot arreu, i en un centre gran és el que fa que la gent et reconegui a les llistes. Aquí també hi ha l'idioma i el tema clar o fosc."
+      },
+      "language": {
+        "title": "Tria l'idioma i l'aparença",
+        "body": "La plataforma parla català, castellà i anglès. El que triïs val per a tot: pantalles, correus i avisos. El tema clar o fosc també és aquí i es recorda al navegador."
+      },
+      "notifications": {
+        "title": "Decideix de què vols que t'avisin",
+        "body": "Pots rebre avisos per correu, al navegador o només dins de la plataforma, i triar-ho per a cada tipus de cosa. Val la pena mirar-s'ho un cop al principi: per defecte s'avisa del que t'afecta directament."
+      },
+      "universities": {
+        "title": "Dona d'alta les universitats",
+        "body": "Una universitat és el paraigua dels seus centres. Aquí hi puges el logotip, que és el que després es veu a la barra superior de qui hi treballa."
+      },
+      "centers": {
+        "title": "Crea els centres",
+        "body": "El centre és la unitat que ho separa tot: assignatures, professorat, espais i horaris pertanyen a un centre, i cap consulta en creua dos. Indica-hi el codi i la zona horària."
+      },
+      "tenants": {
+        "title": "Registra els tenants de Microsoft",
+        "body": "Només si voleu entrada amb comptes de la universitat. Cada organització s'ha de donar d'alta abans que ningú d'allà pugui entrar, i cada una ha d'instal·lar l'aplicació al seu directori: la pantalla et dona l'enllaç per enviar al seu servei informàtic. Sense això, la gent entra igualment amb correu i contrasenya."
+      },
+      "mail": {
+        "title": "Comprova el correu",
+        "body": "Sense servidor de correu configurat, les invitacions i els restabliments de contrasenya s'escriuen al registre i no arriben a ningú. Fes la prova d'enviament abans de convidar la primera persona."
+      },
+      "updates": {
+        "title": "Aprèn a actualitzar",
+        "body": "La pantalla de plataforma diu quina versió corre, quina hi ha disponible i instal·la la nova amb un botó. Fa còpia de la base de dades abans i torna enrere sola si la versió nova no arrenca."
+      },
+      "academicYear": {
+        "title": "Obre un curs acadèmic i marca'l com a actiu",
+        "body": "És el primer que ha d'existir del centre. Tota la docència viu dins d'un curs: sense un curs actiu, el tauler no té càrrega per resumir i les assignatures no tenen on penjar."
+      },
+      "people": {
+        "title": "Dona d'alta les persones",
+        "body": "Crear un usuari demana nom, correu i un o més centres amb el seu rol. Rebrà una invitació amb un enllaç per crear-se la contrasenya; l'enllaç serveix un cop i caduca en set dies. Tornar a convidar algú és també la manera de restablir-li la contrasenya."
+      },
+      "degrees": {
+        "title": "Introdueix les titulacions",
+        "body": "Els graus i màsters que imparteix el centre. Les assignatures pengen d'una titulació, o sigui que van primer."
+      },
+      "subjects": {
+        "title": "Introdueix les assignatures",
+        "body": "Amb el codi, els crèdits, el curs i el període. Si en tens moltes, no les posis a mà: fes servir la importació, que accepta un excel i el valida abans d'escriure res."
+      },
+      "groups": {
+        "title": "Crea els grups de cada assignatura",
+        "body": "Una assignatura no es planifica: es planifiquen els seus grups. Cada grup té un tipus —teoria, seminari, laboratori— i les hores previstes, que són les que després compten a la càrrega de qui el faci."
+      },
+      "spaces": {
+        "title": "Dona d'alta els espais",
+        "body": "Aules, laboratoris i seminaris, amb capacitat i equipament. El planificador no col·loca un grup en un espai on no hi cap o que no té el que necessita, o sigui que val la pena que això sigui fidel."
+      },
+      "calendar": {
+        "title": "Marca el calendari acadèmic",
+        "body": "Festius, períodes vacacionals, dies no lectius, exàmens. El planificador els evita, i el calendari de cadascú els mostra. Un item pot ser d'un dia únic o d'un període."
+      },
+      "imports": {
+        "title": "Importa en comptes de teclejar",
+        "body": "Professorat i assignatures es poden pujar en excel o csv. Descarrega't primer l'excel de mostra: porta les columnes ja posades i una guia del que accepta cada una. La importació valida abans d'escriure i et diu fila per fila què passarà."
+      },
+      "parameters": {
+        "title": "Ajusta els paràmetres del centre",
+        "body": "Hores màximes de docència, durada estàndard d'una sessió, llindars de càrrega, si el coordinador ha d'aprovar els canvis. Els pots posar a mà, o deixar que l'assistent els llegeixi d'una normativa en PDF: llavors cada paràmetre queda amb la seva citació, i el sistema pot explicar per què bloqueja una cosa."
+      },
+      "staff": {
+        "title": "Dona contracte al professorat",
+        "body": "Tenir el rol de professorat i tenir contracte són dues coses diferents. El rol dona accés; el contracte diu la categoria, la dedicació i les hores del curs, que són les que fan el càlcul de càrrega. Es fa des de Professorat → Afegeix professorat."
+      },
+      "coordination": {
+        "title": "Assigna qui coordina cada assignatura",
+        "body": "Sense coordinació assignada, ningú pot planificar aquella assignatura ni fer-hi servir l'assistent. És un pas fàcil d'oblidar i és el que sol explicar que un coordinador no vegi res."
+      },
+      "assignments": {
+        "title": "Reparteix els grups entre el professorat",
+        "body": "Des de la fitxa de cada docent, o directament al planificador. A mesura que reparteixes, la seva càrrega puja i el semàfor et diu si va curt, just, al límit o passat."
+      },
+      "version": {
+        "title": "Crea una versió d'horari",
+        "body": "No es toca l'horari en viu. Es treballa sobre una versió d'esborrany i, quan està llesta, es publica: aleshores passa a ser l'horari oficial i l'anterior queda arxivada."
+      },
+      "place": {
+        "title": "Col·loca les sessions",
+        "body": "Arrossega els grups pendents de la columna esquerra a la graella, o fes-ho amb el teclat: espai per agafar, fletxes per moure, espai per deixar. Els colors et diuen sobre la marxa si la posició és bona, si trenca una preferència o si és impossible, i el motiu."
+      },
+      "generate": {
+        "title": "Prova el generador automàtic",
+        "body": "Li dones un temps i et torna propostes ordenades, dient de cada una què ha hagut de sacrificar. Cap no s'aplica sola: tries la que t'agrada i la revises."
+      },
+      "publish": {
+        "title": "Publica quan estigui",
+        "body": "Publicar avisa només el professorat afectat. Abans pots comparar dues versions per veure exactament què canvia i per a qui."
+      },
+      "assistant": {
+        "title": "Fes servir l'assistent",
+        "body": "Li pots preguntar en llenguatge natural i també demanar-li canvis. Mai escriu res sol: et proposa el canvi amb els conflictes detectats i espera que el confirmis."
+      },
+      "changes": {
+        "title": "Resol les peticions de canvi",
+        "body": "El professorat demana canvis de classe des de la seva pantalla. Aquí els aproves o els rebutges, i el sistema comprova sol que el canvi no trenqui res abans de deixar-lo passar."
+      },
+      "availability": {
+        "title": "Indica la teva disponibilitat",
+        "body": "Pinta la setmana dient quan prefereixes fer classe, quan pots, quan preferiries no fer-ne i quan no pots. Si no dius res, el sistema entén que pots a qualsevol hora — i planificarà en conseqüència, així que val la pena dedicar-hi cinc minuts."
+      },
+      "ownLoad": {
+        "title": "Mira la teva càrrega",
+        "body": "Compara les hores que tens contractades amb les que et van assignant, desglossades per assignatura i per concepte. Si hi veus alguna cosa que no quadra, parla-ho amb la coordinació abans que es publiqui l'horari."
+      },
+      "calendarFeed": {
+        "title": "Porta't l'horari al mòbil",
+        "body": "Pots generar una adreça de subscripció i escanejar-ne el codi QR amb el mòbil: les classes apareixen al calendari del telèfon i s'actualitzen soles quan canvia l'horari. L'adreça és personal; no la comparteixis."
+      },
+      "askChange": {
+        "title": "Demana un canvi de classe",
+        "body": "Si necessites moure una classe, demana-ho des de Canvis de classe. Indica el motiu i la nova hora; la coordinació ho revisa i el sistema comprova que no xoqui amb res."
+      },
+      "absences": {
+        "title": "Comunica una absència",
+        "body": "Les absències es comuniquen aquí. Si el centre ho té configurat, el sistema proposa qui podria substituir-te mirant qui té disponibilitat i coneix la matèria."
+      },
+      "messages": {
+        "title": "Parla amb la resta",
+        "body": "Missatges nous amb qui vulguis del centre o de la universitat. És el canal de dins de la plataforma: queda lligat al context i no es perd en una safata plena."
+      }
     }
   }
 }

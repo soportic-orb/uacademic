@@ -13,6 +13,7 @@ import { ConnectionsPage } from '../pages/connections'
 import { AdminResourcePage } from '../pages/admin-resource'
 import { DashboardPage } from '../pages/dashboard'
 import { DocumentsPage } from '../pages/documents'
+import { GuidePage } from '../pages/guide'
 import { LoginPage } from '../pages/login'
 import { PrivacyPage } from '../pages/privacy'
 import { ProfilePage } from '../pages/profile'
@@ -69,6 +70,7 @@ export const router = createBrowserRouter([
       { path: 'audit', element: <AuditPage /> },
       { path: 'documents', element: <DocumentsPage /> },
       { path: 'platform', element: <PlatformPage /> },
+      { path: 'guide', element: <GuidePage /> },
       { path: 'settings', element: <SettingsPage /> },
       { path: 'profile', element: <ProfilePage /> },
       { path: 'privacy', element: <PrivacyPage /> },

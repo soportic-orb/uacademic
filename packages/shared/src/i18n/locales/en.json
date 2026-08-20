@@ -68,7 +68,8 @@
     "notifications": "Notifications",
     "audit": "Audit",
     "connections": "Calendar connections",
-    "privacy": "Privacy"
+    "privacy": "Privacy",
+    "guide": "Guide"
   },
   "layout": {
     "skipToContent": "Skip to main content",
@@ -2044,6 +2045,150 @@
       "unsupportedType": "That image format is not supported. Use PNG, JPEG, WEBP or GIF.",
       "tooLarge": "The image is too large. The maximum is 4 MB.",
       "empty": "The file is empty."
+    }
+  },
+  "guide": {
+    "title": "Guide",
+    "subtitle": "The steps, in the order the system asks for them.",
+    "forRole": "Guide for {{role}}",
+    "otherRoles": "Read another role's guide",
+    "intro": "Each step needs the one before it. Most of what looks like a broken screen to somebody new is a step further up that has not happened yet.",
+    "stepOf": "Step {{index}} of {{total}}",
+    "openScreen": "Open the screen",
+    "done": "Done",
+    "markDone": "Mark as done",
+    "progress": "{{done}} of {{total}} steps marked",
+    "resetProgress": "Start again",
+    "progressHint": "The marks are kept in this browser. They are for you; they change nothing in the system.",
+    "steps": {
+      "profile": {
+        "title": "Fill in your profile",
+        "body": "Set your name the way you want colleagues to see it and, if you like, a photograph: it appears beside you everywhere, and in a large center it is what makes people recognisable in a list. Your language and light or dark theme are here too."
+      },
+      "language": {
+        "title": "Choose your language and appearance",
+        "body": "The platform speaks Catalan, Spanish and English. What you choose applies to everything: screens, emails and notifications. Light or dark theme is here as well, and is remembered by this browser."
+      },
+      "notifications": {
+        "title": "Decide what you want to hear about",
+        "body": "Notifications can reach you by email, in the browser, or only inside the platform, and you can choose per kind of event. It is worth going through once at the start: by default you are told about what affects you directly."
+      },
+      "universities": {
+        "title": "Add the universities",
+        "body": "A university is the umbrella over its centers. This is where its logo goes, which is what people who work there then see in the header."
+      },
+      "centers": {
+        "title": "Create the centers",
+        "body": "The center is the unit that separates everything: subjects, teaching staff, spaces and timetables belong to a center, and no query crosses two. Give it a code and a timezone."
+      },
+      "tenants": {
+        "title": "Register the Microsoft tenants",
+        "body": "Only if you want sign-in with university accounts. Every organisation has to be registered before anybody there can sign in, and each has to install the application in its own directory: the screen gives you the link to send to their IT department. Without this, people still sign in with email and password."
+      },
+      "mail": {
+        "title": "Check the mail server",
+        "body": "With no mail server configured, invitations and password resets are written to the log and reach nobody. Send the test message before you invite the first person."
+      },
+      "updates": {
+        "title": "Learn how updating works",
+        "body": "The platform screen says which version is running, which one is available, and installs the new one with a button. It backs the database up first and rolls itself back if the new version does not come up."
+      },
+      "academicYear": {
+        "title": "Open an academic year and mark it active",
+        "body": "This is the first thing a center needs. All teaching lives inside a year: with no active year, the dashboard has no load to summarise and subjects have nothing to hang from."
+      },
+      "people": {
+        "title": "Add the people",
+        "body": "Creating a user asks for a name, an email address, and one or more centers with a role in each. They receive an invitation with a link to set their own password; it works once and expires after seven days. Inviting somebody again is also how a forgotten password is reset."
+      },
+      "degrees": {
+        "title": "Enter the degrees",
+        "body": "The bachelor's and master's programmes the center teaches. Subjects hang from a degree, so these come first."
+      },
+      "subjects": {
+        "title": "Enter the subjects",
+        "body": "With their code, credits, year and term. If there are many, do not type them: use the import, which takes a spreadsheet and validates it before writing anything."
+      },
+      "groups": {
+        "title": "Create each subject's groups",
+        "body": "A subject is not planned: its groups are. Each group has a type — lecture, seminar, lab — and its planned hours, which are what later count towards the load of whoever teaches it."
+      },
+      "spaces": {
+        "title": "Add the spaces",
+        "body": "Rooms, labs and seminar rooms, with capacity and equipment. The planner will not place a group in a space it does not fit in or that lacks what it needs, so it is worth getting this right."
+      },
+      "calendar": {
+        "title": "Set the academic calendar",
+        "body": "Public holidays, holiday periods, non-teaching days, exam periods. The planner avoids them and everybody's calendar shows them. An entry can be a single day or a period."
+      },
+      "imports": {
+        "title": "Import rather than type",
+        "body": "Teaching staff and subjects can be uploaded as a spreadsheet or CSV. Download the sample first: it carries the columns already in place and a guide to what each accepts. The import validates before it writes and tells you, row by row, what will happen."
+      },
+      "parameters": {
+        "title": "Set the center's parameters",
+        "body": "Maximum teaching hours, standard session length, load thresholds, whether the coordinator must approve changes. You can set them by hand, or let the assistant read them out of a regulation in PDF: each parameter then carries its citation, and the system can explain why it is blocking something."
+      },
+      "staff": {
+        "title": "Give teaching staff a contract",
+        "body": "Holding the lecturer role and having a contract are two different things. The role gives access; the contract states category, dedication and the year's hours, which are what the load is computed from. It is done from Teaching staff → Add teaching staff."
+      },
+      "coordination": {
+        "title": "Say who coordinates each subject",
+        "body": "With no coordinator assigned, nobody can plan that subject or use the assistant on it. It is an easy step to forget, and it is usually what explains a coordinator seeing nothing."
+      },
+      "assignments": {
+        "title": "Share the groups out among the staff",
+        "body": "From each lecturer's card, or straight from the planner. As you assign, their load rises and the traffic light says whether they are under, on target, at the limit or over."
+      },
+      "version": {
+        "title": "Create a schedule version",
+        "body": "The live timetable is never edited. You work on a draft version and publish it when it is ready: it then becomes the official timetable and the previous one is archived."
+      },
+      "place": {
+        "title": "Place the sessions",
+        "body": "Drag the pending groups from the left column into the grid, or use the keyboard: space to pick up, arrows to move, space to drop. The colours tell you as you go whether the position is fine, breaks a preference, or is impossible — and why."
+      },
+      "generate": {
+        "title": "Try the automatic generator",
+        "body": "Give it a time budget and it returns ranked proposals, each saying what it had to sacrifice. None is applied by itself: you pick one and review it."
+      },
+      "publish": {
+        "title": "Publish when it is ready",
+        "body": "Publishing notifies only the staff affected. Before that you can compare two versions and see exactly what changes, and for whom."
+      },
+      "assistant": {
+        "title": "Use the assistant",
+        "body": "You can ask it questions in plain language and ask it for changes. It never writes anything by itself: it proposes the change with any conflicts it found and waits for you to confirm."
+      },
+      "changes": {
+        "title": "Resolve the change requests",
+        "body": "Teaching staff ask for class changes from their own screen. Here you approve or refuse them, and the system checks by itself that the change breaks nothing before letting it through."
+      },
+      "availability": {
+        "title": "Say when you can teach",
+        "body": "Paint your week: when you would prefer to teach, when you can, when you would rather not, and when you cannot. If you say nothing, the system takes it that you are free at any hour — and will plan accordingly, so five minutes here is time well spent."
+      },
+      "ownLoad": {
+        "title": "Watch your own load",
+        "body": "Compare your contracted hours with what you are being assigned, broken down by subject and by concept. If something looks wrong, raise it with your coordinator before the timetable is published."
+      },
+      "calendarFeed": {
+        "title": "Put your timetable on your phone",
+        "body": "Generate a subscription address and scan its QR code with your phone: your classes appear in the phone's calendar and update themselves when the timetable changes. The address is personal — do not share it."
+      },
+      "askChange": {
+        "title": "Ask for a class change",
+        "body": "If you need to move a class, ask from Class changes. Give the reason and the new time; your coordinator reviews it and the system checks it collides with nothing."
+      },
+      "absences": {
+        "title": "Report an absence",
+        "body": "Absences are reported here. If the center has it configured, the system suggests who could cover for you, looking at who is available and knows the subject."
+      },
+      "messages": {
+        "title": "Talk to your colleagues",
+        "body": "Start a message with anybody in your center or your university. It is the channel inside the platform: it stays tied to its context and does not get lost in a full inbox."
+      }
     }
   }
 }

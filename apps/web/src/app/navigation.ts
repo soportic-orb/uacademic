@@ -1,6 +1,7 @@
 import type { Role } from '@uacademic/shared'
 import {
   BellRing,
+  BookMarked,
   BookOpen,
   CalendarClock,
   CalendarDays,
@@ -152,6 +153,12 @@ export const NAV_ITEMS: NavItem[] = [
     path: '/platform',
     icon: Settings,
     roles: ['SUPERADMIN'],
+  },
+  {
+    key: 'guide',
+    path: '/guide',
+    icon: BookMarked,
+    roles: ['SUPERADMIN', 'CENTER_ADMIN', 'COORDINATOR', 'TEACHER'],
   },
   {
     key: 'settings',
