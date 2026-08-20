@@ -1540,6 +1540,21 @@ model LocalCredential {
   @@map("local_credentials")
 }
 
+/// Settings that belong to the installation rather than to a center.
+///
+/// A single row per key, written only by the superadmin. It is deliberately
+/// small: anything a center can decide for itself lives in `centers.settings_json`
+/// (R9), and this is for the handful of choices that are the platform's — which
+/// languages it offers, and whatever joins them later.
+model PlatformSetting {
+  key       String   @id @db.VarChar(64)
+  valueJson Json     @map("value_json")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  updatedBy String?  @map("updated_by") @db.Char(36)
+
+  @@map("platform_settings")
+}
+
 /// The one-time link an invited person follows to set their own password.
 ///
 /// Only the SHA-256 of the token is stored (CLAUDE.md §5): it is a bearer

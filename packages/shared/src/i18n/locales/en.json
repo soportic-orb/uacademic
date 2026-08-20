@@ -260,14 +260,26 @@
     },
     "errors": {
       "notALecturer": "This person does not hold the lecturer role in this center. Grant it first from Administration → Users.",
-      "alreadyContracted": "This person already has a contract for the active year."
+      "alreadyContracted": "This person already has a contract for the active year.",
+      "alreadyAssigned": "This person already holds that group under that concept."
     },
     "newTitle": "Add teaching staff",
     "newHint": "Give a contract for the active year to somebody who already holds the lecturer role in this center.",
     "noCandidates": "Everybody with the lecturer role already has a contract for the active year. To add more, grant the lecturer role from Administration → Users.",
     "person": "Person",
     "choosePerson": "Choose a person…",
-    "contract": "Give a contract"
+    "contract": "Give a contract",
+    "assignments": {
+      "title": "Subjects and groups",
+      "hint": "The groups this person is teaching this year, and the hours they count for.",
+      "add": "Assign a group",
+      "none": "No groups assigned yet.",
+      "group": "Group",
+      "concept": "Concept",
+      "added": "Group assigned",
+      "removed": "Assignment removed",
+      "remove": "Remove the assignment of group {{group}} in {{subject}}"
+    }
   },
   "subjects": {
     "title": "Subjects",
@@ -773,7 +785,13 @@
     "rolledBackWhy": "The update failed and the previous version was restored. The server said: {{detail}}",
     "failedWhy": "The update failed. The server said: {{detail}}",
     "started": "The update to {{version}} has started. It can take a couple of minutes; this screen will keep itself up to date.",
-    "updatingHint": "Leave this window open. It unlocks by itself when the release lands, and says how it went."
+    "updatingHint": "Leave this window open. It unlocks by itself when the release lands, and says how it went.",
+    "locales": {
+      "title": "Platform languages",
+      "hint": "The languages people can choose. Switching one off removes no translation — it stops being offered.",
+      "saved": "Languages updated",
+      "last": "the last one left"
+    }
   },
   "assistant": {
     "title": "AI assistant",

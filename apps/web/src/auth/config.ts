@@ -6,6 +6,8 @@ import { configureEntra } from './msal'
 export interface AuthConfig {
   mode: 'mock' | 'entra' | 'local'
   entra: { clientId: string; authority: string } | null
+  /** The languages this installation offers, in the order it offers them. */
+  locales: ('ca' | 'es' | 'en')[]
 }
 
 /**

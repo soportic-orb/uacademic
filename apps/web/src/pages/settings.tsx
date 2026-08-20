@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { useRoles } from '../app/use-roles'
+import { useAuthConfig } from '../auth/config'
 import { Card, CardBody, CardHeader } from '../components/ui/card'
 import { Button } from '../components/ui/button'
 import { ExtractionCard } from '../features/settings/extraction-card'
@@ -24,6 +25,10 @@ export function SettingsPage() {
   const setPreference = useThemeStore((state) => state.setPreference)
   const locale = currentLocale()
   const [runId, setRunId] = useState<string | null>(null)
+  // Only what the installation offers. The catalogues always carry all three
+  // (R1) — switching one off hides it from this picker, it does not remove
+  // any translation — so nothing here can fall back to a raw key.
+  const offered = useAuthConfig().data?.locales ?? SUPPORTED_LOCALES
 
   // Reading a regulation into the configuration is the administration's job:
   // it is their center's rules, and their signature on every parameter.
@@ -61,7 +66,7 @@ export function SettingsPage() {
         <CardHeader title={t('settings.languageSection')} />
         <CardBody>
           <div className="flex flex-wrap gap-2" role="group" aria-label={t('language.label')}>
-            {SUPPORTED_LOCALES.map((option: AppLocale) => (
+            {offered.map((option: AppLocale) => (
               <Button
                 key={option}
                 variant={locale === option ? 'primary' : 'secondary'}

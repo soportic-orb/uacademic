@@ -205,6 +205,21 @@ export const teacherProfileInputSchema = z.object({
 })
 export type TeacherProfileInput = z.infer<typeof teacherProfileInputSchema>
 
+/**
+ * Giving a teacher a group to teach.
+ *
+ * The hours are stated rather than derived: what a group is worth in a
+ * teacher's load is a decision the center makes — a lab hour and a lecture
+ * hour are not the same hour in most regulations — and the group's planned
+ * hours are only the default the screen offers.
+ */
+export const teacherAssignmentSchema = z.object({
+  groupId: uuidSchema,
+  concept: z.enum(['lecture', 'tutoring', 'coordination', 'tfg', 'other']).default('lecture'),
+  assignedHours: z.coerce.number().min(0).max(9999.99),
+})
+export type TeacherAssignment = z.infer<typeof teacherAssignmentSchema>
+
 /** Editing one: the person it belongs to never changes. */
 export const teacherProfileUpdateSchema = teacherProfileInputSchema.omit({ userId: true }).partial()
 export type TeacherProfileUpdate = z.infer<typeof teacherProfileUpdateSchema>

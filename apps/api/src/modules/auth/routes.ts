@@ -27,6 +27,7 @@ import {
   revokeSession,
 } from '../../services/auth-service.js'
 import { enqueueJob } from '../../jobs/worker.js'
+import { enabledLocales } from '../../services/platform-settings.js'
 import {
   PASSWORD_RESET_TTL_HOURS,
   acceptInvitation,
@@ -65,6 +66,9 @@ export function registerAuthRoutes(app: FastifyInstance, env: Env): void {
    */
   app.get('/api/v1/auth/config', { config: { public: true } }, async () => ({
     mode: env.AUTH_MODE,
+    // Which languages this installation offers, so the sign-in screen and the
+    // app itself agree before anybody has a session to read a preference from.
+    locales: await enabledLocales(prisma()),
     entra: entraConfigured(env)
       ? {
           clientId: env.ENTRA_CLIENT_ID,

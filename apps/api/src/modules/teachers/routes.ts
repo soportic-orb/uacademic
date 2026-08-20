@@ -15,6 +15,7 @@ import {
   reductionInputSchema,
   saveAvailabilitySchema,
   sortLoadRows,
+  teacherAssignmentSchema,
   teacherProfileInputSchema,
   teacherProfileUpdateSchema,
   summarizeLoads,
@@ -38,6 +39,17 @@ import {
   teacherWorkload,
 } from './service.js'
 import { loadWorkbook } from './export.js'
+
+/** A group of a subject in the year in force, and what this teacher holds on it. */
+interface AssignableGroupDto {
+  id: string
+  code: string
+  type: string
+  plannedHours: number
+  subjectCode: string
+  subjectName: string
+  heldConcepts: string[]
+}
 
 /** Somebody the center could contract for this year, and has not. */
 interface TeacherCandidateDto {
@@ -342,6 +354,136 @@ export function registerTeacherRoutes(app: FastifyInstance): void {
           contractedHours: Number(before.contractedHours),
         },
         after: input,
+        source: 'user',
+        ip: request.ip,
+      })
+
+      return teacherProfile(context, profileId)
+    },
+  )
+
+  /**
+   * The groups this teacher could be given, and is not teaching yet.
+   *
+   * Assigning somebody to a group had no route at all: the only thing that
+   * could write one was the assistant's execute step, so a coordinator without
+   * the assistant — or with it switched off — could not staff a subject.
+   */
+  app.get(
+    '/api/v1/teachers/:id/assignable-groups',
+    { config: { roles: MANAGER_ROLES } },
+    async (
+      request: FastifyRequest<{ Params: { id: string } }>,
+    ): Promise<{ items: AssignableGroupDto[] }> => {
+      const context = await teacherContext(request)
+      const profileId = await resolveTeacherProfileId(context, request.params.id)
+
+      const groups = await context.db.group.findMany({
+        where: { subject: { academicYearId: context.academicYearId } },
+        include: {
+          subject: { select: { code: true, nameCa: true } },
+          assignments: { where: { teacherProfileId: profileId }, select: { concept: true } },
+        },
+        orderBy: [{ subject: { code: 'asc' } }, { code: 'asc' }],
+      })
+
+      return {
+        items: groups.map((group) => ({
+          id: group.id,
+          code: group.code,
+          type: group.type,
+          plannedHours: Number(group.plannedHours),
+          subjectCode: group.subject.code,
+          subjectName: group.subject.nameCa,
+          // Which concepts this teacher already holds on the group, so the
+          // screen does not offer a duplicate the database would refuse.
+          heldConcepts: group.assignments.map((assignment) => assignment.concept),
+        })),
+      }
+    },
+  )
+
+  /** Giving this teacher a group. */
+  app.post(
+    '/api/v1/teachers/:id/assignments',
+    { config: { roles: MANAGER_ROLES } },
+    async (
+      request: FastifyRequest<{ Params: { id: string } }>,
+      reply,
+    ): Promise<TeacherProfileDto> => {
+      const context = await teacherContext(request)
+      const actor = requireUser(request)
+      const profileId = await resolveTeacherProfileId(context, request.params.id)
+      const input = parseWith(teacherAssignmentSchema, request.body)
+
+      // The group has to belong to this center's year; the scoped client
+      // settles the center, and this settles the year (R2).
+      const group = await context.db.group.findFirst({
+        where: { id: input.groupId, subject: { academicYearId: context.academicYearId } },
+      })
+      if (!group) throw AppError.notFound()
+
+      const existing = await context.db.assignment.findFirst({
+        where: { groupId: input.groupId, teacherProfileId: profileId, concept: input.concept },
+      })
+      if (existing) throw new AppError(409, 'CONFLICT', 'teachers.errors.alreadyAssigned')
+
+      const created = await context.db.assignment.create({
+        data: {
+          centerId: context.centerId,
+          academicYearId: context.academicYearId,
+          groupId: input.groupId,
+          teacherProfileId: profileId,
+          assignedHours: input.assignedHours,
+          concept: input.concept,
+        },
+      })
+
+      await writeAuditLog(prisma(), {
+        centerId: context.centerId,
+        userId: actor.userId,
+        entity: 'assignment',
+        entityId: created.id,
+        action: 'create',
+        after: { ...input, teacherProfileId: profileId },
+        source: 'user',
+        ip: request.ip,
+      })
+
+      void reply.status(201)
+      return teacherProfile(context, profileId)
+    },
+  )
+
+  /** Taking one away. */
+  app.delete(
+    '/api/v1/teachers/:id/assignments/:assignmentId',
+    { config: { roles: MANAGER_ROLES } },
+    async (
+      request: FastifyRequest<{ Params: { id: string; assignmentId: string } }>,
+    ): Promise<TeacherProfileDto> => {
+      const context = await teacherContext(request)
+      const actor = requireUser(request)
+      const profileId = await resolveTeacherProfileId(context, request.params.id)
+
+      const assignment = await context.db.assignment.findFirst({
+        where: { id: request.params.assignmentId, teacherProfileId: profileId },
+      })
+      if (!assignment) throw AppError.notFound()
+
+      await context.db.assignment.delete({ where: { id: assignment.id } })
+
+      await writeAuditLog(prisma(), {
+        centerId: context.centerId,
+        userId: actor.userId,
+        entity: 'assignment',
+        entityId: assignment.id,
+        action: 'delete',
+        before: {
+          groupId: assignment.groupId,
+          teacherProfileId: profileId,
+          concept: assignment.concept,
+        },
         source: 'user',
         ip: request.ip,
       })

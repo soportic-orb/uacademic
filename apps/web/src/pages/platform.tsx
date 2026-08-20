@@ -11,7 +11,8 @@
  * it is over, having already rolled back if the new version did not come up.
  */
 import { formatDate } from '@uacademic/shared'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import type { AppLocale } from '@uacademic/shared'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { CircleCheck, Download, History, Info, Loader2, Mail, RefreshCw } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -142,6 +143,8 @@ export function PlatformPage() {
         <h1 className="text-2xl font-semibold text-text">{t('platform.title')}</h1>
         <p className="mt-1 text-sm text-text-muted">{t('platform.subtitle')}</p>
       </header>
+
+      <LocalesCard />
 
       <Card className="max-w-3xl">
         <CardHeader
@@ -361,5 +364,82 @@ function UpdatingOverlay({ version }: { version: string }) {
         <p className="mt-4 text-xs text-text-muted">{t('platform.updatingHint')}</p>
       </div>
     </div>
+  )
+}
+
+/**
+ * The languages the platform offers.
+ *
+ * Switching one off hides it from everybody's picker; it does not remove a
+ * single translation, which is why it cannot leave somebody stranded on a
+ * screen of raw keys. The last one cannot be switched off — a platform in no
+ * language at all is not a state worth being able to reach.
+ */
+function LocalesCard() {
+  const { t } = useTranslation()
+  const toast = useToast()
+  const queryClient = useQueryClient()
+
+  const query = useQuery({
+    queryKey: ['platform-locales'],
+    queryFn: () =>
+      apiFetch<{ available: AppLocale[]; enabled: AppLocale[] }>('/api/v1/platform/locales'),
+  })
+
+  const save = useMutation({
+    mutationFn: (locales: AppLocale[]) => apiJson('/api/v1/platform/locales', 'PUT', { locales }),
+    onSuccess: async () => {
+      toast.success('platform.locales.saved')
+      await queryClient.invalidateQueries({ queryKey: ['platform-locales'] })
+      await queryClient.invalidateQueries({ queryKey: ['auth-config'] })
+    },
+    onError: (error) => {
+      if (error instanceof ApiRequestError)
+        toast.raw({ variant: 'error', message: error.localizedMessage })
+      else toast.error('errors.generic')
+    },
+  })
+
+  if (query.isPending) return <CardSkeleton className="max-w-3xl" />
+  if (query.isError) return <ErrorState onRetry={() => void query.refetch()} />
+
+  const enabled = query.data.enabled
+
+  return (
+    <Card className="max-w-3xl">
+      <CardHeader title={t('platform.locales.title')} description={t('platform.locales.hint')} />
+      <CardBody>
+        <ul className="space-y-2">
+          {query.data.available.map((locale) => {
+            const on = enabled.includes(locale)
+            const last = on && enabled.length === 1
+
+            return (
+              <li key={locale}>
+                <label className="flex items-center gap-3 text-sm text-text">
+                  <input
+                    type="checkbox"
+                    checked={on}
+                    disabled={last || save.isPending}
+                    onChange={(event) =>
+                      save.mutate(
+                        event.target.checked
+                          ? [...enabled, locale]
+                          : enabled.filter((entry) => entry !== locale),
+                      )
+                    }
+                    className="size-4 rounded border-border"
+                  />
+                  {t(`language.${locale}`)}
+                  {last ? (
+                    <span className="text-xs text-text-muted">{t('platform.locales.last')}</span>
+                  ) : null}
+                </label>
+              </li>
+            )
+          })}
+        </ul>
+      </CardBody>
+    </Card>
   )
 }

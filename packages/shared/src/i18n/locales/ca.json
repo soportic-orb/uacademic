@@ -260,14 +260,26 @@
     },
     "errors": {
       "notALecturer": "Aquesta persona no té el rol de professorat en aquest centre. Dona-li'l primer des d'Administració → Usuaris.",
-      "alreadyContracted": "Aquesta persona ja té contracte per al curs actiu."
+      "alreadyContracted": "Aquesta persona ja té contracte per al curs actiu.",
+      "alreadyAssigned": "Aquesta persona ja té assignat aquest grup amb aquest concepte."
     },
     "newTitle": "Afegeix professorat",
     "newHint": "Dona contracte per al curs actiu a algú que ja té el rol de professorat al centre.",
     "noCandidates": "Tot el professorat del centre ja té contracte per al curs actiu. Per afegir-ne, dona el rol de professorat a algú des d'Administració → Usuaris.",
     "person": "Persona",
     "choosePerson": "Tria una persona…",
-    "contract": "Dona-li contracte"
+    "contract": "Dona-li contracte",
+    "assignments": {
+      "title": "Assignatures i grups",
+      "hint": "Els grups que té assignats aquesta persona aquest curs, i les hores que li compten.",
+      "add": "Assigna un grup",
+      "none": "Encara no té cap grup assignat.",
+      "group": "Grup",
+      "concept": "Concepte",
+      "added": "Grup assignat",
+      "removed": "Assignació retirada",
+      "remove": "Retira l'assignació del grup {{group}} de {{subject}}"
+    }
   },
   "subjects": {
     "title": "Assignatures",
@@ -773,7 +785,13 @@
     "rolledBackWhy": "L'actualització ha fallat i s'ha tornat a la versió anterior. El servidor ha dit: {{detail}}",
     "failedWhy": "L'actualització ha fallat. El servidor ha dit: {{detail}}",
     "started": "S'ha iniciat l'actualització a {{version}}. Pot trigar un parell de minuts; aquesta pantalla s'anirà actualitzant.",
-    "updatingHint": "No tanquis la finestra. Quan acabi, la pantalla es desbloquejarà sola i et dirà com ha anat."
+    "updatingHint": "No tanquis la finestra. Quan acabi, la pantalla es desbloquejarà sola i et dirà com ha anat.",
+    "locales": {
+      "title": "Idiomes de la plataforma",
+      "hint": "Els idiomes que la gent pot triar. Apagar-ne un no esborra cap traducció: només deixa d'oferir-lo.",
+      "saved": "Idiomes actualitzats",
+      "last": "és l'últim que queda"
+    }
   },
   "assistant": {
     "title": "Assistent IA",

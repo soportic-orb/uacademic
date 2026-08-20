@@ -260,14 +260,26 @@
     },
     "errors": {
       "notALecturer": "Esta persona no tiene el rol de profesorado en este centro. Dáselo primero desde Administración → Usuarios.",
-      "alreadyContracted": "Esta persona ya tiene contrato para el curso activo."
+      "alreadyContracted": "Esta persona ya tiene contrato para el curso activo.",
+      "alreadyAssigned": "Esta persona ya tiene asignado ese grupo con ese concepto."
     },
     "newTitle": "Añadir profesorado",
     "newHint": "Da contrato para el curso activo a alguien que ya tiene el rol de profesorado en el centro.",
     "noCandidates": "Todo el profesorado del centro ya tiene contrato para el curso activo. Para añadir más, da el rol de profesorado a alguien desde Administración → Usuarios.",
     "person": "Persona",
     "choosePerson": "Elige una persona…",
-    "contract": "Dar contrato"
+    "contract": "Dar contrato",
+    "assignments": {
+      "title": "Asignaturas y grupos",
+      "hint": "Los grupos que tiene asignados esta persona este curso, y las horas que le cuentan.",
+      "add": "Asignar un grupo",
+      "none": "Todavía no tiene ningún grupo asignado.",
+      "group": "Grupo",
+      "concept": "Concepto",
+      "added": "Grupo asignado",
+      "removed": "Asignación retirada",
+      "remove": "Retirar la asignación del grupo {{group}} de {{subject}}"
+    }
   },
   "subjects": {
     "title": "Asignaturas",
@@ -773,7 +785,13 @@
     "rolledBackWhy": "La actualización ha fallado y se ha vuelto a la versión anterior. El servidor ha dicho: {{detail}}",
     "failedWhy": "La actualización ha fallado. El servidor ha dicho: {{detail}}",
     "started": "Se ha iniciado la actualización a {{version}}. Puede tardar un par de minutos; esta pantalla se irá actualizando.",
-    "updatingHint": "No cierres la ventana. Cuando termine, la pantalla se desbloqueará sola y te dirá cómo ha ido."
+    "updatingHint": "No cierres la ventana. Cuando termine, la pantalla se desbloqueará sola y te dirá cómo ha ido.",
+    "locales": {
+      "title": "Idiomas de la plataforma",
+      "hint": "Los idiomas que la gente puede elegir. Apagar uno no borra ninguna traducción: solo deja de ofrecerlo.",
+      "saved": "Idiomas actualizados",
+      "last": "es el último que queda"
+    }
   },
   "assistant": {
     "title": "Asistente IA",

@@ -289,6 +289,18 @@ export async function teacherProfile(
       subjectName: skill.subject?.nameCa ?? null,
       knowledgeArea: skill.knowledgeArea,
     })),
+    // One row per assignment, with its id: `bySubject` totals the same hours
+    // but cannot say which of two assignments on a group is being removed.
+    assignments: profile.assignments.map((assignment) => ({
+      id: assignment.id,
+      subjectId: assignment.group.subject.id,
+      subjectCode: assignment.group.subject.code,
+      subjectName: assignment.group.subject.nameCa,
+      groupId: assignment.group.id,
+      groupCode: assignment.group.code,
+      concept: assignment.concept,
+      hours: Number(assignment.assignedHours),
+    })),
     weeklyAvailableHours: weeklyAvailableHours(entries),
   }
 }

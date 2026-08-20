@@ -178,12 +178,32 @@ export const teacherSkillSchema = z.object({
 })
 export type TeacherSkillDto = z.infer<typeof teacherSkillSchema>
 
+/**
+ * What this person teaches, one row per assignment.
+ *
+ * `bySubject` totals the same thing for the load figures; this carries the
+ * ids, because taking an assignment away needs to name which one — and two
+ * assignments on the same group differ only by their concept.
+ */
+export const teacherAssignmentRowSchema = z.object({
+  id: uuidSchema,
+  subjectId: uuidSchema,
+  subjectCode: z.string(),
+  subjectName: z.string(),
+  groupId: uuidSchema,
+  groupCode: z.string(),
+  concept: z.enum(['lecture', 'tutoring', 'coordination', 'tfg', 'other']),
+  hours: z.number(),
+})
+export type TeacherAssignmentRowDto = z.infer<typeof teacherAssignmentRowSchema>
+
 /** The profile card of screen (a). */
 export const teacherProfileSchema = teacherWorkloadSchema.extend({
   email: z.email(),
   notes: z.string().nullable(),
   reductions: z.array(teacherReductionSchema),
   skills: z.array(teacherSkillSchema),
+  assignments: z.array(teacherAssignmentRowSchema),
   weeklyAvailableHours: z.number(),
 })
 export type TeacherProfileDto = z.infer<typeof teacherProfileSchema>

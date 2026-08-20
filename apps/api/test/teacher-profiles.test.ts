@@ -192,6 +192,95 @@ describe.skipIf(!hasDatabase)('contracting a teacher', () => {
     expect(stored.dedication).toBe('full_time')
   })
 
+  /**
+   * Assigning somebody to a group had no route: the only thing that could
+   * write one was the assistant's execute step, so a center with the
+   * assistant switched off could not staff a subject at all.
+   */
+  describe('giving a teacher something to teach', () => {
+    it('assigns a group, and takes it away again', async () => {
+      const user = await lecturerWithoutContract('amb.grups@demo.uacademic.test')
+      const created = await contract({
+        userId: user.id,
+        category: 'lecturer',
+        dedication: 'full_time',
+        contractedHours: 200,
+      })
+      const profileId = String(created.json().teacherProfileId ?? created.json().id)
+
+      // A subject and a group of its own in this year.
+      const degree = await prisma.degree.create({
+        data: {
+          centerId,
+          code: 'DOC',
+          nameCa: 'Grau de prova',
+          nameEs: 'Grado de prueba',
+          nameEn: 'Test degree',
+          level: 'bachelor',
+        },
+      })
+      const subject = await prisma.subject.create({
+        data: {
+          centerId,
+          academicYearId,
+          degreeId: degree.id,
+          code: 'PRV101',
+          nameCa: 'Assignatura de prova',
+          nameEs: 'Asignatura de prueba',
+          nameEn: 'Test subject',
+          ects: 6,
+          year: 1,
+          term: 't1',
+          type: 'compulsory',
+        },
+      })
+      const group = await prisma.group.create({
+        data: { centerId, subjectId: subject.id, code: 'A1', type: 'theory', plannedHours: 60 },
+      })
+
+      const offered = await app.inject({
+        method: 'GET',
+        url: `/api/v1/teachers/${profileId}/assignable-groups`,
+        headers,
+      })
+      expect(offered.json().items.map((row: { id: string }) => row.id)).toContain(group.id)
+
+      const assigned = await app.inject({
+        method: 'POST',
+        url: `/api/v1/teachers/${profileId}/assignments`,
+        headers,
+        payload: { groupId: group.id, concept: 'lecture', assignedHours: 60 },
+      })
+      expect(assigned.statusCode).toBe(201)
+      expect(assigned.json().assignedHours).toBe(60)
+
+      const assignmentId = assigned
+        .json()
+        .assignments.find((row: { groupId: string }) => row.groupId === group.id).id
+
+      const again = await app.inject({
+        method: 'POST',
+        url: `/api/v1/teachers/${profileId}/assignments`,
+        headers,
+        payload: { groupId: group.id, concept: 'lecture', assignedHours: 60 },
+      })
+      expect(again.statusCode).toBe(409)
+      expect(again.json().error.messageKey).toBe('teachers.errors.alreadyAssigned')
+
+      const removed = await app.inject({
+        method: 'DELETE',
+        url: `/api/v1/teachers/${profileId}/assignments/${assignmentId}`,
+        headers,
+      })
+      expect(removed.statusCode).toBe(200)
+      expect(removed.json().assignedHours).toBe(0)
+
+      await prisma.group.delete({ where: { id: group.id } })
+      await prisma.subject.delete({ where: { id: subject.id } })
+      await prisma.degree.delete({ where: { id: degree.id } })
+    })
+  })
+
   it('is not something a lecturer can do to themselves', async () => {
     const lecturerEmail = 'jo.mateix@demo.uacademic.test'
     const user = await lecturerWithoutContract(lecturerEmail)

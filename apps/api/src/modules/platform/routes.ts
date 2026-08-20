@@ -4,15 +4,19 @@
  * SUPERADMIN only, and not by convention — this is the one role that crosses
  * centers, and an update touches every one of them at once.
  */
-import { translate } from '@uacademic/shared'
+import { SUPPORTED_LOCALES, localeSchema, translate } from '@uacademic/shared'
 import type { FastifyInstance } from 'fastify'
+import { z } from 'zod'
 
 import { env } from '../../config/env.js'
+import { writeAuditLog } from '../../lib/audit.js'
 import { enqueueJob } from '../../jobs/worker.js'
 import { AppError } from '../../lib/errors.js'
 import { prisma } from '../../lib/prisma.js'
+import { parseWith } from '../../lib/validate.js'
 import { requireUser } from '../../plugins/context.js'
 import { mailConfigured, sendMail } from '../../services/mailer.js'
+import { enabledLocales, setEnabledLocales } from '../../services/platform-settings.js'
 import {
   latestRelease,
   releaseIsAlreadyRunning,
@@ -35,6 +39,39 @@ export function registerPlatformRoutes(app: FastifyInstance): void {
    * is configuration and is free to ask; the second needs a real message to
    * leave the building, so it is a separate, deliberate action.
    */
+  /**
+   * Which languages the platform offers.
+   *
+   * Switching one off hides it from the pickers; it does not remove the
+   * translations, which always carry all three (R1). That distinction is what
+   * keeps a screen from falling back to raw keys the moment somebody's stored
+   * preference points at a language that has been turned off.
+   */
+  app.get('/api/v1/platform/locales', { config: { roles: [...SUPERADMIN] } }, async () => ({
+    available: [...SUPPORTED_LOCALES],
+    enabled: await enabledLocales(prisma()),
+  }))
+
+  app.put('/api/v1/platform/locales', { config: { roles: [...SUPERADMIN] } }, async (request) => {
+    const actor = requireUser(request)
+    const body = parseWith(z.object({ locales: z.array(localeSchema).min(1) }), request.body)
+
+    const enabled = await setEnabledLocales(prisma(), body.locales, actor.userId)
+
+    await writeAuditLog(prisma(), {
+      centerId: null,
+      userId: actor.userId,
+      entity: 'platform_settings',
+      entityId: 'enabledLocales',
+      action: 'update',
+      after: { enabled },
+      source: 'user',
+      ip: request.ip,
+    })
+
+    return { available: [...SUPPORTED_LOCALES], enabled }
+  })
+
   app.get('/api/v1/platform/mail', { config: { roles: [...SUPERADMIN] } }, async () => {
     const configuration = env()
 

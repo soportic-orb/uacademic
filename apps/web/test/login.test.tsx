@@ -25,14 +25,17 @@ vi.mock('../src/auth/session', () => ({
 
 const authConfig = vi.fn<() => { isPending: boolean; data: AuthConfig }>(() => ({
   isPending: false,
-  data: { mode: 'local', entra: null },
+  data: { mode: 'local', entra: null, locales: ['ca', 'es', 'en'] },
 }))
 
 vi.mock('../src/auth/config', () => ({ useAuthConfig: () => authConfig() }))
 
 afterEach(() => {
   signInLocally.mockReset()
-  authConfig.mockReturnValue({ isPending: false, data: { mode: 'local', entra: null } })
+  authConfig.mockReturnValue({
+    isPending: false,
+    data: { mode: 'local', entra: null, locales: ['ca', 'es', 'en'] },
+  })
 })
 
 async function openLocalForm() {
@@ -92,6 +95,7 @@ describe('the sign-in screen', () => {
       data: {
         mode: 'entra',
         entra: { clientId: 'app-id', authority: 'https://login/organizations' },
+        locales: ['ca', 'es', 'en'],
       },
     })
 

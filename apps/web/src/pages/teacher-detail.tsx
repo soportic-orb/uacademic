@@ -5,6 +5,7 @@ import { Link, useParams } from 'react-router'
 import { CardSkeleton, ErrorState } from '../components/feedback/states'
 import { AvailabilityEditor } from '../features/capacity/availability-editor'
 import { ExceptionsPanel } from '../features/capacity/exceptions-panel'
+import { AssignmentsPanel } from '../features/capacity/assignments-panel'
 import { ProfileCard } from '../features/capacity/profile-card'
 import { useAvailability, useTeacherProfile } from '../features/capacity/queries'
 import { useRoles } from '../app/use-roles'
@@ -48,12 +49,15 @@ export function TeacherDetailPage() {
           description={t('teachers.profile.notFound')}
         />
       ) : (
-        <ProfileCard
-          teacherId={teacherId}
-          profile={profile.data}
-          canManage={canManage}
-          canManageSkills={isManager}
-        />
+        <>
+          <ProfileCard
+            teacherId={teacherId}
+            profile={profile.data}
+            canManage={canManage}
+            canManageSkills={isManager}
+          />
+          <AssignmentsPanel teacherId={teacherId} profile={profile.data} canManage={isManager} />
+        </>
       )}
 
       {availability.isPending ? (
