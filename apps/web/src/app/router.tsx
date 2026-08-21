@@ -25,6 +25,7 @@ import { MessagesPage } from '../pages/messages'
 import { NotificationsPage } from '../pages/notifications'
 import { NotFoundPage } from '../pages/placeholders'
 import { PlatformPage } from '../pages/platform'
+import { SupportAdminPage } from '../pages/support-admin'
 import { PlanningPage } from '../pages/planning'
 import { SettingsPage } from '../pages/settings'
 import { SubjectsPage } from '../pages/subjects'
@@ -70,6 +71,7 @@ export const router = createBrowserRouter([
       { path: 'audit', element: <AuditPage /> },
       { path: 'documents', element: <DocumentsPage /> },
       { path: 'platform', element: <PlatformPage /> },
+      { path: 'support', element: <SupportAdminPage /> },
       { path: 'guide', element: <GuidePage /> },
       { path: 'settings', element: <SettingsPage /> },
       { path: 'profile', element: <ProfilePage /> },

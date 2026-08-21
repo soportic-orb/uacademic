@@ -16,6 +16,7 @@ import { registerAuthRoutes } from './modules/auth/routes.js'
 import { registerAbsenceRoutes } from './modules/absences/routes.js'
 import { registerAuditRoutes } from './modules/audit/routes.js'
 import { registerAiRoutes } from './modules/ai/routes.js'
+import { registerSupportRoutes } from './modules/support/routes.js'
 import { registerDocumentRoutes } from './modules/documents/routes.js'
 import { registerInstallDisabledRoutes } from './modules/install/routes.js'
 import { registerPlatformRoutes } from './modules/platform/routes.js'
@@ -146,6 +147,7 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
   registerNotificationRoutes(app)
   registerAuditRoutes(app)
   registerAiRoutes(app)
+  registerSupportRoutes(app)
   registerDocumentRoutes(app)
   registerSettingsRoutes(app)
   registerPrivacyRoutes(app)

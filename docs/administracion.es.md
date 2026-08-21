@@ -170,6 +170,26 @@ disponibilidad, con los motivos y los impedimentos a la vista.
 
 ---
 
+## 7b. Ayuda y soporte (Cady)
+
+Cady es la asistente de ayuda que cualquier persona abre con el botón redondo
+de la esquina inferior derecha, en todas las pantallas. Explica cómo funciona
+la plataforma y dónde se hace cada cosa; no ve los datos del centro y no puede
+cambiar nada.
+
+Viene desactivada. La activa la superadministración en Administración → Ayuda
+y soporte, y necesita la misma clave de Anthropic que la asistente de
+coordinación.
+
+Responde solo desde la guía paso a paso y desde los artículos de ayuda
+escritos en esa misma pantalla, nunca de lo que un modelo pueda imaginarse.
+Cuando una pregunta no está en la ayuda, lo dice y la pregunta queda marcada:
+la superadministración ve todas las conversaciones y puede filtrar las que no
+ha sabido responder, que son exactamente la lista de lo que falta escribir.
+Los artículos se escriben en los tres idiomas, como todo lo demás.
+
+---
+
 ## 8. Auditoría
 
 Toda modificación de datos de negocio queda registrada con el antes, el

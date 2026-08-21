@@ -164,6 +164,26 @@ the reasons and the blockers in plain sight.
 
 ---
 
+## 7b. Help and support (Cady)
+
+Cady is the support assistant anybody opens from the round button in the
+bottom-right corner, on every screen. She explains how the platform works and
+where each thing is done; she cannot see the center's data and cannot change
+anything.
+
+She ships switched off. The platform administrator turns her on under
+Administration → Help and support, and she needs the same Anthropic key as the
+coordination assistant.
+
+She answers only from the step-by-step guide and from the help articles
+written on that same screen — never from what a model might imagine. When a
+question is not in the help she says so, and the question is marked: the
+platform administrator sees every conversation and can filter the ones she
+could not answer, which is exactly the list of what still needs writing.
+Articles are written in all three languages, like everything else.
+
+---
+
 ## 8. Audit
 
 Every change to business data is recorded with the before, the after, the

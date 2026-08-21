@@ -125,6 +125,19 @@ salud. Y no escribe nada sin que una persona lo confirme.
 
 ---
 
+## Si te pierdes
+
+En todas las pantallas, en la esquina inferior derecha, hay un botón redondo
+azul: es Cady, la asistente de ayuda. Puedes preguntarle cómo funciona
+cualquier parte de la plataforma y dónde se hace cada cosa, con tus palabras.
+
+No ve tus datos ni puede hacer cambios por ti: te explica dónde lo haces tú. Si
+algo no lo tiene en su ayuda te lo dice claramente en vez de inventárselo, y la
+pregunta queda anotada para que alguien escriba la respuesta. Si tu centro no
+la ha activado, el botón no aparece.
+
+---
+
 ## Cosas que pasan
 
 **No me sale el horario.** Comprueba que el curso está publicado: mientras es

@@ -440,6 +440,7 @@ model Center {
   notifications          Notification[]
   calendarTombstones     CalendarTombstone[]
   aiConversations        AiConversation[]
+  supportConversations   SupportConversation[]
   aiProposals            AiProposal[]
   documents              Document[]
   documentChunks         DocumentChunk[]
@@ -523,6 +524,7 @@ model User {
   calendarTombstones   CalendarTombstone[]
   consents             ConsentRecord[]
   aiConversations      AiConversation[]
+  supportConversations SupportConversation[]
   aiProposals          AiProposal[]            @relation("ProposalAuthor")
   resolvedProposals    AiProposal[]            @relation("ProposalResolver")
   uploadedDocuments    Document[]              @relation("DocumentUploader")
@@ -1553,6 +1555,78 @@ model PlatformSetting {
   updatedBy String?  @map("updated_by") @db.Char(36)
 
   @@map("platform_settings")
+}
+
+/// Cady, the support assistant: what somebody asked about the platform and
+/// what she answered.
+///
+/// Kept apart from `ai_conversations`, which is coordination's tool for the
+/// timetable and carries proposals, tool calls and a center's documents.
+/// This one is open to every role, holds no proposals, and is read by the
+/// platform administrator across centers to see what people are struggling
+/// with — three reasons the two are not one table.
+model SupportConversation {
+  id            String   @id @default(uuid(7)) @db.Char(36)
+  /// The center the person was working in. Null for a platform administrator,
+  /// who is not in one.
+  centerId      String?  @map("center_id") @db.Char(36)
+  userId        String   @map("user_id") @db.Char(36)
+  /// The role they held while asking: the same question means different things
+  /// from a lecturer and from a coordinator, and this is what the platform
+  /// administrator groups by when deciding what to write next.
+  role          Role
+  locale        String   @db.VarChar(5)
+  title         String   @db.VarChar(200)
+  lastMessageAt DateTime @default(now()) @map("last_message_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  center   Center?          @relation(fields: [centerId], references: [id], onDelete: Cascade)
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages SupportMessage[]
+
+  @@index([userId, lastMessageAt])
+  @@index([centerId, lastMessageAt])
+  @@map("support_conversations")
+}
+
+model SupportMessage {
+  id             String   @id @default(uuid(7)) @db.Char(36)
+  conversationId String   @map("conversation_id") @db.Char(36)
+  role           AiRole
+  content        String   @db.Text
+  /// Whether the help material actually covered the question. False marks one
+  /// Cady had to decline — which, gathered up, is the list of what the help
+  /// is missing rather than a failure to hide.
+  covered        Boolean  @default(true)
+  /// The reader's own verdict, when they give one.
+  helpful        Boolean?
+  tokensIn       Int?     @map("tokens_in")
+  tokensOut      Int?     @map("tokens_out")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  conversation SupportConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+  @@map("support_messages")
+}
+
+/// A piece of help the platform administrator writes, in the three languages.
+///
+/// Cady answers from these and from the step-by-step guide, and from nothing
+/// else. Writing one is how a question she could not answer stops being one.
+model SupportArticle {
+  id          String   @id @default(uuid(7)) @db.Char(36)
+  slug        String   @unique @db.VarChar(80)
+  /// `{ ca: { title, body }, es: …, en: … }` — all three, always (R1).
+  contentJson Json     @map("content_json")
+  /// Roles the article is offered to, as a list of `Role` values.
+  rolesJson   Json     @map("roles_json")
+  enabled     Boolean  @default(true)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  updatedBy   String?  @map("updated_by") @db.Char(36)
+
+  @@map("support_articles")
 }
 
 /// The one-time link an invited person follows to set their own password.

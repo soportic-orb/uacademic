@@ -11,6 +11,7 @@ import {
   Repeat,
   ScrollText,
   LayoutDashboard,
+  MessageCircleQuestion,
   MessageSquare,
   Settings,
   Sliders,
@@ -152,6 +153,12 @@ export const NAV_ITEMS: NavItem[] = [
     key: 'platform',
     path: '/platform',
     icon: Settings,
+    roles: ['SUPERADMIN'],
+  },
+  {
+    key: 'support',
+    path: '/support',
+    icon: MessageCircleQuestion,
     roles: ['SUPERADMIN'],
   },
   {

@@ -6,6 +6,7 @@ import { Outlet } from 'react-router'
 
 import { useSession } from '../../auth/session'
 import { useRealtime } from '../../features/realtime/use-realtime'
+import { SupportLauncher } from '../../features/support/support-launcher'
 import { useSessionStore } from '../../stores/session'
 import { CardSkeleton } from '../feedback/states'
 import { BottomNav } from './bottom-nav'
@@ -95,6 +96,14 @@ export function AppShell() {
       </div>
 
       <BottomNav roles={roles} />
+
+      {/*
+        Cady, in the same corner of every screen. In the shell rather than on
+        the pages because somebody who is lost is not going to hunt for the
+        help, and "bottom right" has to still be true on the screen they got
+        lost on.
+      */}
+      <SupportLauncher />
       <CommandPalette open={searchOpen} onClose={() => setSearchOpen(false)} roles={roles} />
     </div>
   )

@@ -124,6 +124,20 @@ anything medical. And it writes nothing without a person confirming it.
 
 ---
 
+## If you get lost
+
+On every screen, in the bottom-right corner, there is a round blue button:
+that is Cady, the support assistant. Ask her how any part of the platform
+works and where each thing is done, in your own words.
+
+She cannot see your data and cannot make changes for you — she tells you where
+you do it yourself. If something is not in her help material she says so
+plainly rather than inventing it, and the question is noted so somebody can
+write the answer. If your center has not switched her on, the button is not
+there.
+
+---
+
 ## Things that happen
 
 **My timetable is not there.** Check that the year is published: while it is a

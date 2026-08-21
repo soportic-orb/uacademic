@@ -40,6 +40,10 @@ const DELIBERATELY_UNSCOPED = new Set([
   'SettingExtractionRun',
   'AiConversation',
   'AiProposal',
+  // The support chat: written with the center the person was in, read by them
+  // and — deliberately, and only by the role that crosses centers — by the
+  // platform administrator, who has to see what everybody is asking.
+  'SupportConversation',
   'ImportBatch',
   'ImportRow',
   // INSERT-only, and read by the audit screen with its own center filter (R4).

@@ -5,6 +5,7 @@
  */
 import { z } from 'zod'
 
+import { CADY_MAX_QUESTION } from '../domain/support.js'
 import {
   clockTimeSchema,
   decimalHoursSchema,
@@ -262,3 +263,54 @@ export const timeWindowSchema = z.object({
   startTime: clockTimeSchema,
   endTime: clockTimeSchema,
 })
+
+/* ─────────────────────────── the support chat ──────────────────────────── */
+
+/** One question for Cady. Short: this is a chat, not a document upload. */
+export const supportAskSchema = z.object({
+  question: z.string().trim().min(2).max(CADY_MAX_QUESTION),
+  conversationId: uuidSchema.optional(),
+})
+export type SupportAsk = z.infer<typeof supportAskSchema>
+
+/** The reader's verdict on one answer, which is how the help gets better. */
+export const supportFeedbackSchema = z.object({ helpful: z.boolean() })
+export type SupportFeedback = z.infer<typeof supportFeedbackSchema>
+
+const supportArticleTextSchema = z.object({
+  title: z.string().trim().min(1).max(160),
+  body: z.string().trim().min(1).max(8_000),
+})
+
+/**
+ * A piece of help, in the three languages (R1).
+ *
+ * Cady reads the reader's own language out of this, so a missing one is a
+ * question she cannot answer for a third of the platform.
+ */
+export const supportArticleInputSchema = z.object({
+  slug: z
+    .string()
+    .trim()
+    .min(2)
+    .max(80)
+    .regex(/^[a-z0-9-]+$/, 'validation.slug'),
+  roles: z.array(roleSchema).min(1),
+  enabled: z.boolean().default(true),
+  content: z.object({
+    ca: supportArticleTextSchema,
+    es: supportArticleTextSchema,
+    en: supportArticleTextSchema,
+  }),
+})
+export type SupportArticleInput = z.infer<typeof supportArticleInputSchema>
+
+export const supportArticleUpdateSchema = supportArticleInputSchema.partial()
+
+/** What the platform administrator may switch. */
+export const supportSettingsInputSchema = z.object({
+  enabled: z.boolean().optional(),
+  maxOutputTokens: z.number().int().min(256).max(8_000).optional(),
+  historyMessages: z.number().int().min(0).max(40).optional(),
+})
+export type SupportSettingsInput = z.infer<typeof supportSettingsInputSchema>

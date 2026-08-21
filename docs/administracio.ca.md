@@ -165,6 +165,26 @@ disponibilitat, amb els motius i els impediments a la vista.
 
 ---
 
+## 7b. Ajuda i suport (Cady)
+
+La Cady és l'assistent d'ajuda que qualsevol persona obre amb el botó rodó de
+la cantonada inferior dreta, a totes les pantalles. Explica com funciona la
+plataforma i on es fa cada cosa; no veu les dades del centre i no pot canviar
+res.
+
+Ve desactivada. L'activa la superadministració a Administració → Ajuda i
+suport, i necessita la mateixa clau d'Anthropic que l'assistent de
+coordinació.
+
+Respon només des de la guia pas a pas i dels articles d'ajuda escrits en
+aquella mateixa pantalla, mai del que un model es pugui imaginar. Quan una
+pregunta no és a l'ajuda, ho diu i la pregunta queda marcada: la
+superadministració veu totes les converses i pot filtrar les que no ha sabut
+respondre, que són exactament la llista del que falta escriure. Els articles
+s'escriuen en les tres llengües, com tota la resta.
+
+---
+
 ## 8. Auditoria
 
 Tota modificació de dades de negoci queda registrada amb l'abans, el després,

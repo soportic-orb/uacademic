@@ -69,7 +69,8 @@
     "audit": "Audit",
     "connections": "Calendar connections",
     "privacy": "Privacy",
-    "guide": "Guide"
+    "guide": "Guide",
+    "support": "Help (Cady)"
   },
   "layout": {
     "skipToContent": "Skip to main content",
@@ -2269,6 +2270,57 @@
         "title": "Talk to your colleagues",
         "body": "Start a message with anybody in your center or your university. It is the channel inside the platform: it stays tied to its context and does not get lost in a full inbox."
       }
+    }
+  },
+  "support": {
+    "title": "Cady, the support assistant",
+    "subtitle": "Ask me how the platform works",
+    "open": "Open Cady, the support assistant",
+    "close": "Close support",
+    "placeholder": "Type your question…",
+    "send": "Send",
+    "thinking": "Cady is writing…",
+    "emptyTitle": "Hi, I’m Cady 👋",
+    "emptyHint": "I help you find your way around UAcademic: where each thing is done, what has to be set up first, and why a screen is empty. I cannot see your center’s data and I cannot change anything for you.",
+    "history": "Conversations",
+    "newConversation": "New conversation",
+    "helpful": "This helped",
+    "notHelpful": "This did not help",
+    "thanks": "Thank you — we will take note.",
+    "uncovered": "This question is not in my help material yet. It has been recorded so somebody can write the answer.",
+    "errors": {
+      "unavailable": "Cady is not available on this installation.",
+      "failed": "I could not answer. Try again in a moment.",
+      "slugTaken": "An article with that identifier already exists."
+    },
+    "admin": {
+      "title": "Help and support (Cady)",
+      "subtitle": "Switch the assistant on, read what people ask, and write what it is missing",
+      "enabled": "Support assistant on",
+      "enabledHint": "With it off, the round button appears on no screen.",
+      "notConfigured": "This installation has no Anthropic API key configured, so the assistant cannot answer even when switched on.",
+      "maxOutputTokens": "Longest answer",
+      "historyMessages": "Messages of context",
+      "saved": "Settings saved",
+      "conversations": "Conversations",
+      "conversationsHint": "Everything people have asked, across every center.",
+      "uncoveredOnly": "Only the ones she could not answer",
+      "uncovered": "Not in the help",
+      "unhelpful": "Did not help",
+      "noConversations": "Nobody has asked anything yet.",
+      "articles": "Help articles",
+      "articlesHint": "Cady answers from the step-by-step guide and from these articles, and from nothing else.",
+      "newArticle": "New article",
+      "slug": "Identifier",
+      "roles": "Which roles",
+      "articleTitle": "Title",
+      "articleBody": "Body",
+      "articleEnabled": "On",
+      "articleSaved": "Article saved",
+      "articleDeleted": "Article deleted",
+      "deleteArticle": "Delete article {{slug}}",
+      "noArticles": "No articles yet — Cady answers from the guide alone.",
+      "writeFromQuestion": "Write an article about this"
     }
   }
 }

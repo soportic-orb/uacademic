@@ -69,7 +69,8 @@
     "audit": "Auditoria",
     "connections": "Connexions de calendari",
     "privacy": "Privacitat",
-    "guide": "Guia"
+    "guide": "Guia",
+    "support": "Ajuda (Cady)"
   },
   "layout": {
     "skipToContent": "Ves al contingut principal",
@@ -2269,6 +2270,57 @@
         "title": "Parla amb la resta",
         "body": "Missatges nous amb qui vulguis del centre o de la universitat. És el canal de dins de la plataforma: queda lligat al context i no es perd en una safata plena."
       }
+    }
+  },
+  "support": {
+    "title": "Cady, l'assistent d'ajuda",
+    "subtitle": "Pregunta'm com funciona la plataforma",
+    "open": "Obre l'ajuda de la Cady",
+    "close": "Tanca l'ajuda",
+    "placeholder": "Escriu la teva pregunta…",
+    "send": "Envia",
+    "thinking": "La Cady està escrivint…",
+    "emptyTitle": "Hola! Sóc la Cady 👋",
+    "emptyHint": "T'ajudo a moure't per UAcademic: on es fa cada cosa, què cal configurar abans i per què una pantalla surt buida. No veig les dades del teu centre ni puc fer canvis per tu.",
+    "history": "Converses",
+    "newConversation": "Nova conversa",
+    "helpful": "M'ha servit",
+    "notHelpful": "No m'ha servit",
+    "thanks": "Gràcies, ho tindrem en compte.",
+    "uncovered": "Aquesta pregunta encara no és a la meva ajuda. L'hem registrada perquè algú hi escrigui la resposta.",
+    "errors": {
+      "unavailable": "L'ajuda de la Cady no està disponible en aquesta instal·lació.",
+      "failed": "No he pogut respondre. Torna-ho a provar d'aquí a un moment.",
+      "slugTaken": "Ja hi ha un article amb aquest identificador."
+    },
+    "admin": {
+      "title": "Ajuda i suport (Cady)",
+      "subtitle": "Activa l'assistent, llegeix el que pregunta la gent i escriu el que li falta",
+      "enabled": "Assistent d'ajuda actiu",
+      "enabledHint": "Quan està desactivat, el botó rodó no apareix a cap pantalla.",
+      "notConfigured": "Aquesta instal·lació no té clau d'API d'Anthropic configurada, així que l'assistent no pot respondre encara que s'activi.",
+      "maxOutputTokens": "Longitud màxima de la resposta",
+      "historyMessages": "Missatges de context",
+      "saved": "Configuració desada",
+      "conversations": "Converses",
+      "conversationsHint": "Tot el que la gent ha preguntat, de tots els centres.",
+      "uncoveredOnly": "Només les que no ha sabut respondre",
+      "uncovered": "Sense resposta a l'ajuda",
+      "unhelpful": "No ha servit",
+      "noConversations": "Encara ningú no ha preguntat res.",
+      "articles": "Articles d'ajuda",
+      "articlesHint": "La Cady respon des de la guia pas a pas i des d'aquests articles, i de res més.",
+      "newArticle": "Nou article",
+      "slug": "Identificador",
+      "roles": "Per a quins rols",
+      "articleTitle": "Títol",
+      "articleBody": "Contingut",
+      "articleEnabled": "Actiu",
+      "articleSaved": "Article desat",
+      "articleDeleted": "Article eliminat",
+      "deleteArticle": "Elimina l'article {{slug}}",
+      "noArticles": "Encara no hi ha cap article. La Cady només respon des de la guia.",
+      "writeFromQuestion": "Escriu un article sobre això"
     }
   }
 }

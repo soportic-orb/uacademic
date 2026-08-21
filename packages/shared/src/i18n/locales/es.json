@@ -69,7 +69,8 @@
     "audit": "Auditoría",
     "connections": "Conexiones de calendario",
     "privacy": "Privacidad",
-    "guide": "Guía"
+    "guide": "Guía",
+    "support": "Ayuda (Cady)"
   },
   "layout": {
     "skipToContent": "Ir al contenido principal",
@@ -2269,6 +2270,57 @@
         "title": "Habla con el resto",
         "body": "Mensajes nuevos con quien quieras del centro o de la universidad. Es el canal de dentro de la plataforma: queda ligado al contexto y no se pierde en una bandeja llena."
       }
+    }
+  },
+  "support": {
+    "title": "Cady, la asistente de ayuda",
+    "subtitle": "Pregúntame cómo funciona la plataforma",
+    "open": "Abre la ayuda de Cady",
+    "close": "Cerrar la ayuda",
+    "placeholder": "Escribe tu pregunta…",
+    "send": "Enviar",
+    "thinking": "Cady está escribiendo…",
+    "emptyTitle": "¡Hola! Soy Cady 👋",
+    "emptyHint": "Te ayudo a moverte por UAcademic: dónde se hace cada cosa, qué hay que configurar antes y por qué una pantalla sale vacía. No veo los datos de tu centro ni puedo hacer cambios por ti.",
+    "history": "Conversaciones",
+    "newConversation": "Nueva conversación",
+    "helpful": "Me ha servido",
+    "notHelpful": "No me ha servido",
+    "thanks": "Gracias, lo tendremos en cuenta.",
+    "uncovered": "Esta pregunta todavía no está en mi ayuda. La hemos registrado para que alguien escriba la respuesta.",
+    "errors": {
+      "unavailable": "La ayuda de Cady no está disponible en esta instalación.",
+      "failed": "No he podido responder. Inténtalo de nuevo en un momento.",
+      "slugTaken": "Ya hay un artículo con este identificador."
+    },
+    "admin": {
+      "title": "Ayuda y soporte (Cady)",
+      "subtitle": "Activa la asistente, lee lo que pregunta la gente y escribe lo que le falta",
+      "enabled": "Asistente de ayuda activo",
+      "enabledHint": "Cuando está desactivado, el botón redondo no aparece en ninguna pantalla.",
+      "notConfigured": "Esta instalación no tiene clave de API de Anthropic configurada, así que la asistente no puede responder aunque se active.",
+      "maxOutputTokens": "Longitud máxima de la respuesta",
+      "historyMessages": "Mensajes de contexto",
+      "saved": "Configuración guardada",
+      "conversations": "Conversaciones",
+      "conversationsHint": "Todo lo que la gente ha preguntado, de todos los centros.",
+      "uncoveredOnly": "Solo las que no ha sabido responder",
+      "uncovered": "Sin respuesta en la ayuda",
+      "unhelpful": "No ha servido",
+      "noConversations": "Todavía nadie ha preguntado nada.",
+      "articles": "Artículos de ayuda",
+      "articlesHint": "Cady responde desde la guía paso a paso y desde estos artículos, y de nada más.",
+      "newArticle": "Nuevo artículo",
+      "slug": "Identificador",
+      "roles": "Para qué roles",
+      "articleTitle": "Título",
+      "articleBody": "Contenido",
+      "articleEnabled": "Activo",
+      "articleSaved": "Artículo guardado",
+      "articleDeleted": "Artículo eliminado",
+      "deleteArticle": "Eliminar el artículo {{slug}}",
+      "noArticles": "Todavía no hay ningún artículo. Cady solo responde desde la guía.",
+      "writeFromQuestion": "Escribir un artículo sobre esto"
     }
   }
 }

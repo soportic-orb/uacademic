@@ -123,6 +123,19 @@ sense que una persona ho confirmi.
 
 ---
 
+## Si et perds
+
+A totes les pantalles, a la cantonada de baix a la dreta, hi ha un botó rodó
+blau: és la Cady, l'assistent d'ajuda. Li pots preguntar com funciona qualsevol
+part de la plataforma i on es fa cada cosa, amb les teves paraules.
+
+No veu les teves dades ni pot fer canvis per tu: t'explica on ho fas tu. Si una
+cosa no la té a la seva ajuda t'ho diu clarament en comptes d'inventar-se-la, i
+la pregunta queda anotada perquè algú hi escrigui la resposta. Si el teu centre
+no l'ha activada, el botó no hi surt.
+
+---
+
 ## Coses que passen
 
 **No em surt l'horari.** Comprova que el curs està publicat: mentre és
