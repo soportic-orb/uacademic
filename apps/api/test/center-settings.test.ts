@@ -64,6 +64,43 @@ describe.skipIf(!hasDatabase)('editing the center parameters by hand', () => {
     expect(entry?.source).toBe('user')
   })
 
+  it('writes a collection: the categories a center names for itself', async () => {
+    const categories = [
+      {
+        code: 'AS66',
+        label: 'Associat 6+6',
+        baseCapacityHours: 120,
+        maxTeachingHours: 180,
+        mapsTo: 'adjunct',
+        notes: null,
+      },
+    ]
+
+    const response = await patch({ categories })
+
+    expect(response.statusCode).toBe(200)
+    expect(readSettingValue(response.json().settings, 'categories')).toMatchObject([
+      { code: 'AS66', baseCapacityHours: 120, mapsTo: 'adjunct' },
+    ])
+  })
+
+  it('refuses a row that is missing a column the schema requires', async () => {
+    // Which is what an added-but-unfilled row is, and the point of sending
+    // every column: the answer names the field rather than the whole list.
+    const response = await patch({ categories: [{ code: '', label: 'Sense codi' }] })
+
+    expect(response.statusCode).toBe(422)
+  })
+
+  it('writes the days the center teaches, and refuses an empty week', async () => {
+    expect((await patch({ 'schedule.workingWeekdays': [1, 2, 3, 4] })).statusCode).toBe(200)
+    expect((await patch({ 'schedule.workingWeekdays': [] })).statusCode).toBe(422)
+
+    // Put back: this is the seeded center, the planner reads its weekdays for
+    // the grid, and the test files run in parallel against one database.
+    expect((await patch({ 'schedule.workingWeekdays': [1, 2, 3, 4, 5] })).statusCode).toBe(200)
+  })
+
   it('refuses a value the settings schema will not have', async () => {
     const response = await patch({ 'capacity.maxTeachingHoursYear': -40 })
 

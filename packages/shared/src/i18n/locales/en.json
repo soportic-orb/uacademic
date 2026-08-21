@@ -756,6 +756,69 @@
       "edit": "Edit manually",
       "hint": "Parameters the assistant reads from a regulation arrive with their citation. You can correct them, or set them by hand when you need to.",
       "saved": "Parameters saved"
+    },
+    "collections": {
+      "add": "Add a row",
+      "remove": "Remove row {{position}}",
+      "empty": "Nothing recorded yet.",
+      "categories": {
+        "fields": {
+          "code": "Code",
+          "label": "Name",
+          "baseCapacityHours": "Base capacity",
+          "maxTeachingHours": "Teaching ceiling",
+          "mapsTo": "Maps to",
+          "notes": "Notes"
+        },
+        "choices": {
+          "mapsTo": {
+            "full_professor": "Full professor",
+            "associate_professor": "Associate professor",
+            "assistant_professor": "Assistant professor",
+            "lecturer": "Lecturer",
+            "adjunct": "Adjunct",
+            "visiting": "Visiting",
+            "external": "External"
+          }
+        }
+      },
+      "reductions": {
+        "fields": {
+          "code": "Code",
+          "label": "Name",
+          "hours": "Hours",
+          "credits": "Credits",
+          "maxHours": "Ceiling",
+          "stackable": "Stacks",
+          "approvedBy": "Approved by",
+          "notes": "Notes"
+        },
+        "choices": {
+          "approvedBy": {
+            "department": "Department",
+            "faculty": "Faculty",
+            "coordination": "Coordination",
+            "union": "Works council",
+            "rectorate": "Rectorate",
+            "other": "Other"
+          }
+        }
+      },
+      "academicCalendar": {
+        "examPeriods": {
+          "fields": {
+            "label": "Period",
+            "from": "From",
+            "to": "To"
+          }
+        },
+        "holidays": {
+          "fields": {
+            "label": "Holiday",
+            "date": "Date"
+          }
+        }
+      }
     }
   },
   "platform": {
@@ -1465,7 +1528,8 @@
     },
     "closedOn": "The center is closed: {{name}}",
     "closedLegend": "Center closed",
-    "closedLegendHint": "A holiday or holiday period from the academic calendar. You can still plan on it: the week is a template, and that date is skipped when the classes are generated."
+    "closedLegendHint": "A holiday or holiday period from the academic calendar. You can still plan on it: the week is a template, and that date is skipped when the classes are generated.",
+    "thisWeekCount": "{{shown}} of {{total}} classes this week"
   },
   "calendar": {
     "title": "My calendar",

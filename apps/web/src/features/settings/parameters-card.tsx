@@ -24,6 +24,7 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 
 import { CardSkeleton, ErrorState } from '../../components/feedback/states'
+import { CollectionEditor, WeekdaysEditor } from './collection-editor'
 import { Button } from '../../components/ui/button'
 import { Card, CardBody, CardHeader } from '../../components/ui/card'
 import { useToast } from '../../hooks/use-toast'
@@ -31,13 +32,13 @@ import { useCenterSettings } from '../../hooks/use-api'
 import { ApiRequestError, apiJson } from '../../lib/api'
 
 /**
- * The parameters that can be typed into a box.
+ * The parameters that fit in a single box.
  *
- * A list of teacher categories or a set of weekdays is not one value, and a
- * text field that pretends otherwise invites somebody to paste JSON into their
- * own configuration. Those stay read-only until they get a screen of their own.
+ * A list of teacher categories or a set of weekdays is not one value, so those
+ * two get editors of their own — a row per entry, and seven checkboxes — drawn
+ * across the full width of the row rather than squeezed beside the label.
  */
-function isEditable(param: SettingParam): boolean {
+function isScalar(param: SettingParam): boolean {
   return param.kind !== 'collection' && param.kind !== 'weekdays'
 }
 
@@ -133,7 +134,7 @@ export function ParametersCard() {
                         {t(paramLabelKey(param.key))}
                       </label>
 
-                      {editing && isEditable(param) ? (
+                      {editing && isScalar(param) ? (
                         <span className="flex items-center gap-2">
                           <input
                             id={`param-${param.key}`}
@@ -161,15 +162,30 @@ export function ParametersCard() {
                             <span className="text-xs text-text-muted">{param.unit}</span>
                           ) : null}
                         </span>
-                      ) : (
+                      ) : isScalar(param) ? (
                         <span className="tabular-nums text-text">
                           {display(valueOf(param.key))}
                           {param.unit ? (
                             <span className="ml-1 text-xs text-text-muted">{param.unit}</span>
                           ) : null}
                         </span>
-                      )}
+                      ) : param.kind === 'weekdays' ? (
+                        <WeekdaysEditor
+                          value={valueOf(param.key)}
+                          editing={editing}
+                          onChange={(weekdays) => setDraft({ ...draft, [param.key]: weekdays })}
+                        />
+                      ) : null}
                     </dt>
+
+                    {param.kind === 'collection' ? (
+                      <CollectionEditor
+                        paramKey={param.key}
+                        value={valueOf(param.key)}
+                        editing={editing}
+                        onChange={(rows) => setDraft({ ...draft, [param.key]: rows })}
+                      />
+                    ) : null}
                     <dd className="mt-1 text-xs text-text-muted">
                       <p>{t(paramHelpKey(param.key))}</p>
 

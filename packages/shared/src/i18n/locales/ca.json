@@ -756,6 +756,69 @@
       "edit": "Edita manualment",
       "hint": "Els paràmetres que llegeix l'assistent d'una normativa arriben amb la citació. Els pots corregir o posar a mà quan calgui.",
       "saved": "Paràmetres desats"
+    },
+    "collections": {
+      "add": "Afegeix una fila",
+      "remove": "Elimina la fila {{position}}",
+      "empty": "Encara no hi ha cap entrada.",
+      "categories": {
+        "fields": {
+          "code": "Codi",
+          "label": "Denominació",
+          "baseCapacityHours": "Capacitat base",
+          "maxTeachingHours": "Màxim docent",
+          "mapsTo": "Equival a",
+          "notes": "Notes"
+        },
+        "choices": {
+          "mapsTo": {
+            "full_professor": "Catedràtic/a",
+            "associate_professor": "Professor/a titular",
+            "assistant_professor": "Professor/a agregat/da",
+            "lecturer": "Professor/a lector/a",
+            "adjunct": "Professor/a associat/da",
+            "visiting": "Professor/a visitant",
+            "external": "Personal extern"
+          }
+        }
+      },
+      "reductions": {
+        "fields": {
+          "code": "Codi",
+          "label": "Denominació",
+          "hours": "Hores",
+          "credits": "Crèdits",
+          "maxHours": "Màxim",
+          "stackable": "Acumulable",
+          "approvedBy": "Aprova",
+          "notes": "Notes"
+        },
+        "choices": {
+          "approvedBy": {
+            "department": "Departament",
+            "faculty": "Facultat",
+            "coordination": "Coordinació",
+            "union": "Comitè d'empresa",
+            "rectorate": "Rectorat",
+            "other": "Altres"
+          }
+        }
+      },
+      "academicCalendar": {
+        "examPeriods": {
+          "fields": {
+            "label": "Període",
+            "from": "Del",
+            "to": "Al"
+          }
+        },
+        "holidays": {
+          "fields": {
+            "label": "Festiu",
+            "date": "Data"
+          }
+        }
+      }
     }
   },
   "platform": {
@@ -1465,7 +1528,8 @@
     },
     "closedOn": "El centre és tancat: {{name}}",
     "closedLegend": "Centre tancat",
-    "closedLegendHint": "Festiu o període vacacional del calendari acadèmic. Pots planificar-hi igualment: la setmana és una plantilla i aquell dia se salta quan es generen les classes."
+    "closedLegendHint": "Festiu o període vacacional del calendari acadèmic. Pots planificar-hi igualment: la setmana és una plantilla i aquell dia se salta quan es generen les classes.",
+    "thisWeekCount": "{{shown}} de {{total}} classes aquesta setmana"
   },
   "calendar": {
     "title": "El meu calendari",

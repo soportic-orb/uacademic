@@ -11,6 +11,7 @@
 import {
   type CellEvaluation,
   closuresInRange,
+  occursOn,
   effectiveAvailability,
   isoDateOf,
 } from '@uacademic/shared'
@@ -312,9 +313,26 @@ export function PlannerGrid({
     }
   }
 
+  /**
+   * The classes that actually happen in the week on screen.
+   *
+   * The grid used to draw every session in the version whatever week it was
+   * showing, so a term that has not started and a fortnightly class in its off
+   * week both looked like an ordinary Monday. Now that the columns carry
+   * dates, that is a straightforward contradiction: the header says the 9th of
+   * February and the cell says a class that finished in December.
+   */
+  const thisWeek = useMemo(
+    () =>
+      version.sessions.filter((session) =>
+        occursOn(session, isoDateOf(dateOfWeekday(weekStart, session.weekday))),
+      ),
+    [version.sessions, weekStart],
+  )
+
   const occupied = useMemo(() => {
     const map = new Map<string, PlannerSessionDto>()
-    for (const session of version.sessions) {
+    for (const session of thisWeek) {
       const span = Math.max(
         1,
         Math.round(
@@ -330,7 +348,7 @@ export function PlannerGrid({
       }
     }
     return map
-  }, [version])
+  }, [thisWeek, version.grid.slotMinutes])
 
   return (
     <div className="space-y-4">
@@ -402,7 +420,20 @@ export function PlannerGrid({
           />
 
           <CardBody className="space-y-3">
-            <Legend />
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <Legend />
+              {/*
+                Says why the grid is emptier than the version is. Without it, a
+                week outside the term — or the off week of a fortnightly class
+                — reads as classes that have gone missing.
+              */}
+              <p className="text-xs text-text-muted">
+                {t('planner.thisWeekCount', {
+                  shown: thisWeek.length,
+                  total: version.sessions.length,
+                })}
+              </p>
+            </div>
 
             <div className="overflow-x-auto">
               <table

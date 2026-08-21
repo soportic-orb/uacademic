@@ -756,6 +756,69 @@
       "edit": "Editar manualmente",
       "hint": "Los parámetros que el asistente lee de una normativa llegan con la cita. Puedes corregirlos o ponerlos a mano cuando haga falta.",
       "saved": "Parámetros guardados"
+    },
+    "collections": {
+      "add": "Añadir una fila",
+      "remove": "Eliminar la fila {{position}}",
+      "empty": "Todavía no hay ninguna entrada.",
+      "categories": {
+        "fields": {
+          "code": "Código",
+          "label": "Denominación",
+          "baseCapacityHours": "Capacidad base",
+          "maxTeachingHours": "Máximo docente",
+          "mapsTo": "Equivale a",
+          "notes": "Notas"
+        },
+        "choices": {
+          "mapsTo": {
+            "full_professor": "Catedrático/a",
+            "associate_professor": "Profesor/a titular",
+            "assistant_professor": "Profesor/a agregado/a",
+            "lecturer": "Profesor/a lector/a",
+            "adjunct": "Profesor/a asociado/a",
+            "visiting": "Profesor/a visitante",
+            "external": "Personal externo"
+          }
+        }
+      },
+      "reductions": {
+        "fields": {
+          "code": "Código",
+          "label": "Denominación",
+          "hours": "Horas",
+          "credits": "Créditos",
+          "maxHours": "Máximo",
+          "stackable": "Acumulable",
+          "approvedBy": "Aprueba",
+          "notes": "Notas"
+        },
+        "choices": {
+          "approvedBy": {
+            "department": "Departamento",
+            "faculty": "Facultad",
+            "coordination": "Coordinación",
+            "union": "Comité de empresa",
+            "rectorate": "Rectorado",
+            "other": "Otros"
+          }
+        }
+      },
+      "academicCalendar": {
+        "examPeriods": {
+          "fields": {
+            "label": "Periodo",
+            "from": "Del",
+            "to": "Al"
+          }
+        },
+        "holidays": {
+          "fields": {
+            "label": "Festivo",
+            "date": "Fecha"
+          }
+        }
+      }
     }
   },
   "platform": {
@@ -1465,7 +1528,8 @@
     },
     "closedOn": "El centro está cerrado: {{name}}",
     "closedLegend": "Centro cerrado",
-    "closedLegendHint": "Festivo o periodo vacacional del calendario académico. Puedes planificar igualmente: la semana es una plantilla y ese día se salta al generar las clases."
+    "closedLegendHint": "Festivo o periodo vacacional del calendario académico. Puedes planificar igualmente: la semana es una plantilla y ese día se salta al generar las clases.",
+    "thisWeekCount": "{{shown}} de {{total}} clases esta semana"
   },
   "calendar": {
     "title": "Mi calendario",

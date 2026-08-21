@@ -219,3 +219,115 @@ function sameValue(a: SettingValue | undefined, b: SettingValue | undefined): bo
   if (Array.isArray(a) || Array.isArray(b)) return JSON.stringify(a) === JSON.stringify(b)
   return a === b
 }
+
+/* ─────────────────────────── the collections ───────────────────────────── */
+
+/**
+ * One column of a collection parameter.
+ *
+ * A list of contractual categories is a table, not a value, and a text box
+ * that pretends otherwise invites somebody to paste JSON into their own
+ * configuration. Describing the columns here — rather than in the component —
+ * keeps the shape beside the schema that validates it, and means the editor
+ * is the same editor for all five collections.
+ */
+export interface CollectionField {
+  name: string
+  kind: 'text' | 'number' | 'date' | 'boolean' | 'choice'
+  /** For `choice`. The empty option is offered when the field is nullable. */
+  options?: readonly string[]
+  /** Whether an empty box means `null` rather than an error. */
+  nullable?: boolean
+  /** Shown beside the box, as on the scalar parameters. */
+  unit?: string | null
+}
+
+function field(
+  name: string,
+  kind: CollectionField['kind'],
+  extra: Omit<CollectionField, 'name' | 'kind'> = {},
+): CollectionField {
+  return { name, kind, ...extra }
+}
+
+const CATEGORY_MAPPINGS = [
+  'full_professor',
+  'associate_professor',
+  'assistant_professor',
+  'lecturer',
+  'adjunct',
+  'visiting',
+  'external',
+] as const
+
+const REDUCTION_APPROVERS = [
+  'department',
+  'faculty',
+  'coordination',
+  'union',
+  'rectorate',
+  'other',
+] as const
+
+/**
+ * The columns of each collection, in the order they are edited.
+ *
+ * These mirror the Zod schemas in `settings.ts`; the schemas remain the
+ * authority on what is legal, and the API re-parses whatever this produces.
+ */
+export const COLLECTION_FIELDS: Readonly<Record<string, readonly CollectionField[]>> = {
+  categories: [
+    field('code', 'text'),
+    field('label', 'text'),
+    field('baseCapacityHours', 'number', { unit: 'hours/year' }),
+    field('maxTeachingHours', 'number', { unit: 'hours/year' }),
+    field('mapsTo', 'choice', { options: CATEGORY_MAPPINGS, nullable: true }),
+    field('notes', 'text', { nullable: true }),
+  ],
+  reductions: [
+    field('code', 'text'),
+    field('label', 'text'),
+    field('hours', 'number', { nullable: true, unit: 'hours' }),
+    field('credits', 'number', { nullable: true, unit: 'credits' }),
+    field('maxHours', 'number', { nullable: true, unit: 'hours' }),
+    field('stackable', 'boolean'),
+    field('approvedBy', 'choice', { options: REDUCTION_APPROVERS }),
+    field('notes', 'text', { nullable: true }),
+  ],
+  'academicCalendar.examPeriods': [
+    field('label', 'text'),
+    field('from', 'date'),
+    field('to', 'date'),
+  ],
+  'academicCalendar.holidays': [field('label', 'text'), field('date', 'date')],
+}
+
+export function collectionFields(key: string): readonly CollectionField[] | null {
+  return COLLECTION_FIELDS[key] ?? null
+}
+
+/**
+ * A blank row.
+ *
+ * Every column is present, because a row half-built is still parsed against
+ * the schema on save: an absent `stackable` would take its default and an
+ * absent `code` would be reported as missing, which is the point.
+ */
+export function emptyCollectionRow(key: string): Record<string, unknown> {
+  const row: Record<string, unknown> = {}
+  for (const column of collectionFields(key) ?? []) {
+    if (column.kind === 'boolean') row[column.name] = true
+    else if (column.kind === 'choice' && !column.nullable) row[column.name] = column.options?.[0]
+    else row[column.name] = column.nullable ? null : ''
+  }
+  return row
+}
+
+/** Label for one column of a collection, and for the values of a `choice`. */
+export function collectionFieldLabelKey(key: string, field: string): string {
+  return `settings.collections.${key}.fields.${field}`
+}
+
+export function collectionChoiceLabelKey(key: string, field: string, option: string): string {
+  return `settings.collections.${key}.choices.${field}.${option}`
+}

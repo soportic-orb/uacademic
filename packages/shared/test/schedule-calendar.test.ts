@@ -4,7 +4,9 @@ import {
   type CalendarDayEntry,
   closureOn,
   closuresInRange,
+  firstClassDate,
   isoDateOf,
+  occursOn,
 } from '../src/domain/schedule-calendar.js'
 
 /**
@@ -72,5 +74,66 @@ describe('what the academic calendar says about a day', () => {
     // anybody east of Greenwich, which is the whole of this platform's users.
     expect(isoDateOf(new Date(2026, 0, 1, 0, 30))).toBe('2026-01-01')
     expect(isoDateOf(new Date(2026, 11, 25))).toBe('2026-12-25')
+  })
+})
+
+describe('when a repeating class happens', () => {
+  const weekly = {
+    weekday: 3,
+    dateFrom: '2026-09-14',
+    dateTo: '2026-12-18',
+    recurrence: 'weekly',
+  } as const
+
+  it('starts on the first matching weekday, not on the day the term opens', () => {
+    // 14 September 2026 is a Monday; the class is on Wednesdays.
+    expect(firstClassDate(weekly)).toBe('2026-09-16')
+  })
+
+  it('happens every week of the term and on no other day', () => {
+    expect(occursOn(weekly, '2026-09-16')).toBe(true)
+    expect(occursOn(weekly, '2026-09-23')).toBe(true)
+    expect(occursOn(weekly, '2026-09-24')).toBe(false)
+  })
+
+  it('has not started before the term and has finished after it', () => {
+    expect(occursOn(weekly, '2026-09-09')).toBe(false)
+    expect(occursOn(weekly, '2026-12-23')).toBe(false)
+  })
+
+  it('skips alternate weeks when it is fortnightly', () => {
+    const biweekly = { ...weekly, recurrence: 'biweekly' } as const
+
+    expect(occursOn(biweekly, '2026-09-16')).toBe(true)
+    expect(occursOn(biweekly, '2026-09-23')).toBe(false)
+    expect(occursOn(biweekly, '2026-09-30')).toBe(true)
+  })
+
+  it('counts a fortnight from its own first class, so two of them alternate', () => {
+    const first = { ...weekly, recurrence: 'biweekly' } as const
+    const second = { ...first, dateFrom: '2026-09-21' } as const
+
+    expect(occursOn(first, '2026-09-23')).toBe(false)
+    expect(occursOn(second, '2026-09-23')).toBe(true)
+  })
+
+  it('happens exactly once when it is a one-off', () => {
+    const once = { ...weekly, recurrence: 'once' } as const
+
+    expect(occursOn(once, '2026-09-16')).toBe(true)
+    expect(occursOn(once, '2026-09-23')).toBe(false)
+  })
+
+  it('reads the date in UTC, so a Sunday class is not a Saturday one', () => {
+    const sunday = {
+      weekday: 7,
+      dateFrom: '2026-03-02',
+      dateTo: '2026-06-30',
+      recurrence: 'weekly',
+    } as const
+
+    expect(firstClassDate(sunday)).toBe('2026-03-08')
+    expect(occursOn(sunday, '2026-03-08')).toBe(true)
+    expect(occursOn(sunday, '2026-03-07')).toBe(false)
   })
 })

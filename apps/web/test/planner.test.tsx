@@ -9,7 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { Toaster } from '../src/components/feedback/toaster'
 import { PlannerGrid } from '../src/features/planner/planner-grid'
-import { mondayOf } from '../src/features/planner/week-dates'
+import { addDays, isoDate, mondayOf } from '../src/features/planner/week-dates'
 import type { VersionDetailDto } from '../src/features/planner/queries'
 import { useSessionStore } from '../src/stores/session'
 
@@ -113,6 +113,18 @@ const CONTEXT = {
   ],
 }
 
+/**
+ * The term the fixture's classes run in.
+ *
+ * Ten weeks either side of today, because the grid opens on this week and only
+ * draws what actually happens in it: a term hard-coded to autumn 2026 would
+ * make every one of these tests pass or fail depending on the date they run.
+ */
+const TERM = {
+  dateFrom: isoDate(addDays(mondayOf(new Date()), -70)),
+  dateTo: isoDate(addDays(mondayOf(new Date()), 70)),
+}
+
 const VERSION: VersionDetailDto = {
   id: 'v1',
   name: 'Esborrany',
@@ -137,8 +149,8 @@ const VERSION: VersionDetailDto = {
       startTime: '09:00',
       endTime: '10:00',
       recurrence: 'weekly',
-      dateFrom: '2026-09-14',
-      dateTo: '2026-12-18',
+      dateFrom: TERM.dateFrom,
+      dateTo: TERM.dateTo,
     },
   ],
   violations: [],
@@ -377,6 +389,39 @@ describe('the visual planner', () => {
       expect(
         within(screen.getByRole('grid')).getByText(String(monday.getDate())),
       ).toBeInTheDocument()
+    })
+
+    it('draws only the classes that happen in the week on screen', () => {
+      // The same class, a term that ended before this week began.
+      const past: VersionDetailDto = {
+        ...VERSION,
+        sessions: [
+          {
+            ...VERSION.sessions[0]!,
+            dateFrom: isoDate(addDays(mondayOf(new Date()), -140)),
+            dateTo: isoDate(addDays(mondayOf(new Date()), -70)),
+          },
+        ],
+      }
+      render(wrap(<PlannerGrid version={past} context={CONTEXT} />))
+
+      expect(within(screen.getByRole('grid')).queryByText('MAT101')).not.toBeInTheDocument()
+      expect(screen.getByText('0 de 1 classes aquesta setmana')).toBeInTheDocument()
+    })
+
+    it('skips the off week of a fortnightly class', () => {
+      const fortnightly: VersionDetailDto = {
+        ...VERSION,
+        sessions: [{ ...VERSION.sessions[0]!, recurrence: 'biweekly', dateFrom: TERM.dateFrom }],
+      }
+      render(wrap(<PlannerGrid version={fortnightly} context={CONTEXT} />))
+
+      // dateFrom is a Monday ten whole weeks back, and the class is on Monday,
+      // so this week is an even number of weeks from the first one.
+      expect(within(screen.getByRole('grid')).getByText('MAT101')).toBeInTheDocument()
+
+      fireEvent.click(screen.getByRole('button', { name: 'Setmana següent' }))
+      expect(within(screen.getByRole('grid')).queryByText('MAT101')).not.toBeInTheDocument()
     })
 
     it('steps a week at a time, across the end of a month', () => {
