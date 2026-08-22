@@ -9,6 +9,7 @@ import { Card, CardBody, CardHeader } from '../components/ui/card'
 import { Button } from '../components/ui/button'
 import { ExtractionCard } from '../features/settings/extraction-card'
 import { ExtractionWizard } from '../features/settings/extraction-wizard'
+import { MenuCard } from '../features/settings/menu-card'
 import { ParametersCard } from '../features/settings/parameters-card'
 import { VersionsCard } from '../features/settings/versions-card'
 import { useToast } from '../hooks/use-toast'
@@ -81,6 +82,9 @@ export function SettingsPage() {
           </div>
         </CardBody>
       </Card>
+
+      {/* Everybody's, whatever they administer: it is their own menu. */}
+      <MenuCard roles={roles} />
 
       {administers ? (
         <div className="space-y-6">

@@ -24,8 +24,14 @@ resolen sempre de la base de dades, mai del testimoni d'inici de sessió.
 Administració → Usuaris. Crear un usuari només demana el nom, el correu i el
 rol al centre; l'usuari no es crea la contrasenya aquí, i tu no la veus mai.
 
-En crear-lo s'envia una **invitació** al seu correu amb un enllaç a la pantalla
-on tria la seva pròpia contrasenya. L'enllaç:
+Marca **«Envia la invitació per correu»** si vols que la persona rebi ara
+l'enllaç per entrar. Si no la marques, el compte es crea igualment i no
+s'envia res: és el que sol convenir quan es preparen els comptes d'un curs
+per endavant o s'importen en bloc. La invitació es pot enviar més tard des de
+«Torna a convidar», a la fila de la persona.
+
+La **invitació** és un correu amb un enllaç a la pantalla on tria la seva
+pròpia contrasenya. L'enllaç:
 
 - serveix **una sola vegada** i caduca al cap de **7 dies**;
 - queda anul·lat si n'envies un de nou («Torna a convidar» a la fila de

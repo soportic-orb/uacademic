@@ -25,8 +25,14 @@ sesión.
 Administración → Usuarios. Crear un usuario solo pide el nombre, el correo y el
 rol en el centro; el usuario no crea aquí su contraseña, y tú no la ves nunca.
 
-Al crearlo se envía una **invitación** a su correo con un enlace a la pantalla
-donde elige su propia contraseña. El enlace:
+Marca **«Enviar la invitación por correo»** si quieres que la persona reciba
+ahora el enlace para entrar. Si no la marcas, la cuenta se crea igualmente y no
+se envía nada: es lo que suele convenir cuando se preparan las cuentas de un
+curso por adelantado o se importan en bloque. La invitación se puede enviar más
+tarde desde «Volver a invitar», en la fila de la persona.
+
+La **invitación** es un correo con un enlace a la pantalla donde elige su propia
+contraseña. El enlace:
 
 - sirve **una sola vez** y caduca a los **7 días**;
 - queda anulado si envías uno nuevo («Volver a invitar» en la fila del

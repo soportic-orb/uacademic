@@ -47,6 +47,7 @@ describe.skipIf(!hasDatabase)('granting access to centers', () => {
     firstName: string
     lastName: string
     grants: { centerId: string; role: string }[]
+    sendInvitation?: boolean
   }
 
   const create = (headers: Record<string, string>, body: NewUser) =>
@@ -142,6 +143,38 @@ describe.skipIf(!hasDatabase)('granting access to centers', () => {
   })
 
   /**
+   * The invitation is asked for, never assumed.
+   *
+   * Accounts are regularly prepared ahead of a term, in a batch, or from an
+   * import; an invitation that arrives two months before anybody explains what
+   * it is gets deleted, and then the person cannot get in when term starts.
+   */
+  it('sends nothing at all unless the invitation was asked for', async () => {
+    const email = 'sense.invitacio@demo.uacademic.test'
+    await prisma.user.deleteMany({ where: { email } })
+    await prisma.job.deleteMany({
+      where: { type: 'user.invite', payloadJson: { path: '$.email', equals: email } },
+    })
+
+    const response = await create(asSuperadmin(), {
+      email,
+      firstName: 'Sense',
+      lastName: 'Invitació',
+      grants: [{ centerId, role: 'TEACHER' }],
+    })
+    created.push(response.json().id)
+
+    expect(response.statusCode).toBe(201)
+    expect(response.json().created).toBe(true)
+    expect(response.json().invitationSent).toBe(false)
+
+    const invites = await prisma.job.count({
+      where: { type: 'user.invite', payloadJson: { path: '$.email', equals: email } },
+    })
+    expect(invites).toBe(0)
+  })
+
+  /**
    * Adding somebody to a second center used to send nothing at all — the
    * screen said the user was created and the person was never told — and the
    * answer carried no `invitationSent`, which the screen read as a mail server
@@ -161,6 +194,7 @@ describe.skipIf(!hasDatabase)('granting access to centers', () => {
       firstName: 'Sense',
       lastName: 'Entrada',
       grants: [{ centerId, role: 'TEACHER' }],
+      sendInvitation: true,
     })
     created.push(first.json().id)
 
@@ -169,6 +203,7 @@ describe.skipIf(!hasDatabase)('granting access to centers', () => {
       firstName: 'Sense',
       lastName: 'Entrada',
       grants: [{ centerId: FOREIGN.centerId, role: 'TEACHER' }],
+      sendInvitation: true,
     })
 
     expect(second.statusCode).toBe(201)
@@ -214,6 +249,8 @@ describe.skipIf(!hasDatabase)('granting access to centers', () => {
       firstName: 'Ja',
       lastName: 'Pot Entrar',
       grants: [{ centerId: FOREIGN.centerId, role: 'TEACHER' }],
+      // Asked for, and still not sent: they already have a way in.
+      sendInvitation: true,
     })
 
     expect(response.statusCode).toBe(201)

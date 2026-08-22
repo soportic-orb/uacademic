@@ -122,13 +122,18 @@ describe('the users screen', () => {
     await userEvent.type(screen.getByLabelText('Correu electrònic'), 'marta.puig@uni.test')
   }
 
-  it('invites somebody with the center and role they will hold', async () => {
+  /** The invitation is opt-in, so the tests about it have to ask for it. */
+  async function askForTheInvitation() {
+    await userEvent.click(screen.getByLabelText(/Envia la invitació per correu/))
+  }
+
+  it('creates somebody with the center and role they will hold', async () => {
     await openFormAndFillIdentity()
 
     await userEvent.selectOptions(await screen.findByLabelText('Centre'), 'c1')
     await userEvent.selectOptions(screen.getByLabelText('Rol'), 'COORDINATOR')
     await userEvent.click(screen.getByRole('button', { name: 'Afegeix accés' }))
-    await userEvent.click(screen.getByRole('button', { name: 'Convida' }))
+    await userEvent.click(screen.getByRole('button', { name: "Crea l'usuari" }))
 
     await waitFor(() => expect(posted.calls).toHaveLength(1))
     expect(posted.calls[0]?.path).toBe('/api/v1/users')
@@ -137,7 +142,41 @@ describe('the users screen', () => {
       firstName: 'Marta',
       lastName: 'Puig Serra',
       grants: [{ centerId: 'c1', role: 'COORDINATOR' }],
+      // Nobody is written to unless somebody asked for it.
+      sendInvitation: false,
     })
+  })
+
+  it('writes to the person only when the invitation is ticked', async () => {
+    await openFormAndFillIdentity()
+
+    await userEvent.selectOptions(await screen.findByLabelText('Centre'), 'c1')
+    await userEvent.click(screen.getByRole('button', { name: 'Afegeix accés' }))
+    await askForTheInvitation()
+
+    // The button says what it is about to do, which is now two things.
+    await userEvent.click(screen.getByRole('button', { name: 'Convida' }))
+
+    await waitFor(() => expect(posted.calls).toHaveLength(1))
+    expect(posted.calls[0]?.body).toMatchObject({ sendInvitation: true })
+  })
+
+  it('says no invitation went out, rather than blaming the mail server', async () => {
+    answer.create = {
+      created: true,
+      grantsAdded: 1,
+      invitationSent: false,
+      alreadyCouldSignIn: false,
+    }
+
+    await openFormAndFillIdentity()
+    await userEvent.selectOptions(await screen.findByLabelText('Centre'), 'c1')
+    await userEvent.click(screen.getByRole('button', { name: 'Afegeix accés' }))
+    await userEvent.click(screen.getByRole('button', { name: "Crea l'usuari" }))
+
+    expect(await screen.findByText(/No s'ha enviat cap invitació/)).toBeInTheDocument()
+    // Nothing failed: nobody was expecting a message to go out.
+    expect(screen.queryByText(/SMTP/)).not.toBeInTheDocument()
   })
 
   it('gives one person roles at two universities in one invitation', async () => {
@@ -151,6 +190,7 @@ describe('the users screen', () => {
     await userEvent.selectOptions(screen.getByLabelText('Rol'), 'TEACHER')
     await userEvent.click(screen.getByRole('button', { name: 'Afegeix accés' }))
 
+    await askForTheInvitation()
     await userEvent.click(screen.getByRole('button', { name: 'Convida' }))
 
     await waitFor(() => expect(posted.calls).toHaveLength(1))
@@ -178,6 +218,7 @@ describe('the users screen', () => {
     await openFormAndFillIdentity()
     await userEvent.selectOptions(await screen.findByLabelText('Centre'), 'c1')
     await userEvent.click(screen.getByRole('button', { name: 'Afegeix accés' }))
+    await askForTheInvitation()
     await userEvent.click(screen.getByRole('button', { name: 'Convida' }))
 
     expect(await screen.findByText(/ja podia entrar/)).toBeInTheDocument()
@@ -195,6 +236,8 @@ describe('the users screen', () => {
     await openFormAndFillIdentity()
     await userEvent.selectOptions(await screen.findByLabelText('Centre'), 'c1')
     await userEvent.click(screen.getByRole('button', { name: 'Afegeix accés' }))
+    // Asked for, and it did not go: that, and only that, is a mail problem.
+    await askForTheInvitation()
     await userEvent.click(screen.getByRole('button', { name: 'Convida' }))
 
     expect(await screen.findByText(/SMTP/)).toBeInTheDocument()
@@ -204,18 +247,18 @@ describe('the users screen', () => {
     await openFormAndFillIdentity()
     await userEvent.selectOptions(await screen.findByLabelText('Centre'), 'c2')
     await userEvent.click(screen.getByRole('button', { name: 'Afegeix accés' }))
-    await userEvent.click(screen.getByRole('button', { name: 'Convida' }))
+    await userEvent.click(screen.getByRole('button', { name: "Crea l'usuari" }))
 
     // Created into the other faculty, so the list follows: otherwise the row
     // is simply absent from the screen that just said it was created.
     await waitFor(() => expect(fetched.urls.some((url) => url.includes('centerId=c2'))).toBe(true))
   })
 
-  it('will not invite somebody into nowhere', async () => {
+  it('will not create somebody into nowhere', async () => {
     await openFormAndFillIdentity()
 
     // An account with no role anywhere can sign in and see nothing.
-    expect(screen.getByRole('button', { name: 'Convida' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: "Crea l'usuari" })).toBeDisabled()
     expect(screen.getByText(/com a mínim un centre/)).toBeInTheDocument()
   })
 

@@ -820,6 +820,19 @@
           }
         }
       }
+    },
+    "menu": {
+      "title": "Your menu",
+      "hint": "Put the items in the order that suits you and add separators to group them. It affects only your account, and it saves as you go.",
+      "moveUp": "Move {{name}} up",
+      "moveDown": "Move {{name}} down",
+      "separator": "Separator",
+      "separatorLabel": "Separator label",
+      "separatorPlaceholder": "For example: Teaching",
+      "addSeparator": "Add a separator",
+      "removeSeparator": "Remove separator {{name}}",
+      "restore": "Restore the original order",
+      "restored": "The menu is back in its original order."
     }
   },
   "platform": {
@@ -1202,7 +1215,12 @@
     "accessGrantedNoMail": "Access added, but no email was sent: no SMTP server is configured.",
     "accessGrantedExisting": "Access added. This person could already sign in, so no invitation was sent.",
     "centerFilter": "Center shown",
-    "allMyCenters": "Active center"
+    "allMyCenters": "Active center",
+    "sendInvitation": "Email the invitation",
+    "sendInvitationHint": "Leave it unticked and the account is still created — the invitation can be sent later from the person's own row.",
+    "createUser": "Create the user",
+    "userCreatedNoInvite": "User created. No invitation was sent — you can send it from their row whenever you want.",
+    "accessGrantedNoInvite": "Access added. No invitation was sent — you can send it from their row whenever you want."
   },
   "imports": {
     "title": "Bulk import",

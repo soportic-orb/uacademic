@@ -820,6 +820,19 @@
           }
         }
       }
+    },
+    "menu": {
+      "title": "Tu menú",
+      "hint": "Ordena los ítems como te convenga y pon separadores para agruparlos. Solo afecta a tu cuenta, y el cambio se guarda solo.",
+      "moveUp": "Subir {{name}}",
+      "moveDown": "Bajar {{name}}",
+      "separator": "Separador",
+      "separatorLabel": "Etiqueta del separador",
+      "separatorPlaceholder": "Por ejemplo: Docencia",
+      "addSeparator": "Añadir un separador",
+      "removeSeparator": "Eliminar el separador {{name}}",
+      "restore": "Restaurar el orden original",
+      "restored": "Se ha restaurado el orden original del menú."
     }
   },
   "platform": {
@@ -1202,7 +1215,12 @@
     "accessGrantedNoMail": "Acceso añadido, pero no se ha enviado ningún correo: el servidor SMTP no está configurado.",
     "accessGrantedExisting": "Acceso añadido. Esta persona ya podía entrar, así que no le hemos enviado ninguna invitación.",
     "centerFilter": "Centro de la lista",
-    "allMyCenters": "Centro activo"
+    "allMyCenters": "Centro activo",
+    "sendInvitation": "Enviar la invitación por correo",
+    "sendInvitationHint": "Si no la marcas, el usuario se crea igualmente y podrás enviarle la invitación más adelante desde su fila.",
+    "createUser": "Crear el usuario",
+    "userCreatedNoInvite": "Usuario creado. No se ha enviado ninguna invitación: puedes enviarla desde su fila cuando quieras.",
+    "accessGrantedNoInvite": "Acceso añadido. No se ha enviado ninguna invitación: puedes enviarla desde su fila cuando quieras."
   },
   "imports": {
     "title": "Importación masiva",

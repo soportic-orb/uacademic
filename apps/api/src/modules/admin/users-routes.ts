@@ -290,19 +290,21 @@ export function registerUserRoutes(app: FastifyInstance): void {
       }
 
       /*
-        And an invitation, if they still have no way in.
+        And an invitation, if it was asked for and they still have no way in.
 
-        Adding somebody to a second center used to send nothing at all: the
-        screen said "user created" and the person was never told. Somebody who
-        already signs in — with Microsoft or with a password they have set —
-        needs no invitation and would only be confused by one, so this asks
-        rather than assumes.
+        Two conditions, not one. Somebody who already signs in — with Microsoft
+        or with a password they have set — needs no invitation and would only
+        be confused by one. And whoever is adding them decides when they are
+        written to: a batch of accounts prepared in July should not put fifty
+        "your account is ready" messages into inboxes in July.
       */
       const canAlreadySignIn =
         existing.entraOid !== null ||
         (await client.localCredential.findUnique({ where: { userId: existing.id } })) !== null
 
-      if (!canAlreadySignIn) {
+      const invite = input.sendInvitation && !canAlreadySignIn
+
+      if (invite) {
         const center = await client.center.findUnique({ where: { id: fresh[0]!.centerId } })
         await enqueueJob(client, 'user.invite', {
           email: existing.email,
@@ -322,7 +324,7 @@ export function registerUserRoutes(app: FastifyInstance): void {
         // Always present, so the screen never has to guess from a missing
         // field — which is how it came to report a working mail server as
         // unconfigured.
-        invitationSent: canAlreadySignIn ? false : mailConfigured(),
+        invitationSent: invite && mailConfigured(),
         alreadyCouldSignIn: canAlreadySignIn,
       }
     }
@@ -351,16 +353,19 @@ export function registerUserRoutes(app: FastifyInstance): void {
       ip: request.ip,
     })
 
-    // The invitation itself. Queued rather than sent inline: an SMTP server
-    // that hangs must not hang the request that created the account.
-    const center = await client.center.findUnique({ where: { id: primaryCenterId } })
-    await enqueueJob(client, 'user.invite', {
-      email: created.email,
-      locale: created.locale,
-      firstName: created.firstName,
-      centerName: center?.name ?? '',
-      url: await invitationUrl(client, created.id),
-    })
+    // The invitation, only if it was asked for. Queued rather than sent
+    // inline: an SMTP server that hangs must not hang the request that created
+    // the account.
+    if (input.sendInvitation) {
+      const center = await client.center.findUnique({ where: { id: primaryCenterId } })
+      await enqueueJob(client, 'user.invite', {
+        email: created.email,
+        locale: created.locale,
+        firstName: created.firstName,
+        centerName: center?.name ?? '',
+        url: await invitationUrl(client, created.id),
+      })
+    }
 
     void reply.status(201)
     // Whether anybody will actually receive it. With no SMTP host the queue
@@ -370,7 +375,7 @@ export function registerUserRoutes(app: FastifyInstance): void {
       email: created.email,
       created: true,
       grantsAdded: input.grants.length,
-      invitationSent: mailConfigured(),
+      invitationSent: input.sendInvitation && mailConfigured(),
       alreadyCouldSignIn: false,
     }
   })

@@ -123,6 +123,16 @@ sense que una persona ho confirmi.
 
 ---
 
+## El teu menú
+
+A Configuració hi ha **El teu menú**: puges i baixes els items amb les fletxes
+i hi pots posar separadors amb l'etiqueta que vulguis, per agrupar el que fas
+servir cada dia i deixar la resta a sota. Es desa sol, només afecta el teu
+compte i et segueix a qualsevol ordinador. Si algun dia no el reconeixes,
+«Restaura l'ordre original» el deixa com estava.
+
+---
+
 ## Si et perds
 
 A totes les pantalles, a la cantonada de baix a la dreta, hi ha un botó rodó

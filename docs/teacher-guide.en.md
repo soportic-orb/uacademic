@@ -124,6 +124,16 @@ anything medical. And it writes nothing without a person confirming it.
 
 ---
 
+## Your menu
+
+Settings has **Your menu**: move entries up and down with the arrows, and add
+separators with whatever label you like, so what you use daily sits together
+and the rest sits below it. It saves as you go, it affects only your account,
+and it follows you to any machine. If you ever stop recognising it, "Restore
+the original order" puts it back.
+
+---
+
 ## If you get lost
 
 On every screen, in the bottom-right corner, there is a round blue button:

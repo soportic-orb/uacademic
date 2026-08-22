@@ -1,11 +1,27 @@
 import type { Role } from '@uacademic/shared'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen } from '@testing-library/react'
+import type { ReactNode } from 'react'
 import { MemoryRouter } from 'react-router'
 import { describe, expect, it } from 'vitest'
 
 import { mobileNavItems, navItemsForRoles } from '../src/app/navigation'
 import { LoadBadge } from '../src/components/data/load-badge'
 import { Sidebar } from '../src/components/layout/sidebar'
+
+/**
+ * The sidebar reads the person's own menu order, so it needs a query client
+ * even when the test is only about the landmark. With no answer it falls back
+ * to the product's own order, which is what these assert.
+ */
+function view(children: ReactNode) {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  return render(
+    <QueryClientProvider client={client}>
+      <MemoryRouter>{children}</MemoryRouter>
+    </QueryClientProvider>,
+  )
+}
 
 describe('role-based navigation', () => {
   it('shows a teacher only what a teacher can do', () => {
@@ -41,11 +57,7 @@ describe('role-based navigation', () => {
   })
 
   it('renders the sidebar as a labelled navigation landmark', () => {
-    render(
-      <MemoryRouter>
-        <Sidebar roles={['TEACHER']} collapsed={false} onToggle={() => {}} />
-      </MemoryRouter>,
-    )
+    view(<Sidebar roles={['TEACHER']} collapsed={false} onToggle={() => {}} />)
 
     expect(screen.getByRole('navigation', { name: 'Navegació principal' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'La meva càrrega' })).toBeInTheDocument()
@@ -53,11 +65,7 @@ describe('role-based navigation', () => {
   })
 
   it('keeps the sidebar labels reachable when collapsed', () => {
-    render(
-      <MemoryRouter>
-        <Sidebar roles={['TEACHER']} collapsed onToggle={() => {}} />
-      </MemoryRouter>,
-    )
+    view(<Sidebar roles={['TEACHER']} collapsed onToggle={() => {}} />)
 
     expect(screen.getByRole('link', { name: 'La meva càrrega' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Desplega el menú lateral' })).toBeInTheDocument()

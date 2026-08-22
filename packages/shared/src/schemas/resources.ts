@@ -162,6 +162,15 @@ export type UserGrant = z.infer<typeof userGrantSchema>
 
 export const userCreateSchema = userInputSchema.extend({
   grants: z.array(userGrantSchema).min(1).max(50),
+  /**
+   * Whether to write to this person now.
+   *
+   * Off by default, and asked rather than assumed: accounts are regularly
+   * created ahead of a term, in a batch, or from an import, and an invitation
+   * that arrives two months before anybody explains what it is gets deleted.
+   * The invitation can always be sent afterwards from the row itself.
+   */
+  sendInvitation: z.boolean().default(false),
 })
 export type UserCreate = z.infer<typeof userCreateSchema>
 
@@ -314,3 +323,27 @@ export const supportSettingsInputSchema = z.object({
   historyMessages: z.number().int().min(0).max(40).optional(),
 })
 export type SupportSettingsInput = z.infer<typeof supportSettingsInputSchema>
+
+/* ────────────────────────── the personal menu ──────────────────────────── */
+
+/**
+ * How somebody has arranged their own menu.
+ *
+ * A list of what to draw, not a copy of the menu: the roles still decide what
+ * a person may reach, and an item this does not mention is still drawn at the
+ * end. The label is the person's own text, so it is bounded but not policed.
+ */
+export const menuEntrySchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('item'), key: z.string().trim().min(1).max(40) }),
+  z.object({
+    kind: z.literal('separator'),
+    id: z.string().trim().min(1).max(40),
+    label: z.string().trim().max(40),
+  }),
+])
+export type MenuEntryInput = z.infer<typeof menuEntrySchema>
+
+export const menuLayoutSchema = z.object({
+  entries: z.array(menuEntrySchema).max(120),
+})
+export type MenuLayoutInput = z.infer<typeof menuLayoutSchema>

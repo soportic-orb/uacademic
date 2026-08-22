@@ -72,6 +72,10 @@ export function UsersPage() {
     lastName: '',
     locale: 'ca',
     grants: [] as { centerId: string; role: string }[],
+    // Off unless asked for. Accounts are regularly prepared ahead of a term,
+    // in a batch or from an import, and an invitation that arrives two months
+    // before anybody explains what it is gets deleted.
+    sendInvitation: false,
   }
   const [form, setForm] = useState(EMPTY)
 
@@ -124,8 +128,12 @@ export function UsersPage() {
       if (!result.created) {
         if (result.alreadyCouldSignIn) toast.success('admin.accessGrantedExisting')
         else if (result.invitationSent) toast.success('admin.accessGranted')
+        else if (!form.sendInvitation) toast.success('admin.accessGrantedNoInvite')
         else toast.warning('admin.accessGrantedNoMail', { durationMs: 10_000 })
       } else if (result.invitationSent) toast.success('admin.userInvited')
+      // Not a warning: nobody was expecting a message to go out. The row's own
+      // "invite" button is where it is sent from later.
+      else if (!form.sendInvitation) toast.success('admin.userCreatedNoInvite')
       else toast.warning('admin.userCreatedNoMail', { durationMs: 10_000 })
 
       // Look at where they were actually put, so somebody placed in another of
@@ -363,8 +371,27 @@ export function UsersPage() {
               </fieldset>
 
               <div className="sm:col-span-2">
+                <label className="mb-3 flex items-start gap-2 text-sm text-text">
+                  <input
+                    type="checkbox"
+                    checked={form.sendInvitation}
+                    onChange={(event) => setForm({ ...form, sendInvitation: event.target.checked })}
+                    className="mt-0.5 size-4 rounded-sm border-border"
+                  />
+                  <span>
+                    {t('admin.sendInvitation')}
+                    <span className="block text-xs text-text-muted">
+                      {t('admin.sendInvitationHint')}
+                    </span>
+                  </span>
+                </label>
+
                 <Button type="submit" disabled={create.isPending || form.grants.length === 0}>
-                  {create.isPending ? t('common.saving') : t('admin.invite')}
+                  {create.isPending
+                    ? t('common.saving')
+                    : form.sendInvitation
+                      ? t('admin.invite')
+                      : t('admin.createUser')}
                 </Button>
                 {form.grants.length === 0 ? (
                   <p className="mt-2 text-xs text-text-muted">{t('admin.accessRequired')}</p>

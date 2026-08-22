@@ -820,6 +820,19 @@
           }
         }
       }
+    },
+    "menu": {
+      "title": "El teu menú",
+      "hint": "Ordena els items com et vagi bé i posa-hi separadors per agrupar-los. Només afecta el teu compte, i el canvi es desa sol.",
+      "moveUp": "Puja {{name}}",
+      "moveDown": "Baixa {{name}}",
+      "separator": "Separador",
+      "separatorLabel": "Etiqueta del separador",
+      "separatorPlaceholder": "Per exemple: Docència",
+      "addSeparator": "Afegeix un separador",
+      "removeSeparator": "Elimina el separador {{name}}",
+      "restore": "Restaura l'ordre original",
+      "restored": "S'ha restaurat l'ordre original del menú."
     }
   },
   "platform": {
@@ -1202,7 +1215,12 @@
     "accessGrantedNoMail": "Accés afegit, però no s'ha enviat cap correu: el servidor SMTP no està configurat.",
     "accessGrantedExisting": "Accés afegit. Aquesta persona ja podia entrar, així que no li hem enviat cap invitació.",
     "centerFilter": "Centre de la llista",
-    "allMyCenters": "Centre actiu"
+    "allMyCenters": "Centre actiu",
+    "sendInvitation": "Envia la invitació per correu",
+    "sendInvitationHint": "Si no la marques, l'usuari es crea igualment i li podràs enviar la invitació més endavant des de la seva fila.",
+    "createUser": "Crea l'usuari",
+    "userCreatedNoInvite": "Usuari creat. No s'ha enviat cap invitació: pots enviar-la des de la seva fila quan vulguis.",
+    "accessGrantedNoInvite": "Accés afegit. No s'ha enviat cap invitació: pots enviar-la des de la seva fila quan vulguis."
   },
   "imports": {
     "title": "Importació massiva",

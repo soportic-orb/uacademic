@@ -186,10 +186,21 @@ export function navItemsForRoles(roles: readonly Role[]): NavItem[] {
   return NAV_ITEMS.filter((item) => item.roles.some((role) => roles.includes(role)))
 }
 
-/** The mobile bar holds exactly five entries, settings always last. */
-export function mobileNavItems(roles: readonly Role[]): NavItem[] {
+/**
+ * The mobile bar holds exactly five entries, settings always last.
+ *
+ * `order` is the keys as this person arranged their menu, so the four that
+ * make the bar are the four they put highest rather than the four the product
+ * happens to declare first. Separators have no place in a five-icon bar and
+ * are simply not passed in.
+ */
+export function mobileNavItems(roles: readonly Role[], order: readonly string[] = []): NavItem[] {
   const available = navItemsForRoles(roles)
-  const primary = available.filter((item) => item.mobile).slice(0, 4)
+  const rank = new Map(order.map((key, index) => [key, index]))
+  const primary = available
+    .filter((item) => item.mobile)
+    .sort((a, b) => (rank.get(a.key) ?? Infinity) - (rank.get(b.key) ?? Infinity))
+    .slice(0, 4)
   const settings = available.find((item) => item.key === 'settings')
   return settings ? [...primary, settings] : primary
 }

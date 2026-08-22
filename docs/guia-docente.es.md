@@ -125,6 +125,16 @@ salud. Y no escribe nada sin que una persona lo confirme.
 
 ---
 
+## Tu menú
+
+En Configuración está **Tu menú**: subes y bajas los ítems con las flechas y
+puedes poner separadores con la etiqueta que quieras, para agrupar lo que usas
+cada día y dejar el resto debajo. Se guarda solo, solo afecta a tu cuenta y te
+sigue en cualquier ordenador. Si algún día no lo reconoces, «Restaurar el orden
+original» lo deja como estaba.
+
+---
+
 ## Si te pierdes
 
 En todas las pantallas, en la esquina inferior derecha, hay un botón redondo

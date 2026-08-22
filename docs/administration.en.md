@@ -24,8 +24,14 @@ resolved from the database, never from the sign-in token.
 Administration → Users. Creating a user asks for a name, an email address and a
 role in the center; the password is not set here, and you never see it.
 
-Creating one sends an **invitation** to that address with a link to the screen
-where they choose their own password. The link:
+Tick **"Email the invitation"** to send the person their way in now. Leave it
+unticked and the account is still created and nothing goes out — which is
+usually what you want when accounts for a term are prepared in advance or
+imported in bulk. The invitation can be sent later from "Invite again" on the
+person's own row.
+
+The **invitation** is an email with a link to the screen where they choose
+their own password. The link:
 
 - works **once**, and expires after **7 days**;
 - is retired the moment you send another one ("Invite again" on the user's

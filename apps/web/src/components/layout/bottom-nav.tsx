@@ -3,12 +3,19 @@ import { useTranslation } from 'react-i18next'
 import { NavLink } from 'react-router'
 
 import { mobileNavItems } from '../../app/navigation'
+import { useMenuLayout } from '../../features/settings/menu-layout'
 import { cn } from '../../lib/cn'
 
 /** Five entries, thumb-sized targets, hidden from desktop (CLAUDE.md §4). */
 export function BottomNav({ roles }: { roles: readonly Role[] }) {
   const { t } = useTranslation()
-  const items = mobileNavItems(roles)
+  const layout = useMenuLayout()
+  // The bar follows the same arrangement as the sidebar: the four entries this
+  // person put highest, rather than the four the product declares first.
+  const items = mobileNavItems(
+    roles,
+    (layout.data?.entries ?? []).filter((entry) => entry.kind === 'item').map((entry) => entry.key),
+  )
 
   return (
     <nav
