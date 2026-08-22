@@ -1398,8 +1398,6 @@
     "title": "Planificador",
     "subtitle": "Col·loca les sessions de la setmana i valida-les al vol",
     "legendTitle": "Què vol dir cada color",
-    "pending": "Grups pendents",
-    "pendingEmpty": "Totes les sessions estan col·locades.",
     "placedOf": "{{placed}} de {{total}} sessions col·locades",
     "unassignedTeacher": "Sense docent",
     "unassignedSpace": "Sense aula",
@@ -1557,7 +1555,18 @@
     "closedOn": "El centre és tancat: {{name}}",
     "closedLegend": "Centre tancat",
     "closedLegendHint": "Festiu o període vacacional del calendari acadèmic. Pots planificar-hi igualment: la setmana és una plantilla i aquell dia se salta quan es generen les classes.",
-    "thisWeekCount": "{{shown}} de {{total}} classes aquesta setmana"
+    "thisWeekCount": "{{shown}} de {{total}} classes aquesta setmana",
+    "groups": {
+      "title": "Grups",
+      "subject": "Assignatura",
+      "allSubjects": "Totes les assignatures",
+      "empty": "Aquesta assignatura encara no té cap grup.",
+      "perWeek": "{{hours}} h/setmana",
+      "remaining": "Falten {{hours}} h per planificar",
+      "done": "Planificat",
+      "over": "{{hours}} h de més"
+    },
+    "jumpedToWeek": "El grup es planifica a partir del {{date}}: t'hi hem portat."
   },
   "calendar": {
     "title": "El meu calendari",

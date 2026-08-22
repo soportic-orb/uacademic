@@ -175,6 +175,62 @@ const VERSION: VersionDetailDto = {
       candidateSpaceIds: ['s1'],
     },
   ],
+  groups: [
+    {
+      groupId: 'g1',
+      groupCode: 'T1',
+      subjectId: 'sub-1',
+      subjectCode: 'MAT101',
+      subjectName: 'Matemàtiques I',
+      plannedHours: 60,
+      durationMinutes: 60,
+      weeklyTargetMinutes: 120,
+      placedMinutes: 60,
+      remainingMinutes: 60,
+      overplannedMinutes: 0,
+      sessionsRemaining: 1,
+      complete: false,
+      candidateTeacherIds: ['p1'],
+      candidateSpaceIds: ['s1'],
+    },
+    {
+      groupId: 'g2',
+      groupCode: 'T2',
+      subjectId: 'sub-1',
+      subjectCode: 'MAT101',
+      subjectName: 'Matemàtiques I',
+      plannedHours: 60,
+      durationMinutes: 60,
+      weeklyTargetMinutes: 120,
+      placedMinutes: 0,
+      remainingMinutes: 120,
+      overplannedMinutes: 0,
+      sessionsRemaining: 2,
+      complete: false,
+      candidateTeacherIds: ['p1'],
+      candidateSpaceIds: ['s1'],
+    },
+    {
+      // Another subject, and one that is finished: both are what the column
+      // has to keep showing rather than tidy away.
+      groupId: 'g3',
+      groupCode: 'T1',
+      subjectId: 'sub-2',
+      subjectCode: 'FIS201',
+      subjectName: 'Física',
+      plannedHours: 30,
+      durationMinutes: 60,
+      weeklyTargetMinutes: 60,
+      placedMinutes: 60,
+      remainingMinutes: 0,
+      overplannedMinutes: 0,
+      sessionsRemaining: 0,
+      complete: true,
+      candidateTeacherIds: [],
+      candidateSpaceIds: [],
+    },
+  ],
+  range: { from: TERM.dateFrom, to: TERM.dateTo },
   context: CONTEXT,
 }
 
@@ -202,6 +258,56 @@ describe('the visual planner', () => {
     expect(
       screen.getByRole('button', { name: 'Selecciona la sessió MAT101 T2' }),
     ).toBeInTheDocument()
+  })
+
+  describe('the groups column', () => {
+    it('lists every group, finished ones included', () => {
+      render(wrap(<PlannerGrid version={VERSION} context={CONTEXT} />))
+
+      expect(
+        screen.getByRole('button', { name: 'Selecciona la sessió MAT101 T1' }),
+      ).toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: 'Selecciona la sessió MAT101 T2' }),
+      ).toBeInTheDocument()
+      // A finished group stays on the list and says so, because "have I done
+      // this one?" is what the column is for.
+      expect(
+        screen.getByRole('button', { name: 'Selecciona la sessió FIS201 T1' }),
+      ).toBeInTheDocument()
+      expect(screen.getByText('Planificat')).toBeInTheDocument()
+    })
+
+    it('says how much of each group is still to place', () => {
+      render(wrap(<PlannerGrid version={VERSION} context={CONTEXT} />))
+
+      // Two decimals, as every other hour figure in the product (CLAUDE.md §4).
+      expect(screen.getByText('Falten 1,00 h per planificar')).toBeInTheDocument()
+      expect(screen.getByText('Falten 2,00 h per planificar')).toBeInTheDocument()
+    })
+
+    it('narrows to the subject being planned', async () => {
+      const user = userEvent.setup()
+      render(wrap(<PlannerGrid version={VERSION} context={CONTEXT} />))
+
+      await user.selectOptions(screen.getByLabelText('Assignatura'), 'sub-2')
+
+      expect(
+        screen.getByRole('button', { name: 'Selecciona la sessió FIS201 T1' }),
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'Selecciona la sessió MAT101 T1' }),
+      ).not.toBeInTheDocument()
+    })
+
+    it('offers every subject that has groups, and all of them by default', () => {
+      render(wrap(<PlannerGrid version={VERSION} context={CONTEXT} />))
+
+      const select = screen.getByLabelText('Assignatura') as HTMLSelectElement
+      expect(select.value).toBe('')
+      expect(within(select).getByRole('option', { name: /MAT101/ })).toBeInTheDocument()
+      expect(within(select).getByRole('option', { name: /FIS201/ })).toBeInTheDocument()
+    })
   })
 
   it('reports the state of the week in the bottom bar', () => {
@@ -304,6 +410,73 @@ describe('the visual planner', () => {
         weekday: 1,
         startTime: '10:00',
       })
+    })
+  })
+
+  /**
+   * The grid draws only the classes that happen in the week it is showing,
+   * which makes "which week" a correctness question. A class placed into a
+   * term that has not started is correctly not drawn — and reads exactly like
+   * the class having been lost.
+   */
+  describe('a class whose term is not this week', () => {
+    it('opens on the first week of the year when today is outside it', () => {
+      const nextYear = {
+        ...VERSION,
+        sessions: [],
+        range: {
+          dateFrom: undefined,
+          from: isoDate(addDays(mondayOf(new Date()), 140)),
+          to: isoDate(addDays(mondayOf(new Date()), 350)),
+        },
+      } as unknown as VersionDetailDto
+
+      render(wrap(<PlannerGrid version={nextYear} context={CONTEXT} />))
+
+      const expected = mondayOf(addDays(mondayOf(new Date()), 140))
+      expect(
+        within(screen.getByRole('grid')).getByText(String(expected.getDate())),
+      ).toBeInTheDocument()
+    })
+
+    it('goes to the week the class lands in, rather than losing it', async () => {
+      const user = userEvent.setup()
+      const later = isoDate(addDays(mondayOf(new Date()), 70))
+
+      // What the server answers with: the new class, dated to its own term.
+      fetchMock.mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          ...VERSION,
+          sessions: [
+            ...VERSION.sessions,
+            {
+              ...VERSION.sessions[0]!,
+              id: 'session-new',
+              groupId: 'g2',
+              groupCode: 'T2',
+              weekday: 1,
+              startTime: '10:00',
+              endTime: '11:00',
+              dateFrom: later,
+              dateTo: isoDate(addDays(mondayOf(new Date()), 140)),
+            },
+          ],
+        }),
+      } as Response)
+
+      render(wrap(<PlannerGrid version={VERSION} context={CONTEXT} />))
+
+      await user.click(screen.getByRole('button', { name: 'Selecciona la sessió MAT101 T2' }))
+      await user.click(target('MAT101 T2', 'Dilluns', '10:00'))
+
+      // The week moved to where the class actually is, and said so.
+      await waitFor(() =>
+        expect(
+          within(screen.getByRole('grid')).getByText(String(new Date(later).getDate())),
+        ).toBeInTheDocument(),
+      )
     })
   })
 

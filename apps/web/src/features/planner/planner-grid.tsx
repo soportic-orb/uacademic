@@ -11,10 +11,12 @@
 import {
   type CellEvaluation,
   closuresInRange,
+  firstClassDate,
   occursOn,
   effectiveAvailability,
   isoDateOf,
 } from '@uacademic/shared'
+import { formatDate, formatHours, minutesToHours } from '@uacademic/shared'
 import { Trash2, Undo2, Redo2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -25,8 +27,9 @@ import { useToast } from '../../hooks/use-toast'
 import { WhyThisRule } from '../settings/why-this-rule'
 import { ApiRequestError } from '../../lib/api'
 import { cn } from '../../lib/cn'
+import { currentLocale } from '../../i18n'
 import {
-  type PendingGroupDto,
+  type GroupPlanDto,
   type PlannerSessionDto,
   type VersionDetailDto,
   useCreateSession,
@@ -35,7 +38,7 @@ import {
 } from './queries'
 import { TeacherRail } from './teacher-rail'
 import type { TeacherDirectoryEntry } from './use-planner'
-import { dateOfWeekday, isoDate, mondayOf } from './week-dates'
+import { dateOfWeekday, isoDate, mondayOf, openingWeek, parseIsoDate } from './week-dates'
 import { WeekNavigator } from './week-navigator'
 import {
   type HeldSession,
@@ -108,7 +111,7 @@ export function PlannerGrid({
    * looking at, or hold the date of a session in their head to know whether it
    * has started yet.
    */
-  const [weekStart, setWeekStart] = useState(() => mondayOf(new Date()))
+  const [weekStart, setWeekStart] = useState(() => openingWeek(version.range))
 
   /*
     The days the center is shut, for the week on screen.
@@ -126,6 +129,40 @@ export function PlannerGrid({
 
   /** Picking a colleague dims everybody else's classes, rather than hiding them. */
   const [teacherFilter, setTeacherFilter] = useState<string | null>(null)
+
+  /**
+   * The subject being planned.
+   *
+   * A coordinator plans one subject at a time — that is what they coordinate —
+   * and a column listing every group of the year is a column nobody reads.
+   * Empty means all of them, which is what somebody arriving wants to see
+   * before they choose.
+   */
+  const [subjectId, setSubjectId] = useState('')
+
+  const subjects = useMemo(() => {
+    const byId = new Map<string, { id: string; code: string; name: string }>()
+    for (const group of version.groups) {
+      if (group.subjectId && !byId.has(group.subjectId)) {
+        byId.set(group.subjectId, {
+          id: group.subjectId,
+          code: group.subjectCode,
+          name: group.subjectName,
+        })
+      }
+    }
+    return [...byId.values()].sort((a, b) => a.code.localeCompare(b.code))
+  }, [version.groups])
+
+  const shownGroups = useMemo(
+    () =>
+      version.groups
+        .filter((group) => !subjectId || group.subjectId === subjectId)
+        .sort((a, b) =>
+          `${a.subjectCode}${a.groupCode}`.localeCompare(`${b.subjectCode}${b.groupCode}`),
+        ),
+    [subjectId, version.groups],
+  )
 
   /**
    * Puts somebody in front of a class that is already on the grid.
@@ -231,6 +268,24 @@ export function PlannerGrid({
         }
         const created = await createSession.mutateAsync(values)
         const newId = newestSessionId(created, version)
+
+        /*
+          A new class takes its dates from its subject's term, which is very
+          often not the week on screen — a coordinator planning September in
+          June places a class and the grid, which draws only what happens in
+          the week it is showing, correctly shows nothing. That reads as the
+          class having been lost. Go to the week it is actually in.
+        */
+        const placed = created.sessions.find((session) => session.id === newId)
+        if (placed && !occursOn(placed, isoDateOf(dateOfWeekday(weekStart, placed.weekday)))) {
+          const first = parseIsoDate(firstClassDate(placed))
+          if (first) {
+            setWeekStart(mondayOf(first))
+            toast.success('planner.jumpedToWeek', {
+              params: { date: formatDate(currentLocale(), first) },
+            })
+          }
+        }
 
         history.record({
           sessionId: newId,
@@ -354,8 +409,11 @@ export function PlannerGrid({
     <div className="space-y-4">
       <div className="grid gap-4 lg:grid-cols-[18rem_1fr]">
         <div className="space-y-4">
-          <PendingColumn
-            pending={version.pending}
+          <GroupsColumn
+            groups={shownGroups}
+            subjects={subjects}
+            subjectId={subjectId}
+            onSubject={setSubjectId}
             held={held}
             editable={version.editable}
             onPick={(item) => {
@@ -367,8 +425,10 @@ export function PlannerGrid({
                 durationMinutes: item.durationMinutes,
                 teacherProfileId: item.candidateTeacherIds[0] ?? null,
                 spaceId: item.candidateSpaceIds[0] ?? null,
-                dateFrom: version.sessions[0]?.dateFrom ?? new Date().toISOString().slice(0, 10),
-                dateTo: version.sessions[0]?.dateTo ?? new Date().toISOString().slice(0, 10),
+                // The server gives the new class its subject's term dates; these
+                // are only what the local rules compare against while it is held.
+                dateFrom: version.range.from,
+                dateTo: version.range.to,
               })
               setAnnouncement(
                 t('planner.holding', { group: `${item.subjectCode} ${item.groupCode}` }),
@@ -803,53 +863,125 @@ function SessionBlock({
   )
 }
 
-function PendingColumn({
-  pending,
+/**
+ * The groups of the subject being planned, and how much of each is still to
+ * place.
+ *
+ * It used to list only what was left over, one entry per unplaced session,
+ * and only for groups somebody had already been assigned to. Three things
+ * were wrong with that. A coordinator plans a subject and wants to see its
+ * groups — the finished ones as much as the empty ones, because "have I done
+ * this one?" is the question the column exists to answer. A group with nobody
+ * assigned to it is precisely one that needs the work, so hiding it hid the
+ * work. And a row that disappears when it is done tells you nothing about
+ * what it was.
+ */
+function GroupsColumn({
+  groups,
+  subjects,
+  subjectId,
+  onSubject,
   held,
   editable,
   onPick,
 }: {
-  pending: PendingGroupDto[]
+  groups: GroupPlanDto[]
+  subjects: { id: string; code: string; name: string }[]
+  subjectId: string
+  onSubject: (id: string) => void
   held: HeldSession | null
   editable: boolean
-  onPick: (item: PendingGroupDto) => void
+  onPick: (item: GroupPlanDto) => void
 }) {
   const { t } = useTranslation()
+  const locale = currentLocale()
 
   return (
     <Card className="h-fit">
-      <CardHeader title={t('planner.pending')} />
-      <CardBody>
-        {pending.length === 0 ? (
-          <p className="text-sm text-text-muted">{t('planner.pendingEmpty')}</p>
+      <CardHeader title={t('planner.groups.title')} />
+      <CardBody className="space-y-3">
+        <label className="block text-sm">
+          <span className="mb-1 block text-xs text-text-muted">{t('planner.groups.subject')}</span>
+          <select
+            value={subjectId}
+            onChange={(event) => onSubject(event.target.value)}
+            className="h-9 w-full rounded-control border border-border bg-surface px-2 text-sm text-text"
+          >
+            <option value="">{t('planner.groups.allSubjects')}</option>
+            {subjects.map((subject) => (
+              <option key={subject.id} value={subject.id}>
+                {`${subject.code} · ${subject.name}`}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        {groups.length === 0 ? (
+          <p className="text-sm text-text-muted">{t('planner.groups.empty')}</p>
         ) : (
           <ul className="space-y-2">
-            {pending.map((item) => (
-              <li key={item.requirementId}>
-                <button
-                  type="button"
-                  draggable={editable}
-                  disabled={!editable}
-                  aria-pressed={held?.groupId === item.groupId && held.kind === 'pending'}
-                  aria-label={t('planner.pickSession', {
-                    group: `${item.subjectCode} ${item.groupCode}`,
-                  })}
-                  onClick={() => onPick(item)}
-                  onDragStart={() => onPick(item)}
-                  className={cn(
-                    'w-full rounded-control border border-border bg-surface-muted p-2 text-left text-sm',
-                    held?.groupId === item.groupId && held.kind === 'pending'
-                      ? 'ring-2 ring-ring'
-                      : 'hover:border-primary',
-                  )}
-                >
-                  <span className="block font-medium text-text">
-                    {`${item.subjectCode} ${item.groupCode}`}
-                  </span>
-                  <span className="block text-text-muted">{item.subjectName}</span>
-                </button>
-              </li>
-            ))}
+            {groups.map((item) => {
+              const picked = held?.kind === 'pending' && held.groupId === item.groupId
+
+              return (
+                <li key={item.groupId}>
+                  <button
+                    type="button"
+                    draggable={editable}
+                    disabled={!editable}
+                    aria-pressed={picked}
+                    aria-label={t('planner.pickSession', {
+                      group: `${item.subjectCode} ${item.groupCode}`,
+                    })}
+                    onClick={() => onPick(item)}
+                    onDragStart={() => onPick(item)}
+                    className={cn(
+                      'w-full rounded-control border p-2 text-left text-sm',
+                      // Done is stated, not hidden: the row stays so the
+                      // column answers "have I finished this one?".
+                      item.complete
+                        ? 'border-load-optimal/40 bg-load-optimal-surface'
+                        : 'border-border bg-surface-muted',
+                      picked ? 'ring-2 ring-ring' : 'hover:border-primary',
+                    )}
+                  >
+                    <span className="flex items-baseline justify-between gap-2">
+                      <span className="font-medium text-text">
+                        {`${item.subjectCode} ${item.groupCode}`}
+                      </span>
+                      <span className="tabular shrink-0 text-xs text-text-muted">
+                        {t('planner.groups.perWeek', {
+                          hours: formatHours(locale, minutesToHours(item.weeklyTargetMinutes)),
+                        })}
+                      </span>
+                    </span>
+
+                    <span className="block truncate text-text-muted">{item.subjectName}</span>
+
+                    <span
+                      className={cn(
+                        'tabular mt-1 block text-xs font-medium',
+                        item.overplannedMinutes > 0
+                          ? 'text-load-over'
+                          : item.complete
+                            ? 'text-load-optimal'
+                            : 'text-text',
+                      )}
+                    >
+                      {item.overplannedMinutes > 0
+                        ? t('planner.groups.over', {
+                            hours: formatHours(locale, minutesToHours(item.overplannedMinutes)),
+                          })
+                        : item.complete
+                          ? t('planner.groups.done')
+                          : t('planner.groups.remaining', {
+                              hours: formatHours(locale, minutesToHours(item.remainingMinutes)),
+                            })}
+                    </span>
+                  </button>
+                </li>
+              )
+            })}
           </ul>
         )}
       </CardBody>

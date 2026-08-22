@@ -113,6 +113,60 @@ describe.skipIf(!hasDatabase)('the planner', () => {
       expect(version.grid).toMatchObject({ dayStart: '08:00', slotMinutes: 30 })
       expect(Array.isArray(version.pending)).toBe(true)
     })
+
+    it('lists every group of the year, not only what is left to place', async () => {
+      const version = await createVersion('groups', publishedVersionId)
+      const year = await prisma.academicYear.findFirstOrThrow({
+        where: { centerId, status: 'active' },
+      })
+      const total = await prisma.group.count({
+        where: { subject: { academicYearId: year.id } },
+      })
+
+      expect(version.groups.length).toBe(total)
+      // A group somebody has already finished is still listed, said to be
+      // done: "have I done this one?" is what the column is for.
+      expect(version.groups.some((group: { complete: boolean }) => group.complete)).toBe(true)
+    })
+
+    it('counts down the hours of a group as its classes are placed', async () => {
+      const version = await createVersion('countdown')
+      const target = version.groups.find(
+        (group: { weeklyTargetMinutes: number }) => group.weeklyTargetMinutes > 0,
+      )
+      expect(target).toBeDefined()
+
+      const before = target as { groupId: string; remainingMinutes: number }
+
+      const created = await app.inject({
+        method: 'POST',
+        url: `/api/v1/planner/versions/${version.id}/sessions`,
+        headers: asCoordinator(),
+        payload: {
+          groupId: before.groupId,
+          weekday: 3,
+          startTime: '18:00',
+          endTime: '19:00',
+        },
+      })
+      expect(created.statusCode).toBe(201)
+
+      const after = created
+        .json()
+        .groups.find((group: { groupId: string }) => group.groupId === before.groupId)
+
+      // One hour placed is one hour fewer to place, in the same answer that
+      // created it: the column moves as the class lands.
+      expect(after.placedMinutes).toBe(60)
+      expect(after.remainingMinutes).toBe(Math.max(0, before.remainingMinutes - 60))
+    })
+
+    it('says which dates the year runs between, so the grid opens inside it', async () => {
+      const version = await createVersion('range')
+
+      expect(version.range.from).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+      expect(version.range.to >= version.range.from).toBe(true)
+    })
   })
 
   describe('editing a draft', () => {

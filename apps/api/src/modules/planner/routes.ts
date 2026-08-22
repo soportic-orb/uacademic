@@ -13,9 +13,11 @@ import {
   type SessionSnapshot,
   evaluateCell,
   evaluateTransition,
+  groupPlanState,
   isEditable,
   scoreSchedule,
   summarizePlan,
+  toMinutes,
   diffSchedules,
 } from '@uacademic/shared'
 import type { FastifyInstance, FastifyRequest } from 'fastify'
@@ -598,6 +600,14 @@ async function versionDetail(context: PlannerContext, versionId: string) {
   const pending = Math.max(0, requirements.length - sessions.length)
   const score = scoreSchedule(sessions, context.schedule)
 
+  // Every group of the year, so the side column can be about the subject
+  // somebody is planning rather than only about what is left over.
+  const groups = await context.db.group.findMany({
+    where: { subject: { academicYearId: context.academicYearId } },
+    select: { id: true, plannedHours: true },
+    orderBy: { code: 'asc' },
+  })
+
   return {
     id: version.id,
     name: version.name,
@@ -640,13 +650,100 @@ async function versionDetail(context: PlannerContext, versionId: string) {
     penalties: score.penalties,
     summary: summarizePlan(sessions, pending, context.schedule),
     pending: pendingGroups(context, requirements, sessions),
+    groups: groupPlans(context, requirements, groups, sessions),
+    /*
+      The dates this year runs between.
+
+      The grid opens on a week inside them rather than on today's: a
+      coordinator planning next September in June would otherwise be handed a
+      week in which none of the classes they place exist, and watch each one
+      vanish as it landed.
+    */
+    range: {
+      from: context.academicYear.startDate.toISOString().slice(0, 10),
+      to: context.academicYear.endDate.toISOString().slice(0, 10),
+    },
   }
 }
 
 /**
- * The side column: what still has to be placed. Requirements are matched to
- * placed sessions per group, so a group needing three sessions with one placed
- * shows two.
+ * The side column: every group of the year, with how much of it is placed.
+ *
+ * Every group, not only the ones still to place and not only the ones with a
+ * teacher assigned. A coordinator planning a subject wants to see its groups —
+ * the finished ones as much as the empty ones, because "have I done this one?"
+ * is the question the column exists to answer — and a group nobody has been
+ * assigned to yet is precisely one that needs placing and staffing, so hiding
+ * it is hiding the work.
+ */
+function groupPlans(
+  context: PlannerContext,
+  requirements: {
+    id: string
+    groupId: string
+    durationMinutes: number
+    candidateTeacherIds: readonly string[]
+    candidateSpaceIds: readonly string[]
+  }[],
+  groups: readonly { id: string; plannedHours: unknown }[],
+  sessions: readonly PlannedSession[],
+) {
+  const { teachingWeeks, defaultSessionMinutes } = context.settings.schedule
+
+  const placedByGroup = new Map<string, number>()
+  for (const session of sessions) {
+    const minutes = toMinutes(session.endTime) - toMinutes(session.startTime)
+    placedByGroup.set(session.groupId, (placedByGroup.get(session.groupId) ?? 0) + minutes)
+  }
+
+  // The first requirement of a group carries the candidates the engine worked
+  // out — who may teach it and where it fits — which is what a drag from this
+  // column needs to start with.
+  const requirementByGroup = new Map<string, (typeof requirements)[number]>()
+  for (const requirement of requirements) {
+    if (!requirementByGroup.has(requirement.groupId)) {
+      requirementByGroup.set(requirement.groupId, requirement)
+    }
+  }
+
+  return groups.map((row) => {
+    const resource = context.schedule.groups.get(row.id)
+    const requirement = requirementByGroup.get(row.id)
+    const plannedHours = Number(row.plannedHours)
+
+    const state = groupPlanState({
+      plannedHours,
+      teachingWeeks,
+      sessionMinutes: requirement?.durationMinutes ?? defaultSessionMinutes,
+      placedMinutes: placedByGroup.get(row.id) ?? 0,
+    })
+
+    return {
+      groupId: row.id,
+      groupCode: resource?.code ?? '',
+      subjectId: resource?.subjectId ?? '',
+      subjectCode: resource?.subjectCode ?? '',
+      subjectName: resource?.subjectName ?? '',
+      plannedHours,
+      durationMinutes: requirement?.durationMinutes ?? defaultSessionMinutes,
+      weeklyTargetMinutes: state.weeklyTargetMinutes,
+      placedMinutes: state.placedMinutes,
+      remainingMinutes: state.remainingMinutes,
+      overplannedMinutes: state.overplannedMinutes,
+      sessionsRemaining: state.sessionsRemaining,
+      complete: state.complete,
+      // Empty for a group nobody has been assigned to: it can still be placed,
+      // and the teacher chosen on the card afterwards.
+      candidateTeacherIds: [...(requirement?.candidateTeacherIds ?? [])],
+      candidateSpaceIds: [...(requirement?.candidateSpaceIds ?? [])],
+    }
+  })
+}
+
+/**
+ * How many sessions are still unplaced, for the status bar. Requirements are
+ * matched to placed sessions per group, so a group needing three sessions with
+ * one placed contributes two.
  */
 function pendingGroups(
   context: PlannerContext,

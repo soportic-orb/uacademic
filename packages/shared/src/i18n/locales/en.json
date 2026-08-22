@@ -1398,8 +1398,6 @@
     "title": "Planner",
     "subtitle": "Place the week’s sessions and validate them as you go",
     "legendTitle": "What each colour means",
-    "pending": "Pending groups",
-    "pendingEmpty": "Every session is placed.",
     "placedOf": "{{placed}} of {{total}} sessions placed",
     "unassignedTeacher": "No teacher",
     "unassignedSpace": "No room",
@@ -1557,7 +1555,18 @@
     "closedOn": "The center is closed: {{name}}",
     "closedLegend": "Center closed",
     "closedLegendHint": "A holiday or holiday period from the academic calendar. You can still plan on it: the week is a template, and that date is skipped when the classes are generated.",
-    "thisWeekCount": "{{shown}} of {{total}} classes this week"
+    "thisWeekCount": "{{shown}} of {{total}} classes this week",
+    "groups": {
+      "title": "Groups",
+      "subject": "Subject",
+      "allSubjects": "All subjects",
+      "empty": "This subject has no groups yet.",
+      "perWeek": "{{hours}} h/week",
+      "remaining": "{{hours}} h left to place",
+      "done": "Fully placed",
+      "over": "{{hours}} h too many"
+    },
+    "jumpedToWeek": "This group's term starts on {{date}} — taken you to that week."
   },
   "calendar": {
     "title": "My calendar",

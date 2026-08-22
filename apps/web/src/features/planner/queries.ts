@@ -51,6 +51,26 @@ export interface PendingGroupDto {
   candidateSpaceIds: string[]
 }
 
+/** A group of the year, and how much of its week is placed. */
+export interface GroupPlanDto {
+  groupId: string
+  groupCode: string
+  subjectId: string
+  subjectCode: string
+  subjectName: string
+  /** Teaching hours across the year. */
+  plannedHours: number
+  durationMinutes: number
+  weeklyTargetMinutes: number
+  placedMinutes: number
+  remainingMinutes: number
+  overplannedMinutes: number
+  sessionsRemaining: number
+  complete: boolean
+  candidateTeacherIds: string[]
+  candidateSpaceIds: string[]
+}
+
 export interface VersionDetailDto {
   id: string
   name: string
@@ -64,6 +84,10 @@ export interface VersionDetailDto {
   penalties: Penalty[]
   summary: PlannerSummary
   pending: PendingGroupDto[]
+  /** Every group of the year, with what is still to place for each. */
+  groups: GroupPlanDto[]
+  /** The dates the academic year runs between, as `YYYY-MM-DD`. */
+  range: { from: string; to: string }
   /** The engine's own inputs, so the browser can colour cells without asking. */
   context: PlannerContextDto
   notified?: number

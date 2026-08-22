@@ -1398,8 +1398,6 @@
     "title": "Planificador",
     "subtitle": "Coloca las sesiones de la semana y valídalas al vuelo",
     "legendTitle": "Qué significa cada color",
-    "pending": "Grupos pendientes",
-    "pendingEmpty": "Todas las sesiones están colocadas.",
     "placedOf": "{{placed}} de {{total}} sesiones colocadas",
     "unassignedTeacher": "Sin docente",
     "unassignedSpace": "Sin aula",
@@ -1557,7 +1555,18 @@
     "closedOn": "El centro está cerrado: {{name}}",
     "closedLegend": "Centro cerrado",
     "closedLegendHint": "Festivo o periodo vacacional del calendario académico. Puedes planificar igualmente: la semana es una plantilla y ese día se salta al generar las clases.",
-    "thisWeekCount": "{{shown}} de {{total}} clases esta semana"
+    "thisWeekCount": "{{shown}} de {{total}} clases esta semana",
+    "groups": {
+      "title": "Grupos",
+      "subject": "Asignatura",
+      "allSubjects": "Todas las asignaturas",
+      "empty": "Esta asignatura todavía no tiene ningún grupo.",
+      "perWeek": "{{hours}} h/semana",
+      "remaining": "Faltan {{hours}} h por planificar",
+      "done": "Planificado",
+      "over": "{{hours}} h de más"
+    },
+    "jumpedToWeek": "El grupo se planifica a partir del {{date}}: te hemos llevado allí."
   },
   "calendar": {
     "title": "Mi calendario",

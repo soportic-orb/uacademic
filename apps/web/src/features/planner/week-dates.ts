@@ -39,3 +39,32 @@ export function isoDate(date: Date): string {
   const day = String(date.getDate()).padStart(2, '0')
   return `${date.getFullYear()}-${month}-${day}`
 }
+
+export function parseIsoDate(value: string): Date | null {
+  const [year, month, day] = value.split('-').map(Number)
+  if (!year || !month || !day) return null
+  return new Date(year, month - 1, day)
+}
+
+/**
+ * The week the planner opens on.
+ *
+ * Today's, when today is inside the year being planned. Otherwise the first
+ * week of it — because a coordinator planning next September in June would be
+ * handed a week in which none of the classes they place exist, and would watch
+ * each one vanish as it landed. The grid draws only what happens in the week
+ * on screen, which makes "which week" a correctness question rather than a
+ * convenience.
+ */
+export function openingWeek(range: { from: string; to: string } | undefined): Date {
+  const today = mondayOf(new Date())
+  if (!range) return today
+
+  const start = parseIsoDate(range.from)
+  const end = parseIsoDate(range.to)
+  if (!start || !end) return today
+
+  const now = new Date()
+  now.setHours(0, 0, 0, 0)
+  return now >= start && now <= end ? today : mondayOf(start)
+}
