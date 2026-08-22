@@ -831,8 +831,17 @@
       "separatorPlaceholder": "Per exemple: Docència",
       "addSeparator": "Afegeix un separador",
       "removeSeparator": "Elimina el separador {{name}}",
-      "restore": "Restaura l'ordre original",
-      "restored": "S'ha restaurat l'ordre original del menú."
+      "restore": "Torna al menú per defecte",
+      "restored": "El teu menú torna a ser el que ve per defecte.",
+      "defaults": {
+        "title": "Menú per defecte de cada rol",
+        "hint": "El menú amb què comença qui encara no s'ha fet el seu. Qui ja se l'ha ordenat conserva el seu i no li canvia res.",
+        "role": "Rol",
+        "set": "Aquest rol té un menú per defecte definit.",
+        "notSet": "Aquest rol encara no en té cap: comença amb l'ordre original de la plataforma.",
+        "clear": "Esborra aquest per defecte",
+        "saved": "Menú per defecte desat"
+      }
     }
   },
   "platform": {

@@ -40,13 +40,22 @@ describe.skipIf(!hasDatabase)('a personal menu order', () => {
     // `Prisma.DbNull`, not `undefined`: on a nullable JSON column undefined
     // means "leave it alone", so the cleanup would quietly do nothing.
     await prisma.user.update({ where: { id: userId }, data: { menuLayoutJson: Prisma.DbNull } })
+    await prisma.platformSetting.deleteMany({ where: { key: 'menuDefaults' } })
   })
+
+  const setDefaults = (defaults: Record<string, unknown[]>) =>
+    app.inject({
+      method: 'PUT',
+      url: '/api/v1/platform/menu-defaults',
+      headers: { 'x-mock-user': SEED.superadminEmail, 'x-center-id': centerId },
+      payload: { defaults },
+    })
 
   it('is empty until somebody arranges one, which means the product’s own order', async () => {
     const response = await read()
 
     expect(response.statusCode).toBe(200)
-    expect(response.json()).toEqual({ entries: [] })
+    expect(response.json()).toEqual({ entries: [], personalised: false })
   })
 
   it('keeps what was written, separators and all', async () => {
@@ -57,7 +66,7 @@ describe.skipIf(!hasDatabase)('a personal menu order', () => {
     ]
 
     expect((await write(entries)).statusCode).toBe(200)
-    expect((await read()).json()).toEqual({ entries })
+    expect((await read()).json()).toEqual({ entries, personalised: true })
   })
 
   it('is one person’s, not the center’s', async () => {
@@ -69,7 +78,7 @@ describe.skipIf(!hasDatabase)('a personal menu order', () => {
       headers: { 'x-mock-user': SEED.otherTeacherEmail, 'x-center-id': centerId },
     })
 
-    expect(other.json()).toEqual({ entries: [] })
+    expect(other.json()).toEqual({ entries: [], personalised: false })
   })
 
   it('refuses a separator with no id, which nothing could address', async () => {
@@ -95,7 +104,86 @@ describe.skipIf(!hasDatabase)('a personal menu order', () => {
     const response = await read()
 
     expect(response.statusCode).toBe(200)
-    expect(response.json()).toEqual({ entries: [] })
+    expect(response.json()).toEqual({ entries: [], personalised: false })
+  })
+
+  describe('the menu each role starts with', () => {
+    it('is what somebody who has arranged nothing is given', async () => {
+      // This lecturer also coordinates, and the menu is drawn for the most
+      // privileged role she holds here unless the request names another.
+      await setDefaults({ COORDINATOR: [{ kind: 'item', key: 'messages' }] })
+
+      const response = await read()
+
+      expect(response.json().entries).toEqual([{ kind: 'item', key: 'messages' }])
+      // Not theirs: they have not arranged anything, so there is nothing to
+      // offer to put back.
+      expect(response.json().personalised).toBe(false)
+    })
+
+    it('stops applying to somebody who has arranged their own', async () => {
+      await setDefaults({ COORDINATOR: [{ kind: 'item', key: 'messages' }] })
+      await write([{ kind: 'item', key: 'calendar' }])
+
+      const response = await read()
+
+      expect(response.json().entries).toEqual([{ kind: 'item', key: 'calendar' }])
+      expect(response.json().personalised).toBe(true)
+    })
+
+    it('takes over again when they put their own back', async () => {
+      await setDefaults({ COORDINATOR: [{ kind: 'item', key: 'messages' }] })
+      await write([{ kind: 'item', key: 'calendar' }])
+      await write([])
+
+      expect((await read()).json().entries).toEqual([{ kind: 'item', key: 'messages' }])
+    })
+
+    it('is the one for the role the interface is drawing', async () => {
+      await setDefaults({
+        TEACHER: [{ kind: 'item', key: 'messages' }],
+        COORDINATOR: [{ kind: 'item', key: 'planning' }],
+      })
+
+      // Somebody who coordinates and teaches switches between the two in the
+      // header, and the menu has to follow — they are not the same menu.
+      const teaching = await app.inject({
+        method: 'GET',
+        url: '/api/v1/me/menu?role=TEACHER',
+        headers: headers(),
+      })
+      const coordinating = await app.inject({
+        method: 'GET',
+        url: '/api/v1/me/menu?role=COORDINATOR',
+        headers: headers(),
+      })
+
+      expect(teaching.json().entries).toEqual([{ kind: 'item', key: 'messages' }])
+      expect(coordinating.json().entries).toEqual([{ kind: 'item', key: 'planning' }])
+    })
+
+    it('is the platform administrator’s to set, and nobody else’s', async () => {
+      const response = await app.inject({
+        method: 'PUT',
+        url: '/api/v1/platform/menu-defaults',
+        headers: headers(),
+        payload: { defaults: { TEACHER: [] } },
+      })
+
+      expect(response.statusCode).toBe(403)
+    })
+
+    it('is refused for a role that does not get one', async () => {
+      // A platform administrator arranges their own; there is one of them,
+      // and they are the person setting these.
+      const response = await setDefaults({ SUPERADMIN: [{ kind: 'item', key: 'platform' }] })
+
+      expect(response.statusCode).toBe(422)
+    })
+
+    it('leaves the product’s own order when nobody has set one', async () => {
+      expect((await read()).json().entries).toEqual([])
+    })
   })
 
   it('grants nothing: naming a screen does not open it', async () => {

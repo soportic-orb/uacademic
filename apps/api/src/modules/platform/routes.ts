@@ -4,7 +4,7 @@
  * SUPERADMIN only, and not by convention — this is the one role that crosses
  * centers, and an update touches every one of them at once.
  */
-import { SUPPORTED_LOCALES, localeSchema, translate } from '@uacademic/shared'
+import { SUPPORTED_LOCALES, localeSchema, menuDefaultsSchema, translate } from '@uacademic/shared'
 import type { FastifyInstance } from 'fastify'
 import { z } from 'zod'
 
@@ -16,7 +16,12 @@ import { prisma } from '../../lib/prisma.js'
 import { parseWith } from '../../lib/validate.js'
 import { requireUser } from '../../plugins/context.js'
 import { mailConfigured, sendMail } from '../../services/mailer.js'
-import { enabledLocales, setEnabledLocales } from '../../services/platform-settings.js'
+import {
+  enabledLocales,
+  menuDefaults,
+  setEnabledLocales,
+  setMenuDefaults,
+} from '../../services/platform-settings.js'
 import {
   latestRelease,
   releaseIsAlreadyRunning,
@@ -71,6 +76,43 @@ export function registerPlatformRoutes(app: FastifyInstance): void {
 
     return { available: [...SUPPORTED_LOCALES], enabled }
   })
+
+  /**
+   * The menu each of the three center roles starts with.
+   *
+   * Set once for the installation, and a starting point rather than a rule:
+   * anybody may arrange their own afterwards, and somebody who has keeps
+   * theirs when this changes. That is the whole reason it is a *default* and
+   * not a layout imposed on everybody — a menu somebody sat down and arranged
+   * must not be rewritten under them by an administrator tidying up.
+   */
+  app.get('/api/v1/platform/menu-defaults', { config: { roles: [...SUPERADMIN] } }, async () => ({
+    defaults: await menuDefaults(prisma()),
+  }))
+
+  app.put(
+    '/api/v1/platform/menu-defaults',
+    { config: { roles: [...SUPERADMIN] } },
+    async (request) => {
+      const actor = requireUser(request)
+      const body = parseWith(menuDefaultsSchema, request.body)
+
+      const defaults = await setMenuDefaults(prisma(), body.defaults, actor.userId)
+
+      await writeAuditLog(prisma(), {
+        centerId: null,
+        userId: actor.userId,
+        entity: 'platform_settings',
+        entityId: 'menuDefaults',
+        action: 'update',
+        after: defaults,
+        source: 'user',
+        ip: request.ip,
+      })
+
+      return { defaults }
+    },
+  )
 
   app.get('/api/v1/platform/mail', { config: { roles: [...SUPERADMIN] } }, async () => {
     const configuration = env()

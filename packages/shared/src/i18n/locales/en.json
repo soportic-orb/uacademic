@@ -831,8 +831,17 @@
       "separatorPlaceholder": "For example: Teaching",
       "addSeparator": "Add a separator",
       "removeSeparator": "Remove separator {{name}}",
-      "restore": "Restore the original order",
-      "restored": "The menu is back in its original order."
+      "restore": "Back to the default menu",
+      "restored": "Your menu is back to the default one.",
+      "defaults": {
+        "title": "The default menu for each role",
+        "hint": "The menu somebody starts with until they arrange their own. Anybody who already has keeps theirs, untouched.",
+        "role": "Role",
+        "set": "This role has a default menu.",
+        "notSet": "This role has none yet: it starts in the platform's own order.",
+        "clear": "Clear this default",
+        "saved": "Default menu saved"
+      }
     }
   },
   "platform": {

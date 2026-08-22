@@ -131,15 +131,3 @@ export function renameSeparator(
     entry.kind === 'separator' && entry.id === id ? { ...entry, label } : entry,
   )
 }
-
-/** Whether this layout says anything the product's own order does not. */
-export function isDefaultLayout(
-  available: readonly MenuAvailable[],
-  layout: readonly MenuEntry[],
-): boolean {
-  const applied = applyMenuLayout(available, layout)
-  if (applied.length !== available.length) return false
-  return applied.every(
-    (entry, index) => entry.kind === 'item' && entry.key === available[index]?.key,
-  )
-}

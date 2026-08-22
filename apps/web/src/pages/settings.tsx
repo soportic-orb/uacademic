@@ -9,7 +9,7 @@ import { Card, CardBody, CardHeader } from '../components/ui/card'
 import { Button } from '../components/ui/button'
 import { ExtractionCard } from '../features/settings/extraction-card'
 import { ExtractionWizard } from '../features/settings/extraction-wizard'
-import { MenuCard } from '../features/settings/menu-card'
+import { MenuCard, MenuDefaultsCard } from '../features/settings/menu-card'
 import { ParametersCard } from '../features/settings/parameters-card'
 import { VersionsCard } from '../features/settings/versions-card'
 import { useToast } from '../hooks/use-toast'
@@ -85,6 +85,12 @@ export function SettingsPage() {
 
       {/* Everybody's, whatever they administer: it is their own menu. */}
       <MenuCard roles={roles} />
+
+      {/*
+        And, for the one role that sets things for the whole installation, the
+        menu the other three start with.
+      */}
+      {roles.includes('SUPERADMIN') ? <MenuDefaultsCard /> : null}
 
       {administers ? (
         <div className="space-y-6">

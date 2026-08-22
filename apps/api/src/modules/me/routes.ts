@@ -1,11 +1,23 @@
-import type { CurrentUser } from '@uacademic/shared'
-import { menuLayoutSchema } from '@uacademic/shared'
-import type { FastifyInstance } from 'fastify'
+import type { CurrentUser, Role } from '@uacademic/shared'
+import { menuLayoutSchema, roleSchema, sortRolesByRank } from '@uacademic/shared'
+import type { FastifyInstance, FastifyRequest } from 'fastify'
+import { z } from 'zod'
 
 import { toJson } from '../../lib/json.js'
 import { prisma } from '../../lib/prisma.js'
 import { parseWith } from '../../lib/validate.js'
 import { requireUser } from '../../plugins/context.js'
+import { menuDefaultFor } from '../../services/platform-settings.js'
+
+/** The role the menu is drawn for when the request does not name one. */
+function activeRole(request: FastifyRequest): Role {
+  const user = requireUser(request)
+  const held = user.memberships
+    .filter((membership) => !request.centerId || membership.centerId === request.centerId)
+    .map((membership) => membership.role)
+
+  return sortRolesByRank(held)[0] ?? 'TEACHER'
+}
 
 export function registerMeRoutes(app: FastifyInstance): void {
   app.get('/api/v1/me', async (request): Promise<CurrentUser> => {
@@ -37,18 +49,39 @@ export function registerMeRoutes(app: FastifyInstance): void {
    * permission — what the menu may contain is still decided by the roles, on
    * every request (R3) — so this is theirs to write with no further check.
    */
-  app.get('/api/v1/me/menu', async (request) => {
-    const user = requireUser(request)
-    const row = await prisma().user.findUnique({
-      where: { id: user.userId },
-      select: { menuLayoutJson: true },
-    })
+  app.get(
+    '/api/v1/me/menu',
+    async (request: FastifyRequest<{ Querystring: { role?: string } }>) => {
+      const user = requireUser(request)
+      const query = parseWith(z.object({ role: roleSchema.optional() }), request.query)
 
-    const parsed = menuLayoutSchema.safeParse(row?.menuLayoutJson ?? { entries: [] })
-    // A layout we cannot read is one nobody can fix from the interface, so it
-    // falls back to the product's own order rather than to an error.
-    return parsed.success ? parsed.data : { entries: [] }
-  })
+      const row = await prisma().user.findUnique({
+        where: { id: user.userId },
+        select: { menuLayoutJson: true },
+      })
+
+      const parsed = menuLayoutSchema.safeParse(row?.menuLayoutJson ?? { entries: [] })
+      // A layout we cannot read is one nobody can fix from the interface, so it
+      // falls back to what everybody else with this role gets, not to an error.
+      const personal = parsed.success ? parsed.data.entries : []
+
+      /*
+        Which role's default applies. The interface draws one role at a time
+        and says which; without that, the most privileged one held in the
+        center being looked at, which is what the menu itself is drawn from.
+      */
+      const role = query.role ?? activeRole(request)
+      const fallback = await menuDefaultFor(prisma(), role)
+
+      return {
+        // What to draw: their own arrangement, or the role's starting point.
+        entries: personal.length > 0 ? personal : fallback,
+        // Whether the first of those is what happened, so the screen can offer
+        // to put the default back only when there is something to put back.
+        personalised: personal.length > 0,
+      }
+    },
+  )
 
   app.put('/api/v1/me/menu', async (request) => {
     const user = requireUser(request)

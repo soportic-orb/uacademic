@@ -8,7 +8,6 @@ import type { MenuEntry } from '../src/domain/menu.js'
 import {
   applyMenuLayout,
   insertSeparator,
-  isDefaultLayout,
   moveEntry,
   removeSeparator,
   renameSeparator,
@@ -147,26 +146,5 @@ describe('the separators somebody adds', () => {
     const next = removeSeparator([item('a'), rule('s1'), rule('s2'), item('b')], 's1')
 
     expect(next).toEqual([item('a'), rule('s2'), item('b')])
-  })
-})
-
-describe('whether a layout says anything at all', () => {
-  it('is the default when it is empty', () => {
-    expect(isDefaultLayout(available, [])).toBe(true)
-  })
-
-  it('is not the default once something has been moved', () => {
-    expect(isDefaultLayout(available, [item('messages')])).toBe(false)
-  })
-
-  it('is not the default once a separator has been added', () => {
-    expect(
-      isDefaultLayout(available, [
-        item('dashboard'),
-        rule('s1', 'Docència'),
-        item('planning'),
-        item('messages'),
-      ]),
-    ).toBe(false)
   })
 })

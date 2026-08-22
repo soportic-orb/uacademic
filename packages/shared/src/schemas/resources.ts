@@ -352,3 +352,31 @@ export const menuLayoutSchema = z.object({
   entries: z.array(menuEntrySchema).max(120),
 })
 export type MenuLayoutInput = z.infer<typeof menuLayoutSchema>
+
+/**
+ * The menu each role starts with, set once for the whole installation.
+ *
+ * Only the three center roles. A platform administrator arranges their own —
+ * there is one of them, they are the person setting these, and a default they
+ * would have to maintain for themselves is a form to fill in for nobody.
+ */
+export const DEFAULTED_ROLES = ['CENTER_ADMIN', 'COORDINATOR', 'TEACHER'] as const
+export type DefaultedRole = (typeof DEFAULTED_ROLES)[number]
+
+const roleMenuSchema = z.array(menuEntrySchema).max(120)
+
+// Spelled out rather than a record keyed by the enum: a record over an enum is
+// exhaustive, and every one of these is optional — an installation sets the
+// default for one role and leaves the others as the product declares them.
+export const menuDefaultsSchema = z.object({
+  defaults: z
+    .object({
+      CENTER_ADMIN: roleMenuSchema.optional(),
+      COORDINATOR: roleMenuSchema.optional(),
+      TEACHER: roleMenuSchema.optional(),
+    })
+    // A role that does not get a default — the platform administrator, who
+    // sets these — is refused rather than silently dropped.
+    .strict(),
+})
+export type MenuDefaultsInput = z.infer<typeof menuDefaultsSchema>

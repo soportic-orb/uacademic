@@ -10,7 +10,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { Toaster } from '../src/components/feedback/toaster'
 import { Sidebar } from '../src/components/layout/sidebar'
-import { MenuCard } from '../src/features/settings/menu-card'
+import { MenuCard, MenuDefaultsCard } from '../src/features/settings/menu-card'
 import { useSessionStore } from '../src/stores/session'
 
 function view(children: ReactNode) {
@@ -25,19 +25,39 @@ function view(children: ReactNode) {
   )
 }
 
-/** The stored layout, and every PUT the screen sends. */
-const stored = { entries: [] as unknown[] }
+/** The stored layout and defaults, and every PUT the screens send. */
+const stored = { entries: [] as unknown[], personalised: false }
+const defaults = { value: {} as Record<string, unknown[]> }
 const saved: unknown[][] = []
+const savedDefaults: Record<string, unknown[]>[] = []
 
 beforeEach(() => {
   useSessionStore.setState({ centerId: 'center-1' })
   stored.entries = []
+  stored.personalised = false
+  defaults.value = {}
   saved.length = 0
+  savedDefaults.length = 0
 
   vi.stubGlobal(
     'fetch',
     vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input)
+
+      if (url.includes('/api/v1/platform/menu-defaults')) {
+        if (init?.method === 'PUT') {
+          const body = JSON.parse(String(init.body)) as { defaults: Record<string, unknown[]> }
+          savedDefaults.push(body.defaults)
+          defaults.value = body.defaults
+          return { ok: true, status: 200, json: async () => body } as Response
+        }
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ defaults: defaults.value }),
+        } as Response
+      }
+
       if (!url.includes('/api/v1/me/menu')) {
         return { ok: false, status: 404, json: async () => ({}) } as Response
       }
@@ -46,10 +66,15 @@ beforeEach(() => {
         const body = JSON.parse(String(init.body)) as { entries: unknown[] }
         saved.push(body.entries)
         stored.entries = body.entries
+        stored.personalised = body.entries.length > 0
         return { ok: true, status: 200, json: async () => body } as Response
       }
 
-      return { ok: true, status: 200, json: async () => ({ entries: stored.entries }) } as Response
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ entries: stored.entries, personalised: stored.personalised }),
+      } as Response
     }),
   )
 })
@@ -112,21 +137,77 @@ describe('arranging your own menu', () => {
     expect(saved[0]!.some((entry) => (entry as { kind: string }).kind === 'separator')).toBe(false)
   })
 
-  it('offers to put it all back only once something has been changed', async () => {
+  it('offers the default back only once this person has arranged their own', async () => {
     const { unmount } = view(<MenuCard roles={TEACHER} />)
 
     await screen.findByText('El teu menú')
     expect(
-      screen.queryByRole('button', { name: "Restaura l'ordre original" }),
+      screen.queryByRole('button', { name: 'Torna al menú per defecte' }),
     ).not.toBeInTheDocument()
     unmount()
 
     stored.entries = [{ kind: 'item', key: 'messages' }]
+    stored.personalised = true
     view(<MenuCard roles={TEACHER} />)
 
     expect(
-      await screen.findByRole('button', { name: "Restaura l'ordre original" }),
+      await screen.findByRole('button', { name: 'Torna al menú per defecte' }),
     ).toBeInTheDocument()
+  })
+
+  it('draws the role’s default for somebody who has arranged nothing', async () => {
+    // The server hands back the default as the menu to draw; the card does not
+    // have to know which of the two it is looking at.
+    stored.entries = [{ kind: 'item', key: 'messages' }]
+    stored.personalised = false
+
+    view(<MenuCard roles={TEACHER} />)
+
+    const items = await screen.findAllByRole('listitem')
+    expect(within(items[0]!).getByText('Missatges')).toBeInTheDocument()
+  })
+})
+
+describe('the menu each role starts with', () => {
+  it('arranges one role at a time', async () => {
+    view(<MenuDefaultsCard />)
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Coordinació' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Baixa Tauler' }))
+
+    await waitFor(() => expect(savedDefaults).toHaveLength(1))
+    // Saved under the role being arranged, and nothing else touched.
+    expect(Object.keys(savedDefaults[0]!)).toEqual(['COORDINATOR'])
+    expect(savedDefaults[0]!.COORDINATOR![1]).toEqual({ kind: 'item', key: 'dashboard' })
+  })
+
+  it('offers that role’s own screens, not the administrator’s', async () => {
+    view(<MenuDefaultsCard />)
+
+    // It opens on the lecturer, who has no platform administration.
+    await screen.findByText(/Aquest rol encara no en té cap/)
+    expect(screen.queryByText('Plataforma')).not.toBeInTheDocument()
+    expect(screen.getByText('La meva càrrega')).toBeInTheDocument()
+  })
+
+  it('keeps the roles that were already set when another is arranged', async () => {
+    defaults.value = { TEACHER: [{ kind: 'item', key: 'messages' }] }
+
+    view(<MenuDefaultsCard />)
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Coordinació' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Baixa Tauler' }))
+
+    await waitFor(() => expect(savedDefaults).toHaveLength(1))
+    expect(savedDefaults[0]!.TEACHER).toEqual([{ kind: 'item', key: 'messages' }])
+  })
+
+  it('says whether the role has a default at all', async () => {
+    defaults.value = { TEACHER: [{ kind: 'item', key: 'messages' }] }
+
+    view(<MenuDefaultsCard />)
+
+    expect(await screen.findByText(/té un menú per defecte definit/)).toBeInTheDocument()
   })
 })
 

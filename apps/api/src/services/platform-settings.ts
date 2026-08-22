@@ -7,11 +7,19 @@
  * languages it offers people.
  */
 import type { PrismaClient } from '@uacademic/db'
-import { SUPPORTED_LOCALES, type AppLocale } from '@uacademic/shared'
+import {
+  DEFAULTED_ROLES,
+  type DefaultedRole,
+  type MenuEntry,
+  SUPPORTED_LOCALES,
+  type AppLocale,
+  menuDefaultsSchema,
+} from '@uacademic/shared'
 
 import { toJson } from '../lib/json.js'
 
 const ENABLED_LOCALES = 'enabledLocales'
+const MENU_DEFAULTS = 'menuDefaults'
 
 /**
  * The languages on offer.
@@ -46,4 +54,46 @@ export async function setEnabledLocales(
   })
 
   return [...kept]
+}
+
+/**
+ * The menu each of the three center roles starts with.
+ *
+ * A platform decision rather than a center one: the shape of the menu is the
+ * shape of the product, which is the same everywhere. It is a starting point
+ * and nothing more — anybody may then arrange their own, and a person who has
+ * follows their own arrangement rather than a changed default.
+ *
+ * An empty list for a role means "the order the product declares", which is
+ * also what an installation nobody has configured has.
+ */
+export type MenuDefaults = Partial<Record<DefaultedRole, MenuEntry[]>>
+
+export async function menuDefaults(client: PrismaClient): Promise<MenuDefaults> {
+  const row = await client.platformSetting.findUnique({ where: { key: MENU_DEFAULTS } })
+  const parsed = menuDefaultsSchema.safeParse(row?.valueJson ?? { defaults: {} })
+  // A stored value we cannot read falls back to the product's own order rather
+  // than leaving everybody without a menu.
+  return parsed.success ? parsed.data.defaults : {}
+}
+
+export async function menuDefaultFor(client: PrismaClient, role: string): Promise<MenuEntry[]> {
+  if (!(DEFAULTED_ROLES as readonly string[]).includes(role)) return []
+  return (await menuDefaults(client))[role as DefaultedRole] ?? []
+}
+
+export async function setMenuDefaults(
+  client: PrismaClient,
+  defaults: MenuDefaults,
+  updatedBy: string,
+): Promise<MenuDefaults> {
+  const parsed = menuDefaultsSchema.parse({ defaults })
+
+  await client.platformSetting.upsert({
+    where: { key: MENU_DEFAULTS },
+    create: { key: MENU_DEFAULTS, valueJson: toJson(parsed), updatedBy },
+    update: { valueJson: toJson(parsed), updatedBy },
+  })
+
+  return parsed.defaults
 }

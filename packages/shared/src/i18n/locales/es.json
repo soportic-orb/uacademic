@@ -831,8 +831,17 @@
       "separatorPlaceholder": "Por ejemplo: Docencia",
       "addSeparator": "Añadir un separador",
       "removeSeparator": "Eliminar el separador {{name}}",
-      "restore": "Restaurar el orden original",
-      "restored": "Se ha restaurado el orden original del menú."
+      "restore": "Volver al menú por defecto",
+      "restored": "Tu menú vuelve a ser el que viene por defecto.",
+      "defaults": {
+        "title": "Menú por defecto de cada rol",
+        "hint": "El menú con el que empieza quien todavía no se ha hecho el suyo. Quien ya se lo ha ordenado conserva el suyo y no le cambia nada.",
+        "role": "Rol",
+        "set": "Este rol tiene un menú por defecto definido.",
+        "notSet": "Este rol todavía no tiene ninguno: empieza con el orden original de la plataforma.",
+        "clear": "Borrar este por defecto",
+        "saved": "Menú por defecto guardado"
+      }
     }
   },
   "platform": {
