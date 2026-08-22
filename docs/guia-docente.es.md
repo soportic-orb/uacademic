@@ -141,6 +141,9 @@ En todas las pantallas, en la esquina inferior derecha, hay un botón redondo
 azul: es Cady, la asistente de ayuda. Puedes preguntarle cómo funciona
 cualquier parte de la plataforma y dónde se hace cada cosa, con tus palabras.
 
+Sabe en qué pantalla estás, así que puedes preguntarle «¿por qué sale vacío?» o
+«¿dónde pongo esto?» sin explicarle dónde estás.
+
 No ve tus datos ni puede hacer cambios por ti: te explica dónde lo haces tú. Si
 algo no lo tiene en su ayuda te lo dice claramente en vez de inventárselo, y la
 pregunta queda anotada para que alguien escriba la respuesta. Si tu centro no

@@ -279,6 +279,11 @@ export const timeWindowSchema = z.object({
 export const supportAskSchema = z.object({
   question: z.string().trim().min(2).max(CADY_MAX_QUESTION),
   conversationId: uuidSchema.optional(),
+  /**
+   * The screen the person is on. Bounded and matched against a known list of
+   * routes — it reaches a prompt, so it is not free text with a free ride.
+   */
+  path: z.string().trim().max(200).optional(),
 })
 export type SupportAsk = z.infer<typeof supportAskSchema>
 

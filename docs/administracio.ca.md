@@ -182,8 +182,15 @@ Ve desactivada. L'activa la superadministració a Administració → Ajuda i
 suport, i necessita la mateixa clau d'Anthropic que l'assistent de
 coordinació.
 
-Respon només des de la guia pas a pas i dels articles d'ajuda escrits en
-aquella mateixa pantalla, mai del que un model es pugui imaginar. Quan una
+La Cady sap en quina pantalla ets quan preguntes, de manera que «per què surt
+buit?» ja té un «això» i normalment es respon amb una frase.
+
+Respon només des del coneixement de la plataforma que ve amb la versió
+instal·lada, de la guia pas a pas i dels articles d'ajuda escrits en aquella
+mateixa pantalla; mai del que un model es pugui imaginar. El coneixement de la
+plataforma explica com funciona el producte i què cal que existeixi abans que
+cada pantalla tingui res a mostrar; els articles són per al que el codi no pot
+saber — la normativa d'aquest centre, qui aprova què, els terminis interns. Quan una
 pregunta no és a l'ajuda, ho diu i la pregunta queda marcada: la
 superadministració veu totes les converses i pot filtrar les que no ha sabut
 respondre, que són exactament la llista del que falta escriure. Els articles

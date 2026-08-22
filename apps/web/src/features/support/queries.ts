@@ -97,6 +97,8 @@ export function useSupportFeedback() {
 export interface AskCadyInput {
   question: string
   conversationId?: string | undefined
+  /** The screen the person is looking at, so "why is this empty" has a this. */
+  path?: string | undefined
   onEvent: (event: SupportStreamEvent) => void
   signal?: AbortSignal
 }
@@ -123,6 +125,7 @@ export async function askCady(input: AskCadyInput): Promise<void> {
     body: JSON.stringify({
       question: input.question,
       ...(input.conversationId ? { conversationId: input.conversationId } : {}),
+      ...(input.path ? { path: input.path } : {}),
     }),
   })
 

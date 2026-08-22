@@ -140,6 +140,9 @@ On every screen, in the bottom-right corner, there is a round blue button:
 that is Cady, the support assistant. Ask her how any part of the platform
 works and where each thing is done, in your own words.
 
+She knows which screen you are on, so you can ask "why is this empty?" or
+"where do I put this?" without explaining where you are.
+
 She cannot see your data and cannot make changes for you — she tells you where
 you do it yourself. If something is not in her help material she says so
 plainly rather than inventing it, and the question is noted so somebody can

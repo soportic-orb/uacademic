@@ -207,6 +207,7 @@ export function registerSupportRoutes(app: FastifyInstance): void {
             content: message.content,
           })),
         question: input.question,
+        path: input.path ?? null,
         emit: send,
       })
 

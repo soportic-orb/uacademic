@@ -187,8 +187,16 @@ Viene desactivada. La activa la superadministración en Administración → Ayud
 y soporte, y necesita la misma clave de Anthropic que la asistente de
 coordinación.
 
-Responde solo desde la guía paso a paso y desde los artículos de ayuda
-escritos en esa misma pantalla, nunca de lo que un modelo pueda imaginarse.
+Cady sabe en qué pantalla estás cuando preguntas, así que «¿por qué sale
+vacío?» ya tiene un «esto» y normalmente se responde con una frase.
+
+Responde solo desde el conocimiento de la plataforma que viene con la versión
+instalada, desde la guía paso a paso y desde los artículos de ayuda escritos en
+esa misma pantalla; nunca de lo que un modelo pueda imaginarse. El conocimiento
+de la plataforma explica cómo funciona el producto y qué tiene que existir antes
+de que cada pantalla tenga algo que mostrar; los artículos son para lo que el
+código no puede saber — la normativa de este centro, quién aprueba qué, los
+plazos internos.
 Cuando una pregunta no está en la ayuda, lo dice y la pregunta queda marcada:
 la superadministración ve todas las conversaciones y puede filtrar las que no
 ha sabido responder, que son exactamente la lista de lo que falta escribir.

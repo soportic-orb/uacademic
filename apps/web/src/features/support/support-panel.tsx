@@ -12,6 +12,7 @@
 import { Loader2, MessageCircleQuestion, Send, ThumbsDown, ThumbsUp, X } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useLocation } from 'react-router'
 
 import { Button } from '../../components/ui/button'
 import { useToast } from '../../hooks/use-toast'
@@ -35,6 +36,13 @@ interface Turn {
 export function SupportPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { t } = useTranslation()
   const toast = useToast()
+  /*
+    Where the person is standing. Support questions are almost always about
+    what is in front of them and are phrased as if that were obvious — "why is
+    this empty", "where do I put the hours" — so the screen goes with the
+    question rather than being asked for in a first reply.
+  */
+  const location = useLocation()
   const conversations = useSupportConversations(open)
   const feedback = useSupportFeedback()
 
@@ -81,6 +89,7 @@ export function SupportPanel({ open, onClose }: { open: boolean; onClose: () => 
       await askCady({
         question: text,
         conversationId: conversationId ?? undefined,
+        path: location.pathname,
         onEvent: (event) => {
           if (event.type === 'text') {
             setTurns((current) => {
@@ -116,7 +125,7 @@ export function SupportPanel({ open, onClose }: { open: boolean; onClose: () => 
       setBusy(false)
       await conversations.refetch()
     }
-  }, [busy, conversationId, conversations, question, toast])
+  }, [busy, conversationId, conversations, location.pathname, question, toast])
 
   const rate = (turn: Turn, helpful: boolean) => {
     if (!turn.messageId) return

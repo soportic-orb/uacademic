@@ -15,6 +15,7 @@
 import { type AppLocale, catalogs } from '../i18n/index.js'
 import type { Role } from '../schemas/common.js'
 import { GUIDE_STEPS } from './guide.js'
+import { type ScreenKnowledge, platformKnowledge, screenFor } from './support-knowledge.js'
 
 export const CADY_MAX_QUESTION = 2_000
 
@@ -81,10 +82,16 @@ const SECTION_TITLES = {
  */
 export function supportCorpus(input: SupportCorpusInput): string {
   const parts = [
+    // How the product actually works, written from the source. First, because
+    // it is the part that answers "why is this empty" and "what do I have to
+    // do first" — which is most of what gets asked.
+    `# How UAcademic works\n\n${platformKnowledge(input.role)}`,
     `# ${SECTION_TITLES.guide[input.locale]}\n\n${guideSection(input.role, input.locale)}`,
   ]
 
   const articles = articleSection(input)
+  // Last, so a center's own words are the closest thing to the question — and
+  // the place to write anything the platform knowledge cannot know.
   if (articles) parts.push(`# ${SECTION_TITLES.articles[input.locale]}\n\n${articles}`)
 
   return parts.join('\n\n')
@@ -114,6 +121,15 @@ export interface CadyPromptInput {
   userName: string
   centerName: string | null
   corpus: string
+  /**
+   * The screen they are standing on when they ask.
+   *
+   * Most support questions are about what is in front of the person and are
+   * phrased as if that were obvious — "why is this empty", "where do I put the
+   * hours", "this does not let me". Without the screen those are unanswerable
+   * without a round trip; with it they are usually one sentence.
+   */
+  path?: string | null
 }
 
 /**
@@ -124,6 +140,8 @@ export interface CadyPromptInput {
  * stripped before the answer reaches a reader.
  */
 export function cadySystemPrompt(input: CadyPromptInput): string {
+  const screen = screenFor(input.path)
+
   return [
     'You are Cady, the support assistant inside UAcademic — an academic-management platform universities use to match each lecturer’s contracted teaching capacity against the teaching load that has to be covered, respecting their availability.',
     '',
@@ -131,9 +149,15 @@ export function cadySystemPrompt(input: CadyPromptInput): string {
       input.centerName ? ` They are working in ${input.centerName}.` : ''
     }`,
     '',
+    ...(screen ? [screenLine(screen, input.path ?? screen.path), ''] : []),
     `Answer in ${LANGUAGE_NAME[input.locale]}, always, whatever language the question is written in.`,
     '',
     'How to answer:',
+    ...(screen
+      ? [
+          '- They are asking about the screen they are on unless they say otherwise. "Why is this empty" means that screen; "where do I do this" means from where they are standing.',
+        ]
+      : []),
     '- Be kind, plain and direct. Short sentences. No preamble, no apologising, no "great question".',
     '- Give the steps in order and name the screen, with the path when the material gives one.',
     '- When something has to happen first — a center with no academic year has no teaching load to show — say that first. It is usually the real answer.',
@@ -151,6 +175,11 @@ export function cadySystemPrompt(input: CadyPromptInput): string {
     input.corpus,
     '--- END OF HELP MATERIAL ---',
   ].join('\n')
+}
+
+/** Where the person is standing, for the paragraph before the instructions. */
+function screenLine(screen: ScreenKnowledge, path: string): string {
+  return `Right now they are looking at "${screen.title}" (${path}). ${screen.body}`
 }
 
 const COVERAGE = /\[\[(covered|uncovered)\]\]\s*$/i

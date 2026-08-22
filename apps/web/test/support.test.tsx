@@ -14,11 +14,11 @@ import { SupportLauncher } from '../src/features/support/support-launcher'
 import { SupportPanel } from '../src/features/support/support-panel'
 import { useSessionStore } from '../src/stores/session'
 
-function wrap(children: ReactNode) {
+function wrap(children: ReactNode, path = '/') {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return (
     <QueryClientProvider client={client}>
-      <MemoryRouter>
+      <MemoryRouter initialEntries={[path]}>
         {children}
         <Toaster />
       </MemoryRouter>
@@ -48,7 +48,11 @@ function router(routes: Record<string, unknown>) {
 function streaming(frames: Record<string, unknown>[], routes: Record<string, unknown> = {}) {
   const encoder = new TextEncoder()
 
-  return vi.fn(async (input: RequestInfo | URL) => {
+  // `init` is declared even though the stream branch ignores it: the tests
+  // read the request body out of `mock.calls`, and a one-argument mock has no
+  // second element in its call tuple to read.
+  return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    void init
     const url = String(input)
 
     if (url.includes('/support/ask')) {
@@ -197,6 +201,29 @@ describe('asking Cady something', () => {
       const call = fetchMock.mock.calls.find(([url]) => String(url).includes('/feedback'))
       expect(call).toBeDefined()
       expect(String(call![0])).toContain('/api/v1/support/messages/m1/feedback')
+    })
+  })
+
+  it('sends the screen the person is standing on with the question', async () => {
+    const fetchMock = streaming(
+      [
+        { type: 'text', text: 'Encara no hi tens cap classe assignada.' },
+        { type: 'done', conversationId: 'c1', messageId: 'm1', covered: true },
+      ],
+      { '/support/conversations': { items: [] } },
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(wrap(<SupportPanel open onClose={vi.fn()} />, '/my-load'))
+
+    await userEvent.type(screen.getByRole('textbox'), 'Per què surt buit?')
+    await userEvent.click(screen.getByRole('button', { name: 'Envia' }))
+
+    await waitFor(() => {
+      const call = fetchMock.mock.calls.find(([url]) => String(url).includes('/support/ask'))
+      expect(call).toBeDefined()
+      // Without it, "why is this empty" has no "this".
+      expect(JSON.parse(String(call![1]?.body))).toMatchObject({ path: '/my-load' })
     })
   })
 

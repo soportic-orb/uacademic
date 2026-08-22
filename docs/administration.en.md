@@ -181,8 +181,15 @@ She ships switched off. The platform administrator turns her on under
 Administration → Help and support, and she needs the same Anthropic key as the
 coordination assistant.
 
-She answers only from the step-by-step guide and from the help articles
-written on that same screen — never from what a model might imagine. When a
+Cady knows which screen you are on when you ask, so "why is this empty?"
+already has a "this" and is usually answered in one sentence.
+
+She answers only from the platform knowledge that ships with the installed
+release, from the step-by-step guide, and from the help articles written on
+that same screen — never from what a model might imagine. The platform
+knowledge explains how the product works and what has to exist before each
+screen has anything to show; the articles are for what the code cannot know —
+this center's regulation, who approves what, the internal deadlines. When a
 question is not in the help she says so, and the question is marked: the
 platform administrator sees every conversation and can filter the ones she
 could not answer, which is exactly the list of what still needs writing.

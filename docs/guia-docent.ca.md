@@ -139,6 +139,9 @@ A totes les pantalles, a la cantonada de baix a la dreta, hi ha un botó rodó
 blau: és la Cady, l'assistent d'ajuda. Li pots preguntar com funciona qualsevol
 part de la plataforma i on es fa cada cosa, amb les teves paraules.
 
+Sap en quina pantalla ets, així que li pots preguntar «per què surt buit?» o
+«on poso això?» sense explicar-li on ets.
+
 No veu les teves dades ni pot fer canvis per tu: t'explica on ho fas tu. Si una
 cosa no la té a la seva ajuda t'ho diu clarament en comptes d'inventar-se-la, i
 la pregunta queda anotada perquè algú hi escrigui la resposta. Si el teu centre

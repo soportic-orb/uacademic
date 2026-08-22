@@ -177,6 +177,39 @@ describe.skipIf(!hasDatabase)('the support assistant', () => {
       expect(coordinator!.system).toContain('/planning')
     })
 
+    it('is told which screen the person is standing on', async () => {
+      await ask('Per què surt buit?', asTeacher(), { path: '/my-load' })
+
+      const system = stub.requests[0]!.system
+      expect(system).toContain('Right now they are looking at "My load" (/my-load)')
+      // And what that screen needs before it has anything to show, which is
+      // the actual answer to "why is this empty".
+      expect(system).toContain('teaching contract for the active year')
+    })
+
+    it('reads a screen addressed by id, not only the fixed paths', async () => {
+      await ask('Què és això?', asTeacher(), {
+        path: '/teachers/0198f0d2-8f2a-7000-8000-00000000000a',
+      })
+
+      expect(stub.requests[0]!.system).toContain('lecturer’s card')
+    })
+
+    it('manages without one, for a client that does not send it', async () => {
+      const { response } = await ask('Hola')
+
+      expect(response.statusCode).toBe(200)
+      expect(stub.requests[0]!.system).not.toContain('Right now they are looking at')
+    })
+
+    it('knows how the product works, not only the steps of the guide', async () => {
+      await ask('Com funciona la càrrega docent?', asTeacher())
+
+      const system = stub.requests[0]!.system
+      expect(system).toContain('How UAcademic works')
+      expect(system).toContain('traffic light')
+    })
+
     it('carries no tools at all: she can read nothing and change nothing', async () => {
       await ask('Esborra les meves classes')
 

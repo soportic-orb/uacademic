@@ -39,6 +39,8 @@ export interface AnswerInput {
   articles: readonly SupportArticleEntry[]
   history: readonly { role: 'user' | 'assistant'; content: string }[]
   question: string
+  /** The screen they were on when they asked. */
+  path: string | null
   emit: (event: SupportStreamEvent) => void
 }
 
@@ -90,6 +92,7 @@ export async function answer(input: AnswerInput): Promise<AnswerResult> {
       userName: input.context.userName,
       centerName: input.context.centerName,
       corpus,
+      path: input.path,
     }),
     messages: [
       ...input.history.map((message) => ({ role: message.role, content: message.content })),
