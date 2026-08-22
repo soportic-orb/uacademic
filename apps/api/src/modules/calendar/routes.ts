@@ -39,6 +39,7 @@ import {
   tombstoneToIcsSession,
 } from '../../services/calendar/drafts.js'
 import { registerCalendarConnectionRoutes } from './connections-routes.js'
+import { registerCoordinationCalendarRoutes } from './coordination-routes.js'
 import { requireCenterScope, requireUser } from '../../plugins/context.js'
 
 const rangeSchema = z.object({
@@ -61,13 +62,16 @@ export function hashFeedToken(token: string): string {
   return createHash('sha256').update(token).digest('hex')
 }
 
-interface CalendarSession {
+export interface CalendarSession {
   id: string
   subjectId: string
   subjectCode: string
   subjectName: string
+  groupId: string
   groupCode: string
+  spaceId: string | null
   spaceName: string | null
+  teacherProfileId: string | null
   teacherName: string | null
   weekday: number
   startTime: string
@@ -117,6 +121,7 @@ export function registerCalendarRoutes(app: FastifyInstance): void {
 
   registerFeedRoutes(app)
   registerExportRoutes(app)
+  registerCoordinationCalendarRoutes(app)
   registerCalendarConnectionRoutes(app)
 }
 
@@ -390,7 +395,7 @@ function registerExportRoutes(app: FastifyInstance): void {
   })
 }
 
-function toIcsSession(session: CalendarSession): IcsSession {
+export function toIcsSession(session: CalendarSession): IcsSession {
   return {
     id: session.id,
     summary: `${session.subjectCode} ${session.groupCode}`,
@@ -459,7 +464,7 @@ export async function publishedSessionsForProfile(
   return publishedSessionsWhere(client, { teacherProfileId })
 }
 
-async function publishedSessionsWhere(
+export async function publishedSessionsWhere(
   client: PrismaClient,
   where: Record<string, unknown>,
 ): Promise<CalendarSession[]> {
@@ -470,10 +475,16 @@ async function publishedSessionsWhere(
     },
     include: {
       group: {
-        select: { code: true, subject: { select: { id: true, code: true, nameCa: true } } },
+        select: {
+          id: true,
+          code: true,
+          subject: { select: { id: true, code: true, nameCa: true } },
+        },
       },
-      space: { select: { name: true } },
-      teacherProfile: { select: { user: { select: { firstName: true, lastName: true } } } },
+      space: { select: { id: true, name: true } },
+      teacherProfile: {
+        select: { id: true, user: { select: { firstName: true, lastName: true } } },
+      },
     },
     orderBy: [{ weekday: 'asc' }, { startTime: 'asc' }],
   })) as unknown as {
@@ -484,9 +495,9 @@ async function publishedSessionsWhere(
     dateFrom: Date
     dateTo: Date
     recurrence: 'weekly' | 'biweekly' | 'once'
-    group: { code: string; subject: { id: string; code: string; nameCa: string } }
-    space: { name: string } | null
-    teacherProfile: { user: { firstName: string; lastName: string } } | null
+    group: { id: string; code: string; subject: { id: string; code: string; nameCa: string } }
+    space: { id: string; name: string } | null
+    teacherProfile: { id: string; user: { firstName: string; lastName: string } } | null
   }[]
 
   return rows.map((row) => ({
@@ -494,8 +505,11 @@ async function publishedSessionsWhere(
     subjectId: row.group.subject.id,
     subjectCode: row.group.subject.code,
     subjectName: row.group.subject.nameCa,
+    groupId: row.group.id,
     groupCode: row.group.code,
+    spaceId: row.space?.id ?? null,
     spaceName: row.space?.name ?? null,
+    teacherProfileId: row.teacherProfile?.id ?? null,
     teacherName: row.teacherProfile
       ? `${row.teacherProfile.user.firstName} ${row.teacherProfile.user.lastName}`
       : null,

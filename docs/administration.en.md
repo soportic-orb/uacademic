@@ -170,6 +170,24 @@ the reasons and the blockers in plain sight.
 
 ---
 
+## 6b. The teaching programme
+
+Coordination → Programme. The calendar of every class of the subjects you
+coordinate, whoever gives them — the center administration sees the whole
+center. The same four views as the personal calendar (day, week, month,
+agenda) and four filters: subject, teacher, group and space. None of them on
+to begin with.
+
+Each subject has its own colour, computed from its own identity: it does not
+change when another subject is added, and the screen and the PDF agree without
+either being told. Colour is never the only carrier — every class also shows
+its code, its group, who gives it and where.
+
+The print button produces a PDF carrying the filters you have on and the
+period you are looking at: on the week view, you get that week.
+
+---
+
 ## 7b. Help and support (Cady)
 
 Cady is the support assistant anybody opens from the round button in the

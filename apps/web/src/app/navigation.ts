@@ -6,6 +6,7 @@ import {
   CalendarClock,
   CalendarDays,
   CalendarOff,
+  CalendarRange,
   CalendarSync,
   FileText,
   Repeat,
@@ -72,6 +73,12 @@ export const NAV_ITEMS: NavItem[] = [
     icon: Users,
     roles: ['CENTER_ADMIN', 'COORDINATOR'],
     mobile: true,
+  },
+  {
+    key: 'programme',
+    path: '/programme',
+    icon: CalendarRange,
+    roles: ['SUPERADMIN', 'CENTER_ADMIN', 'COORDINATOR'],
   },
   {
     key: 'calendar',

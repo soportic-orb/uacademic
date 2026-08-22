@@ -176,6 +176,24 @@ disponibilidad, con los motivos y los impedimentos a la vista.
 
 ---
 
+## 6b. Programación docente
+
+Coordinación → Programación. El calendario de todas las clases de las
+asignaturas que coordinas, las dé quien las dé — la administración del centro
+ve el centro entero. Las mismas cuatro vistas que el calendario personal (día,
+semana, mes, agenda) y cuatro filtros: asignatura, docente, grupo y espacio.
+Ningún filtro activo de salida.
+
+Cada asignatura tiene su color, calculado a partir de su propia identidad: no
+cambia cuando se añade otra, y la pantalla y el PDF coinciden sin pasarse nada.
+El color nunca es el único portador — cada clase muestra también el código, el
+grupo, quién la da y dónde.
+
+El botón de imprimir saca un PDF con los filtros que tengas activos y el
+periodo que estés mirando: si estás en la vista de semana, sale esa semana.
+
+---
+
 ## 7b. Ayuda y soporte (Cady)
 
 Cady es la asistente de ayuda que cualquier persona abre con el botón redondo

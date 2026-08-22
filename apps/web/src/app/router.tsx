@@ -25,6 +25,7 @@ import { MessagesPage } from '../pages/messages'
 import { NotificationsPage } from '../pages/notifications'
 import { NotFoundPage } from '../pages/placeholders'
 import { PlatformPage } from '../pages/platform'
+import { ProgrammePage } from '../pages/programme'
 import { SupportAdminPage } from '../pages/support-admin'
 import { PlanningPage } from '../pages/planning'
 import { SettingsPage } from '../pages/settings'
@@ -56,6 +57,7 @@ export const router = createBrowserRouter([
       { path: 'my-load', element: <MyLoadPage /> },
       { path: 'planning', element: <PlanningPage /> },
       { path: 'calendar', element: <CalendarPage /> },
+      { path: 'programme', element: <ProgrammePage /> },
       { path: 'teachers', element: <TeachersPage /> },
       { path: 'teachers/:id', element: <TeacherDetailPage /> },
       { path: 'subjects', element: <SubjectsPage /> },

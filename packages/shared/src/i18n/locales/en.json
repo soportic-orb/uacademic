@@ -72,7 +72,8 @@
     "guide": "Guide",
     "support": "Help (Cady)",
     "pendingSuffix_one": ", {{count}} pending",
-    "pendingSuffix_other": ", {{count}} pending"
+    "pendingSuffix_other": ", {{count}} pending",
+    "programme": "Programme"
   },
   "layout": {
     "skipToContent": "Skip to main content",
@@ -1605,6 +1606,22 @@
       "excel": "Export to Excel",
       "done": "File downloaded",
       "failed": "We could not generate the file"
+    },
+    "coordination": {
+      "title": "Teaching programme",
+      "subtitle": "Every class of the subjects you coordinate, who gives it and where.",
+      "filterTeacher": "Teacher",
+      "filterGroup": "Group",
+      "filterSpace": "Space",
+      "allTeachers": "All teachers",
+      "allGroups": "All groups",
+      "allSpaces": "All spaces",
+      "clearFilters": "Clear the filters",
+      "legend": "Colour by subject",
+      "print": "Print this view",
+      "printHint": "The PDF carries the filters you have on and the period you are looking at.",
+      "empty": "No published classes match these filters.",
+      "none": "You do not coordinate any subject yet, so there is nothing to show."
     }
   },
   "changes": {

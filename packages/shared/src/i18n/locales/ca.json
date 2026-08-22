@@ -72,7 +72,8 @@
     "guide": "Guia",
     "support": "Ajuda (Cady)",
     "pendingSuffix_one": ", {{count}} pendent",
-    "pendingSuffix_other": ", {{count}} pendents"
+    "pendingSuffix_other": ", {{count}} pendents",
+    "programme": "Programació"
   },
   "layout": {
     "skipToContent": "Ves al contingut principal",
@@ -1605,6 +1606,22 @@
       "excel": "Exporta a Excel",
       "done": "Fitxer descarregat",
       "failed": "No hem pogut generar el fitxer"
+    },
+    "coordination": {
+      "title": "Programació docent",
+      "subtitle": "Totes les classes de les assignatures que coordines, de qui les fa i on.",
+      "filterTeacher": "Docent",
+      "filterGroup": "Grup",
+      "filterSpace": "Espai",
+      "allTeachers": "Tot el professorat",
+      "allGroups": "Tots els grups",
+      "allSpaces": "Tots els espais",
+      "clearFilters": "Treu els filtres",
+      "legend": "Color per assignatura",
+      "print": "Imprimeix aquesta vista",
+      "printHint": "El PDF surt amb els filtres actius i el període que estàs veient.",
+      "empty": "No hi ha cap classe publicada amb aquests filtres.",
+      "none": "Encara no coordines cap assignatura, així que no hi ha res a mostrar."
     }
   },
   "changes": {

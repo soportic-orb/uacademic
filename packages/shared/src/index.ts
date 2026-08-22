@@ -1,6 +1,7 @@
 export * from './domain/access.js'
 export * from './domain/ai.js'
 export * from './domain/availability.js'
+export * from './domain/calendar-colors.js'
 export * from './domain/calendar-sync.js'
 export * from './domain/capacity.js'
 export * from './domain/change-requests.js'

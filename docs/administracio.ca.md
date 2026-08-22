@@ -171,6 +171,24 @@ disponibilitat, amb els motius i els impediments a la vista.
 
 ---
 
+## 6b. Programació docent
+
+Coordinació → Programació. El calendari de totes les classes de les
+assignatures que coordines, les faci qui les faci — l'administració del centre
+hi veu el centre sencer. Les mateixes quatre vistes que el calendari personal
+(dia, setmana, mes, agenda) i quatre filtres: assignatura, docent, grup i
+espai. Cap filtre actiu de sortida.
+
+Cada assignatura té el seu color, calculat a partir de la seva pròpia
+identitat: no canvia quan se n'afegeix una altra, i la pantalla i el PDF hi
+coincideixen sense passar-se res. El color mai és l'únic portador — cada classe
+mostra també el codi, el grup, qui la fa i on.
+
+El botó d'imprimir treu un PDF amb els filtres que tinguis actius i el període
+que estiguis mirant: si estàs a la vista de setmana, surt aquella setmana.
+
+---
+
 ## 7b. Ajuda i suport (Cady)
 
 La Cady és l'assistent d'ajuda que qualsevol persona obre amb el botó rodó de

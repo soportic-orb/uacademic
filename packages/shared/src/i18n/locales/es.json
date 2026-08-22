@@ -72,7 +72,8 @@
     "guide": "Guía",
     "support": "Ayuda (Cady)",
     "pendingSuffix_one": ", {{count}} pendiente",
-    "pendingSuffix_other": ", {{count}} pendientes"
+    "pendingSuffix_other": ", {{count}} pendientes",
+    "programme": "Programación"
   },
   "layout": {
     "skipToContent": "Ir al contenido principal",
@@ -1605,6 +1606,22 @@
       "excel": "Exportar a Excel",
       "done": "Archivo descargado",
       "failed": "No hemos podido generar el archivo"
+    },
+    "coordination": {
+      "title": "Programación docente",
+      "subtitle": "Todas las clases de las asignaturas que coordinas, de quién las da y dónde.",
+      "filterTeacher": "Docente",
+      "filterGroup": "Grupo",
+      "filterSpace": "Espacio",
+      "allTeachers": "Todo el profesorado",
+      "allGroups": "Todos los grupos",
+      "allSpaces": "Todos los espacios",
+      "clearFilters": "Quitar los filtros",
+      "legend": "Color por asignatura",
+      "print": "Imprimir esta vista",
+      "printHint": "El PDF sale con los filtros activos y el periodo que estás viendo.",
+      "empty": "No hay ninguna clase publicada con estos filtros.",
+      "none": "Todavía no coordinas ninguna asignatura, así que no hay nada que mostrar."
     }
   },
   "changes": {
