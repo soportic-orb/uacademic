@@ -2363,6 +2363,8 @@
       "deleteArticle": "Eliminar el artículo {{slug}}",
       "noArticles": "Todavía no hay ningún artículo. Cady solo responde desde la guía.",
       "writeFromQuestion": "Escribir un artículo sobre esto"
-    }
+    },
+    "expand": "Ampliar el chat",
+    "shrink": "Reducir el chat"
   }
 }

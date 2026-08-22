@@ -2363,6 +2363,8 @@
       "deleteArticle": "Delete article {{slug}}",
       "noArticles": "No articles yet — Cady answers from the guide alone.",
       "writeFromQuestion": "Write an article about this"
-    }
+    },
+    "expand": "Make the chat bigger",
+    "shrink": "Make the chat smaller"
   }
 }

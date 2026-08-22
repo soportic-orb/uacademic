@@ -227,6 +227,64 @@ describe('asking Cady something', () => {
     })
   })
 
+  it('renders her answer as formatted text, not as asterisks and pipes', async () => {
+    vi.stubGlobal(
+      'fetch',
+      streaming(
+        [
+          {
+            type: 'text',
+            text: 'Ves a **Planificació**.\n\n1. Tria la versió\n2. Arrossega el grup\n\n| Rol | Pot |\n| --- | --- |\n| Docent | Consultar |',
+          },
+          { type: 'done', conversationId: 'c1', messageId: 'm1', covered: true },
+        ],
+        { '/support/conversations': { items: [] } },
+      ),
+    )
+
+    render(wrap(<SupportPanel open onClose={vi.fn()} />))
+
+    await userEvent.type(screen.getByRole('textbox'), 'On planifico?')
+    await userEvent.click(screen.getByRole('button', { name: 'Envia' }))
+
+    expect(await screen.findByText('Planificació')).toBeInTheDocument()
+    expect(screen.getByText('Planificació').tagName).toBe('STRONG')
+    expect(screen.getByRole('list')).toBeInTheDocument()
+    expect(screen.getByRole('table')).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: 'Rol' })).toBeInTheDocument()
+  })
+
+  it('leaves what somebody typed exactly as they typed it', async () => {
+    vi.stubGlobal(
+      'fetch',
+      streaming([{ type: 'done', conversationId: 'c1', messageId: 'm1', covered: true }], {
+        '/support/conversations': { items: [] },
+      }),
+    )
+
+    render(wrap(<SupportPanel open onClose={vi.fn()} />))
+
+    // Their own asterisks are not formatting, they are their words.
+    await userEvent.type(screen.getByRole('textbox'), 'Què vol dir **TFG**?')
+    await userEvent.click(screen.getByRole('button', { name: 'Envia' }))
+
+    expect(await screen.findByText('Què vol dir **TFG**?')).toBeInTheDocument()
+  })
+
+  it('opens out and back for an answer that needs the room', async () => {
+    vi.stubGlobal('fetch', router({ '/support/conversations': { items: [] } }))
+
+    render(wrap(<SupportPanel open onClose={vi.fn()} />))
+
+    const bigger = screen.getByRole('button', { name: 'Amplia el xat' })
+    expect(bigger).toHaveAttribute('aria-pressed', 'false')
+
+    await userEvent.click(bigger)
+
+    const smaller = screen.getByRole('button', { name: 'Redueix el xat' })
+    expect(smaller).toHaveAttribute('aria-pressed', 'true')
+  })
+
   it('refuses to send an empty question', () => {
     vi.stubGlobal('fetch', router({ '/support/conversations': { items: [] } }))
 

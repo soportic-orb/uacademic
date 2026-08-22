@@ -2363,6 +2363,8 @@
       "deleteArticle": "Elimina l'article {{slug}}",
       "noArticles": "Encara no hi ha cap article. La Cady només respon des de la guia.",
       "writeFromQuestion": "Escriu un article sobre això"
-    }
+    },
+    "expand": "Amplia el xat",
+    "shrink": "Redueix el xat"
   }
 }

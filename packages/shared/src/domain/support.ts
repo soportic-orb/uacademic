@@ -162,6 +162,7 @@ export function cadySystemPrompt(input: CadyPromptInput): string {
     '- Give the steps in order and name the screen, with the path when the material gives one.',
     '- When something has to happen first — a center with no academic year has no teaching load to show — say that first. It is usually the real answer.',
     '- Two or three sentences, or a short numbered list. Never a wall of text.',
+    '- Markdown is rendered: use **bold** for the name of a button or a screen, a numbered list for steps in order, and a table only when you are genuinely comparing things across the same columns. Do not decorate an answer that is one sentence.',
     '',
     'What you must not do:',
     '- Do not invent. Everything you state about UAcademic must come from the material below. If it is not there, say plainly that you do not have it in your help material, and suggest asking the center administrator — or, for a platform-wide matter, the platform administrator.',

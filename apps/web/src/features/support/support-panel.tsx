@@ -9,7 +9,16 @@
  * asked in September does not have to ask again in February, and so the
  * platform can be improved from what people actually needed.
  */
-import { Loader2, MessageCircleQuestion, Send, ThumbsDown, ThumbsUp, X } from 'lucide-react'
+import {
+  Loader2,
+  Maximize2,
+  MessageCircleQuestion,
+  Minimize2,
+  Send,
+  ThumbsDown,
+  ThumbsUp,
+  X,
+} from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useLocation } from 'react-router'
@@ -17,6 +26,8 @@ import { useLocation } from 'react-router'
 import { Button } from '../../components/ui/button'
 import { useToast } from '../../hooks/use-toast'
 import { ApiRequestError } from '../../lib/api'
+import { cn } from '../../lib/cn'
+import { Answer } from './answer'
 import {
   askCady,
   useSupportConversation,
@@ -51,6 +62,15 @@ export function SupportPanel({ open, onClose }: { open: boolean; onClose: () => 
   const [question, setQuestion] = useState('')
   const [busy, setBusy] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
+  /**
+   * Bigger, for an answer with a table in it.
+   *
+   * The small window is deliberately small — support is read beside the screen
+   * somebody is stuck on, and a panel that covers it makes them close the help
+   * to look at the thing the help is about. But a comparison of four teaching
+   * categories does not fit in it, so the panel opens out on request.
+   */
+  const [expanded, setExpanded] = useState(false)
   const bottom = useRef<HTMLDivElement>(null)
 
   const history = useSupportConversation(conversationId)
@@ -142,7 +162,12 @@ export function SupportPanel({ open, onClose }: { open: boolean; onClose: () => 
   return (
     <aside
       aria-label={t('support.title')}
-      className="fixed inset-x-2 bottom-36 z-40 flex max-h-[70vh] flex-col overflow-hidden rounded-card border border-border bg-surface shadow-lg md:inset-x-auto md:bottom-24 md:right-6 md:w-96"
+      className={cn(
+        'fixed z-40 flex flex-col overflow-hidden rounded-card border border-border bg-surface shadow-lg',
+        expanded
+          ? 'inset-x-2 bottom-36 top-4 md:inset-x-auto md:bottom-24 md:right-6 md:top-6 md:w-[44rem]'
+          : 'inset-x-2 bottom-36 max-h-[70vh] md:inset-x-auto md:bottom-24 md:right-6 md:w-96',
+      )}
     >
       <header className="flex items-start justify-between gap-2 border-b border-border px-4 py-3">
         <div className="min-w-0">
@@ -152,9 +177,24 @@ export function SupportPanel({ open, onClose }: { open: boolean; onClose: () => 
           </h2>
           <p className="mt-0.5 truncate text-xs text-text-muted">{t('support.subtitle')}</p>
         </div>
-        <Button variant="ghost" size="icon" aria-label={t('support.close')} onClick={onClose}>
-          <X className="size-4" aria-hidden="true" />
-        </Button>
+        <div className="flex shrink-0 gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label={expanded ? t('support.shrink') : t('support.expand')}
+            aria-pressed={expanded}
+            onClick={() => setExpanded((current) => !current)}
+          >
+            {expanded ? (
+              <Minimize2 className="size-4" aria-hidden="true" />
+            ) : (
+              <Maximize2 className="size-4" aria-hidden="true" />
+            )}
+          </Button>
+          <Button variant="ghost" size="icon" aria-label={t('support.close')} onClick={onClose}>
+            <X className="size-4" aria-hidden="true" />
+          </Button>
+        </div>
       </header>
 
       {showHistory ? (
@@ -188,13 +228,20 @@ export function SupportPanel({ open, onClose }: { open: boolean; onClose: () => 
           {turns.map((turn, index) => (
             <div key={turn.messageId ?? index} className={turn.role === 'user' ? 'text-right' : ''}>
               <div
-                className={`inline-block max-w-full rounded-card px-3 py-2 text-left text-sm ${
+                className={cn(
+                  'inline-block max-w-full rounded-card px-3 py-2 text-left text-sm',
                   turn.role === 'user'
                     ? 'bg-primary text-primary-contrast'
-                    : 'border border-border bg-surface text-text'
-                }`}
+                    : 'border border-border bg-surface text-text',
+                )}
               >
-                <p className="whitespace-pre-wrap">{turn.text}</p>
+                {turn.role === 'assistant' ? (
+                  <Answer text={turn.text} />
+                ) : (
+                  // What somebody typed is shown as they typed it: their own
+                  // asterisks are not formatting, they are their words.
+                  <p className="whitespace-pre-wrap">{turn.text}</p>
+                )}
               </div>
 
               {turn.role === 'assistant' && turn.covered === false ? (
