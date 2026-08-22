@@ -70,7 +70,9 @@
     "connections": "Conexiones de calendario",
     "privacy": "Privacidad",
     "guide": "Guía",
-    "support": "Ayuda (Cady)"
+    "support": "Ayuda (Cady)",
+    "pendingSuffix_one": ", {{count}} pendiente",
+    "pendingSuffix_other": ", {{count}} pendientes"
   },
   "layout": {
     "skipToContent": "Ir al contenido principal",
@@ -1821,6 +1823,10 @@
       "reported": {
         "title": "Ausencia comunicada",
         "body": "{{teacher}} ha comunicado una ausencia del {{from}} al {{to}}."
+      },
+      "resolved": {
+        "title": "Respuesta a tu ausencia",
+        "body": "La coordinación ha revisado tu ausencia del {{from}} al {{to}}."
       },
       "substituteAssigned": {
         "title": "Te piden una sustitución",

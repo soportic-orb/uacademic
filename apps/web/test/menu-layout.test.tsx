@@ -28,6 +28,7 @@ function view(children: ReactNode) {
 /** The stored layout and defaults, and every PUT the screens send. */
 const stored = { entries: [] as unknown[], personalised: false }
 const defaults = { value: {} as Record<string, unknown[]> }
+const pending = { value: { changes: 0, absences: 0 } }
 const saved: unknown[][] = []
 const savedDefaults: Record<string, unknown[]>[] = []
 
@@ -36,6 +37,7 @@ beforeEach(() => {
   stored.entries = []
   stored.personalised = false
   defaults.value = {}
+  pending.value = { changes: 0, absences: 0 }
   saved.length = 0
   savedDefaults.length = 0
 
@@ -43,6 +45,10 @@ beforeEach(() => {
     'fetch',
     vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input)
+
+      if (url.includes('/api/v1/me/pending')) {
+        return { ok: true, status: 200, json: async () => pending.value } as Response
+      }
 
       if (url.includes('/api/v1/platform/menu-defaults')) {
         if (init?.method === 'PUT') {
@@ -82,6 +88,7 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals())
 
 const TEACHER = ['TEACHER'] as const
+const COORDINATOR = ['COORDINATOR'] as const
 
 describe('arranging your own menu', () => {
   it('lists the entries this person actually reaches, in the product’s order', async () => {
@@ -231,6 +238,32 @@ describe('the sidebar', () => {
     view(<Sidebar roles={TEACHER} collapsed={false} onToggle={vi.fn()} />)
 
     expect(await screen.findByRole('link', { name: 'Tauler' })).toBeInTheDocument()
+  })
+
+  it('carries the number of things waiting beside the entry', async () => {
+    pending.value = { changes: 3, absences: 0 }
+
+    view(<Sidebar roles={COORDINATOR} collapsed={false} onToggle={vi.fn()} />)
+
+    // The count arrives on its own request, so the badge appears a tick later
+    // than the entry it sits on.
+    expect(await screen.findByText('3')).toBeInTheDocument()
+
+    // The number alone says nothing aloud, so the words follow the name.
+    const link = screen.getByRole('link', { name: /Canvis de classe/ })
+    expect(link).toHaveAccessibleName('Canvis de classe, 3 pendents')
+  })
+
+  it('says nothing beside an entry with nothing waiting', async () => {
+    pending.value = { changes: 0, absences: 2 }
+
+    view(<Sidebar roles={COORDINATOR} collapsed={false} onToggle={vi.fn()} />)
+
+    expect(await screen.findByRole('link', { name: 'Absències, 2 pendents' })).toBeInTheDocument()
+
+    // Nothing waiting means no badge at all, not a zero.
+    const changes = screen.getByRole('link', { name: 'Canvis de classe' })
+    expect(within(changes).queryByText('0')).not.toBeInTheDocument()
   })
 
   it('shows a separator’s label above the rule', async () => {

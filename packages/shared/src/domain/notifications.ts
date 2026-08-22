@@ -27,6 +27,7 @@ export type NotificationEvent =
   | 'change.rejected'
   | 'change.expired'
   | 'absence.reported'
+  | 'absence.resolved'
   | 'absence.substituteAssigned'
   | 'message.received'
   | 'message.announcement'
@@ -109,6 +110,16 @@ export const NOTIFICATION_EVENTS: readonly EventDefinition[] = [
     defaults: ['inApp', 'push'],
     titleKey: 'notify.absence.reported.title',
     bodyKey: 'notify.absence.reported.body',
+  },
+  {
+    // The teacher hears what became of what they reported. Reporting an
+    // absence into silence and finding out on the day is the failure this
+    // prevents.
+    event: 'absence.resolved',
+    priority: 'high',
+    defaults: ['inApp', 'push'],
+    titleKey: 'notify.absence.resolved.title',
+    bodyKey: 'notify.absence.resolved.body',
   },
   {
     event: 'absence.substituteAssigned',

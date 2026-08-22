@@ -1,5 +1,10 @@
 import type { CurrentUser, Role } from '@uacademic/shared'
-import { menuLayoutSchema, roleSchema, sortRolesByRank } from '@uacademic/shared'
+import {
+  AWAITING_COORDINATOR,
+  menuLayoutSchema,
+  roleSchema,
+  sortRolesByRank,
+} from '@uacademic/shared'
 import type { FastifyInstance, FastifyRequest } from 'fastify'
 import { z } from 'zod'
 
@@ -38,6 +43,38 @@ export function registerMeRoutes(app: FastifyInstance): void {
         role: membership.role,
       })),
     }
+  })
+
+  /**
+   * What is waiting for this person, per menu item.
+   *
+   * Only what *they* have to act on: a request still waiting on the colleague
+   * it names is not coordination's to answer, and a badge that counts other
+   * people's work is a badge people learn to ignore. Nothing is counted for
+   * somebody who does not coordinate here — they have no screen to act on.
+   */
+  app.get('/api/v1/me/pending', async (request) => {
+    const user = requireUser(request)
+    const centerId = request.centerId
+
+    const coordinates =
+      centerId !== undefined &&
+      user.memberships.some(
+        (membership) =>
+          membership.centerId === centerId &&
+          (membership.role === 'COORDINATOR' || membership.role === 'CENTER_ADMIN'),
+      )
+
+    if (!coordinates || centerId === undefined) return { changes: 0, absences: 0 }
+
+    const [changes, absences] = await Promise.all([
+      prisma().changeRequest.count({
+        where: { centerId, status: { in: [...AWAITING_COORDINATOR] } },
+      }),
+      prisma().absence.count({ where: { centerId, status: 'requested' } }),
+    ])
+
+    return { changes, absences }
   })
 
   /**

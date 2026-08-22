@@ -47,6 +47,23 @@ export const OPEN_STATUSES: readonly ChangeRequestStatus[] = [
   'approved_by_coordinator',
 ]
 
+/**
+ * The states in which a request is waiting on coordination.
+ *
+ * What the badge on the menu counts, so a coordinator can see there is
+ * something to do without opening the screen. Not simply "open": a request
+ * still waiting on the colleague it names is not the coordinator's to act on,
+ * and a badge that counts other people's work is a badge people learn to
+ * ignore.
+ */
+export const AWAITING_COORDINATOR: readonly ChangeRequestStatus[] = [
+  // Accepted by the teacher, waiting to be approved — or, where approval is
+  // only informative, waiting to be applied.
+  'accepted_by_teacher',
+  // Approved, and still to be put on the timetable.
+  'approved_by_coordinator',
+]
+
 export type ChangeRequestAction =
   'submit' | 'accept' | 'reject' | 'approve' | 'apply' | 'cancel' | 'expire'
 

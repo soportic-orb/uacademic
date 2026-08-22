@@ -159,6 +159,34 @@ export function registerAbsenceRoutes(app: FastifyInstance, bus: RealtimeTranspo
         ip: request.ip,
       })
 
+      /*
+        And the person who reported it hears what became of it.
+
+        Coordination was told at once when it arrived; the answer went nowhere.
+        Reporting an absence into silence and finding out on the day whether it
+        was accepted is the failure this closes.
+      */
+      const teacher = await context.db.teacherProfile.findUnique({
+        where: { id: before.teacherProfileId },
+        select: { userId: true },
+      })
+
+      if (teacher && teacher.userId !== context.user.userId) {
+        await notify({
+          client: prisma(),
+          bus,
+          centerId: context.centerId,
+          event: 'absence.resolved',
+          url: `/absences/${before.id}`,
+          recipients: [{ userId: teacher.userId }],
+          params: {
+            status: input.status,
+            from: before.dateFrom.toISOString().slice(0, 10),
+            to: before.dateTo.toISOString().slice(0, 10),
+          },
+        })
+      }
+
       return detail(context, before.id)
     },
   )

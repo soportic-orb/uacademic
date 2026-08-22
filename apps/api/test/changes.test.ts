@@ -397,6 +397,38 @@ describe.skipIf(!hasDatabase)('absences and substitutions', () => {
     expect(notifications.length).toBeGreaterThan(0)
   })
 
+  it('waits for coordination, and is not a lecturer’s to answer', async () => {
+    const absence = await report()
+
+    const bySelf = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/absences/${absence.id}`,
+      headers: asTeacher(),
+      payload: { status: 'approved' },
+    })
+
+    // Reported is reported: approving one's own absence is not reporting it.
+    expect(bySelf.statusCode).toBe(403)
+  })
+
+  it('tells the lecturer what became of it', async () => {
+    const absence = await report()
+    await prisma.notification.deleteMany({ where: { centerId } })
+
+    const answered = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/absences/${absence.id}`,
+      headers: asCoordinator(),
+      payload: { status: 'approved' },
+    })
+    expect(answered.statusCode).toBe(200)
+
+    // Reporting an absence into silence and finding out on the day whether it
+    // was accepted is the failure this closes.
+    const told = await prisma.notification.findMany({ where: { type: 'absence.resolved' } })
+    expect(told.length).toBe(1)
+  })
+
   it('keeps one teacher out of another’s absences', async () => {
     const absence = await report()
 

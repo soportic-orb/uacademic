@@ -6,9 +6,11 @@ import { useTranslation } from 'react-i18next'
 import { NavLink } from 'react-router'
 
 import { navItemsForRoles } from '../../app/navigation'
+import { pendingFor, usePendingCounts } from '../../features/navigation/pending'
 import { useMenuLayout } from '../../features/settings/menu-layout'
 import { Logo } from '../brand/logo'
 import { cn } from '../../lib/cn'
+import { PendingBadge } from './pending-badge'
 
 export interface SidebarProps {
   roles: readonly Role[]
@@ -21,6 +23,7 @@ export function Sidebar({ roles, collapsed, onToggle }: SidebarProps) {
   const { t } = useTranslation()
   const items = navItemsForRoles(roles)
   const layout = useMenuLayout()
+  const pending = usePendingCounts()
 
   /*
     The order this person put their menu in, over the entries their roles
@@ -77,8 +80,10 @@ export function Sidebar({ roles, collapsed, onToggle }: SidebarProps) {
           const item = byKey.get(entry.key)
           if (!item) return null
 
+          const count = pendingFor(pending, item.key)
+
           return (
-            <li key={item.key}>
+            <li key={item.key} className="relative">
               <NavLink
                 to={item.path}
                 end={item.path === '/'}
@@ -99,6 +104,18 @@ export function Sidebar({ roles, collapsed, onToggle }: SidebarProps) {
                 ) : (
                   <span className="truncate">{t(`nav.${item.key}`)}</span>
                 )}
+                {/*
+                  The number alone says nothing aloud — "3" beside "Class
+                  changes" is not a sentence — so the badge is hidden from
+                  assistive technology and the words follow the name instead.
+                */}
+                {count > 0 ? (
+                  <span className="sr-only">{t('nav.pendingSuffix', { count })}</span>
+                ) : null}
+                <PendingBadge
+                  count={count}
+                  className={collapsed ? 'absolute right-1 top-1' : 'ml-auto'}
+                />
               </NavLink>
             </li>
           )

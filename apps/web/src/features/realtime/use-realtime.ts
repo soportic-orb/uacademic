@@ -31,9 +31,11 @@ export interface RealtimeEvent {
 
 /** Which queries an event makes stale. */
 const INVALIDATES: Record<string, string[]> = {
-  notification: ['notifications'],
+  // The counts on the menu move with the notifications that announce them: a
+  // change request arriving is exactly when the badge should appear.
+  notification: ['notifications', 'pending-counts'],
   message: ['conversations', 'thread', 'notifications'],
-  'schedule.published': ['planner-version', 'calendar', 'notifications'],
+  'schedule.published': ['planner-version', 'calendar', 'notifications', 'pending-counts'],
 }
 
 export type RealtimeTransportName = 'stream' | 'poll'

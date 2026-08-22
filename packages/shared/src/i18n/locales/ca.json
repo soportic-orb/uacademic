@@ -70,7 +70,9 @@
     "connections": "Connexions de calendari",
     "privacy": "Privacitat",
     "guide": "Guia",
-    "support": "Ajuda (Cady)"
+    "support": "Ajuda (Cady)",
+    "pendingSuffix_one": ", {{count}} pendent",
+    "pendingSuffix_other": ", {{count}} pendents"
   },
   "layout": {
     "skipToContent": "Ves al contingut principal",
@@ -1821,6 +1823,10 @@
       "reported": {
         "title": "Absència comunicada",
         "body": "{{teacher}} ha comunicat una absència del {{from}} al {{to}}."
+      },
+      "resolved": {
+        "title": "Resposta a la teva absència",
+        "body": "La coordinació ha revisat la teva absència del {{from}} al {{to}}."
       },
       "substituteAssigned": {
         "title": "Et demanen una substitució",

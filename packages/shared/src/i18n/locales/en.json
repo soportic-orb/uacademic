@@ -70,7 +70,9 @@
     "connections": "Calendar connections",
     "privacy": "Privacy",
     "guide": "Guide",
-    "support": "Help (Cady)"
+    "support": "Help (Cady)",
+    "pendingSuffix_one": ", {{count}} pending",
+    "pendingSuffix_other": ", {{count}} pending"
   },
   "layout": {
     "skipToContent": "Skip to main content",
@@ -1821,6 +1823,10 @@
       "reported": {
         "title": "Absence reported",
         "body": "{{teacher}} reported an absence from {{from}} to {{to}}."
+      },
+      "resolved": {
+        "title": "Your absence has been answered",
+        "body": "Coordination has reviewed your absence from {{from}} to {{to}}."
       },
       "substituteAssigned": {
         "title": "You have been asked to cover a class",

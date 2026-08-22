@@ -146,9 +146,17 @@ function useInvalidate() {
   const queryClient = useQueryClient()
   return async () => {
     await Promise.all(
-      ['changes', 'absences', 'conversations', 'thread', 'notifications', 'planner-version'].map(
-        (key) => queryClient.invalidateQueries({ queryKey: [key] }),
-      ),
+      [
+        'changes',
+        'absences',
+        'conversations',
+        'thread',
+        'notifications',
+        'planner-version',
+        // Approving a change or an absence is exactly when the badge on the
+        // menu should come down.
+        'pending-counts',
+      ].map((key) => queryClient.invalidateQueries({ queryKey: [key] })),
     )
   }
 }
