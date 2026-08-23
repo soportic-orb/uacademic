@@ -208,27 +208,43 @@ describe.skipIf(!hasDatabase)('the teaching programme', () => {
       const session = await prisma.classSession.findFirstOrThrow({
         where: { centerId, scheduleVersion: { status: 'published' } },
       })
-      const space = await prisma.space.findFirstOrThrow({
-        where: { centerId, id: { not: session.spaceId ?? undefined } },
+
+      /*
+        A room of this test's own. Picking any other room of the center would
+        be picking whatever the seed happens to leave free at that hour, and
+        the timetable is full: the answer would be "that room is taken", which
+        is a different test — the one below.
+      */
+      const space = await prisma.space.create({
+        data: {
+          centerId,
+          name: 'Prova aula lliure',
+          building: 'Prova',
+          capacity: 100,
+          type: 'classroom',
+        },
       })
 
-      const response = await move(session.id, space.id)
+      try {
+        const response = await move(session.id, space.id)
 
-      expect(response.statusCode).toBe(200)
-      expect(
-        (await prisma.classSession.findFirstOrThrow({ where: { id: session.id } })).spaceId,
-      ).toBe(space.id)
+        expect(response.statusCode).toBe(200)
+        expect(
+          (await prisma.classSession.findFirstOrThrow({ where: { id: session.id } })).spaceId,
+        ).toBe(space.id)
 
-      const entry = await prisma.auditLog.findFirst({
-        where: { entity: 'class_session', entityId: session.id, action: 'room' },
-        orderBy: { createdAt: 'desc' },
-      })
-      expect(entry?.source).toBe('user')
-
-      await prisma.classSession.update({
-        where: { id: session.id },
-        data: { spaceId: session.spaceId },
-      })
+        const entry = await prisma.auditLog.findFirst({
+          where: { entity: 'class_session', entityId: session.id, action: 'room' },
+          orderBy: { createdAt: 'desc' },
+        })
+        expect(entry?.source).toBe('user')
+      } finally {
+        await prisma.classSession.update({
+          where: { id: session.id },
+          data: { spaceId: session.spaceId },
+        })
+        await prisma.space.delete({ where: { id: space.id } })
+      }
     })
 
     it('refuses a room that is already taken at that hour', async () => {
