@@ -44,6 +44,23 @@ export function applyMenuLayout(
   available: readonly MenuAvailable[],
   layout: readonly MenuEntry[],
 ): MenuEntry[] {
+  return tidySeparators(orderMenuEntries(available, layout))
+}
+
+/**
+ * The same, without dropping anything.
+ *
+ * What the editor works on. Tidying is right for *drawing* a menu — a rule
+ * against nothing is a mistake on screen — but it is wrong while somebody is
+ * arranging one: a separator added above another is momentarily adjacent to
+ * it, and quietly deleting one of the two makes a new separator look like it
+ * overwrote the last. Nothing should disappear under the hands of the person
+ * moving it; the sidebar tidies when it draws.
+ */
+export function orderMenuEntries(
+  available: readonly MenuAvailable[],
+  layout: readonly MenuEntry[],
+): MenuEntry[] {
   const reachable = new Set(available.map((item) => item.key))
   const placed = new Set<string>()
   const ordered: MenuEntry[] = []
@@ -63,7 +80,7 @@ export function applyMenuLayout(
     if (!placed.has(item.key)) ordered.push({ kind: 'item', key: item.key })
   }
 
-  return tidySeparators(ordered)
+  return ordered
 }
 
 /** Drops the separators that would draw a rule against nothing. */

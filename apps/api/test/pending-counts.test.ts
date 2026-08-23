@@ -103,6 +103,15 @@ describe.skipIf(!hasDatabase)('what is waiting on the menu', () => {
     expect((await counts(asCoordinator())).json().absences).toBe(0)
   })
 
+  it('answers a lecturer rather than refusing them', async () => {
+    // Every screen a lecturer opens asks for this. Refusing it would raise a
+    // permissions error on a screen they are perfectly entitled to look at —
+    // which is exactly what `/ai/status` used to do from the load screen.
+    const response = await counts(asTeacher())
+
+    expect(response.statusCode).toBe(200)
+  })
+
   it('counts nothing for somebody who does not coordinate here', async () => {
     await changeRequest('accepted_by_teacher')
     await absence('requested')

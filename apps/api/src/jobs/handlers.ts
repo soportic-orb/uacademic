@@ -467,6 +467,26 @@ export function buildJobHandlers(client: PrismaClient, logger: Logger): Record<s
      * The nightly backup. Kept close to the update procedure on purpose: the
      * same function runs before a deployment touches a migration.
      */
+    /**
+     * The queue's own history.
+     *
+     * Nothing ever deleted from `jobs`, so a year of invitations, digests and
+     * calendar syncs sat there for ever — growing the table, every backup of
+     * it, and the index the claim query walks. Finished work is kept a week,
+     * which is long enough to answer "did that email go out?"; jobs that died
+     * are kept a month, because those are the ones somebody investigates.
+     */
+    'jobs.prune': async () => {
+      const succeeded = await client.job.deleteMany({
+        where: { status: 'succeeded', updatedAt: { lt: daysAgo(7) } },
+      })
+      const dead = await client.job.deleteMany({
+        where: { status: 'dead', updatedAt: { lt: daysAgo(30) } },
+      })
+
+      logger.info({ succeeded: succeeded.count, dead: dead.count }, 'jobs.prune')
+    },
+
     'db.backup': async () => {
       const result = await createBackup()
       logger.info(
@@ -511,25 +531,74 @@ export function buildJobHandlers(client: PrismaClient, logger: Logger): Record<s
   }
 }
 
-export async function enqueuePeriodicJobs(client: PrismaClient): Promise<void> {
-  const types = [
-    'changes.expire',
-    'notification.digest',
-    'calendar.busy.pull',
-    'calendar.purge',
-    'privacy.retention',
-    'db.backup',
-  ]
+/**
+ * How often each piece of recurring work actually wants to happen.
+ *
+ * This used to be a list of names enqueued with `runAt: now`, checked every
+ * fifteen minutes. Since the check only skips a type that already has a
+ * pending row, and a row that ran is no longer pending, every one of them ran
+ * **every fifteen minutes** — including `db.backup`, which spawns `mysqldump`.
+ * Ninety-six full dumps a day is most of a small server's CPU and a disk that
+ * fills, for a backup nobody asked to be taken four times an hour.
+ *
+ * So each type now says its own cadence, and the row that is enqueued sits in
+ * the future. The pending-row guard then does the scheduling for free: there
+ * is always exactly one waiting, and the next is written only once it has run.
+ */
+const MINUTE = 60_000
+const HOUR = 60 * MINUTE
 
-  for (const type of types) {
-    const pending = await client.job.count({ where: { type, status: 'pending' } })
+const PERIODIC: { type: string; everyMs: number }[] = [
+  // Cheap, and the sooner an unanswered request expires the better.
+  { type: 'changes.expire', everyMs: HOUR },
+  // A sync with somebody else's calendar: worth doing often, costs a request.
+  { type: 'calendar.busy.pull', everyMs: 15 * MINUTE },
+  // Sweeps. Nothing about them is urgent to the minute.
+  { type: 'calendar.purge', everyMs: 24 * HOUR },
+  { type: 'privacy.retention', everyMs: 24 * HOUR },
+  { type: 'jobs.prune', everyMs: 24 * HOUR },
+  // Once a night, at a quiet hour — see `nextBackupRun`.
+  { type: 'db.backup', everyMs: 24 * HOUR },
+]
+
+export async function enqueuePeriodicJobs(client: PrismaClient): Promise<void> {
+  for (const entry of [...PERIODIC, { type: 'notification.digest', everyMs: 24 * HOUR }]) {
+    const pending = await client.job.count({ where: { type: entry.type, status: 'pending' } })
     if (pending > 0) continue
 
-    const runAt = type === 'notification.digest' ? nextDigestRun(client) : new Date()
     await client.job.create({
-      data: { type, payloadJson: toJson({}), runAt: await runAt },
+      data: { type: entry.type, payloadJson: toJson({}), runAt: await nextRun(client, entry) },
     })
   }
+}
+
+async function nextRun(
+  client: PrismaClient,
+  entry: { type: string; everyMs: number },
+): Promise<Date> {
+  if (entry.type === 'notification.digest') return nextDigestRun(client)
+  if (entry.type === 'db.backup') return nextBackupRun()
+
+  /*
+    One interval from now, not now.
+
+    The first tick after a restart therefore waits rather than running
+    everything at once — which is what a server coming back from a reboot
+    least needs, and what made a restart look like a load spike.
+  */
+  return new Date(Date.now() + entry.everyMs)
+}
+
+/** Tonight, at three in the morning: nobody is teaching and nobody is reading. */
+function nextBackupRun(): Date {
+  const next = new Date()
+  next.setHours(3, 0, 0, 0)
+  if (next.getTime() <= Date.now()) next.setDate(next.getDate() + 1)
+  return next
+}
+
+function daysAgo(days: number): Date {
+  return new Date(Date.now() - days * 24 * 60 * 60 * 1000)
 }
 
 /** The center's own digest hour, in its own timezone (R9). */

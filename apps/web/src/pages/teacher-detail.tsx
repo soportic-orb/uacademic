@@ -2,7 +2,7 @@ import { ArrowLeft } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router'
 
-import { CardSkeleton, ErrorState } from '../components/feedback/states'
+import { CardSkeleton, EmptyState, ErrorState } from '../components/feedback/states'
 import { AvailabilityEditor } from '../features/capacity/availability-editor'
 import { ExceptionsPanel } from '../features/capacity/exceptions-panel'
 import { AssignmentsPanel } from '../features/capacity/assignments-panel'
@@ -10,6 +10,7 @@ import { ProfileCard } from '../features/capacity/profile-card'
 import { ScheduleExport } from '../features/capacity/schedule-export'
 import { useAvailability, useTeacherProfile } from '../features/capacity/queries'
 import { useRoles } from '../app/use-roles'
+import { ApiRequestError } from '../lib/api'
 
 /**
  * Screens (a), (b) and (c) of the capacity model for one person: the profile
@@ -44,6 +45,14 @@ export function TeacherDetailPage() {
 
       {profile.isPending ? (
         <CardSkeleton />
+      ) : profile.error instanceof ApiRequestError && profile.error.status === 404 ? (
+        // Their own card, before the center has written their contract: the
+        // role is granted and the hours are not, which is an ordinary state
+        // and not a fault.
+        <EmptyState
+          title={t(teacherId === 'me' ? 'load.noContract.title' : 'teachers.profile.notFound')}
+          description={teacherId === 'me' ? t('load.noContract.hint') : undefined}
+        />
       ) : profile.isError ? (
         <ErrorState
           onRetry={() => void profile.refetch()}

@@ -9,6 +9,7 @@ import {
   applyMenuLayout,
   insertSeparator,
   moveEntry,
+  orderMenuEntries,
   removeSeparator,
   renameSeparator,
   tidySeparators,
@@ -97,6 +98,34 @@ describe('separators that would draw a rule against nothing', () => {
     )
 
     expect(drawn).toEqual([item('dashboard')])
+  })
+})
+
+describe('the list the editor works on', () => {
+  it('keeps a separator that is momentarily against another', () => {
+    // A new separator inserted above an existing one is adjacent to it for
+    // exactly as long as it takes to move something between them. Dropping
+    // one of the two there makes the new one look like it overwrote the old.
+    const layout = [item('dashboard'), rule('s2'), rule('s1'), item('planning')]
+
+    expect(orderMenuEntries(available, layout).filter((e) => e.kind === 'separator')).toHaveLength(
+      2,
+    )
+    // The drawn menu still tidies: a rule against nothing is a mistake there.
+    expect(applyMenuLayout(available, layout).filter((e) => e.kind === 'separator')).toHaveLength(1)
+  })
+
+  it('keeps one at the very top, which the drawn menu would drop', () => {
+    const layout = [rule('s1'), item('dashboard')]
+
+    expect(orderMenuEntries(available, layout)[0]).toEqual(rule('s1'))
+    expect(applyMenuLayout(available, layout)[0]).toEqual(item('dashboard'))
+  })
+
+  it('still adds what the layout never mentions, and drops what is unreachable', () => {
+    const ordered = orderMenuEntries([{ key: 'dashboard' }], [item('planning'), item('dashboard')])
+
+    expect(ordered).toEqual([item('dashboard')])
   })
 })
 

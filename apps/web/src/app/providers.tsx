@@ -50,6 +50,18 @@ export function AppProviders({ children }: { children: ReactNode }) {
     const unsubscribe = queryClient.getQueryCache().subscribe((event) => {
       if (event.type === 'updated' && event.query.state.status === 'error') {
         const error = event.query.state.error
+
+        /*
+          A read that found nothing is the screen's to explain, not a toast's.
+
+          "We could not find the resource" over a screen that is already saying
+          why it is empty — a lecturer with no contract for this year, a
+          conversation that has been deleted — is duplicate and reads as a
+          fault. Everything else still surfaces: a 403, a 500, a network that
+          is not there.
+        */
+        if (error instanceof ApiRequestError && error.status === 404) return
+
         if (error instanceof ApiRequestError) {
           push({ variant: 'error', message: error.localizedMessage })
         } else {

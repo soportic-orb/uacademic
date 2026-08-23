@@ -74,14 +74,22 @@ export interface ConversationSummary {
   lastMessageAt: string
 }
 
-export function useAssistantStatus() {
+/**
+ * Whether the assistant can answer.
+ *
+ * `enabled` is not an optimisation. The endpoint is coordination's, so asking
+ * it as a lecturer is a 403 — and a failed query raises a toast, which is how
+ * opening one's own load screen came to say "you do not have permission" for a
+ * request the interface made on the person's behalf and then threw away.
+ */
+export function useAssistantStatus(enabled = true) {
   const centerId = useSessionStore((state) => state.centerId)
   const mockUserEmail = useSessionStore((state) => state.mockUserEmail)
 
   return useQuery({
     queryKey: ['ai-status', centerId, mockUserEmail],
     queryFn: () => apiFetch<AssistantStatus>('/api/v1/ai/status'),
-    enabled: Boolean(centerId),
+    enabled: enabled && Boolean(centerId),
     // A key that appears, a budget that moves: worth re-reading now and then,
     // never worth hammering.
     staleTime: 60_000,

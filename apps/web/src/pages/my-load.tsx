@@ -5,11 +5,12 @@ import { Link } from 'react-router'
 
 import { LoadBadge } from '../components/data/load-badge'
 import { AssistantLauncher } from '../features/assistant/assistant-launcher'
-import { CardSkeleton, ErrorState } from '../components/feedback/states'
+import { CardSkeleton, EmptyState, ErrorState } from '../components/feedback/states'
 import { Card, CardBody, CardHeader } from '../components/ui/card'
 import { useTeacherWorkload } from '../features/capacity/queries'
 import { WorkloadBreakdown } from '../features/capacity/workload-breakdown'
 import { currentLocale } from '../i18n'
+import { ApiRequestError } from '../lib/api'
 
 /**
  * Screen (e): the teacher's own hours — the totals that decide the traffic
@@ -21,6 +22,20 @@ export function MyLoadPage() {
   const locale = currentLocale()
 
   if (query.isPending) return <CardSkeleton />
+
+  /*
+    No contract for the year in force.
+
+    The account and the contract are different things, created at different
+    moments: somebody invited in July holds the lecturer role and has no hours
+    recorded against them until the center writes the contract. That is a
+    normal state on a normal day, and it used to answer with a red error and a
+    retry button that could never succeed.
+  */
+  if (query.error instanceof ApiRequestError && query.error.status === 404) {
+    return <EmptyState title={t('load.noContract.title')} description={t('load.noContract.hint')} />
+  }
+
   if (query.isError) return <ErrorState onRetry={() => void query.refetch()} />
 
   const load = query.data

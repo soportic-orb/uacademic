@@ -136,7 +136,11 @@
     },
     "summary": "Center total",
     "thresholds": "Traffic-light thresholds",
-    "export": "Export to Excel"
+    "export": "Export to Excel",
+    "noContract": {
+      "title": "You have no contract for this year yet",
+      "hint": "Your account is active, but the center administration has not yet recorded your contracted hours for this year. Until they do there is no teaching load to show. If you think there should be, ask your center administration."
+    }
   },
   "dashboard": {
     "title": "Dashboard",
@@ -844,7 +848,10 @@
         "notSet": "This role has none yet: it starts in the platform's own order.",
         "clear": "Clear this default",
         "saved": "Default menu saved"
-      }
+      },
+      "unsaved": "You have unsaved changes.",
+      "saved": "Everything is saved.",
+      "savedToast": "Menu saved"
     }
   },
   "platform": {

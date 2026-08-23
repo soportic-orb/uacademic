@@ -12,14 +12,14 @@
  */
 import type { DefaultedRole, MenuEntry, Role } from '@uacademic/shared'
 import {
-  applyMenuLayout,
   insertSeparator,
   moveEntry,
+  orderMenuEntries,
   removeSeparator,
   renameSeparator,
 } from '@uacademic/shared'
 import { ArrowDown, ArrowUp, Minus, Plus, RotateCcw, Trash2 } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { navItemsForRoles } from '../../app/navigation'
@@ -53,6 +53,7 @@ export function MenuCard({ roles }: { roles: readonly Role[] }) {
 
   const persist = (next: MenuEntry[]) =>
     save.mutate(next, {
+      onSuccess: () => toast.success('settings.menu.savedToast'),
       onError: (error) => {
         if (error instanceof ApiRequestError)
           toast.raw({ variant: 'error', message: error.localizedMessage })
@@ -84,7 +85,13 @@ export function MenuCard({ roles }: { roles: readonly Role[] }) {
         }
       />
       <CardBody>
-        <Arranger items={items} entries={query.data.entries} onChange={persist} idPrefix="own" />
+        <Arranger
+          items={items}
+          entries={query.data.entries}
+          onSave={persist}
+          saving={save.isPending}
+          idPrefix="own"
+        />
       </CardBody>
     </Card>
   )
@@ -165,7 +172,13 @@ export function MenuDefaultsCard() {
             : t('settings.menu.defaults.notSet')}
         </p>
 
-        <Arranger items={items} entries={entries} onChange={persist} idPrefix={`default-${role}`} />
+        <Arranger
+          items={items}
+          entries={entries}
+          onSave={persist}
+          saving={save.isPending}
+          idPrefix={`default-${role}`}
+        />
       </CardBody>
     </Card>
   )
@@ -176,21 +189,47 @@ export function MenuDefaultsCard() {
 function Arranger({
   items,
   entries: stored,
-  onChange,
+  onSave,
+  saving,
   idPrefix,
 }: {
   items: readonly { key: string }[]
   entries: readonly MenuEntry[]
-  onChange: (next: MenuEntry[]) => void
+  onSave: (next: MenuEntry[]) => void
+  saving: boolean
   /** Distinguishes the two editors when both are on screen. */
   idPrefix: string
 }) {
   const { t } = useTranslation()
   const [label, setLabel] = useState('')
 
-  // What is on screen is what the sidebar draws, not the raw stored list: the
-  // two must not be able to disagree about where a separator ended up.
-  const entries = applyMenuLayout(items, stored)
+  /*
+    A draft, saved on request.
+
+    Every press used to write to the server, which meant typing a separator's
+    label sent one request per keystroke — and those race: the answer to "Doc"
+    could land after the answer to "Docènc" and put the shorter one back. What
+    looked like "the label did not save" was two requests finishing out of
+    order.
+  */
+  const settled = useMemo(() => orderMenuEntries(items, stored), [items, stored])
+  const [entries, setEntries] = useState<MenuEntry[]>(settled)
+
+  /*
+    Re-seed when the stored value really changes — a save landing, or the
+    administrator switching to another role's default.
+
+    Keyed on the content rather than on the array, because `settled` is a new
+    array on every render: depending on it directly would throw the draft away
+    between one keystroke and the next.
+  */
+  const settledKey = JSON.stringify(settled)
+  useEffect(() => {
+    setEntries(orderMenuEntries(items, stored))
+  }, [settledKey, items, stored])
+
+  const dirty = JSON.stringify(entries) !== settledKey
+  const onChange = setEntries
 
   const nameOf = (entry: MenuEntry) =>
     entry.kind === 'item' ? t(`nav.${entry.key}`) : entry.label || t('settings.menu.separator')
@@ -302,6 +341,25 @@ function Arranger({
           {t('settings.menu.addSeparator')}
         </Button>
       </form>
+
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-4">
+        <p aria-live="polite" className="text-xs text-text-muted">
+          {dirty ? t('settings.menu.unsaved') : t('settings.menu.saved')}
+        </p>
+
+        <div className="flex gap-2">
+          <Button
+            variant="secondary"
+            disabled={!dirty || saving}
+            onClick={() => setEntries(settled)}
+          >
+            {t('common.discard')}
+          </Button>
+          <Button disabled={!dirty || saving} onClick={() => onSave(entries)}>
+            {saving ? t('common.saving') : t('common.save')}
+          </Button>
+        </div>
+      </div>
     </div>
   )
 }

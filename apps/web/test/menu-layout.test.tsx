@@ -100,14 +100,37 @@ describe('arranging your own menu', () => {
     expect(screen.queryByText('Plataforma')).not.toBeInTheDocument()
   })
 
-  it('moves an entry down and saves it without asking', async () => {
+  it('moves an entry and saves it when asked to', async () => {
     view(<MenuCard roles={TEACHER} />)
 
     await userEvent.click(await screen.findByRole('button', { name: 'Baixa Tauler' }))
+    // Nothing is written until the button is pressed: a request per press is
+    // a request per keystroke once a label is being typed, and those race.
+    expect(saved).toHaveLength(0)
+
+    await userEvent.click(screen.getByRole('button', { name: 'Desa' }))
 
     await waitFor(() => expect(saved).toHaveLength(1))
     // The dashboard was first; now it is second, and nothing else moved.
     expect(saved[0]![1]).toEqual({ kind: 'item', key: 'dashboard' })
+  })
+
+  it('says whether there is anything to save', async () => {
+    view(<MenuCard roles={TEACHER} />)
+
+    expect(await screen.findByText('Tot desat.')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Baixa Tauler' }))
+    expect(screen.getByText('Tens canvis sense desar.')).toBeInTheDocument()
+  })
+
+  it('puts the draft back when it is discarded', async () => {
+    view(<MenuCard roles={TEACHER} />)
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Baixa Tauler' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Descarta' }))
+
+    expect(screen.getByText('Tot desat.')).toBeInTheDocument()
+    expect(saved).toHaveLength(0)
   })
 
   it('will not move the first entry up, or the last one down', async () => {
@@ -122,9 +145,65 @@ describe('arranging your own menu', () => {
 
     await userEvent.type(await screen.findByLabelText('Etiqueta del separador'), 'Docència')
     await userEvent.click(screen.getByRole('button', { name: 'Afegeix un separador' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Desa' }))
 
     await waitFor(() => expect(saved).toHaveLength(1))
     expect(saved[0]![1]).toMatchObject({ kind: 'separator', label: 'Docència' })
+  })
+
+  it('keeps the separator that was already there when another is added', async () => {
+    view(<MenuCard roles={TEACHER} />)
+
+    const label = await screen.findByLabelText('Etiqueta del separador')
+    await userEvent.type(label, 'Primer')
+    await userEvent.click(screen.getByRole('button', { name: 'Afegeix un separador' }))
+
+    await userEvent.type(screen.getByLabelText('Etiqueta del separador'), 'Segon')
+    await userEvent.click(screen.getByRole('button', { name: 'Afegeix un separador' }))
+
+    await userEvent.click(screen.getByRole('button', { name: 'Desa' }))
+
+    await waitFor(() => expect(saved).toHaveLength(1))
+    const separators = saved[0]!.filter((entry) => (entry as { kind: string }).kind === 'separator')
+    // The new one used to land against the old one and the tidying dropped
+    // one of the two, which reads as the second overwriting the first.
+    expect(separators).toHaveLength(2)
+    expect(separators.map((entry) => (entry as { label: string }).label).sort()).toEqual([
+      'Primer',
+      'Segon',
+    ])
+  })
+
+  it('still shows both separators after they have been saved', async () => {
+    // What the server hands back once two have been added: adjacent, until
+    // something is moved between them. The editor used to draw the tidied
+    // menu, so reopening the screen showed one — which reads as the second
+    // having overwritten the first.
+    stored.entries = [
+      { kind: 'item', key: 'dashboard' },
+      { kind: 'separator', id: 'sep-2', label: 'Segon' },
+      { kind: 'separator', id: 'sep-1', label: 'Primer' },
+      { kind: 'item', key: 'myLoad' },
+    ]
+    stored.personalised = true
+
+    view(<MenuCard roles={TEACHER} />)
+
+    expect(await screen.findByDisplayValue('Primer')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('Segon')).toBeInTheDocument()
+  })
+
+  it('writes one request for a whole label, not one per keystroke', async () => {
+    view(<MenuCard roles={TEACHER} />)
+
+    await userEvent.type(await screen.findByLabelText('Etiqueta del separador'), 'Docència')
+    await userEvent.click(screen.getByRole('button', { name: 'Afegeix un separador' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Desa' }))
+
+    await waitFor(() => expect(saved).toHaveLength(1))
+    // Eight keystrokes used to be eight requests, and their answers could
+    // land out of order and put a shorter label back.
+    expect(saved).toHaveLength(1)
   })
 
   it('takes a separator away again', async () => {
@@ -139,6 +218,7 @@ describe('arranging your own menu', () => {
     await userEvent.click(
       await screen.findByRole('button', { name: 'Elimina el separador Docència' }),
     )
+    await userEvent.click(screen.getByRole('button', { name: 'Desa' }))
 
     await waitFor(() => expect(saved).toHaveLength(1))
     expect(saved[0]!.some((entry) => (entry as { kind: string }).kind === 'separator')).toBe(false)
@@ -181,6 +261,7 @@ describe('the menu each role starts with', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: 'Coordinació' }))
     await userEvent.click(screen.getByRole('button', { name: 'Baixa Tauler' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Desa' }))
 
     await waitFor(() => expect(savedDefaults).toHaveLength(1))
     // Saved under the role being arranged, and nothing else touched.
@@ -204,6 +285,7 @@ describe('the menu each role starts with', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: 'Coordinació' }))
     await userEvent.click(screen.getByRole('button', { name: 'Baixa Tauler' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Desa' }))
 
     await waitFor(() => expect(savedDefaults).toHaveLength(1))
     expect(savedDefaults[0]!.TEACHER).toEqual([{ kind: 'item', key: 'messages' }])

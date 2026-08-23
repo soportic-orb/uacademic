@@ -22,11 +22,17 @@ export interface AssistantLauncherProps {
 export function AssistantLauncher({ subjectId, subjectCode }: AssistantLauncherProps) {
   const { t } = useTranslation()
   const roles = useRoles()
-  const status = useAssistantStatus()
+
+  // R5/product: a coordination tool. Nobody else is offered it — and nobody
+  // else asks after it either. The check used to happen after the query had
+  // already gone out, so a lecturer opening a screen this sits on got a 403
+  // and, through the global handler, a "you do not have permission" toast for
+  // something they had not done.
+  const coordinates = roles.includes('COORDINATOR') || roles.includes('CENTER_ADMIN')
+  const status = useAssistantStatus(coordinates)
   const [open, setOpen] = useState(false)
 
-  // R5/product: a coordination tool. Nobody else is offered it.
-  if (!roles.includes('COORDINATOR') && !roles.includes('CENTER_ADMIN')) return null
+  if (!coordinates) return null
   if (status.data && !status.data.available) return null
 
   return (

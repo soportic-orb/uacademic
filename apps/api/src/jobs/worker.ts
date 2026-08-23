@@ -66,6 +66,23 @@ export class JobWorker {
   async runOnce(): Promise<number> {
     const now = new Date()
 
+    /*
+      Look before writing.
+
+      The claim is an UPDATE, and an UPDATE opens a write transaction and takes
+      locks whether or not it matches anything. On an idle queue — which is
+      most of the time on most installations — that is a write every five
+      seconds for ever. This is an indexed SELECT over `(status, run_at)` that
+      stops at the first row, and the UPDATE only happens when there is
+      actually something to claim. The latency is unchanged.
+    */
+    const waiting = await this.#prisma.$queryRaw<{ id: string }[]>`
+      SELECT id FROM jobs
+       WHERE status = 'pending' AND run_at <= ${now} AND locked_at IS NULL
+       LIMIT 1
+    `
+    if (waiting.length === 0) return 0
+
     const claimed = await this.#prisma.$executeRaw`
       UPDATE jobs
          SET status = 'running', locked_at = ${now}, locked_by = ${this.#options.workerId}
@@ -139,9 +156,22 @@ export class JobWorker {
     if (this.#running) return
     this.#running = true
 
+    /*
+      Recovering abandoned locks is not per-tick work.
+
+      A lock only goes stale after `staleLockMs`, so running the recovery
+      UPDATE every five seconds writes nothing and costs a statement each time
+      — seventeen thousand a day on a queue that is empty. Once per stale
+      window is exactly as effective.
+    */
+    let recoveredAt = 0
+
     const tick = async () => {
       try {
-        await this.recoverStaleJobs()
+        if (Date.now() - recoveredAt >= this.#options.staleLockMs) {
+          recoveredAt = Date.now()
+          await this.recoverStaleJobs()
+        }
         await this.runOnce()
       } catch (error) {
         this.#options.logger?.error({ err: error }, 'job worker tick failed')

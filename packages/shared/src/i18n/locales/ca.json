@@ -136,7 +136,11 @@
     },
     "summary": "Total del centre",
     "thresholds": "Llindars del semàfor",
-    "export": "Exporta a Excel"
+    "export": "Exporta a Excel",
+    "noContract": {
+      "title": "Encara no tens contracte per a aquest curs",
+      "hint": "El teu compte ja està actiu, però l'administració del centre encara no t'ha registrat les hores contractades d'aquest curs. Fins que ho faci no hi ha càrrega docent a mostrar. Si creus que hauria d'estar-hi, parla-ho amb l'administració del teu centre."
+    }
   },
   "dashboard": {
     "title": "Tauler",
@@ -844,7 +848,10 @@
         "notSet": "Aquest rol encara no en té cap: comença amb l'ordre original de la plataforma.",
         "clear": "Esborra aquest per defecte",
         "saved": "Menú per defecte desat"
-      }
+      },
+      "unsaved": "Tens canvis sense desar.",
+      "saved": "Tot desat.",
+      "savedToast": "Menú desat"
     }
   },
   "platform": {

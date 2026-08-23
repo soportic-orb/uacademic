@@ -136,7 +136,11 @@
     },
     "summary": "Total del centro",
     "thresholds": "Umbrales del semáforo",
-    "export": "Exportar a Excel"
+    "export": "Exportar a Excel",
+    "noContract": {
+      "title": "Todavía no tienes contrato para este curso",
+      "hint": "Tu cuenta ya está activa, pero la administración del centro todavía no ha registrado tus horas contratadas de este curso. Hasta que lo haga no hay carga docente que mostrar. Si crees que debería estar, háblalo con la administración de tu centro."
+    }
   },
   "dashboard": {
     "title": "Panel",
@@ -844,7 +848,10 @@
         "notSet": "Este rol todavía no tiene ninguno: empieza con el orden original de la plataforma.",
         "clear": "Borrar este por defecto",
         "saved": "Menú por defecto guardado"
-      }
+      },
+      "unsaved": "Tienes cambios sin guardar.",
+      "saved": "Todo guardado.",
+      "savedToast": "Menú guardado"
     }
   },
   "platform": {
