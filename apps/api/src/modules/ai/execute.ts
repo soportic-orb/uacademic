@@ -113,16 +113,25 @@ async function applySessionChanges(
       teacherProfileId?: string | null
     }
 
+    /*
+      A class is placed on a date, so moving it to another weekday moves its
+      date with it — inside the same week, which is what "move it to Thursday"
+      means. Leaving the date behind would put the weekday and the day it
+      happens on out of step, and the class would quietly slide days.
+    */
+    const weekday = (after.weekday ?? current.weekday) as Weekday
+    const moved = shiftToWeekday(current.dateFrom, current.weekday, weekday)
+
     const candidate: PlannedSession = {
       id: current.id,
       groupId: current.groupId,
       teacherProfileId: after.teacherProfileId ?? current.teacherProfileId,
       spaceId: after.spaceId ?? current.spaceId,
-      weekday: (after.weekday ?? current.weekday) as Weekday,
+      weekday,
       startTime: (after.startTime ?? current.startTime) as PlannedSession['startTime'],
       endTime: (after.endTime ?? current.endTime) as PlannedSession['endTime'],
-      dateFrom: current.dateFrom,
-      dateTo: current.dateTo,
+      dateFrom: moved,
+      dateTo: current.recurrence === 'once' ? moved : current.dateTo,
       recurrence: current.recurrence,
     }
 
@@ -144,6 +153,8 @@ async function applySessionChanges(
         endTime: candidate.endTime,
         spaceId: candidate.spaceId,
         teacherProfileId: candidate.teacherProfileId,
+        dateFrom: candidate.dateFrom,
+        dateTo: candidate.dateTo,
       },
     })
 
@@ -296,4 +307,19 @@ export function proposalPreview(row: { previewJson: unknown }): AiProposal {
 
 export function toStoredJson(value: unknown) {
   return toJson(value)
+}
+
+/**
+ * The same week, another day.
+ *
+ * A one-off class carries the date it happens on, and its weekday has to keep
+ * agreeing with that date. Moving it two days later is moving the date two
+ * days later, not relabelling it.
+ */
+function shiftToWeekday(from: Date, fromWeekday: number, toWeekday: number): Date {
+  if (fromWeekday === toWeekday) return from
+
+  const moved = new Date(from)
+  moved.setUTCDate(moved.getUTCDate() + (toWeekday - fromWeekday))
+  return moved
 }

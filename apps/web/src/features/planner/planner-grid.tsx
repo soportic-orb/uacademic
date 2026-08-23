@@ -259,15 +259,19 @@ export function PlannerGrid({
     const endTime = addMinutes(target.start, held.durationMinutes)
 
     try {
+      // The date the column is showing. A class is placed on a day, not on a
+      // weekday: the week on screen is a week, not a template of one.
+      const date = isoDateOf(dateOfWeekday(weekStart, target.weekday))
+
       if (held.kind === 'session' && held.sessionId) {
         const sessionId = held.sessionId
         const source = version.sessions.find((session) => session.id === sessionId)!
         const before = {
-          weekday: source.weekday,
+          date: source.dateFrom,
           startTime: source.startTime,
           endTime: source.endTime,
         }
-        const after = { weekday: target.weekday, startTime: target.start, endTime }
+        const after = { date, startTime: target.start, endTime }
 
         await updateSession.mutateAsync({ sessionId, values: after })
         history.record({
@@ -281,7 +285,7 @@ export function PlannerGrid({
           groupId: held.groupId,
           teacherProfileId: held.teacherProfileId,
           spaceId: held.spaceId,
-          weekday: target.weekday,
+          date,
           startTime: target.start,
           endTime,
         }
@@ -289,11 +293,10 @@ export function PlannerGrid({
         const newId = newestSessionId(created, version)
 
         /*
-          A new class takes its dates from its subject's term, which is very
-          often not the week on screen — a coordinator planning September in
-          June places a class and the grid, which draws only what happens in
-          the week it is showing, correctly shows nothing. That reads as the
-          class having been lost. Go to the week it is actually in.
+          Belt and braces: a class lands on the day it was dropped on, so it is
+          in the week on screen by construction. This stays because the server
+          decides the date it stores, and a screen that quietly loses a class
+          it has just placed is the worst thing this grid can do.
         */
         const placed = created.sessions.find((session) => session.id === newId)
         if (placed && !occursOn(placed, isoDateOf(dateOfWeekday(weekStart, placed.weekday)))) {
@@ -331,13 +334,16 @@ export function PlannerGrid({
   }
 
   const remove = async (session: PlannerSessionDto) => {
+    // What it takes to put this class back exactly where it was, if the
+    // deletion is undone. Its own day, not its weekday.
     const values = {
       groupId: session.groupId,
       teacherProfileId: session.teacherProfileId,
       spaceId: session.spaceId,
-      weekday: session.weekday,
+      date: session.dateFrom,
       startTime: session.startTime,
       endTime: session.endTime,
+      topic: session.topic,
     }
 
     try {

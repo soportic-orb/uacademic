@@ -6,15 +6,7 @@
  * not of that class. The screen therefore always draws a coherent picture
  * rather than a locally patched one.
  */
-import type {
-  Penalty,
-  PlannerSummary,
-  Proposal,
-  ScheduleChange,
-  SolverProgress,
-  Violation,
-  Weekday,
-} from '@uacademic/shared'
+import type { Penalty, PlannerSummary, ScheduleChange, Violation, Weekday } from '@uacademic/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { apiFetch, apiJson } from '../../lib/api'
@@ -119,15 +111,6 @@ export interface CompareResult {
   byTeacher: { teacherProfileId: string; teacherName: string | null; changes: ScheduleChange[] }[]
 }
 
-export interface GenerationRunDto {
-  runId: string
-  status: 'processing' | 'done' | 'failed'
-  progress: SolverProgress | null
-  proposals: Proposal[]
-  stoppedEarly: boolean
-  error: string | null
-}
-
 function useRequestContext() {
   const mockUserEmail = useSessionStore((state) => state.mockUserEmail)
   const centerId = useSessionStore((state) => state.centerId)
@@ -215,7 +198,8 @@ export interface SessionInput {
   groupId: string
   teacherProfileId?: string | null
   spaceId?: string | null
-  weekday: number
+  /** The day it happens, `YYYY-MM-DD`. A class is placed on a date. */
+  date: string
   startTime: string
   endTime: string
   /** What the class is about. Null clears what was written. */
@@ -254,31 +238,6 @@ export function useDeleteSession(versionId: string) {
       apiFetch<VersionDetailDto>(`/api/v1/planner/versions/${versionId}/sessions/${sessionId}`, {
         method: 'DELETE',
       }),
-    onSuccess: invalidate,
-  })
-}
-
-export function useStartGeneration(versionId: string) {
-  return useMutation({
-    mutationFn: (input: { seed?: number; proposals?: number; timeBudgetSeconds?: number }) =>
-      apiJson<{ runId: string; requirements: number }>(
-        `/api/v1/planner/versions/${versionId}/generate`,
-        'POST',
-        input,
-      ),
-  })
-}
-
-export function fetchRun(runId: string): Promise<GenerationRunDto> {
-  return apiFetch<GenerationRunDto>(`/api/v1/planner/runs/${runId}`)
-}
-
-export function useApplyProposal(versionId: string) {
-  const invalidate = useInvalidate()
-
-  return useMutation({
-    mutationFn: (input: { runId: string; proposalId: string }) =>
-      apiJson<VersionDetailDto>(`/api/v1/planner/versions/${versionId}/apply`, 'POST', input),
     onSuccess: invalidate,
   })
 }

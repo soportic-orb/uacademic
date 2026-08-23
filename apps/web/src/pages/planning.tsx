@@ -10,7 +10,6 @@ import { Card, CardBody, CardHeader } from '../components/ui/card'
 import { useToast } from '../hooks/use-toast'
 import { ApiRequestError } from '../lib/api'
 import { CompareView } from '../features/planner/compare-view'
-import { GeneratePanel } from '../features/planner/generate-panel'
 import { PlannerGrid } from '../features/planner/planner-grid'
 import { ScheduleExport } from '../features/capacity/schedule-export'
 import { useCreateVersion, useVersion, useVersions } from '../features/planner/queries'
@@ -78,8 +77,6 @@ export function PlanningPage() {
           ) : null}
 
           <PlannerGrid version={version.data} context={version.data.context} />
-
-          <GeneratePanel versionId={version.data.id} editable={version.data.editable} />
 
           {/* Sending happens after publishing, so it sits at the foot of the
               screen where the work ends rather than competing with the grid. */}

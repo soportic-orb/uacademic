@@ -358,8 +358,10 @@ describe('the visual planner', () => {
       )
       expect(patch).toBeDefined()
       expect(String(patch?.[0])).toContain('/sessions/session-1')
+      // A class is placed on a day, so a move sends the day it moved to —
+      // Monday of the week on screen, which is where the grid opens.
       expect(JSON.parse(String((patch?.[1] as RequestInit).body))).toMatchObject({
-        weekday: 1,
+        date: isoDate(mondayOf(new Date())),
         startTime: '11:00',
         endTime: '12:00',
       })
@@ -408,7 +410,7 @@ describe('the visual planner', () => {
       expect(post).toBeDefined()
       expect(JSON.parse(String((post?.[1] as RequestInit).body))).toMatchObject({
         groupId: 'g2',
-        weekday: 1,
+        date: isoDate(mondayOf(new Date())),
         startTime: '10:00',
       })
     })
@@ -545,7 +547,7 @@ describe('the visual planner', () => {
       )
       expect(patches).toHaveLength(2)
       expect(JSON.parse(String((patches[1]?.[1] as RequestInit).body))).toMatchObject({
-        weekday: 1,
+        date: VERSION.sessions[0]!.dateFrom,
         startTime: '09:00',
         endTime: '10:00',
       })

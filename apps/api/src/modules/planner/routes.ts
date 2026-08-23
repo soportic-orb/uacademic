@@ -31,14 +31,11 @@ import { parseWith } from '../../lib/validate.js'
 import {
   type PlannerContext,
   plannerContext,
-  rangeForTerm,
   sessionInclude,
   sessionRequirements,
-  termRanges,
   toPlannedSession,
   toSnapshot,
 } from './context.js'
-import { MAX_TIME_BUDGET_MS, readGeneration, startGeneration } from './generation.js'
 import { publishVersion, readSnapshot } from './publish.js'
 
 const COORDINATION = ['CENTER_ADMIN', 'COORDINATOR'] as const
@@ -56,14 +53,22 @@ const statusSchema = z.object({
   status: z.enum(['draft', 'in_review', 'published', 'archived']),
 })
 
+/**
+ * One class, on one day.
+ *
+ * The date is the session. Nothing repeats it: a week is planned by placing
+ * the classes of that week, and the following week is placed again. The
+ * weekday still travels with it because everything downstream reads timetables
+ * in weekdays — it is derived from the date rather than chosen.
+ */
 const sessionSchema = z.object({
   groupId: z.uuid(),
   teacherProfileId: z.uuid().nullable().default(null),
   spaceId: z.uuid().nullable().default(null),
-  weekday: z.number().int().min(1).max(7),
+  /** The day it happens, `YYYY-MM-DD`. */
+  date: z.iso.date(),
   startTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
   endTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
-  recurrence: z.enum(['weekly', 'biweekly', 'once']).default('weekly'),
   /** What the class is about, typed on the block itself. */
   topic: z.string().trim().max(200).nullable().optional(),
 })
@@ -77,7 +82,8 @@ const sessionPatchSchema = z.object({
   groupId: z.uuid().optional(),
   teacherProfileId: z.uuid().nullable().optional(),
   spaceId: z.uuid().nullable().optional(),
-  weekday: z.number().int().min(1).max(7).optional(),
+  /** Moving it to another day, which is the only way a session moves. */
+  date: z.iso.date().optional(),
   startTime: z
     .string()
     .regex(/^([01]\d|2[0-3]):[0-5]\d$/)
@@ -86,24 +92,12 @@ const sessionPatchSchema = z.object({
     .string()
     .regex(/^([01]\d|2[0-3]):[0-5]\d$/)
     .optional(),
-  recurrence: z.enum(['weekly', 'biweekly', 'once']).optional(),
   topic: z.string().trim().max(200).nullable().optional(),
 })
 
 const validateSchema = sessionSchema.extend({
   /** The session being moved, excluded from the comparison. */
   sessionId: z.uuid().optional(),
-})
-
-const generateSchema = z.object({
-  seed: z.number().int().optional(),
-  proposals: z.number().int().min(1).max(5).optional(),
-  timeBudgetSeconds: z.number().int().min(1).max(60).optional(),
-})
-
-const applySchema = z.object({
-  runId: z.uuid(),
-  proposalId: z.string().min(1),
 })
 
 export function registerPlannerRoutes(app: FastifyInstance, bus: RealtimeTransport): void {
@@ -313,7 +307,6 @@ export function registerPlannerRoutes(app: FastifyInstance, bus: RealtimeTranspo
   )
 
   registerSessionRoutes(app)
-  registerGenerationRoutes(app, bus)
 }
 
 function registerSessionRoutes(app: FastifyInstance): void {
@@ -324,7 +317,7 @@ function registerSessionRoutes(app: FastifyInstance): void {
       const context = await plannerContext(request)
       const version = await requireEditable(context, request.params.id)
       const input = parseWith(sessionSchema, request.body)
-      const range = await groupRange(context, input.groupId)
+      const day = dayOf(input.date)
 
       const created = await context.db.classSession.create({
         data: {
@@ -333,12 +326,14 @@ function registerSessionRoutes(app: FastifyInstance): void {
           groupId: input.groupId,
           teacherProfileId: input.teacherProfileId,
           spaceId: input.spaceId,
-          weekday: input.weekday,
+          weekday: day.weekday,
           startTime: input.startTime,
           endTime: input.endTime,
-          dateFrom: range.from,
-          dateTo: range.to,
-          recurrence: input.recurrence,
+          // The same day at both ends, happening once: a class is placed on a
+          // date and is never repeated onto another by the platform.
+          dateFrom: day.date,
+          dateTo: day.date,
+          recurrence: 'once',
           topic: input.topic ?? null,
         },
       })
@@ -369,10 +364,16 @@ function registerSessionRoutes(app: FastifyInstance): void {
             ? { teacherProfileId: input.teacherProfileId }
             : {}),
           ...(input.spaceId !== undefined ? { spaceId: input.spaceId } : {}),
-          ...(input.weekday ? { weekday: input.weekday } : {}),
+          ...(input.date
+            ? {
+                weekday: dayOf(input.date).weekday,
+                dateFrom: dayOf(input.date).date,
+                dateTo: dayOf(input.date).date,
+                recurrence: 'once' as const,
+              }
+            : {}),
           ...(input.startTime ? { startTime: input.startTime } : {}),
           ...(input.endTime ? { endTime: input.endTime } : {}),
-          ...(input.recurrence ? { recurrence: input.recurrence } : {}),
           // `undefined` is "leave it"; `null` is "clear what was written".
           ...(input.topic !== undefined ? { topic: input.topic } : {}),
         },
@@ -440,24 +441,22 @@ function registerSessionRoutes(app: FastifyInstance): void {
 
       const sessions = (await loadSessions(context, version.id)).map(toPlannedSession)
       const others = sessions.filter((session) => session.id !== input.sessionId)
-      const moved = sessions.find((session) => session.id === input.sessionId)
-      // The candidate runs when its group runs; anything wider would collide
-      // with the other term and refuse a placement that is perfectly legal.
-      const range = moved
-        ? { from: moved.dateFrom, to: moved.dateTo }
-        : await groupRange(context, input.groupId)
+      const day = dayOf(input.date)
 
+      // One day, once: the candidate is checked against the classes that
+      // actually happen on it, which is the only comparison worth making now
+      // that nothing repeats.
       const candidate: PlannedSession = {
         id: input.sessionId ?? 'candidate',
         groupId: input.groupId,
         teacherProfileId: input.teacherProfileId,
         spaceId: input.spaceId,
-        weekday: input.weekday as PlannedSession['weekday'],
+        weekday: day.weekday as PlannedSession['weekday'],
         startTime: input.startTime,
         endTime: input.endTime,
-        dateFrom: range.from,
-        dateTo: range.to,
-        recurrence: input.recurrence,
+        dateFrom: day.date,
+        dateTo: day.date,
+        recurrence: 'once',
       }
 
       return evaluateCell(candidate, others, context.schedule)
@@ -465,108 +464,16 @@ function registerSessionRoutes(app: FastifyInstance): void {
   )
 }
 
-function registerGenerationRoutes(app: FastifyInstance, bus: RealtimeTransport): void {
-  app.post(
-    '/api/v1/planner/versions/:id/generate',
-    { config: { roles: [...COORDINATION] } },
-    async (request: FastifyRequest<{ Params: { id: string } }>, reply) => {
-      const context = await plannerContext(request)
-      const version = await requireEditable(context, request.params.id)
-      const input = parseWith(generateSchema, request.body ?? {})
-
-      const requirements = await sessionRequirements(context)
-      if (requirements.length === 0) {
-        throw AppError.validation([{ path: 'groups', messageKey: 'planner.generate.failed' }])
-      }
-
-      const budgetMs = Math.min(
-        MAX_TIME_BUDGET_MS,
-        (input.timeBudgetSeconds ?? context.settings.engine.timeBudgetSeconds) * 1000,
-      )
-
-      const runId = await startGeneration({
-        centerId: context.centerId,
-        scheduleVersionId: version.id,
-        userId: context.user.userId,
-        bus,
-        input: {
-          settings: context.settings,
-          teachers: [...context.schedule.teachers.values()],
-          spaces: [...context.schedule.spaces.values()],
-          groups: [...context.schedule.groups.values()],
-          requirements,
-          fixed: [],
-          seed: input.seed ?? Date.now() % 100_000,
-          timeBudgetMs: budgetMs,
-          proposals: input.proposals ?? context.settings.engine.proposals,
-        },
-      })
-
-      return reply.code(202).send({ runId, requirements: requirements.length })
-    },
-  )
-
-  app.get(
-    '/api/v1/planner/runs/:runId',
-    { config: { roles: [...COORDINATION] } },
-    async (request: FastifyRequest<{ Params: { runId: string } }>) => {
-      const context = await plannerContext(request)
-      const run = await readGeneration(request.params.runId, context.centerId)
-      if (!run) throw AppError.notFound()
-      return run
-    },
-  )
-
-  /** Applying a proposal replaces the draft's sessions with its own. */
-  app.post(
-    '/api/v1/planner/versions/:id/apply',
-    { config: { roles: [...COORDINATION] } },
-    async (request: FastifyRequest<{ Params: { id: string } }>) => {
-      const context = await plannerContext(request)
-      const version = await requireEditable(context, request.params.id)
-      const input = parseWith(applySchema, request.body)
-
-      const run = await readGeneration(input.runId, context.centerId)
-      if (!run || run.status !== 'done') throw AppError.notFound()
-
-      const proposal = run.proposals.find((entry) => entry.id === input.proposalId)
-      if (!proposal) throw AppError.notFound()
-
-      await context.db.classSession.deleteMany({ where: { scheduleVersionId: version.id } })
-      await context.db.classSession.createMany({
-        data: proposal.sessions.map((session) => ({
-          centerId: context.centerId,
-          scheduleVersionId: version.id,
-          groupId: session.groupId,
-          teacherProfileId: session.teacherProfileId,
-          spaceId: session.spaceId,
-          weekday: session.weekday,
-          startTime: session.startTime,
-          endTime: session.endTime,
-          dateFrom: session.dateFrom,
-          dateTo: session.dateTo,
-          recurrence: session.recurrence ?? 'weekly',
-        })),
-      })
-
-      await audit(request, context, version.id, 'apply', null, {
-        runId: input.runId,
-        proposalId: input.proposalId,
-        sessions: proposal.sessions.length,
-      })
-
-      return versionDetail(context, version.id)
-    },
-  )
-}
-
 /** The dates a group's sessions run between, from its subject's term. */
-async function groupRange(context: PlannerContext, groupId: string) {
-  const group = await context.db.group.findFirst({
-    where: { id: groupId },
-    select: { subject: { select: { term: true } } },
-  })
-  return rangeForTerm(await termRanges(context), group?.subject.term)
+/**
+ * A date, as the two things the database keeps: the day itself and its ISO
+ * weekday. Read in UTC, because the column is a `DATE` and a local reading
+ * shifts it by one for half the world.
+ */
+function dayOf(date: string): { date: Date; weekday: number } {
+  const day = new Date(`${date}T00:00:00Z`)
+  const weekday = day.getUTCDay() === 0 ? 7 : day.getUTCDay()
+  return { date: day, weekday }
 }
 
 async function findVersion(context: PlannerContext, id: string) {

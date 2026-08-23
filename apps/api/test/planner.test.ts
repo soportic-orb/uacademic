@@ -1,7 +1,7 @@
 /**
  * The planner API: versions and their lifecycle, session edits with live
  * validation, publication with its diff and notifications, and the automatic
- * generation running in a worker thread.
+ * placement, and the rule that nothing repeats.
  *
  * Publication mutates shared demo state on purpose (it archives whatever was
  * live), so every test that publishes puts the seeded version back afterwards.
@@ -13,6 +13,20 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { SEED, createTestApp, hasDatabase, seedCenterId } from './helpers.js'
 
 const TEST_PREFIX = 'Test planner '
+
+/**
+ * A class is placed on a date, never on a weekday: the planner puts each
+ * session on its own day and nothing repeats it. These are real dates in the
+ * seeded year, one per ISO weekday, so a test can say "Wednesday" and mean a
+ * Wednesday the platform will accept.
+ */
+const ON = {
+  1: '2026-09-14',
+  2: '2026-09-15',
+  3: '2026-09-16',
+  4: '2026-09-17',
+  5: '2026-09-18',
+} as const
 
 describe.skipIf(!hasDatabase)('the planner', () => {
   let app: FastifyInstance
@@ -144,7 +158,7 @@ describe.skipIf(!hasDatabase)('the planner', () => {
         headers: asCoordinator(),
         payload: {
           groupId: before.groupId,
-          weekday: 3,
+          date: ON[3],
           startTime: '18:00',
           endTime: '19:00',
         },
@@ -159,6 +173,42 @@ describe.skipIf(!hasDatabase)('the planner', () => {
       // created it: the column moves as the class lands.
       expect(after.placedMinutes).toBe(60)
       expect(after.remainingMinutes).toBe(Math.max(0, before.remainingMinutes - 60))
+    })
+
+    it('never repeats a class onto another day', async () => {
+      const version = await createVersion('once-only')
+      const group = await prisma.group.findFirstOrThrow({ where: { centerId } })
+
+      const created = await app.inject({
+        method: 'POST',
+        url: `/api/v1/planner/versions/${version.id}/sessions`,
+        headers: asCoordinator(),
+        payload: { groupId: group.id, date: ON[2], startTime: '11:00', endTime: '12:00' },
+      })
+
+      // A week is planned by placing that week's classes; the following week
+      // is placed again. Nothing here copies one onto another.
+      expect(created.json().sessions).toHaveLength(1)
+      expect(created.json().sessions[0]).toMatchObject({
+        recurrence: 'once',
+        dateFrom: ON[2],
+        dateTo: ON[2],
+        weekday: 2,
+      })
+    })
+
+    it('refuses a session with no day to happen on', async () => {
+      const version = await createVersion('dateless')
+      const group = await prisma.group.findFirstOrThrow({ where: { centerId } })
+
+      const response = await app.inject({
+        method: 'POST',
+        url: `/api/v1/planner/versions/${version.id}/sessions`,
+        headers: asCoordinator(),
+        payload: { groupId: group.id, startTime: '11:00', endTime: '12:00' },
+      })
+
+      expect(response.statusCode).toBe(422)
     })
 
     it('says which dates the year runs between, so the grid opens inside it', async () => {
@@ -184,7 +234,7 @@ describe.skipIf(!hasDatabase)('the planner', () => {
           groupId: group!.id,
           teacherProfileId: profile!.id,
           spaceId: space!.id,
-          weekday: 5,
+          date: ON[5],
           startTime: '08:00',
           endTime: '10:00',
         },
@@ -194,15 +244,28 @@ describe.skipIf(!hasDatabase)('the planner', () => {
       expect(created.json().sessions).toHaveLength(1)
       const sessionId = created.json().sessions[0].id
 
+      // Placed on one day and only on that day: both ends of the range are
+      // the date it happens, and it happens once.
+      expect(created.json().sessions[0]).toMatchObject({
+        weekday: 5,
+        dateFrom: ON[5],
+        dateTo: ON[5],
+        recurrence: 'once',
+      })
+
       const moved = await app.inject({
         method: 'PATCH',
         url: `/api/v1/planner/versions/${version.id}/sessions/${sessionId}`,
         headers: asCoordinator(),
-        payload: { weekday: 4, startTime: '10:00', endTime: '12:00' },
+        payload: { date: ON[4], startTime: '10:00', endTime: '12:00' },
       })
 
       expect(moved.statusCode).toBe(200)
-      expect(moved.json().sessions[0]).toMatchObject({ weekday: 4, startTime: '10:00' })
+      expect(moved.json().sessions[0]).toMatchObject({
+        weekday: 4,
+        dateFrom: ON[4],
+        startTime: '10:00',
+      })
 
       const removed = await app.inject({
         method: 'DELETE',
@@ -218,7 +281,7 @@ describe.skipIf(!hasDatabase)('the planner', () => {
         method: 'POST',
         url: `/api/v1/planner/versions/${publishedVersionId}/sessions`,
         headers: asCoordinator(),
-        payload: { groupId: group!.id, weekday: 1, startTime: '08:00', endTime: '09:00' },
+        payload: { groupId: group!.id, date: ON[1], startTime: '08:00', endTime: '09:00' },
       })
 
       expect(response.statusCode).toBe(409)
@@ -233,7 +296,7 @@ describe.skipIf(!hasDatabase)('the planner', () => {
         method: 'POST',
         url: `/api/v1/planner/versions/${version.id}/sessions`,
         headers: asCoordinator(),
-        payload: { groupId: group!.id, weekday: 5, startTime: '19:00', endTime: '20:00' },
+        payload: { groupId: group!.id, date: ON[5], startTime: '19:00', endTime: '20:00' },
       })
 
       const entry = await prisma.auditLog.findFirst({
@@ -257,7 +320,7 @@ describe.skipIf(!hasDatabase)('the planner', () => {
           groupId: existing.groupId,
           teacherProfileId: existing.teacherProfileId,
           spaceId: existing.spaceId,
-          weekday: existing.weekday,
+          date: existing.dateFrom,
           startTime: existing.startTime,
           endTime: existing.endTime,
         },
@@ -277,7 +340,7 @@ describe.skipIf(!hasDatabase)('the planner', () => {
           groupId: existing.groupId,
           teacherProfileId: existing.teacherProfileId,
           spaceId: existing.spaceId,
-          weekday: existing.weekday,
+          date: existing.dateFrom,
           startTime: existing.startTime,
           endTime: existing.endTime,
         },
@@ -302,8 +365,8 @@ describe.skipIf(!hasDatabase)('the planner', () => {
           groupId: group!.id,
           teacherProfileId: profile!.id,
           spaceId: null,
-          // Nobody declares availability at dawn.
-          weekday: 6,
+          // A Saturday: nobody has declared themselves available on one.
+          date: '2026-09-19',
           startTime: '08:00',
           endTime: '09:00',
         },
@@ -342,7 +405,8 @@ describe.skipIf(!hasDatabase)('the planner', () => {
         method: 'PATCH',
         url: `/api/v1/planner/versions/${version.id}/sessions/${moved.id}`,
         headers: asCoordinator(),
-        payload: { weekday: moved.weekday === 5 ? 4 : 5 },
+        // Moving a class is moving its date: `weekday` is derived from it.
+        payload: { date: moved.weekday === 5 ? ON[4] : ON[5] },
       })
 
       await app.inject({
@@ -486,95 +550,4 @@ describe.skipIf(!hasDatabase)('the planner', () => {
       expect(response.json().changes).toEqual([])
     })
   })
-
-  describe('automatic generation', () => {
-    it('runs in a worker thread and returns ranked proposals with their sacrifices', async () => {
-      const version = await createVersion('generate')
-
-      const started = await app.inject({
-        method: 'POST',
-        url: `/api/v1/planner/versions/${version.id}/generate`,
-        headers: asCoordinator(),
-        payload: { seed: 42, timeBudgetSeconds: 3, proposals: 3 },
-      })
-
-      expect(started.statusCode).toBe(202)
-      const runId = started.json().runId
-      expect(started.json().requirements).toBeGreaterThan(0)
-
-      const run = await waitForRun(runId)
-      expect(run.status).toBe('done')
-      expect(run.proposals.length).toBeGreaterThan(0)
-      expect(run.proposals.length).toBeLessThanOrEqual(3)
-
-      const costs = run.proposals.map((proposal: { cost: number }) => proposal.cost)
-      expect(costs).toEqual([...costs].sort((a: number, b: number) => a - b))
-
-      for (const sacrifice of run.proposals[0].sacrifices) {
-        expect(sacrifice.messageKey).toMatch(/^planner\.sacrifice\./)
-      }
-
-      const applied = await app.inject({
-        method: 'POST',
-        url: `/api/v1/planner/versions/${version.id}/apply`,
-        headers: asCoordinator(),
-        payload: { runId, proposalId: run.proposals[0].id },
-      })
-
-      expect(applied.statusCode).toBe(200)
-      expect(applied.json().sessions.length).toBe(run.proposals[0].sessions.length)
-      // What the generator produced is legal by construction.
-      expect(applied.json().summary.blocked).toBe(0)
-    }, 40_000)
-
-    it('keeps a run inside the center that started it (R2)', async () => {
-      const version = await createVersion('scoped')
-      const started = await app.inject({
-        method: 'POST',
-        url: `/api/v1/planner/versions/${version.id}/generate`,
-        headers: asCoordinator(),
-        payload: { seed: 1, timeBudgetSeconds: 1 },
-      })
-
-      const runId = started.json().runId
-      await waitForRun(runId)
-
-      const foreign = await app.inject({
-        method: 'GET',
-        url: `/api/v1/planner/runs/${runId}`,
-        headers: {
-          'x-mock-user': SEED.superadminEmail,
-          'x-center-id': centerId,
-          'x-cross-center': 'true',
-        },
-      })
-      expect(foreign.statusCode).toBe(200)
-
-      // Same run id, a center it does not belong to: not found, never leaked.
-      await prisma.job.update({
-        where: { id: runId },
-        data: { payloadJson: { centerId: 'another-center' } },
-      })
-      const denied = await app.inject({
-        method: 'GET',
-        url: `/api/v1/planner/runs/${runId}`,
-        headers: asCoordinator(),
-      })
-      expect(denied.statusCode).toBe(404)
-    }, 30_000)
-  })
-
-  async function waitForRun(runId: string) {
-    for (let attempt = 0; attempt < 120; attempt += 1) {
-      const response = await app.inject({
-        method: 'GET',
-        url: `/api/v1/planner/runs/${runId}`,
-        headers: asCoordinator(),
-      })
-      const run = response.json()
-      if (run.status !== 'processing') return run
-      await new Promise((resolve) => setTimeout(resolve, 250))
-    }
-    throw new Error('generation did not finish in time')
-  }
 })

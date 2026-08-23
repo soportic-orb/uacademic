@@ -113,7 +113,7 @@ Assigned hours come from assignments (a person to a group, with a concept: lectu
 
 Silence before anybody has been asked means available: a lecturer who has never opened the screen is plannable at any hour. Silence inside a week they have spoken about does not — there they left that hour out on purpose. This is why the grid stores every level, including the refusals.
 
-The planner reads the same rules the generator does. Placing a class on an hour somebody marked unavailable is refused outright; one they asked to avoid goes through with a warning. Availability is worth five minutes of a lecturer's time: without it they get planned around blindly.`,
+The planner reads those levels as it places. Putting a class on an hour somebody marked unavailable is refused outright; one they asked to avoid goes through with a warning. Availability is worth five minutes of a lecturer's time: without it they get planned around blindly.`,
   },
   {
     id: 'planning',
@@ -127,7 +127,9 @@ Classes are moved by dragging or entirely by keyboard: Space picks a session up,
 
 Beside the grid: the groups still to place, and every colleague with the hours this version gives them, counted from what is on screen so the figures move as classes land.
 
-Generating a proposal runs the engine over the unplaced groups. Publishing snapshots the version, archives the previous one and notifies only the people whose classes actually changed.
+Every class is placed on a day, one at a time, and nothing repeats it: a week is planned by placing that week's classes, and the following week is placed again. The platform never copies a session onto another week or another month.
+
+Publishing snapshots the version, archives the previous one and notifies only the people whose classes actually changed.
 
 Hard constraints cannot be published through — a lecturer or a room in two places at once, an hour somebody cannot do. Soft ones (gaps, too many consecutive hours, a building change with no time to walk it) are warnings with weights the center can tune.`,
   },
@@ -275,7 +277,7 @@ export const SCREEN_KNOWLEDGE: readonly ScreenKnowledge[] = [
     path: '/planning',
     title: 'Planning',
     roles: ['COORDINATOR', 'CENTER_ADMIN'],
-    body: `Where the timetable is built. A version toolbar, the weekly grid, the generator, the comparison between two versions, and — at the foot — sending every lecturer their own teaching calendar as a PDF. Needs a version to exist; with none, the screen offers to create the first one. Needs groups to have something to place.`,
+    body: `Where the timetable is built, week by week. A version toolbar (the version can be renamed at any time, published included), the week itself, the comparison between two versions, and — at the foot — sending every lecturer their own teaching calendar as a PDF. Each class is placed on its own day, with its teacher and, if somebody writes one, the topic of the class; nothing is repeated onto another week. Needs a version to exist; with none, the screen offers to create the first one. Needs groups to have something to place.`,
   },
   {
     path: '/calendar',
