@@ -151,6 +151,7 @@ const VERSION: VersionDetailDto = {
       recurrence: 'weekly',
       dateFrom: TERM.dateFrom,
       dateTo: TERM.dateTo,
+      topic: null,
     },
   ],
   violations: [],
@@ -477,6 +478,52 @@ describe('the visual planner', () => {
           within(screen.getByRole('grid')).getByText(String(new Date(later).getDate())),
         ).toBeInTheDocument(),
       )
+    })
+  })
+
+  describe('what the class is about', () => {
+    it('is typed on the block and saved when the box is left', async () => {
+      const user = userEvent.setup()
+      render(wrap(<PlannerGrid version={VERSION} context={CONTEXT} />))
+
+      const topic = screen.getByLabelText('Tema de la classe')
+      await user.type(topic, 'Derivades')
+      await user.tab()
+
+      await waitFor(() => {
+        const patch = fetchMock.mock.calls.find(
+          (call) => (call[1] as RequestInit)?.method === 'PATCH',
+        )
+        expect(patch).toBeDefined()
+        expect(JSON.parse(String((patch?.[1] as RequestInit).body))).toEqual({ topic: 'Derivades' })
+      })
+    })
+
+    it('writes nothing when the box is left untouched', async () => {
+      const user = userEvent.setup()
+      render(wrap(<PlannerGrid version={VERSION} context={CONTEXT} />))
+
+      // A request per letter is a request per letter; a request for a box
+      // somebody clicked into and out of is worse still.
+      await user.click(screen.getByLabelText('Tema de la classe'))
+      await user.tab()
+
+      expect(
+        fetchMock.mock.calls.some((call) => (call[1] as RequestInit)?.method === 'PATCH'),
+      ).toBe(false)
+    })
+
+    it('shows it above the teacher once it is there', () => {
+      const withTopic = {
+        ...VERSION,
+        editable: false,
+        sessions: [{ ...VERSION.sessions[0]!, topic: 'Derivades' }],
+      }
+      render(wrap(<PlannerGrid version={withTopic} context={CONTEXT} />))
+
+      const block = screen.getByText('Derivades').closest('div')!
+      expect(within(block).getByText('Derivades')).toBeInTheDocument()
+      expect(within(block).getByText('Marta Puig')).toBeInTheDocument()
     })
   })
 

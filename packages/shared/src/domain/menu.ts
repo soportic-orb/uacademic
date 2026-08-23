@@ -148,3 +148,31 @@ export function renameSeparator(
     entry.kind === 'separator' && entry.id === id ? { ...entry, label } : entry,
   )
 }
+
+/**
+ * The menu as sections, so a section can be folded away.
+ *
+ * A separator opens a section and everything after it belongs to that section
+ * until the next one. Whatever comes before the first separator is a section
+ * with no separator of its own: it cannot be folded, because there is no
+ * header to fold it into, and a person who has never made a separator should
+ * not find their menu suddenly collapsible.
+ */
+export interface MenuSection {
+  /** The separator that opens it, or null for the entries above the first. */
+  separator: MenuSeparatorEntry | null
+  items: MenuItemEntry[]
+}
+
+export function menuSections(entries: readonly MenuEntry[]): MenuSection[] {
+  const sections: MenuSection[] = [{ separator: null, items: [] }]
+
+  for (const entry of entries) {
+    if (entry.kind === 'separator') sections.push({ separator: entry, items: [] })
+    else sections[sections.length - 1]?.items.push(entry)
+  }
+
+  // A leading section with nothing in it is not a section; every other empty
+  // one keeps its separator, which is the thing the person put there.
+  return sections.filter((section, index) => index > 0 || section.items.length > 0)
+}

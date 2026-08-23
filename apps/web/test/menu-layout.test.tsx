@@ -11,6 +11,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Toaster } from '../src/components/feedback/toaster'
 import { Sidebar } from '../src/components/layout/sidebar'
 import { MenuCard, MenuDefaultsCard } from '../src/features/settings/menu-card'
+import { useMenuSectionsStore } from '../src/stores/menu-sections'
 import { useSessionStore } from '../src/stores/session'
 
 function view(children: ReactNode) {
@@ -38,6 +39,7 @@ beforeEach(() => {
   stored.personalised = false
   defaults.value = {}
   pending.value = { changes: 0, absences: 0 }
+  useMenuSectionsStore.setState({ collapsed: {} })
   saved.length = 0
   savedDefaults.length = 0
 
@@ -388,5 +390,81 @@ describe('the sidebar', () => {
     view(<Sidebar roles={TEACHER} collapsed={false} onToggle={vi.fn()} />)
 
     expect(await screen.findByText('Docència')).toBeInTheDocument()
+  })
+})
+
+describe('folding a section of the menu away', () => {
+  const withSection = [
+    { kind: 'item', key: 'dashboard' },
+    { kind: 'separator', id: 'sep-1', label: 'Docència' },
+    { kind: 'item', key: 'myLoad' },
+    { kind: 'item', key: 'changes' },
+  ]
+
+  it('offers no fold to somebody who has made no separator', async () => {
+    view(<Sidebar roles={TEACHER} collapsed={false} onToggle={vi.fn()} />)
+
+    await screen.findByRole('link', { name: 'Tauler' })
+    // The sidebar's own collapse control also carries `aria-expanded`, so the
+    // question is about the list rather than about the whole landmark.
+    const list = screen.getByRole('navigation').querySelector('ul')!
+    expect(within(list).queryByRole('button')).not.toBeInTheDocument()
+  })
+
+  it('folds the entries under a separator, and unfolds them again', async () => {
+    stored.entries = withSection
+
+    view(<Sidebar roles={TEACHER} collapsed={false} onToggle={vi.fn()} />)
+
+    const header = await screen.findByRole('button', { name: /Docència/ })
+    expect(header).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByRole('link', { name: 'La meva càrrega' })).toBeInTheDocument()
+
+    await userEvent.click(header)
+
+    expect(header).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.queryByRole('link', { name: 'La meva càrrega' })).not.toBeInTheDocument()
+    // What is above the separator is untouched.
+    expect(screen.getByRole('link', { name: 'Tauler' })).toBeInTheDocument()
+
+    await userEvent.click(header)
+    expect(screen.getByRole('link', { name: 'La meva càrrega' })).toBeInTheDocument()
+  })
+
+  it('remembers what was folded', async () => {
+    stored.entries = withSection
+    useMenuSectionsStore.setState({ collapsed: { 'sep-1': true } })
+
+    view(<Sidebar roles={TEACHER} collapsed={false} onToggle={vi.fn()} />)
+
+    // Wait for the stored layout to land: before it does there is no
+    // separator at all and everything is on screen for a perfectly good
+    // reason, which is not the one this test is about.
+    const header = await screen.findByRole('button', { name: /Docència/ })
+    expect(header).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.queryByRole('link', { name: 'La meva càrrega' })).not.toBeInTheDocument()
+  })
+
+  it('brings the count up to the header rather than hiding it', async () => {
+    stored.entries = withSection
+    pending.value = { changes: 2, absences: 0 }
+    useMenuSectionsStore.setState({ collapsed: { 'sep-1': true } })
+
+    view(<Sidebar roles={TEACHER} collapsed={false} onToggle={vi.fn()} />)
+
+    // Folding a section must not fold away something waiting to be answered.
+    const header = await screen.findByRole('button', { name: /Docència/ })
+    expect(within(header).getByText('2')).toBeInTheDocument()
+  })
+
+  it('folds nothing while the sidebar is down to icons', async () => {
+    stored.entries = withSection
+    useMenuSectionsStore.setState({ collapsed: { 'sep-1': true } })
+
+    view(<Sidebar roles={TEACHER} collapsed onToggle={vi.fn()} />)
+
+    // There is no header to fold into, so hiding entries would leave no way
+    // to find out why they are gone.
+    expect(await screen.findByRole('link', { name: 'La meva càrrega' })).toBeInTheDocument()
   })
 })

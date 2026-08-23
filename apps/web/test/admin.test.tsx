@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { ReactNode } from 'react'
 import { MemoryRouter } from 'react-router'
@@ -161,5 +161,100 @@ describe('resource table', () => {
 
     expect(await screen.findByText('Encara no hi ha res aquí')).toBeInTheDocument()
     expect(screen.getAllByRole('button', { name: 'Crea' }).length).toBeGreaterThan(0)
+  })
+})
+
+/**
+ * A date range is one control writing two names, and the form used to collect
+ * only the names it draws — so the far end of every range was dropped on the
+ * way out. The server refused each academic calendar entry for a missing end
+ * date, and the complaint arrived against a field the form does not draw, so
+ * nothing was shown: the button simply appeared not to work.
+ */
+describe('a form with a date range on it', () => {
+  const fetchMock = vi.fn()
+
+  beforeEach(() => {
+    vi.stubGlobal('fetch', fetchMock)
+    fetchMock.mockReset()
+    fetchMock.mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('/academic-years')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            items: [{ id: 'year-1', name: '2026–2027' }],
+            page: 1,
+            pageSize: 25,
+            total: 1,
+            totalPages: 1,
+          }),
+        } as Response)
+      }
+
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({ items: [], page: 1, pageSize: 25, total: 0, totalPages: 0 }),
+      } as Response)
+    })
+  })
+
+  afterEach(() => vi.unstubAllGlobals())
+
+  const fill = async (user: ReturnType<typeof userEvent.setup>) => {
+    await user.click(await screen.findByRole('button', { name: 'Crea' }))
+
+    await user.selectOptions(await screen.findByLabelText(/Curs acadèmic/), 'year-1')
+    // The filter above the table carries the same label, so this is the one
+    // inside the dialog.
+    const dialog = screen.getByRole('dialog')
+    await user.selectOptions(within(dialog).getByLabelText(/^Tipus/), 'vacation')
+    await user.type(screen.getByLabelText(/Nom \(català\)/), 'Setmana Santa')
+    await user.type(screen.getByLabelText(/Nom \(castellà\)/), 'Semana Santa')
+    await user.type(screen.getByLabelText(/Nom \(anglès\)/), 'Easter')
+  }
+
+  const posted = () =>
+    fetchMock.mock.calls.find(([, init]) => (init as RequestInit | undefined)?.method === 'POST')
+
+  const dateInputs = () => [...document.querySelectorAll<HTMLInputElement>('input[type="date"]')]
+
+  it('sends both ends of the range, not only the one with a field', async () => {
+    const user = userEvent.setup()
+    render(wrap(<ResourcePage resource={resourceByKey('calendar-entries')!} />))
+
+    await fill(user)
+
+    // Two different dates: the tick that means "a single day" comes off.
+    await user.click(screen.getByLabelText(/dia únic/))
+    // `type` on a date input is not reliable in jsdom; the change is.
+    const dates = dateInputs()
+    fireEvent.change(dates[0]!, { target: { value: '2027-04-01' } })
+    fireEvent.change(dates[1]!, { target: { value: '2027-04-07' } })
+
+    await user.click(screen.getByRole('button', { name: 'Desa' }))
+
+    await waitFor(() => expect(posted()).toBeDefined())
+    const body = JSON.parse(String((posted()![1] as RequestInit).body)) as Record<string, unknown>
+    expect(body.dateFrom).toBe('2027-04-01')
+    expect(body.dateTo).toBe('2027-04-07')
+  })
+
+  it('sends the same date twice for a single day', async () => {
+    const user = userEvent.setup()
+    render(wrap(<ResourcePage resource={resourceByKey('calendar-entries')!} />))
+
+    await fill(user)
+
+    fireEvent.change(dateInputs()[0]!, { target: { value: '2027-04-01' } })
+
+    await user.click(screen.getByRole('button', { name: 'Desa' }))
+
+    await waitFor(() => expect(posted()).toBeDefined())
+    const body = JSON.parse(String((posted()![1] as RequestInit).body)) as Record<string, unknown>
+    expect(body.dateFrom).toBe('2027-04-01')
+    expect(body.dateTo).toBe('2027-04-01')
   })
 })

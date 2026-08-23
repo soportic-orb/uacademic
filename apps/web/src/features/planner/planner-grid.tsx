@@ -127,6 +127,25 @@ export function PlannerGrid({
     return closuresInRange(dates, context.calendar ?? [])
   }, [context.calendar, geometry.weekdays, weekStart])
 
+  /**
+   * What the class is about.
+   *
+   * Saved on its own, without touching anything else on the session: a topic
+   * is not a placement, so it is not checked against availability and it does
+   * not go through the undo history — nobody expects "undo" to take back a
+   * sentence they typed and then left.
+   */
+  const setTopic = async (session: PlannerSessionDto, topic: string) => {
+    try {
+      await updateSession.mutateAsync({
+        sessionId: session.id,
+        values: { topic: topic.trim() || null },
+      })
+    } catch (error) {
+      onError(error)
+    }
+  }
+
   /** Picking a colleague dims everybody else's classes, rather than hiding them. */
   const [teacherFilter, setTeacherFilter] = useState<string | null>(null)
 
@@ -591,6 +610,7 @@ export function PlannerGrid({
                                 onAssign={(teacherProfileId) =>
                                   void assignTeacher(session, teacherProfileId)
                                 }
+                                onTopic={(topic) => void setTopic(session, topic)}
                                 onPick={() => {
                                   setHeld(heldFromSession(session))
                                   setCursor({ day: dayIndex, slot: slotIndex })
@@ -758,6 +778,7 @@ function SessionBlock({
   onDrop,
   onRemove,
   onAssign,
+  onTopic,
   onKeyDown,
 }: {
   session: PlannerSessionDto
@@ -770,6 +791,8 @@ function SessionBlock({
   onDrop: () => void
   onRemove: () => void
   onAssign: (teacherProfileId: string | null) => void
+  /** What this class is about, typed on the block. Saved when the box is left. */
+  onTopic: (topic: string) => void
   onKeyDown: (event: React.KeyboardEvent) => void
 }) {
   const { t } = useTranslation()
@@ -820,6 +843,40 @@ function SessionBlock({
           {session.spaceName ?? t('planner.unassignedSpace')}
         </span>
       </button>
+
+      {/*
+        What the class is about, written on the block itself.
+
+        Above the teacher because it is what a coordinator scans a week for —
+        "where did I put the practical?" — and it is theirs to write, where the
+        subject, the group and the room are all facts from elsewhere. Saved on
+        leaving the box rather than on every keystroke: a session is a row on
+        the server, and a request per letter is a request per letter.
+      */}
+      {editable ? (
+        <label className="block">
+          <span className="sr-only">{t('planner.topic')}</span>
+          <input
+            type="text"
+            maxLength={200}
+            defaultValue={session.topic ?? ''}
+            placeholder={t('planner.topicPlaceholder')}
+            onClick={(event) => event.stopPropagation()}
+            onKeyDown={(event) => {
+              event.stopPropagation()
+              if (event.key === 'Enter') (event.target as HTMLInputElement).blur()
+            }}
+            onBlur={(event) => {
+              if (event.target.value !== (session.topic ?? '')) onTopic(event.target.value)
+            }}
+            className="w-full rounded-sm border border-border bg-surface px-1 py-0.5 text-xs text-text"
+          />
+        </label>
+      ) : session.topic ? (
+        <span className="block truncate font-medium text-text" title={session.topic}>
+          {session.topic}
+        </span>
+      ) : null}
 
       {/*
         The teacher, chosen here rather than only by dragging from the pending

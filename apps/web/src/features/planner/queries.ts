@@ -38,6 +38,7 @@ export interface PlannerSessionDto {
   recurrence: 'weekly' | 'biweekly' | 'once'
   dateFrom: string
   dateTo: string
+  topic: string | null
 }
 
 export interface PendingGroupDto {
@@ -187,6 +188,17 @@ export function useCreateVersion() {
   })
 }
 
+/** Renaming the version on screen, published or not. */
+export function useRenameVersion(versionId: string) {
+  const invalidate = useInvalidate()
+
+  return useMutation({
+    mutationFn: (name: string) =>
+      apiJson<VersionDetailDto>(`/api/v1/planner/versions/${versionId}`, 'PATCH', { name }),
+    onSuccess: invalidate,
+  })
+}
+
 export function useVersionStatus(versionId: string) {
   const invalidate = useInvalidate()
 
@@ -206,6 +218,8 @@ export interface SessionInput {
   weekday: number
   startTime: string
   endTime: string
+  /** What the class is about. Null clears what was written. */
+  topic?: string | null
 }
 
 export function useCreateSession(versionId: string) {

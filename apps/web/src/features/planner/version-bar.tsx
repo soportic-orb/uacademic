@@ -5,7 +5,7 @@
  * Publishing is the only action that reaches anybody, so it is the only one
  * that asks for confirmation and reports how many teachers were told.
  */
-import { GitBranch, Plus, Send, Upload } from 'lucide-react'
+import { GitBranch, Pencil, Plus, Send, Upload } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -19,6 +19,7 @@ import {
   type VersionDetailDto,
   type VersionListItem,
   useCreateVersion,
+  useRenameVersion,
   useVersionStatus,
 } from './queries'
 
@@ -38,9 +39,21 @@ export function VersionBar({
   const locale = currentLocale()
 
   const create = useCreateVersion()
+  const rename = useRenameVersion(version.id)
   const status = useVersionStatus(version.id)
   const [naming, setNaming] = useState(false)
   const [name, setName] = useState('')
+
+  /*
+    Renaming the one on screen.
+
+    Published included: the name is a label somebody put on a draft —
+    "Provisional", "amb els canvis del departament" — and publishing is exactly
+    when it stops being true. Nothing downstream reads it; the snapshot, the
+    diff and the notifications are keyed on the version's id.
+  */
+  const [renaming, setRenaming] = useState(false)
+  const [newName, setNewName] = useState('')
 
   const onError = (error: unknown) => {
     if (error instanceof ApiRequestError)
@@ -83,6 +96,18 @@ export function VersionBar({
               ))}
             </select>
           </label>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label={t('planner.version.rename')}
+            onClick={() => {
+              setNewName(version.name)
+              setRenaming((current) => !current)
+            }}
+          >
+            <Pencil className="size-4" aria-hidden="true" />
+          </Button>
 
           <p className="pb-2 text-xs text-text-muted">
             {t(`planner.version.statusHint.${version.status}`)}
@@ -127,6 +152,43 @@ export function VersionBar({
             </Button>
           ) : null}
         </div>
+
+        {renaming ? (
+          <form
+            className="flex w-full flex-wrap items-end gap-2 border-t border-border pt-3"
+            onSubmit={(event) => {
+              event.preventDefault()
+              rename.mutate(newName, {
+                onSuccess: () => {
+                  setRenaming(false)
+                  toast.success('planner.version.renamed')
+                },
+                onError,
+              })
+            }}
+          >
+            <label className="flex-1 text-sm">
+              <span className="mb-1 block text-xs text-text-muted">
+                {t('planner.version.rename')}
+              </span>
+              <input
+                type="text"
+                required
+                minLength={3}
+                value={newName}
+                onChange={(event) => setNewName(event.target.value)}
+                className="h-10 w-full rounded-control border border-border bg-surface px-3 text-text"
+              />
+            </label>
+
+            <Button type="submit" disabled={rename.isPending}>
+              {rename.isPending ? t('common.saving') : t('common.save')}
+            </Button>
+            <Button type="button" variant="secondary" onClick={() => setRenaming(false)}>
+              {t('common.cancel')}
+            </Button>
+          </form>
+        ) : null}
 
         {naming ? (
           <form

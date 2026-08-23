@@ -8,6 +8,7 @@ import { Link } from 'react-router'
 import { useSession } from '../../auth/session'
 import { Logo } from '../brand/logo'
 import { NotificationBell } from '../../features/notifications/notification-bell'
+import { FullscreenButton } from './fullscreen-button'
 import { useToast } from '../../hooks/use-toast'
 import { clearApiCache } from '../../app/service-worker'
 import { DEMO_IDENTITIES, useSessionStore } from '../../stores/session'
@@ -165,6 +166,8 @@ export function Header({
           {'⌘K'}
         </kbd>
       </button>
+
+      <FullscreenButton />
 
       <NotificationBell />
 

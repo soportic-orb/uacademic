@@ -93,7 +93,10 @@
     "demoUser": "Usuari de demostració",
     "roleSelector": "Rol actiu",
     "universitySelector": "Universitat",
-    "universityHint": "Tries la universitat i entres al seu centre; des d’allà pots canviar de centre."
+    "universityHint": "Tries la universitat i entres al seu centre; des d’allà pots canviar de centre.",
+    "enterFullscreen": "Maximitza la finestra",
+    "exitFullscreen": "Minimitza la finestra",
+    "section": "Secció {{position}}"
   },
   "theme": {
     "label": "Aparença",
@@ -1509,7 +1512,9 @@
         "blockingViolations": "Hi ha conflictes sense resoldre: no es pot publicar.",
         "notEditable": "Aquesta versió ja no es pot modificar."
       },
-      "createFirst": "Crea la primera versió"
+      "createFirst": "Crea la primera versió",
+      "rename": "Canvia el nom de la versió",
+      "renamed": "Nom de la versió actualitzat"
     },
     "compare": {
       "title": "Compara versions",
@@ -1576,7 +1581,9 @@
       "done": "Planificat",
       "over": "{{hours}} h de més"
     },
-    "jumpedToWeek": "El grup es planifica a partir del {{date}}: t'hi hem portat."
+    "jumpedToWeek": "El grup es planifica a partir del {{date}}: t'hi hem portat.",
+    "topic": "Tema de la classe",
+    "topicPlaceholder": "Tema…"
   },
   "calendar": {
     "title": "El meu calendari",

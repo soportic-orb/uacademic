@@ -8,6 +8,7 @@ import type { MenuEntry } from '../src/domain/menu.js'
 import {
   applyMenuLayout,
   insertSeparator,
+  menuSections,
   moveEntry,
   orderMenuEntries,
   removeSeparator,
@@ -175,5 +176,42 @@ describe('the separators somebody adds', () => {
     const next = removeSeparator([item('a'), rule('s1'), rule('s2'), item('b')], 's1')
 
     expect(next).toEqual([item('a'), rule('s2'), item('b')])
+  })
+})
+
+describe('the menu as sections', () => {
+  it('puts what comes before the first separator in a section of its own', () => {
+    const sections = menuSections([item('a'), rule('s1', 'Docència'), item('b')])
+
+    expect(sections).toHaveLength(2)
+    expect(sections[0]).toEqual({ separator: null, items: [item('a')] })
+    expect(sections[1]!.separator).toEqual(rule('s1', 'Docència'))
+    expect(sections[1]!.items).toEqual([item('b')])
+  })
+
+  it('has no leading section when the menu opens with a separator', () => {
+    const sections = menuSections([rule('s1'), item('a')])
+
+    expect(sections).toHaveLength(1)
+    expect(sections[0]!.separator).toEqual(rule('s1'))
+  })
+
+  it('is one unfoldable section when nobody has made a separator', () => {
+    // Somebody who has never arranged their menu should not find it suddenly
+    // collapsible.
+    const sections = menuSections([item('a'), item('b')])
+
+    expect(sections).toHaveLength(1)
+    expect(sections[0]!.separator).toBeNull()
+  })
+
+  it('keeps a separator that has nothing under it yet', () => {
+    const sections = menuSections([item('a'), rule('s1', 'Buida')])
+
+    expect(sections[1]).toEqual({ separator: rule('s1', 'Buida'), items: [] })
+  })
+
+  it('is nothing at all for an empty menu', () => {
+    expect(menuSections([])).toEqual([])
   })
 })

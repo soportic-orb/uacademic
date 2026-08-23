@@ -70,7 +70,7 @@ export function TeacherRail({
               aria-pressed={picked}
               onClick={() => onSelect(picked ? null : teacher.teacherProfileId)}
               className={cn(
-                'flex w-full items-center gap-2 rounded-control border px-2 py-1.5 text-left',
+                'flex w-full gap-2 rounded-control border px-2 py-1.5 text-left',
                 picked
                   ? 'border-primary bg-primary-50'
                   : 'border-transparent hover:bg-surface-muted',
@@ -78,22 +78,33 @@ export function TeacherRail({
             >
               <Avatar name={teacher.name} url={teacher.avatarUrl} size="xs" />
 
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm text-text">{teacher.name}</span>
+              {/*
+                One column, and the badge underneath.
+
+                The badge and the percentage used to sit beside the name in a
+                column eighteen rems wide, which left the name about six — and
+                a name is not an abbreviation. "Cristina" came out as "Crist…"
+                and told nobody which Cristina. The name gets the width; what
+                it is worth in hours and how full that week is go below it,
+                where they have the whole row.
+              */}
+              <span className="min-w-0 flex-1 space-y-0.5">
+                <span className="block text-sm text-text">{teacher.name}</span>
+
                 <span className="tabular block text-xs text-text-muted">
                   {formatHours(locale, hours)}
                   {weekly ? ` / ${formatHours(locale, weekly)}` : ''} {t('common.hoursShort')}
                 </span>
-              </span>
 
-              {ratio === null ? null : (
-                <span className="flex shrink-0 items-center gap-1">
-                  <span className="tabular text-xs text-text-muted">
-                    {formatPercent(locale, ratio)}
+                {ratio === null ? null : (
+                  <span className="flex flex-wrap items-center gap-1">
+                    <span className="tabular text-xs text-text-muted">
+                      {formatPercent(locale, ratio)}
+                    </span>
+                    <LoadBadge status={statusOf(ratio)} />
                   </span>
-                  <LoadBadge status={statusOf(ratio)} />
-                </span>
-              )}
+                )}
+              </span>
             </button>
           )
         })}

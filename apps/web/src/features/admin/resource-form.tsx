@@ -96,6 +96,23 @@ export function ResourceForm({
             if (field.type === 'image') byPath[field.name] = byPath.file
           }
         }
+
+        /*
+          And anything the form has nowhere to put goes at the top.
+
+          A complaint about a name this form does not draw used to be written
+          into the error map and then never rendered: the request failed, the
+          dialog stayed open, and nothing on it said why. Whatever else is
+          wrong, somebody must be able to see that something is.
+        */
+        const shown = new Set<string>()
+        for (const field of resource.fields) {
+          shown.add(field.name)
+          if (field.rangeEnd) shown.add(field.rangeEnd)
+        }
+        const unplaceable = Object.keys(byPath).filter((path) => !shown.has(path))
+        if (unplaceable.length > 0) byPath._form = error.localizedMessage
+
         setErrors(byPath)
       } else if (error instanceof ApiRequestError) {
         setErrors({ _form: error.localizedMessage })
@@ -331,15 +348,32 @@ function initialValues(fields: FieldConfig[], row: Values | null): Values {
 /** Empty strings are omitted so a partial update never blanks a column. */
 function cleanValues(fields: FieldConfig[], values: Values): Values {
   const cleaned: Values = {}
+
   for (const field of fields) {
     // A picture is uploaded separately, and the column it lands in is written
     // by the server: sending it here would only fight with that.
     if (field.type === 'image') continue
 
     const value = values[field.name]
-    if (value === '' || value === undefined || value === null) continue
-    cleaned[field.name] = field.type === 'number' ? Number(value) : value
+    if (value !== '' && value !== undefined && value !== null) {
+      cleaned[field.name] = field.type === 'number' ? Number(value) : value
+    }
+
+    /*
+      The far end of a range is a value without a field of its own.
+
+      A date range is one control writing two names, and this walked the
+      *fields*, so `dateTo` was collected into the form and then dropped on the
+      way out. The server refused every academic calendar entry for a missing
+      end date, and the complaint arrived against a field that is not on the
+      form — so nothing was shown and the button simply appeared not to work.
+    */
+    if (field.rangeEnd) {
+      const end = values[field.rangeEnd]
+      if (end !== '' && end !== undefined && end !== null) cleaned[field.rangeEnd] = end
+    }
   }
+
   return cleaned
 }
 

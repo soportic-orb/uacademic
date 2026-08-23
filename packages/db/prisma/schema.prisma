@@ -847,6 +847,10 @@ model ClassSession {
   dateTo            DateTime   @map("date_to") @db.Date
   recurrence        Recurrence @default(weekly)
   isException       Boolean    @default(false) @map("is_exception")
+  /// What this class is about, written on the block in the planner. Shown to
+  /// the teacher and on their calendar, so it is the one field on a session
+  /// that is read by somebody who did not place it.
+  topic             String?    @db.VarChar(200)
   notes             String?    @db.Text
   createdAt         DateTime   @default(now()) @map("created_at")
   updatedAt         DateTime   @updatedAt @map("updated_at")

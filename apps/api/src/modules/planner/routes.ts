@@ -43,8 +43,11 @@ import { publishVersion, readSnapshot } from './publish.js'
 
 const COORDINATION = ['CENTER_ADMIN', 'COORDINATOR'] as const
 
-const createVersionSchema = z.object({
+const versionSchema = z.object({
   name: z.string().trim().min(3).max(150),
+})
+
+const createVersionSchema = versionSchema.extend({
   /** Copy the sessions of an existing version into the new draft. */
   fromVersionId: z.uuid().optional(),
 })
@@ -61,6 +64,8 @@ const sessionSchema = z.object({
   startTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
   endTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
   recurrence: z.enum(['weekly', 'biweekly', 'once']).default('weekly'),
+  /** What the class is about, typed on the block itself. */
+  topic: z.string().trim().max(200).nullable().optional(),
 })
 
 /**
@@ -82,6 +87,7 @@ const sessionPatchSchema = z.object({
     .regex(/^([01]\d|2[0-3]):[0-5]\d$/)
     .optional(),
   recurrence: z.enum(['weekly', 'biweekly', 'once']).optional(),
+  topic: z.string().trim().max(200).nullable().optional(),
 })
 
 const validateSchema = sessionSchema.extend({
@@ -183,6 +189,33 @@ export function registerPlannerRoutes(app: FastifyInstance, bus: RealtimeTranspo
     { config: { roles: [...COORDINATION] } },
     async (request: FastifyRequest<{ Params: { id: string } }>) =>
       versionDetail(await plannerContext(request), request.params.id),
+  )
+
+  /**
+   * Renaming one.
+   *
+   * A published version can be renamed too. The name is a label a person put
+   * on a draft — "Provisional", "Amb els canvis del departament" — and the
+   * moment it is published is exactly when it stops being accurate. Nothing
+   * downstream reads it: the snapshot, the diff and the notifications are
+   * keyed on the version's id.
+   */
+  app.patch(
+    '/api/v1/planner/versions/:id',
+    { config: { roles: [...COORDINATION] } },
+    async (request: FastifyRequest<{ Params: { id: string } }>) => {
+      const context = await plannerContext(request)
+      const input = parseWith(versionSchema, request.body)
+      const version = await findVersion(context, request.params.id)
+
+      await context.db.scheduleVersion.update({
+        where: { id: version.id },
+        data: { name: input.name },
+      })
+
+      await audit(request, context, version.id, 'rename', { name: version.name }, input)
+      return versionDetail(context, version.id)
+    },
   )
 
   app.patch(
@@ -306,6 +339,7 @@ function registerSessionRoutes(app: FastifyInstance): void {
           dateFrom: range.from,
           dateTo: range.to,
           recurrence: input.recurrence,
+          topic: input.topic ?? null,
         },
       })
 
@@ -339,6 +373,8 @@ function registerSessionRoutes(app: FastifyInstance): void {
           ...(input.startTime ? { startTime: input.startTime } : {}),
           ...(input.endTime ? { endTime: input.endTime } : {}),
           ...(input.recurrence ? { recurrence: input.recurrence } : {}),
+          // `undefined` is "leave it"; `null` is "clear what was written".
+          ...(input.topic !== undefined ? { topic: input.topic } : {}),
         },
       })
 
@@ -645,6 +681,7 @@ async function versionDetail(context: PlannerContext, versionId: string) {
       building: row.space?.building ?? null,
       dateFrom: row.dateFrom.toISOString().slice(0, 10),
       dateTo: row.dateTo.toISOString().slice(0, 10),
+      topic: row.topic ?? null,
     })),
     violations: score.violations,
     penalties: score.penalties,

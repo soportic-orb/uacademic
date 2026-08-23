@@ -93,7 +93,10 @@
     "demoUser": "Demo user",
     "roleSelector": "Active role",
     "universitySelector": "University",
-    "universityHint": "Pick the university and you land in one of its centers; you can switch center from there."
+    "universityHint": "Pick the university and you land in one of its centers; you can switch center from there.",
+    "enterFullscreen": "Maximise the window",
+    "exitFullscreen": "Minimise the window",
+    "section": "Section {{position}}"
   },
   "theme": {
     "label": "Appearance",
@@ -1509,7 +1512,9 @@
         "blockingViolations": "There are unresolved conflicts: it cannot be published.",
         "notEditable": "This version can no longer be modified."
       },
-      "createFirst": "Create the first version"
+      "createFirst": "Create the first version",
+      "rename": "Rename the version",
+      "renamed": "Version renamed"
     },
     "compare": {
       "title": "Compare versions",
@@ -1576,7 +1581,9 @@
       "done": "Fully placed",
       "over": "{{hours}} h too many"
     },
-    "jumpedToWeek": "This group's term starts on {{date}} — taken you to that week."
+    "jumpedToWeek": "This group's term starts on {{date}} — taken you to that week.",
+    "topic": "Class topic",
+    "topicPlaceholder": "Topic…"
   },
   "calendar": {
     "title": "My calendar",
