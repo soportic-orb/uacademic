@@ -5,7 +5,8 @@ import { useTranslation } from 'react-i18next'
 
 import { Button } from '../../components/ui/button'
 import { useImageData } from '../../hooks/use-image'
-import { ApiRequestError, apiFetch } from '../../lib/api'
+import { useToast } from '../../hooks/use-toast'
+import { ApiRequestError, apiFetch, apiJson } from '../../lib/api'
 import { cn } from '../../lib/cn'
 import type { FieldConfig, ResourceConfig } from './resource-config'
 
@@ -34,7 +35,10 @@ export function ResourceForm({
   onSubmit: (values: Values, images: ImageIntent) => Promise<unknown>
 }) {
   const { t } = useTranslation()
+  const toast = useToast()
   const dialogRef = useRef<HTMLDivElement>(null)
+  /** Which creatable field, if any, is currently asking for a new option. */
+  const [creating, setCreating] = useState<string | null>(null)
   const [values, setValues] = useState<Values>(() => initialValues(resource.fields, row))
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [busy, setBusy] = useState(false)
@@ -64,6 +68,12 @@ export function ResourceForm({
     dialogRef.current?.querySelector<HTMLElement>('input, select')?.focus()
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [onClose])
+
+  /** Puts a just-created option in the dropdown without a page reload. */
+  const refreshOptions = async (field: FieldConfig) => {
+    const index = relationFields.findIndex((candidate) => candidate.name === field.name)
+    await relationQueries[index]?.refetch()
+  }
 
   const optionsFor = (field: FieldConfig) => {
     if (field.options)
@@ -161,23 +171,51 @@ export function ResourceForm({
                   </label>
 
                   {field.type === 'select' ? (
-                    <select
-                      id={inputId}
-                      required={field.required}
-                      value={String(values[field.name] ?? '')}
-                      onChange={(event) =>
-                        setValues({ ...values, [field.name]: event.target.value })
-                      }
-                      aria-invalid={Boolean(errorKey)}
-                      className="h-10 w-full rounded-control border border-border bg-surface px-2 text-sm text-text"
-                    >
-                      <option value="">{t('common.choose')}</option>
-                      {optionsFor(field).map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
+                    <>
+                      <select
+                        id={inputId}
+                        required={field.required}
+                        value={String(values[field.name] ?? '')}
+                        onChange={(event) => {
+                          if (event.target.value === NEW_OPTION) {
+                            setCreating(field.name)
+                            return
+                          }
+                          setValues({ ...values, [field.name]: event.target.value })
+                        }}
+                        aria-invalid={Boolean(errorKey)}
+                        className="h-10 w-full rounded-control border border-border bg-surface px-2 text-sm text-text"
+                      >
+                        <option value="">{t('common.choose')}</option>
+                        {optionsFor(field).map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                        {/*
+                          Last, and only on a list the center owns: the thing
+                          somebody is looking for when nothing in the dropdown
+                          is what their calendar actually has.
+                        */}
+                        {field.creatable ? (
+                          <option value={NEW_OPTION}>{t('admin.calendarTypes.newOption')}</option>
+                        ) : null}
+                      </select>
+
+                      {field.creatable && creating === field.name ? (
+                        <NewOption
+                          path={field.creatable.path}
+                          titleKey={field.creatable.titleKey}
+                          onCancel={() => setCreating(null)}
+                          onCreated={(option) => {
+                            setCreating(null)
+                            setValues({ ...values, [field.name]: option.id })
+                            toast.success('admin.calendarTypes.created')
+                            void refreshOptions(field)
+                          }}
+                        />
+                      ) : null}
+                    </>
                   ) : field.type === 'checkbox' ? (
                     <input
                       id={inputId}
@@ -444,6 +482,90 @@ function DateRangeField({
             </label>
           </>
         )}
+      </div>
+    </div>
+  )
+}
+
+/**
+ * The value the "create a new one" entry carries.
+ *
+ * A sentinel rather than an empty value, so choosing it is distinguishable
+ * from clearing the field, and unmistakable for a real key: no slug the server
+ * accepts contains a colon.
+ */
+const NEW_OPTION = '__new__'
+
+/**
+ * Adding an option to a center's own list, without leaving the form.
+ *
+ * Three names, because everything a person reads in this platform exists in
+ * three languages (R1) — but only the first is required: this is a detour in
+ * the middle of writing something else, and blocking it on a translation
+ * nobody has yet would send people back to hardcoded types.
+ */
+function NewOption({
+  path,
+  titleKey,
+  onCancel,
+  onCreated,
+}: {
+  path: string
+  titleKey: string
+  onCancel: () => void
+  onCreated: (option: { id: string; name: string }) => void
+}) {
+  const { t } = useTranslation()
+  const [names, setNames] = useState({ nameCa: '', nameEs: '', nameEn: '' })
+  const [error, setError] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+
+  const create = async () => {
+    setBusy(true)
+    setError(null)
+    try {
+      onCreated(await apiJson<{ id: string; name: string }>(`/api/v1/${path}`, 'POST', names))
+    } catch (failure) {
+      setError(
+        failure instanceof ApiRequestError
+          ? (failure.details[0]?.messageKey ?? failure.messageKey)
+          : 'errors.generic',
+      )
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="mt-2 space-y-2 rounded-control border border-border bg-surface-raised p-3">
+      <p className="text-sm font-medium text-text">{t(titleKey)}</p>
+
+      {(['nameCa', 'nameEs', 'nameEn'] as const).map((name) => (
+        <label key={name} className="block">
+          <span className="mb-1 block text-xs text-text-muted">
+            {t(`admin.calendarTypes.${name}`)}
+            {name === 'nameCa' ? <span aria-hidden="true"> *</span> : null}
+          </span>
+          <input
+            type="text"
+            maxLength={60}
+            value={names[name]}
+            onChange={(event) => setNames({ ...names, [name]: event.target.value })}
+            className="h-9 w-full rounded-control border border-border bg-surface px-2 text-sm text-text"
+          />
+        </label>
+      ))}
+
+      <p className="text-xs text-text-muted">{t('admin.calendarTypes.hint')}</p>
+      {error ? <p className="text-xs text-danger">{t(error)}</p> : null}
+
+      <div className="flex gap-2">
+        <Button type="button" onClick={() => void create()} disabled={busy || !names.nameCa.trim()}>
+          {t('admin.calendarTypes.add')}
+        </Button>
+        <Button type="button" variant="ghost" onClick={onCancel}>
+          {t('common.cancel')}
+        </Button>
       </div>
     </div>
   )

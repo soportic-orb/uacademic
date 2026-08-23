@@ -13,6 +13,7 @@ import { AppError } from './errors.js'
 export const TENANT_SCOPED_MODELS: readonly string[] = [
   'AcademicYear',
   'AcademicCalendarEntry',
+  'CalendarType',
   'UserCenterRole',
   'Degree',
   'Subject',

@@ -38,6 +38,7 @@ describe.skipIf(!hasDatabase)('the academic calendar', () => {
 
   afterAll(async () => {
     await prisma.academicCalendarEntry.deleteMany({ where: { nameCa: { startsWith: 'Prova ' } } })
+    await prisma.calendarType.deleteMany({ where: { centerId } })
     await app.close()
     await disconnectPrisma()
   })
@@ -98,6 +99,112 @@ describe.skipIf(!hasDatabase)('the academic calendar', () => {
 
     expect(response.statusCode).toBe(201)
     expect(response.json().type).toBe('vacation')
+  })
+
+  describe('the kinds of day a center may use', () => {
+    it('offers the ones the platform ships with', async () => {
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/v1/admin/calendar-types',
+        headers,
+      })
+
+      const items = response.json().items as { id: string; name: string; builtIn: boolean }[]
+      expect(items.map((item) => item.id)).toEqual(
+        expect.arrayContaining(['holiday', 'vacation', 'term_start', 'term_end']),
+      )
+      // Named in the reader's language, not as a key.
+      expect(items.find((item) => item.id === 'holiday')?.name).toBe('Festiu')
+    })
+
+    it('lets a center add its own, and then use it on an entry', async () => {
+      const created = await app.inject({
+        method: 'POST',
+        url: '/api/v1/admin/calendar-types',
+        headers,
+        payload: { nameCa: 'Simulacre d’incendi' },
+      })
+
+      expect(created.statusCode).toBe(201)
+      expect(created.json().id).toBe('simulacre_d_incendi')
+
+      const listed = await app.inject({
+        method: 'GET',
+        url: '/api/v1/admin/calendar-types',
+        headers,
+      })
+      expect(
+        (listed.json().items as { id: string }[]).some((item) => item.id === 'simulacre_d_incendi'),
+      ).toBe(true)
+
+      const entryResponse = await app.inject({
+        method: 'POST',
+        url: '/api/v1/admin/calendar-entries',
+        headers,
+        payload: entry({ type: 'simulacre_d_incendi', nameCa: 'Prova simulacre' }),
+      })
+
+      expect(entryResponse.statusCode).toBe(201)
+      expect(entryResponse.json().type).toBe('simulacre_d_incendi')
+    })
+
+    it('takes the Catalan name for the languages nobody filled in', async () => {
+      await app.inject({
+        method: 'POST',
+        url: '/api/v1/admin/calendar-types',
+        headers,
+        payload: { nameCa: 'Portes obertes', nameEn: 'Open day' },
+      })
+
+      const stored = await prisma.calendarType.findFirstOrThrow({
+        where: { centerId, key: 'portes_obertes' },
+      })
+      expect(stored.nameEs).toBe('Portes obertes')
+      expect(stored.nameEn).toBe('Open day')
+    })
+
+    it('refuses one that would shadow a type the platform already has', async () => {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/v1/admin/calendar-types',
+        headers,
+        payload: { nameCa: 'holiday' },
+      })
+
+      expect(response.statusCode).toBe(409)
+    })
+
+    it('refuses an entry whose type this center does not have', async () => {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/v1/admin/calendar-entries',
+        headers,
+        payload: entry({ type: 'inventat', nameCa: 'Prova inventada' }),
+      })
+
+      // An open column is not a licence to invent one: it has to be a type
+      // somebody can see in the list.
+      expect(response.statusCode).toBe(422)
+    })
+
+    it('keeps a center’s own types to itself (R2)', async () => {
+      await app.inject({
+        method: 'POST',
+        url: '/api/v1/admin/calendar-types',
+        headers,
+        payload: { nameCa: 'Nomes aqui' },
+      })
+
+      const foreign = await app.inject({
+        method: 'GET',
+        url: '/api/v1/admin/calendar-types',
+        headers: { 'x-mock-user': SEED.superadminEmail, 'x-center-id': FOREIGN.centerId },
+      })
+
+      expect((foreign.json().items as { id: string }[]).map((item) => item.id)).not.toContain(
+        'nomes_aqui',
+      )
+    })
   })
 
   it('refuses a range that ends before it starts', async () => {

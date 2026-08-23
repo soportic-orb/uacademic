@@ -67,18 +67,6 @@ enum AuthMethod {
   local
 }
 
-enum CalendarEntryType {
-  holiday
-  /// A closure that runs for weeks — Christmas, Easter, summer — as opposed to
-  /// a single public holiday, which is what `holiday` is for.
-  vacation
-  non_teaching
-  exam_period
-  term_start
-  term_end
-  event
-}
-
 enum ImportType {
   teachers
   subjects
@@ -452,6 +440,7 @@ model Center {
   aiInteractions         AiInteraction[]
   auditLog               AuditLog[]
   calendarEntries        AcademicCalendarEntry[]
+  calendarTypes          CalendarType[]
   importBatches          ImportBatch[]
 
   @@unique([universityId, code])
@@ -1743,11 +1732,37 @@ model AuthSession {
 // ───────────────────────────────────────────────────────────────────────────────
 
 /// Holidays and non-teaching periods. A range is stored once, with dateTo.
+/// A kind of day a center added for itself.
+///
+/// The platform ships seven — holiday, vacation, exam period… — and a center
+/// that needs "Simulacre d'incendi" or "Jornada de portes obertes" adds it
+/// here rather than asking for a release. What it adds is a label: the day's
+/// behaviour comes from `is_teaching_day`, not from its type.
+model CalendarType {
+  id        String   @id @default(uuid(7)) @db.Char(36)
+  centerId  String   @map("center_id") @db.Char(36)
+  /// Slugged from the Catalan name, unique in the center.
+  key       String   @db.VarChar(50)
+  nameCa    String   @map("name_ca") @db.VarChar(60)
+  nameEs    String   @map("name_es") @db.VarChar(60)
+  nameEn    String   @map("name_en") @db.VarChar(60)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  center Center @relation(fields: [centerId], references: [id], onDelete: Cascade)
+
+  @@unique([centerId, key])
+  @@map("calendar_types")
+}
+
 model AcademicCalendarEntry {
   id             String            @id @default(uuid(7)) @db.Char(36)
   centerId       String            @map("center_id") @db.Char(36)
   academicYearId String            @map("academic_year_id") @db.Char(36)
-  type           CalendarEntryType
+  /// One of the keys the platform ships with, or one of this center's own
+  /// (`calendar_types`). A key rather than a database enum, because what
+  /// counts as a kind of day differs between centers.
+  type           String            @db.VarChar(50)
   dateFrom       DateTime          @map("date_from") @db.Date
   dateTo         DateTime          @map("date_to") @db.Date
   nameCa         String            @map("name_ca") @db.VarChar(200)

@@ -193,6 +193,25 @@ describe('a form with a date range on it', () => {
         } as Response)
       }
 
+      // The kinds of day belong to the center, so they come from the server
+      // named rather than from a catalog in the browser.
+      if (url.includes('/calendar-types')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            items: [
+              { id: 'vacation', name: 'Període vacacional', builtIn: true },
+              { id: 'simulacre', name: 'Simulacre', builtIn: false },
+            ],
+            page: 1,
+            pageSize: 25,
+            total: 2,
+            totalPages: 1,
+          }),
+        } as Response)
+      }
+
       return Promise.resolve({
         ok: true,
         status: 200,
@@ -256,5 +275,121 @@ describe('a form with a date range on it', () => {
     const body = JSON.parse(String((posted()![1] as RequestInit).body)) as Record<string, unknown>
     expect(body.dateFrom).toBe('2027-04-01')
     expect(body.dateTo).toBe('2027-04-01')
+  })
+})
+
+/**
+ * What a kind of day is differs between centers — a fire drill, an open day —
+ * and the list used to be seven values compiled into the application.
+ */
+describe('the kinds of day in the academic calendar', () => {
+  const fetchMock = vi.fn()
+  let types: { id: string; name: string; builtIn: boolean }[] = []
+
+  beforeEach(() => {
+    vi.stubGlobal('fetch', fetchMock)
+    fetchMock.mockReset()
+    types = [{ id: 'simulacre', name: 'Simulacre d’incendi', builtIn: false }]
+    fetchMock.mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input)
+
+      if (url.includes('/calendar-types') && init?.method === 'POST') {
+        // Created, and from now on it is one of the center's types — which is
+        // what lets the dropdown hold it.
+        types.push({ id: 'portes_obertes', name: 'Portes obertes', builtIn: false })
+        return Promise.resolve({
+          ok: true,
+          status: 201,
+          json: async () => ({ id: 'portes_obertes', name: 'Portes obertes', builtIn: false }),
+        } as Response)
+      }
+
+      if (url.includes('/calendar-types')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            items: [...types],
+            page: 1,
+            pageSize: 25,
+            total: types.length,
+            totalPages: 1,
+          }),
+        } as Response)
+      }
+
+      if (url.includes('/academic-years')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            items: [{ id: 'year-1', name: '2026–2027' }],
+            page: 1,
+            pageSize: 25,
+            total: 1,
+            totalPages: 1,
+          }),
+        } as Response)
+      }
+
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          items: [
+            {
+              id: 'entry-1',
+              academicYearId: 'year-1',
+              type: 'simulacre',
+              dateFrom: '2027-04-01',
+              dateTo: '2027-04-01',
+              nameCa: 'Simulacre de primavera',
+              nameEs: 'Simulacro',
+              nameEn: 'Drill',
+              isTeachingDay: false,
+            },
+          ],
+          page: 1,
+          pageSize: 25,
+          total: 1,
+          totalPages: 1,
+        }),
+      } as Response)
+    })
+  })
+
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('names a center’s own type in the table, not its key', async () => {
+    render(wrap(<ResourcePage resource={resourceByKey('calendar-entries')!} />))
+
+    expect(
+      await within(await screen.findByRole('table')).findByText('Simulacre d’incendi'),
+    ).toBeInTheDocument()
+  })
+
+  it('creates a type from the dropdown and chooses it straight away', async () => {
+    const user = userEvent.setup()
+    render(wrap(<ResourcePage resource={resourceByKey('calendar-entries')!} />))
+
+    await user.click(await screen.findByRole('button', { name: 'Crea' }))
+    const dialog = screen.getByRole('dialog')
+    const types = within(dialog).getByLabelText(/^Tipus/) as HTMLSelectElement
+
+    await user.selectOptions(types, '__new__')
+
+    const panel = within(dialog).getByText('Tipus de dia').parentElement!
+    await user.type(within(panel).getByLabelText(/Nom \(català\)/), 'Portes obertes')
+    await user.click(within(panel).getByRole('button', { name: 'Crea el tipus' }))
+
+    await waitFor(() => expect(types.value).toBe('portes_obertes'))
+    const created = fetchMock.mock.calls.find(
+      ([url, init]) =>
+        String(url).includes('/calendar-types') &&
+        (init as RequestInit | undefined)?.method === 'POST',
+    )
+    expect(JSON.parse(String((created![1] as RequestInit).body))).toMatchObject({
+      nameCa: 'Portes obertes',
+    })
   })
 })

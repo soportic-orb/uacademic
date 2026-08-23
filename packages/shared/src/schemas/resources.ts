@@ -116,18 +116,69 @@ export const spaceInputSchema = z.object({
 })
 export type SpaceInput = z.infer<typeof spaceInputSchema>
 
+/**
+ * The kinds of day a center's calendar is made of, as the platform ships.
+ *
+ * Two of them mean something to the engine — `term_start` and `term_end`
+ * bracket the terms a group's classes run in — and the rest are labels for the
+ * days themselves. A center may add its own alongside these, which is why the
+ * column is a key rather than a database enum; what a center adds is a label,
+ * and it is `isTeachingDay` that decides whether the planner skips the day.
+ */
+export const BUILT_IN_CALENDAR_TYPES = [
+  'holiday',
+  'vacation',
+  'non_teaching',
+  'exam_period',
+  'term_start',
+  'term_end',
+  'event',
+] as const
+
+export type BuiltInCalendarType = (typeof BUILT_IN_CALENDAR_TYPES)[number]
+
+/**
+ * A type key: lower case, no accents, words joined by underscores.
+ *
+ * Slugged rather than free text so the value in the column reads the same as
+ * the seven the platform ships with, and so a center that writes "Simulacre
+ * d'incendi" twice does not end up with two types.
+ */
+export const calendarTypeKeySchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(50)
+  .regex(/^[a-z0-9]+(_[a-z0-9]+)*$/, 'validation.invalidCode')
+
+export function calendarTypeKeyFrom(name: string): string {
+  return name
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 50)
+}
+
+/** A type a center added for itself. The three names are what people read. */
+export const calendarTypeInputSchema = z.object({
+  nameCa: z.string().trim().min(1).max(60),
+  /**
+   * The other two languages are optional here, and only here: this is created
+   * inline from a dropdown, mid-way through writing something else. Left
+   * blank they take the Catalan name, which is better than blocking the person
+   * or than inventing a translation.
+   */
+  nameEs: z.string().trim().max(60).optional(),
+  nameEn: z.string().trim().max(60).optional(),
+})
+export type CalendarTypeInput = z.infer<typeof calendarTypeInputSchema>
+
 export const calendarEntryInputSchema = trilingualNameSchema
   .extend({
     academicYearId: uuidSchema,
-    type: z.enum([
-      'holiday',
-      'vacation',
-      'non_teaching',
-      'exam_period',
-      'term_start',
-      'term_end',
-      'event',
-    ]),
+    type: calendarTypeKeySchema,
     dateFrom: isoDateSchema,
     dateTo: isoDateSchema,
     isTeachingDay: z.boolean().default(false),

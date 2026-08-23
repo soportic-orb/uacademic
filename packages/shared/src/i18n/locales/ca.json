@@ -1167,6 +1167,19 @@
     "groups": "Grups",
     "spaces": "Espais",
     "calendar": "Calendari acadèmic",
+    "calendarTypes": {
+      "title": "Tipus de dia",
+      "newOption": "+ Crea un tipus nou…",
+      "nameCa": "Nom (català)",
+      "nameEs": "Nom (castellà)",
+      "nameEn": "Nom (anglès)",
+      "hint": "Si deixes en blanc el castellà o l’anglès, s’hi posarà el nom en català.",
+      "add": "Crea el tipus",
+      "created": "Tipus creat",
+      "errors": {
+        "duplicate": "Ja existeix un tipus amb aquest nom."
+      }
+    },
     "users": "Usuaris",
     "roles": "Rols",
     "create": "Crea",

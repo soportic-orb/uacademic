@@ -12,10 +12,19 @@ export interface ColumnConfig {
   sortable?: boolean
   align?: 'left' | 'right'
   /** `enum` looks the value up in the catalog under `enumPrefix`. */
-  render?: 'text' | 'enum' | 'date' | 'number' | 'boolean' | 'entraConsent' | 'nameWithCode'
+  render?:
+    'text' | 'enum' | 'date' | 'number' | 'boolean' | 'entraConsent' | 'nameWithCode' | 'lookup'
   /** `nameWithCode` only: the column holding the short code, shown in brackets. */
   codeKey?: string
   enumPrefix?: string
+  /**
+   * `lookup` only: where the labels come from.
+   *
+   * For a column whose values are not a fixed catalog — a kind of calendar day,
+   * which a center may add to — so the table names what the form offered
+   * rather than showing the raw key.
+   */
+  optionsFrom?: { path: string; labelField: string }
 }
 
 export interface FieldOption {
@@ -45,6 +54,15 @@ export interface FieldConfig {
   options?: FieldOption[]
   /** Options loaded from another resource (degrees, academic years…). */
   optionsFrom?: { path: string; labelField: string }
+  /**
+   * Lets the person add an option without leaving the form.
+   *
+   * For lists that belong to the center rather than to the platform: the
+   * dropdown carries a "create a new one" entry, and what they type becomes an
+   * option they can then choose. `path` is posted to, and answers with the new
+   * option.
+   */
+  creatable?: { path: string; titleKey: string }
   step?: string
   full?: boolean
 }
@@ -52,7 +70,9 @@ export interface FieldConfig {
 export interface FilterConfig {
   name: string
   labelKey: string
-  options: FieldOption[]
+  options?: FieldOption[]
+  /** The same live list the form offers, for a filter that is not a catalog. */
+  optionsFrom?: { path: string; labelField: string }
 }
 
 export interface ResourceConfig {
@@ -66,6 +86,9 @@ export interface ResourceConfig {
   /** Column used in the delete confirmation. */
   labelField: string
 }
+
+/** Built-in kinds of day and the center's own, already named by the server. */
+const CALENDAR_TYPES = { path: 'admin/calendar-types', labelField: 'name' }
 
 const enumOptions = (prefix: string, values: readonly string[]): FieldOption[] =>
   values.map((value) => ({ value, labelKey: `${prefix}.${value}` }))
@@ -471,27 +494,13 @@ export const ADMIN_RESOURCES: ResourceConfig[] = [
       {
         key: 'type',
         labelKey: 'admin.fields.type',
-        render: 'enum',
-        enumPrefix: 'calendarType',
+        render: 'lookup',
+        optionsFrom: CALENDAR_TYPES,
         sortable: true,
       },
       { key: 'isTeachingDay', labelKey: 'admin.fields.isTeachingDay', render: 'boolean' },
     ],
-    filters: [
-      {
-        name: 'type',
-        labelKey: 'admin.fields.type',
-        options: enumOptions('calendarType', [
-          'holiday',
-          'vacation',
-          'non_teaching',
-          'exam_period',
-          'term_start',
-          'term_end',
-          'event',
-        ]),
-      },
-    ],
+    filters: [{ name: 'type', labelKey: 'admin.fields.type', optionsFrom: CALENDAR_TYPES }],
     fields: [
       {
         name: 'academicYearId',
@@ -506,15 +515,10 @@ export const ADMIN_RESOURCES: ResourceConfig[] = [
         labelKey: 'admin.fields.type',
         type: 'select',
         required: true,
-        options: enumOptions('calendarType', [
-          'holiday',
-          'vacation',
-          'non_teaching',
-          'exam_period',
-          'term_start',
-          'term_end',
-          'event',
-        ]),
+        optionsFrom: CALENDAR_TYPES,
+        // What counts as a kind of day differs between centers, so the list is
+        // the center's own and can be added to from here.
+        creatable: { path: 'admin/calendar-types', titleKey: 'admin.calendarTypes.title' },
       },
       { name: 'isTeachingDay', labelKey: 'admin.fields.isTeachingDay', type: 'checkbox' },
       {

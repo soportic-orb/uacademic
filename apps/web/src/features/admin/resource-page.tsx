@@ -1,6 +1,6 @@
 import type { ListResult } from '@uacademic/shared'
 import { formatDate, formatNumber } from '@uacademic/shared'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowDown, ArrowUp, Pencil, Plus, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -38,6 +38,39 @@ export function ResourcePage({ resource }: { resource: ResourceConfig }) {
   const [filters, setFilters] = useState<Record<string, string>>({})
   const [sort, setSort] = useState<{ column: string; order: 'asc' | 'desc' } | null>(null)
   const [editing, setEditing] = useState<Row | 'new' | null>(null)
+
+  /**
+   * Lists that belong to the center rather than to the platform — the kinds of
+   * day a calendar is made of, which a center may add to. The table and the
+   * filter read the same list the form offers, so a type somebody created is
+   * named everywhere rather than showing as its raw key.
+   */
+  const lookupPaths = [
+    ...new Set(
+      [
+        ...resource.columns.map((column) => column.optionsFrom),
+        ...(resource.filters ?? []).map((filter) => filter.optionsFrom),
+      ]
+        .filter((source): source is { path: string; labelField: string } => Boolean(source))
+        .map((source) => source.path),
+    ),
+  ]
+
+  const lookupQueries = useQueries({
+    queries: lookupPaths.map((path) => ({
+      queryKey: ['admin-options', path],
+      queryFn: () => apiFetch<ListResult<Record<string, unknown>>>(`/api/v1/${path}?pageSize=100`),
+      staleTime: 60_000,
+    })),
+  })
+
+  const lookupOptions = (source: { path: string; labelField: string }) => {
+    const rows = lookupQueries[lookupPaths.indexOf(source.path)]?.data?.items ?? []
+    return rows.map((item) => ({
+      value: String(item.id),
+      label: String(item[source.labelField] ?? item.id),
+    }))
+  }
 
   const queryString = useMemo(() => {
     const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) })
@@ -163,6 +196,15 @@ export function ResourcePage({ resource }: { resource: ResourceConfig }) {
     switch (column.render) {
       case 'enum':
         return t(`${column.enumPrefix}.${String(value)}`)
+      case 'lookup': {
+        if (!column.optionsFrom) return String(value)
+        const match = lookupOptions(column.optionsFrom).find(
+          (option) => option.value === String(value),
+        )
+        // Until the list arrives — and for a value it does not contain — the
+        // key itself is the honest thing to show.
+        return match?.label ?? String(value)
+      }
       case 'date':
         return formatDate(locale, new Date(String(value)))
       case 'number':
@@ -216,11 +258,17 @@ export function ResourcePage({ resource }: { resource: ResourceConfig }) {
                   className="h-10 rounded-control border border-border bg-surface px-2 text-sm text-text"
                 >
                   <option value="">{t('common.all')}</option>
-                  {filter.options.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {t(option.labelKey)}
-                    </option>
-                  ))}
+                  {filter.optionsFrom
+                    ? lookupOptions(filter.optionsFrom).map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))
+                    : (filter.options ?? []).map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {t(option.labelKey)}
+                        </option>
+                      ))}
                 </select>
               </label>
             ))}

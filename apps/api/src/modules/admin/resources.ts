@@ -11,6 +11,7 @@ import {
 } from '@uacademic/shared'
 import type { FastifyInstance } from 'fastify'
 
+import { calendarTypeOptions, registerCalendarTypeRoutes } from './calendar-types.js'
 import { type CrudResource, registerCrudRoutes } from '../../lib/crud.js'
 import { AppError } from '../../lib/errors.js'
 
@@ -35,6 +36,8 @@ const names = (row: Record<string, unknown>) => ({
  * returns the teaching plan; `/api/v1/admin/subjects` edits it).
  */
 export function registerAdminResources(app: FastifyInstance): void {
+  registerCalendarTypeRoutes(app)
+
   registerCrudRoutes(app, {
     path: 'admin/universities',
     model: 'university',
@@ -258,10 +261,21 @@ export function registerAdminResources(app: FastifyInstance): void {
       isTeachingDay: Boolean(row.isTeachingDay),
       ...names(row),
     }),
-    beforeWrite: (input) => ({
-      ...input,
-      ...(input.dateFrom ? { dateFrom: new Date(input.dateFrom) } : {}),
-      ...(input.dateTo ? { dateTo: new Date(input.dateTo) } : {}),
-    }),
+    beforeWrite: async (input, context) => {
+      // The type is an open key now, so a typo would quietly invent a type
+      // nobody can see in the list. It has to be one this center actually has.
+      if (input.type) {
+        const known = await calendarTypeOptions(context.request)
+        if (!known.some((option) => option.id === input.type)) {
+          throw AppError.validation([{ path: 'type', messageKey: 'validation.required' }])
+        }
+      }
+
+      return {
+        ...input,
+        ...(input.dateFrom ? { dateFrom: new Date(input.dateFrom) } : {}),
+        ...(input.dateTo ? { dateTo: new Date(input.dateTo) } : {}),
+      }
+    },
   } satisfies CrudResource<typeof calendarEntryInputSchema>)
 }

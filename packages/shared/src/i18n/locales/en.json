@@ -1167,6 +1167,19 @@
     "groups": "Groups",
     "spaces": "Spaces",
     "calendar": "Academic calendar",
+    "calendarTypes": {
+      "title": "Kinds of day",
+      "newOption": "+ Create a new type…",
+      "nameCa": "Name (Catalan)",
+      "nameEs": "Name (Spanish)",
+      "nameEn": "Name (English)",
+      "hint": "Leave Spanish or English blank and the Catalan name is used.",
+      "add": "Create the type",
+      "created": "Type created",
+      "errors": {
+        "duplicate": "A type with this name already exists."
+      }
+    },
     "users": "Users",
     "roles": "Roles",
     "create": "Create",

@@ -67,7 +67,13 @@ export interface CrudResource<Input extends z.ZodType> {
   /** Business rules that a Zod schema cannot express (cross-table checks). */
   beforeWrite?: (
     input: z.infer<Input>,
-    context: { client: PrismaClient; centerId: string | null; id?: string },
+    context: {
+      client: PrismaClient
+      centerId: string | null
+      id?: string
+      /** For rules that need the caller — their center, their language. */
+      request: FastifyRequest
+    },
   ) => Promise<Record<string, unknown>> | Record<string, unknown>
 }
 
@@ -184,7 +190,7 @@ export function registerCrudRoutes<Input extends z.ZodType>(
     const input = parseWith(resource.inputSchema, request.body)
 
     const data = resource.beforeWrite
-      ? await resource.beforeWrite(input, { client, centerId })
+      ? await resource.beforeWrite(input, { client, centerId, request })
       : (input as Record<string, unknown>)
 
     const row = await runWrite(() => delegate(client, resource.model).create({ data }))
@@ -218,7 +224,7 @@ export function registerCrudRoutes<Input extends z.ZodType>(
     const input = parseWith(schema.partial(), request.body)
 
     const data = resource.beforeWrite
-      ? await resource.beforeWrite(input as z.infer<Input>, { client, centerId, id })
+      ? await resource.beforeWrite(input as z.infer<Input>, { client, centerId, id, request })
       : (input as Record<string, unknown>)
 
     const after = await runWrite(() => model.update({ where: { id }, data }))
