@@ -1621,7 +1621,7 @@
       "subject": "Assignatura",
       "allSubjects": "Totes les assignatures",
       "empty": "Aquesta assignatura encara no té cap grup.",
-      "perWeek": "{{hours}} h/setmana",
+      "perYear": "{{hours}} h al curs",
       "remaining": "Falten {{hours}} h per planificar",
       "done": "Planificat",
       "over": "{{hours}} h de més"

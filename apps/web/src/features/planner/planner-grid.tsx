@@ -1413,8 +1413,8 @@ function GroupsColumn({
                         {`${item.subjectCode} ${item.groupCode}`}
                       </span>
                       <span className="tabular shrink-0 text-xs text-text-muted">
-                        {t('planner.groups.perWeek', {
-                          hours: formatHours(locale, minutesToHours(item.weeklyTargetMinutes)),
+                        {t('planner.groups.perYear', {
+                          hours: formatHours(locale, minutesToHours(item.targetMinutes)),
                         })}
                       </span>
                     </span>

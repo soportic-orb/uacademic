@@ -1,49 +1,51 @@
 /**
  * How much of a group is still to be placed on the timetable.
  *
- * A group carries the hours it needs over the whole year; the planner works on
- * one typical week. Turning one into the other is the arithmetic the side
- * column lives on, and getting it wrong means a coordinator either stops too
- * early or keeps placing classes nobody asked for — so it lives here, with
- * tests, rather than inside a component (R7).
+ * A group carries the hours it needs across the year, and that is what this
+ * counts down: classes are placed one date at a time, all the way to the end
+ * of the term, so "still to place" is the year's work minus what is already
+ * on the calendar. It used to divide the year into a typical week, which was
+ * the arithmetic of a planner that repeated a week — it no longer does, and a
+ * countdown against one week reads as finished while most of the year is
+ * empty.
+ *
+ * It lives here, with tests, rather than inside a component (R7): getting it
+ * wrong means a coordinator either stops too early or keeps placing classes
+ * nobody asked for.
  */
 export interface GroupPlanInput {
   /** Teaching hours the group needs across the year. */
   plannedHours: number
-  /** Teaching weeks in the year, from the center's parameters. */
-  teachingWeeks: number
-  /** The center's default session length, in minutes. */
+  /** How long one class of this group lasts, in minutes. */
   sessionMinutes: number
-  /** Minutes already placed for this group in the week being planned. */
+  /** Minutes already placed for this group, across the whole year. */
   placedMinutes: number
 }
 
 export interface GroupPlanState {
-  /** What one week of this group ought to hold. */
-  weeklyTargetMinutes: number
+  /** The year's teaching for this group, in minutes. */
+  targetMinutes: number
   placedMinutes: number
   /** Still to place. Never negative — see `overplannedMinutes`. */
   remainingMinutes: number
   /** Placed beyond the target, which is a decision rather than an error. */
   overplannedMinutes: number
-  /** Whole sessions still to place, at the center's default length. */
+  /** Whole classes still to place, at this group's length. */
   sessionsRemaining: number
   complete: boolean
 }
 
 export function groupPlanState(input: GroupPlanInput): GroupPlanState {
-  const weeks = Math.max(1, input.teachingWeeks)
   const session = Math.max(1, input.sessionMinutes)
 
-  // Rounded to the minute: a group of 45 annual hours over 30 weeks is 90
-  // minutes a week exactly, and one of 40 is 80. Carrying the fraction would
+  // Rounded to the minute: hours are decimal, and carrying the fraction would
   // show "1 h 20 m and 0.000001 left to place".
-  const weeklyTargetMinutes = Math.round((input.plannedHours / weeks) * 60)
+  const targetMinutes = Math.round(input.plannedHours * 60)
   const placedMinutes = Math.max(0, input.placedMinutes)
-  const difference = weeklyTargetMinutes - placedMinutes
+  const difference = targetMinutes - placedMinutes
 
   return {
-    weeklyTargetMinutes,
+    targetMinutes,
     placedMinutes,
     remainingMinutes: Math.max(0, difference),
     overplannedMinutes: Math.max(0, -difference),

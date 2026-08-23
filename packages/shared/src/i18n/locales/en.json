@@ -1621,7 +1621,7 @@
       "subject": "Subject",
       "allSubjects": "All subjects",
       "empty": "This subject has no groups yet.",
-      "perWeek": "{{hours}} h/week",
+      "perYear": "{{hours}} h this year",
       "remaining": "{{hours}} h left to place",
       "done": "Fully placed",
       "over": "{{hours}} h too many"

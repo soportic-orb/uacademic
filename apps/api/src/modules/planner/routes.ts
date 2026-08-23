@@ -788,7 +788,6 @@ async function versionDetail(context: PlannerContext, versionId: string) {
   })
 
   const requirements = await sessionRequirements(context)
-  const pending = Math.max(0, requirements.length - sessions.length)
   const score = scoreSchedule(sessions, context.schedule)
 
   // Every group of the year, so the side column can be about the subject
@@ -798,6 +797,12 @@ async function versionDetail(context: PlannerContext, versionId: string) {
     select: { id: true, plannedHours: true, sessionMinutes: true },
     orderBy: { code: 'asc' },
   })
+
+  const plans = groupPlans(context, requirements, groups, sessions)
+  // Classes still to place across the year, which is what each group's own
+  // countdown adds up to. The status bar and the side column therefore cannot
+  // disagree about how much work is left.
+  const pending = plans.reduce((total, plan) => total + plan.sessionsRemaining, 0)
 
   return {
     id: version.id,
@@ -842,7 +847,7 @@ async function versionDetail(context: PlannerContext, versionId: string) {
     penalties: score.penalties,
     summary: summarizePlan(sessions, pending, context.schedule),
     pending: pendingGroups(context, requirements, sessions),
-    groups: groupPlans(context, requirements, groups, sessions),
+    groups: plans,
     /*
       The dates this year runs between.
 
@@ -880,7 +885,7 @@ function groupPlans(
   groups: readonly { id: string; plannedHours: unknown; sessionMinutes: number | null }[],
   sessions: readonly PlannedSession[],
 ) {
-  const { teachingWeeks, defaultSessionMinutes } = context.settings.schedule
+  const { defaultSessionMinutes } = context.settings.schedule
 
   const placedByGroup = new Map<string, number>()
   for (const session of sessions) {
@@ -905,8 +910,9 @@ function groupPlans(
 
     const state = groupPlanState({
       plannedHours,
-      teachingWeeks,
       sessionMinutes: row.sessionMinutes ?? requirement?.durationMinutes ?? defaultSessionMinutes,
+      // Everything placed for this group in this version, which is the whole
+      // year: classes are placed a date at a time, not a week at a time.
       placedMinutes: placedByGroup.get(row.id) ?? 0,
     })
 
@@ -918,7 +924,7 @@ function groupPlans(
       subjectName: resource?.subjectName ?? '',
       plannedHours,
       durationMinutes: row.sessionMinutes ?? requirement?.durationMinutes ?? defaultSessionMinutes,
-      weeklyTargetMinutes: state.weeklyTargetMinutes,
+      targetMinutes: state.targetMinutes,
       placedMinutes: state.placedMinutes,
       remainingMinutes: state.remainingMinutes,
       overplannedMinutes: state.overplannedMinutes,

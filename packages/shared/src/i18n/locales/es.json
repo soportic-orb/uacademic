@@ -1621,7 +1621,7 @@
       "subject": "Asignatura",
       "allSubjects": "Todas las asignaturas",
       "empty": "Esta asignatura todavía no tiene ningún grupo.",
-      "perWeek": "{{hours}} h/semana",
+      "perYear": "{{hours}} h del curso",
       "remaining": "Faltan {{hours}} h por planificar",
       "done": "Planificado",
       "over": "{{hours}} h de más"

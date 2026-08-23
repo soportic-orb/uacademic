@@ -119,6 +119,29 @@ describe.skipIf(!hasDatabase)('the planner', () => {
       expect(response.statusCode).toBe(403)
     })
 
+    it('counts what is left to place against the year, not against a week', async () => {
+      const version = await createVersion('year countdown')
+      const group = await prisma.group.findFirstOrThrow({
+        where: { centerId, plannedHours: { gt: 0 } },
+      })
+
+      const plan = (version.groups as { groupId: string; targetMinutes: number }[]).find(
+        (entry) => entry.groupId === group.id,
+      )
+
+      // The whole year's teaching, not a week of it.
+      expect(plan?.targetMinutes).toBe(Math.round(Number(group.plannedHours) * 60))
+    })
+
+    it('adds the groups’ own countdowns up into the number on the status bar', async () => {
+      const version = await createVersion('pending total')
+      const groups = version.groups as { sessionsRemaining: number }[]
+
+      expect(version.summary.pending).toBe(
+        groups.reduce((total, entry) => total + entry.sessionsRemaining, 0),
+      )
+    })
+
     it('reports the week with its conflicts, penalties and pending groups', async () => {
       const version = await createVersion('summary', publishedVersionId)
 
@@ -138,15 +161,43 @@ describe.skipIf(!hasDatabase)('the planner', () => {
       })
 
       expect(version.groups.length).toBe(total)
+
       // A group somebody has already finished is still listed, said to be
-      // done: "have I done this one?" is what the column is for.
-      expect(version.groups.some((group: { complete: boolean }) => group.complete)).toBe(true)
+      // done: "have I done this one?" is what the column is for. Finished
+      // means the year's hours are placed, so this makes one so.
+      const placed = (version.groups as { groupId: string; placedMinutes: number }[]).find(
+        (group) => group.placedMinutes > 0,
+      )
+      const group = await prisma.group.findFirstOrThrow({ where: { id: placed!.groupId } })
+
+      try {
+        await prisma.group.update({
+          where: { id: group.id },
+          data: { plannedHours: placed!.placedMinutes / 60 },
+        })
+
+        const reread = await app.inject({
+          method: 'GET',
+          url: `/api/v1/planner/versions/${version.id}`,
+          headers: asCoordinator(),
+        })
+
+        const done = (reread.json().groups as { groupId: string; complete: boolean }[]).find(
+          (entry) => entry.groupId === group.id,
+        )
+        expect(done?.complete).toBe(true)
+      } finally {
+        await prisma.group.update({
+          where: { id: group.id },
+          data: { plannedHours: group.plannedHours },
+        })
+      }
     })
 
     it('counts down the hours of a group as its classes are placed', async () => {
       const version = await createVersion('countdown')
       const target = version.groups.find(
-        (group: { weeklyTargetMinutes: number }) => group.weeklyTargetMinutes > 0,
+        (group: { targetMinutes: number }) => group.targetMinutes > 0,
       )
       expect(target).toBeDefined()
 

@@ -56,7 +56,8 @@ export interface GroupPlanDto {
   /** Teaching hours across the year. */
   plannedHours: number
   durationMinutes: number
-  weeklyTargetMinutes: number
+  /** The year's teaching for this group, in minutes. */
+  targetMinutes: number
   placedMinutes: number
   remainingMinutes: number
   overplannedMinutes: number
