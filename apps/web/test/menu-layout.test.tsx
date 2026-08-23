@@ -193,6 +193,36 @@ describe('arranging your own menu', () => {
     expect(screen.getByDisplayValue('Segon')).toBeInTheDocument()
   })
 
+  it('keeps the draft when something above it re-renders', async () => {
+    /*
+      The card above hands the editor a fresh array on every render, and a
+      save, a refetch or a toast is enough to cause one. Re-seeding on those
+      arrays put the stored value back over whatever was being arranged: a
+      separator added a moment earlier vanished, and Save went back to
+      disabled because the draft suddenly matched what was saved.
+    */
+    const { rerender } = view(<MenuCard roles={TEACHER} />)
+
+    await userEvent.type(await screen.findByLabelText('Etiqueta del separador'), 'Docència')
+    await userEvent.click(screen.getByRole('button', { name: 'Afegeix un separador' }))
+    expect(screen.getByDisplayValue('Docència')).toBeInTheDocument()
+
+    // Anything at all above the editor rendering again.
+    rerender(
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+      >
+        <MemoryRouter>
+          <MenuCard roles={[...TEACHER]} />
+          <Toaster />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+
+    expect(await screen.findByDisplayValue('Docència')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Desa' })).toBeEnabled()
+  })
+
   it('writes one request for a whole label, not one per keystroke', async () => {
     view(<MenuCard roles={TEACHER} />)
 

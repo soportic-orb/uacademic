@@ -19,7 +19,7 @@ import {
   renameSeparator,
 } from '@uacademic/shared'
 import { ArrowDown, ArrowUp, Minus, Plus, RotateCcw, Trash2 } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { navItemsForRoles } from '../../app/navigation'
@@ -39,6 +39,25 @@ import {
 
 const CONTROL = 'h-9 w-full rounded-control border border-border bg-surface px-2 text-sm text-text'
 
+/**
+ * Stable across renders, both of them.
+ *
+ * `navItemsForRoles` filters a constant, so it answers the same list every
+ * time — but a *new* array every time, and the editor below memoises on what
+ * it is handed. A fresh array on every render is a fresh memo on every render.
+ */
+const EMPTY: MenuEntry[] = []
+const ROLE_ITEMS = new Map<Role, ReturnType<typeof navItemsForRoles>>()
+
+function roleItems(role: Role) {
+  const cached = ROLE_ITEMS.get(role)
+  if (cached) return cached
+
+  const items = navItemsForRoles([role])
+  ROLE_ITEMS.set(role, items)
+  return items
+}
+
 /** Your own menu. */
 export function MenuCard({ roles }: { roles: readonly Role[] }) {
   const { t } = useTranslation()
@@ -46,7 +65,7 @@ export function MenuCard({ roles }: { roles: readonly Role[] }) {
   const query = useMenuLayout()
   const save = useSaveMenuLayout()
 
-  const items = navItemsForRoles(roles)
+  const items = useMemo(() => navItemsForRoles(roles), [roles])
 
   if (query.isPending) return <CardSkeleton />
   if (query.isError) return <ErrorState onRetry={() => void query.refetch()} />
@@ -116,10 +135,10 @@ export function MenuDefaultsCard() {
   if (query.isError) return <ErrorState onRetry={() => void query.refetch()} />
 
   const defaults = query.data.defaults
-  const entries = defaults[role] ?? []
+  const entries = defaults[role] ?? EMPTY
   // The menu of somebody who holds exactly this role: what is being arranged
   // is their starting point, not the administrator's own.
-  const items = navItemsForRoles([role])
+  const items = roleItems(role)
 
   const persist = (next: MenuEntry[]) =>
     save.mutate(
@@ -213,20 +232,27 @@ function Arranger({
     order.
   */
   const settled = useMemo(() => orderMenuEntries(items, stored), [items, stored])
+  const settledKey = JSON.stringify(settled)
+
   const [entries, setEntries] = useState<MenuEntry[]>(settled)
 
   /*
     Re-seed when the stored value really changes — a save landing, or the
-    administrator switching to another role's default.
+    administrator switching to another role's default — and at no other time.
 
-    Keyed on the content rather than on the array, because `settled` is a new
-    array on every render: depending on it directly would throw the draft away
-    between one keystroke and the next.
+    Compared by content, and adjusted during the render rather than in an
+    effect. Both matter. `items` and `stored` are fresh arrays on every render
+    of the card above, so an effect keyed on them re-ran whenever anything at
+    all re-rendered the parent — a refetch, a toast, the save itself — and put
+    the stored value back over whatever was being arranged. Separators added a
+    moment earlier disappeared, and the Save button went back to disabled
+    because the draft suddenly matched what was saved.
   */
-  const settledKey = JSON.stringify(settled)
-  useEffect(() => {
-    setEntries(orderMenuEntries(items, stored))
-  }, [settledKey, items, stored])
+  const [seededKey, setSeededKey] = useState(settledKey)
+  if (seededKey !== settledKey) {
+    setSeededKey(settledKey)
+    setEntries(settled)
+  }
 
   const dirty = JSON.stringify(entries) !== settledKey
   const onChange = setEntries
