@@ -103,6 +103,21 @@ function useCapacityInvalidation() {
   }
 }
 
+/** The contract itself: category, dedication, hours and the note beside them. */
+export function useSaveContract(teacherId: string) {
+  const invalidate = useCapacityInvalidation()
+
+  return useMutation({
+    mutationFn: (values: {
+      category?: string
+      dedication?: string
+      contractedHours?: number
+      notes?: string | null
+    }) => apiJson<TeacherProfileDto>(`/api/v1/teachers/${teacherId}`, 'PATCH', values),
+    onSuccess: invalidate,
+  })
+}
+
 export function useSaveReduction(teacherId: string) {
   const invalidate = useCapacityInvalidation()
 

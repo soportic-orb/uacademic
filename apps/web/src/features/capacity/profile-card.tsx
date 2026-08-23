@@ -20,7 +20,21 @@ import { useToast } from '../../hooks/use-toast'
 import { currentLocale } from '../../i18n'
 import { ApiRequestError } from '../../lib/api'
 import { useSubjects } from '../../hooks/use-api'
-import { useDeleteReduction, useSaveReduction, useSaveSkills } from './queries'
+import { useDeleteReduction, useSaveContract, useSaveReduction, useSaveSkills } from './queries'
+
+const CATEGORIES = [
+  'full_professor',
+  'associate_professor',
+  'assistant_professor',
+  'lecturer',
+  'adjunct',
+  'visiting',
+  'external',
+] as const
+
+const DEDICATIONS = ['full_time', 'part_time', 'hourly'] as const
+
+const CONTROL = 'h-10 w-full rounded-control border border-border bg-surface px-2 text-sm text-text'
 
 export function ProfileCard({
   teacherId,
@@ -30,13 +44,14 @@ export function ProfileCard({
 }: {
   teacherId: string
   profile: TeacherProfileDto
-  /** Center admins own the contract side: reductions and their approval. */
+  /** Approving a reduction: the administration's, because it changes a contract. */
   canManage: boolean
-  /** Coordinators decide who can teach what, so they edit the skills. */
+  /** Coordination: the contract itself, the reductions and who can teach what. */
   canManageSkills: boolean
 }) {
   const { t } = useTranslation()
   const locale = currentLocale()
+  const [editing, setEditing] = useState(false)
 
   const facts: { label: string; value: string }[] = [
     { label: t('teachers.category'), value: t(`teacherCategory.${profile.category}`) },
@@ -77,9 +92,27 @@ export function ProfileCard({
               size="md"
             />
           }
-          action={<LoadBadge status={profile.status} ratioPercent={profile.ratioPercent} />}
+          action={
+            <span className="flex items-center gap-2">
+              <LoadBadge status={profile.status} ratioPercent={profile.ratioPercent} />
+              {canManageSkills ? (
+                <Button variant="secondary" onClick={() => setEditing((current) => !current)}>
+                  <Pencil className="size-4" aria-hidden="true" />
+                  {t('teachers.contractEdit')}
+                </Button>
+              ) : null}
+            </span>
+          }
         />
         <CardBody>
+          {editing ? (
+            <ContractForm
+              teacherId={teacherId}
+              profile={profile}
+              onDone={() => setEditing(false)}
+            />
+          ) : null}
+
           <dl className="grid gap-x-8 gap-y-3 sm:grid-cols-2 lg:grid-cols-4">
             {facts.map((fact) => (
               <div key={fact.label}>
@@ -97,20 +130,151 @@ export function ProfileCard({
         </CardBody>
       </Card>
 
-      <ReductionsCard teacherId={teacherId} profile={profile} canManage={canManage} />
+      <ReductionsCard
+        teacherId={teacherId}
+        profile={profile}
+        canApprove={canManage}
+        canWrite={canManageSkills}
+      />
       <SkillsCard teacherId={teacherId} profile={profile} canManage={canManageSkills} />
     </div>
+  )
+}
+
+/**
+ * The contract, edited where it is read.
+ *
+ * Coordination writes this, not only the administration: they are the side
+ * that discovers a colleague is on half a contract when the hours refuse to
+ * fit, and sending that round to be typed in elsewhere is asking them to wait
+ * for their own figures. What it may *not* do is approve a reduction — see
+ * the card below.
+ */
+function ContractForm({
+  teacherId,
+  profile,
+  onDone,
+}: {
+  teacherId: string
+  profile: TeacherProfileDto
+  onDone: () => void
+}) {
+  const { t } = useTranslation()
+  const toast = useToast()
+  const save = useSaveContract(teacherId)
+
+  const [form, setForm] = useState({
+    category: profile.category,
+    dedication: profile.dedication,
+    contractedHours: String(profile.contractedHours),
+    notes: profile.notes ?? '',
+  })
+
+  return (
+    <form
+      className="mb-6 grid gap-3 border-b border-border pb-6 sm:grid-cols-2 lg:grid-cols-4"
+      onSubmit={(event) => {
+        event.preventDefault()
+        save.mutate(
+          {
+            category: form.category,
+            dedication: form.dedication,
+            contractedHours: Number(form.contractedHours),
+            notes: form.notes.trim() || null,
+          },
+          {
+            onSuccess: () => {
+              toast.success('teachers.contractSaved')
+              onDone()
+            },
+            onError: (error) => {
+              if (error instanceof ApiRequestError)
+                toast.raw({ variant: 'error', message: error.localizedMessage })
+              else toast.error('errors.generic')
+            },
+          },
+        )
+      }}
+    >
+      <label className="text-sm">
+        <span className="mb-1 block text-xs text-text-muted">{t('teachers.category')}</span>
+        <select
+          value={form.category}
+          onChange={(event) => setForm({ ...form, category: event.target.value })}
+          className={CONTROL}
+        >
+          {CATEGORIES.map((option) => (
+            <option key={option} value={option}>
+              {t(`teacherCategory.${option}`)}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label className="text-sm">
+        <span className="mb-1 block text-xs text-text-muted">{t('teachers.dedication')}</span>
+        <select
+          value={form.dedication}
+          onChange={(event) => setForm({ ...form, dedication: event.target.value })}
+          className={CONTROL}
+        >
+          {DEDICATIONS.map((option) => (
+            <option key={option} value={option}>
+              {t(`dedication.${option}`)}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label className="text-sm">
+        <span className="mb-1 block text-xs text-text-muted">{t('load.contracted')}</span>
+        <input
+          type="number"
+          min={0}
+          max={2000}
+          step="0.5"
+          required
+          value={form.contractedHours}
+          onChange={(event) => setForm({ ...form, contractedHours: event.target.value })}
+          className={`${CONTROL} tabular-nums`}
+        />
+      </label>
+
+      <label className="text-sm lg:col-span-4">
+        <span className="mb-1 block text-xs text-text-muted">{t('common.note')}</span>
+        <input
+          type="text"
+          maxLength={500}
+          value={form.notes}
+          onChange={(event) => setForm({ ...form, notes: event.target.value })}
+          className={CONTROL}
+        />
+      </label>
+
+      <div className="flex gap-2 lg:col-span-4">
+        <Button type="submit" disabled={save.isPending}>
+          {save.isPending ? t('common.saving') : t('common.save')}
+        </Button>
+        <Button type="button" variant="secondary" onClick={onDone}>
+          {t('common.cancel')}
+        </Button>
+      </div>
+    </form>
   )
 }
 
 function ReductionsCard({
   teacherId,
   profile,
-  canManage,
+  canApprove,
+  canWrite,
 }: {
   teacherId: string
   profile: TeacherProfileDto
-  canManage: boolean
+  /** The administration's: a reduction takes hours off a contract. */
+  canApprove: boolean
+  /** Coordination's: they are the side that knows there is one to record. */
+  canWrite: boolean
 }) {
   const { t } = useTranslation()
   const toast = useToast()
@@ -144,7 +308,7 @@ function ReductionsCard({
         title={t('teachers.reductions.title')}
         description={t('teachers.reductions.description')}
         action={
-          canManage ? (
+          canWrite ? (
             <Button
               variant="secondary"
               onClick={() => setEditing({ values: { reason: '', hours: 0, status: 'pending' } })}
@@ -207,12 +371,22 @@ function ReductionsCard({
                 }
                 className="h-10 w-full rounded-control border border-border bg-surface px-2 text-text"
               >
-                {(['pending', 'approved', 'rejected'] as const).map((status) => (
-                  <option key={status} value={status}>
-                    {t(`reductionStatus.${status}`)}
-                  </option>
-                ))}
+                {(['pending', 'approved', 'rejected'] as const)
+                  // Approving changes what the person is contracted to cover,
+                  // so it stays with the administration. Coordination records
+                  // the reduction and it waits.
+                  .filter((status) => canApprove || status !== 'approved')
+                  .map((status) => (
+                    <option key={status} value={status}>
+                      {t(`reductionStatus.${status}`)}
+                    </option>
+                  ))}
               </select>
+              {canApprove ? null : (
+                <span className="mt-1 block text-xs text-text-muted">
+                  {t('teachers.reductions.approvalHint')}
+                </span>
+              )}
             </label>
             <div className="flex gap-2 sm:col-span-4">
               <Button type="submit" disabled={save.isPending}>
@@ -245,7 +419,7 @@ function ReductionsCard({
                   <th scope="col" className="py-2 pr-4 font-medium">
                     {t('teachers.reductions.approver')}
                   </th>
-                  {canManage ? (
+                  {canWrite ? (
                     <th scope="col" className="py-2 text-right font-medium">
                       {t('admin.actions')}
                     </th>
@@ -273,7 +447,7 @@ function ReductionsCard({
                           }`
                         : '—'}
                     </td>
-                    {canManage ? (
+                    {canWrite ? (
                       <td className="py-3 text-right">
                         <div className="inline-flex gap-1">
                           <Button

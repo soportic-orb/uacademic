@@ -199,7 +199,8 @@
       "pendingHint": "Les reduccions pendents encara no descompten capacitat.",
       "saved": "Reducció desada",
       "removed": "Reducció eliminada",
-      "confirmRemove": "Vols eliminar aquesta reducció?"
+      "confirmRemove": "Vols eliminar aquesta reducció?",
+      "approvalHint": "Aprovar una reducció és cosa de l'administració del centre: canvia les hores que la persona ha de cobrir. La que registris quedarà pendent."
     },
     "skills": {
       "title": "Àrees i assignatures",
@@ -301,7 +302,9 @@
       "sent": "S'estan enviant {{count}} calendaris.",
       "sentNoMail": "No s'han enviat: aquesta instal·lació no té servidor de correu configurat.",
       "format": "A4 apaïsat, un mes per pàgina. Només hi surten les classes de la versió publicada."
-    }
+    },
+    "contractEdit": "Edita el contracte",
+    "contractSaved": "Contracte actualitzat"
   },
   "subjects": {
     "title": "Assignatures",

@@ -145,6 +145,89 @@ describe.skipIf(!hasDatabase)('teaching capacity', () => {
       expect(removed.json().capacityHours).toBe(capacityBefore)
     })
 
+    it('is coordination’s to record, and the administration’s to approve', async () => {
+      /*
+        Coordination is the side that discovers somebody has taken on a degree
+        coordination or a leave — sending that round to be typed in elsewhere
+        is asking them to wait for their own planning figures. But approving
+        it takes hours off a contract, so it waits for the administration.
+      */
+      const recorded = await app.inject({
+        method: 'POST',
+        url: `/api/v1/teachers/${teacherProfileId}/reductions`,
+        headers: asCoordinator(),
+        payload: { reason: 'Coordinació de titulació', hours: 20, status: 'approved' },
+      })
+
+      expect(recorded.statusCode).toBe(201)
+      const written = recorded
+        .json()
+        .reductions.find(
+          (reduction: { reason: string }) => reduction.reason === 'Coordinació de titulació',
+        )
+      // Asked for approved; recorded as pending, because it is not theirs.
+      expect(written.status).toBe('pending')
+
+      const approved = await app.inject({
+        method: 'PATCH',
+        url: `/api/v1/teachers/${teacherProfileId}/reductions/${written.id}`,
+        headers: asAdmin(),
+        payload: { reason: 'Coordinació de titulació', hours: 20, status: 'approved' },
+      })
+      expect(approved.json().reductions[0].status).toBe('approved')
+
+      await app.inject({
+        method: 'DELETE',
+        url: `/api/v1/teachers/${teacherProfileId}/reductions/${written.id}`,
+        headers: asAdmin(),
+      })
+    })
+
+    it('lets coordination edit one without losing the approval it cannot give', async () => {
+      const created = await app.inject({
+        method: 'POST',
+        url: `/api/v1/teachers/${teacherProfileId}/reductions`,
+        headers: asAdmin(),
+        payload: { reason: 'Recerca', hours: 10, status: 'approved' },
+      })
+      const id = created
+        .json()
+        .reductions.find((reduction: { reason: string }) => reduction.reason === 'Recerca').id
+
+      const edited = await app.inject({
+        method: 'PATCH',
+        url: `/api/v1/teachers/${teacherProfileId}/reductions/${id}`,
+        headers: asCoordinator(),
+        payload: { reason: 'Recerca competitiva', hours: 12, status: 'approved' },
+      })
+
+      // The edit lands and the approval it already had is not taken away for
+      // being restated by somebody who could not have granted it.
+      expect(edited.statusCode).toBe(200)
+      const after = edited
+        .json()
+        .reductions.find((reduction: { id: string }) => reduction.id === id)
+      expect(after.reason).toBe('Recerca competitiva')
+      expect(after.status).toBe('approved')
+
+      await app.inject({
+        method: 'DELETE',
+        url: `/api/v1/teachers/${teacherProfileId}/reductions/${id}`,
+        headers: asAdmin(),
+      })
+    })
+
+    it('is not a lecturer’s to record', async () => {
+      const response = await app.inject({
+        method: 'POST',
+        url: `/api/v1/teachers/${teacherProfileId}/reductions`,
+        headers: { 'x-mock-user': SEED.otherTeacherEmail, 'x-center-id': centerId },
+        payload: { reason: 'Meva', hours: 40, status: 'pending' },
+      })
+
+      expect(response.statusCode).toBe(403)
+    })
+
     it('records who approved it, in the audit log', async () => {
       const created = await app.inject({
         method: 'POST',

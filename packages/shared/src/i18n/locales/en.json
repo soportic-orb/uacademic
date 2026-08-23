@@ -199,7 +199,8 @@
       "pendingHint": "Pending reductions do not lower the capacity yet.",
       "saved": "Reduction saved",
       "removed": "Reduction removed",
-      "confirmRemove": "Remove this reduction?"
+      "confirmRemove": "Remove this reduction?",
+      "approvalHint": "Approving a reduction is the center administration's: it changes the hours the person has to cover. What you record here waits for them."
     },
     "skills": {
       "title": "Areas and subjects",
@@ -301,7 +302,9 @@
       "sent": "{{count}} calendars are on their way.",
       "sentNoMail": "Nothing was sent: this installation has no mail server configured.",
       "format": "A4 landscape, one month per page. Only classes from the published version appear."
-    }
+    },
+    "contractEdit": "Edit the contract",
+    "contractSaved": "Contract updated"
   },
   "subjects": {
     "title": "Subjects",

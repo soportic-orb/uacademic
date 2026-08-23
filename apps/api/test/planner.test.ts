@@ -309,8 +309,26 @@ describe.skipIf(!hasDatabase)('the planner', () => {
 
   describe('validation on the fly', () => {
     it('answers green, amber or red with the reason', async () => {
-      const version = await createVersion('validate', publishedVersionId)
-      const existing = version.sessions[0]
+      const version = await createVersion('validate')
+      const group = await prisma.group.findFirstOrThrow({ where: { centerId } })
+      const profile = await prisma.teacherProfile.findFirstOrThrow({ where: { centerId } })
+
+      // A class of this model — placed on a day — rather than one of the
+      // seeded weekly rows, whose `dateFrom` is the start of term and not the
+      // day they happen on.
+      const created = await app.inject({
+        method: 'POST',
+        url: `/api/v1/planner/versions/${version.id}/sessions`,
+        headers: asCoordinator(),
+        payload: {
+          groupId: group.id,
+          teacherProfileId: profile.id,
+          date: ON[2],
+          startTime: '09:00',
+          endTime: '10:00',
+        },
+      })
+      const existing = created.json().sessions[0]
 
       const blocked = await app.inject({
         method: 'POST',
@@ -320,9 +338,9 @@ describe.skipIf(!hasDatabase)('the planner', () => {
           groupId: existing.groupId,
           teacherProfileId: existing.teacherProfileId,
           spaceId: existing.spaceId,
-          date: existing.dateFrom,
-          startTime: existing.startTime,
-          endTime: existing.endTime,
+          date: ON[2],
+          startTime: '09:00',
+          endTime: '10:00',
         },
       })
 
@@ -340,13 +358,49 @@ describe.skipIf(!hasDatabase)('the planner', () => {
           groupId: existing.groupId,
           teacherProfileId: existing.teacherProfileId,
           spaceId: existing.spaceId,
-          date: existing.dateFrom,
-          startTime: existing.startTime,
-          endTime: existing.endTime,
+          date: ON[2],
+          startTime: '09:00',
+          endTime: '10:00',
         },
       })
 
       expect(itself.json().status).not.toBe('blocked')
+    })
+
+    it('does not clash with the same slot in another week', async () => {
+      const version = await createVersion('other-week')
+      const group = await prisma.group.findFirstOrThrow({ where: { centerId } })
+      const profile = await prisma.teacherProfile.findFirstOrThrow({ where: { centerId } })
+
+      await app.inject({
+        method: 'POST',
+        url: `/api/v1/planner/versions/${version.id}/sessions`,
+        headers: asCoordinator(),
+        payload: {
+          groupId: group.id,
+          teacherProfileId: profile.id,
+          date: ON[2],
+          startTime: '09:00',
+          endTime: '10:00',
+        },
+      })
+
+      // The Tuesday of the following week. Nothing repeats, so Tuesday at nine
+      // is free again — which is the whole point of placing by date.
+      const response = await app.inject({
+        method: 'POST',
+        url: `/api/v1/planner/versions/${version.id}/validate`,
+        headers: asCoordinator(),
+        payload: {
+          groupId: group.id,
+          teacherProfileId: profile.id,
+          date: '2026-09-22',
+          startTime: '09:00',
+          endTime: '10:00',
+        },
+      })
+
+      expect(response.json().status).not.toBe('blocked')
     })
 
     it('blocks a slot the teacher declared unavailable', async () => {

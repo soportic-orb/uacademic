@@ -589,17 +589,27 @@ async function degreeFacet(
 }
 
 /**
- * Reductions change the capacity a teacher must cover, so only a center admin
- * writes them and every change is audited with its approver (R4).
+ * Reductions change the capacity a teacher has to cover.
+ *
+ * Coordination records them: they are the side of the product that knows a
+ * colleague has taken on a degree coordination or a research leave, and asking
+ * them to send that to the administration to be typed in is asking them to
+ * wait for their own planning figures.
+ *
+ * Approving one is still the center administration's. A reduction takes hours
+ * off a contract, and coordination approving that unilaterally would let the
+ * timetable rewrite the contract it is supposed to fit inside. Everything is
+ * audited with who approved it (R4).
  */
 function registerReductionRoutes(app: FastifyInstance): void {
   app.post(
     '/api/v1/teachers/:id/reductions',
-    { config: { roles: ['CENTER_ADMIN'] } },
+    { config: { roles: MANAGER_ROLES } },
     async (request: FastifyRequest<{ Params: { id: string } }>, reply) => {
       const context = await teacherContext(request)
       const profileId = await resolveTeacherProfileId(context, request.params.id)
       const input = parseWith(reductionInputSchema, request.body)
+      const status = requestedStatus(context, input.status)
 
       const created = await context.db.teacherReduction.create({
         data: {
@@ -607,19 +617,22 @@ function registerReductionRoutes(app: FastifyInstance): void {
           teacherProfileId: profileId,
           reason: input.reason,
           hours: input.hours,
-          status: input.status,
-          ...approval(input.status, context.user.userId),
+          status,
+          ...approval(status, context.user.userId),
         },
       })
 
-      await audit(request, context, 'teacher_reduction', created.id, 'create', null, input)
+      await audit(request, context, 'teacher_reduction', created.id, 'create', null, {
+        ...input,
+        status,
+      })
       return reply.code(201).send(await teacherProfile(context, profileId))
     },
   )
 
   app.patch(
     '/api/v1/teachers/:id/reductions/:reductionId',
-    { config: { roles: ['CENTER_ADMIN'] } },
+    { config: { roles: MANAGER_ROLES } },
     async (request: FastifyRequest<{ Params: { id: string; reductionId: string } }>) => {
       const context = await teacherContext(request)
       const profileId = await resolveTeacherProfileId(context, request.params.id)
@@ -630,13 +643,22 @@ function registerReductionRoutes(app: FastifyInstance): void {
       })
       if (!before) throw AppError.notFound()
 
+      /*
+        Coordination may write the reduction; only the administration may say
+        it is approved. So an approval coming from coordination leaves the
+        status where it already was rather than being refused — they are
+        editing the reason or the hours, and losing that edit over a field
+        they cannot change would be the wrong answer.
+      */
+      const status = requestedStatus(context, input.status, before.status)
+
       await context.db.teacherReduction.update({
         where: { id: before.id },
         data: {
           reason: input.reason,
           hours: input.hours,
-          status: input.status,
-          ...approval(input.status, context.user.userId),
+          status,
+          ...approval(status, context.user.userId),
         },
       })
 
@@ -655,7 +677,7 @@ function registerReductionRoutes(app: FastifyInstance): void {
 
   app.delete(
     '/api/v1/teachers/:id/reductions/:reductionId',
-    { config: { roles: ['CENTER_ADMIN'] } },
+    { config: { roles: MANAGER_ROLES } },
     async (request: FastifyRequest<{ Params: { id: string; reductionId: string } }>) => {
       const context = await teacherContext(request)
       const profileId = await resolveTeacherProfileId(context, request.params.id)
@@ -678,6 +700,29 @@ function registerReductionRoutes(app: FastifyInstance): void {
       return teacherProfile(context, profileId)
     },
   )
+}
+
+/**
+ * What the status may become, for whoever is asking.
+ *
+ * A reduction takes hours off a contract. Coordination records them — they are
+ * the side that knows about a leave or a coordination role — but approving one
+ * is the administration's, or the timetable would be rewriting the contract it
+ * is supposed to fit inside.
+ */
+function requestedStatus(
+  context: TeacherContext,
+  wanted: 'pending' | 'approved' | 'rejected',
+  current: 'pending' | 'approved' | 'rejected' = 'pending',
+): 'pending' | 'approved' | 'rejected' {
+  const administers = context.user.memberships.some(
+    (membership) =>
+      membership.centerId === context.centerId &&
+      (membership.role === 'CENTER_ADMIN' || membership.role === 'SUPERADMIN'),
+  )
+
+  if (administers || wanted !== 'approved') return wanted
+  return current
 }
 
 /** An approved reduction always carries who approved it and when (R4). */

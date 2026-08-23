@@ -199,7 +199,8 @@
       "pendingHint": "Las reducciones pendientes todavía no descuentan capacidad.",
       "saved": "Reducción guardada",
       "removed": "Reducción eliminada",
-      "confirmRemove": "¿Quieres eliminar esta reducción?"
+      "confirmRemove": "¿Quieres eliminar esta reducción?",
+      "approvalHint": "Aprobar una reducción es cosa de la administración del centro: cambia las horas que la persona debe cubrir. La que registres quedará pendiente."
     },
     "skills": {
       "title": "Áreas y asignaturas",
@@ -301,7 +302,9 @@
       "sent": "Se están enviando {{count}} calendarios.",
       "sentNoMail": "No se han enviado: esta instalación no tiene servidor de correo configurado.",
       "format": "A4 apaisado, un mes por página. Solo salen las clases de la versión publicada."
-    }
+    },
+    "contractEdit": "Editar el contrato",
+    "contractSaved": "Contrato actualizado"
   },
   "subjects": {
     "title": "Asignaturas",
