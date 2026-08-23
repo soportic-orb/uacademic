@@ -685,6 +685,109 @@ describe('the visual planner', () => {
   })
 
   describe('changing how long a class lasts', () => {
+    /**
+     * jsdom lays nothing out, so the grid's rows measure zero and a drag has
+     * nothing to count in. One row is given a height, which is the only thing
+     * the handle asks the layout for.
+     */
+    const withRowHeight = (height: number) => {
+      const original = HTMLTableRowElement.prototype.getBoundingClientRect
+      HTMLTableRowElement.prototype.getBoundingClientRect = () =>
+        ({ height, top: 0, bottom: height, left: 0, right: 0, width: 0, x: 0, y: 0 }) as DOMRect
+      return () => {
+        HTMLTableRowElement.prototype.getBoundingClientRect = original
+      }
+    }
+
+    /** A press, a move and a release, as a pointer actually arrives. */
+    const drag = (handle: HTMLElement, from: number, to: number) => {
+      fireEvent.pointerDown(handle, { clientY: from, pointerId: 1 })
+      fireEvent.pointerMove(window, { clientY: to, pointerId: 1 })
+      fireEvent.pointerUp(window, { clientY: to, pointerId: 1 })
+    }
+
+    it('lengthens the class by the rows the pointer travelled', async () => {
+      const restore = withRowHeight(40)
+      render(wrap(<PlannerGrid version={VERSION} context={CONTEXT} />))
+
+      try {
+        // The grid is drawn in hour rows here, so 40px down is one hour more.
+        drag(screen.getByRole('button', { name: 'Allarga o escurça per baix' }), 100, 140)
+
+        await waitFor(() => {
+          const patch = fetchMock.mock.calls.find(
+            (call) => (call[1] as RequestInit | undefined)?.method === 'PATCH',
+          )
+          expect(JSON.parse(String((patch![1] as RequestInit).body))).toMatchObject({
+            startTime: '09:00',
+            endTime: '11:00',
+          })
+        })
+      } finally {
+        restore()
+      }
+    })
+
+    it('moves the start of the class when it is the top edge that is dragged', async () => {
+      const restore = withRowHeight(40)
+      // A class in the middle of the day, so there is an hour above it to
+      // grow into: the fixture's grid opens at 09:00.
+      const later = {
+        ...VERSION,
+        sessions: [{ ...VERSION.sessions[0]!, startTime: '10:00', endTime: '11:00' }],
+      }
+      render(wrap(<PlannerGrid version={later} context={CONTEXT} />))
+
+      try {
+        // Upwards: the class starts an hour earlier and lasts an hour longer.
+        drag(screen.getByRole('button', { name: 'Allarga o escurça per dalt' }), 100, 60)
+
+        await waitFor(() => {
+          const patch = fetchMock.mock.calls.find(
+            (call) => (call[1] as RequestInit | undefined)?.method === 'PATCH',
+          )
+          expect(JSON.parse(String((patch![1] as RequestInit).body))).toMatchObject({
+            startTime: '09:00',
+            endTime: '11:00',
+          })
+        })
+      } finally {
+        restore()
+      }
+    })
+
+    it('shows the hour it would become while the edge is being dragged', () => {
+      const restore = withRowHeight(40)
+      render(wrap(<PlannerGrid version={VERSION} context={CONTEXT} />))
+
+      try {
+        const handle = screen.getByRole('button', { name: 'Allarga o escurça per baix' })
+        fireEvent.pointerDown(handle, { clientY: 100, pointerId: 1 })
+        fireEvent.pointerMove(window, { clientY: 140, pointerId: 1 })
+
+        expect(handle).toHaveTextContent('11:00')
+      } finally {
+        restore()
+      }
+    })
+
+    it('does nothing when the pointer never left the row it started in', async () => {
+      const restore = withRowHeight(40)
+      render(wrap(<PlannerGrid version={VERSION} context={CONTEXT} />))
+
+      try {
+        drag(screen.getByRole('button', { name: 'Allarga o escurça per baix' }), 100, 104)
+
+        expect(
+          fetchMock.mock.calls.filter(
+            (call) => (call[1] as RequestInit | undefined)?.method === 'PATCH',
+          ),
+        ).toHaveLength(0)
+      } finally {
+        restore()
+      }
+    })
+
     it('lengthens it from the keyboard, which the pointer alternative needs (R8)', async () => {
       const user = userEvent.setup()
       render(wrap(<PlannerGrid version={VERSION} context={CONTEXT} />))

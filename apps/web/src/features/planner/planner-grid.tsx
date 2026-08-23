@@ -674,7 +674,7 @@ export function PlannerGrid({
                                 spaces={context.spaces}
                                 onSpace={(spaceId) => void setSpace(session, spaceId)}
                                 onDuplicate={() => setDuplicating(session)}
-                                span={span}
+                                slotMinutes={version.grid.slotMinutes}
                                 onResize={(edge, slots) => void resizeSession(session, edge, slots)}
                                 onPick={() => {
                                   setHeld(heldFromSession(session))
@@ -999,7 +999,7 @@ function SessionBlock({
   spaces,
   onSpace,
   onDuplicate,
-  span,
+  slotMinutes,
   onResize,
   onKeyDown,
 }: {
@@ -1019,8 +1019,8 @@ function SessionBlock({
   onSpace: (spaceId: string | null) => void
   /** Opens the panel that repeats this class across the term. */
   onDuplicate: () => void
-  /** How many grid rows the class covers, which is how tall it is drawn. */
-  span: number
+  /** How long one row of the grid is, which is what an edge moves by. */
+  slotMinutes: number
   /** An edge was dragged: `slots` rows, positive downwards. */
   onResize: (edge: 'start' | 'end', slots: number) => void
   onKeyDown: (event: React.KeyboardEvent) => void
@@ -1154,8 +1154,18 @@ function SessionBlock({
 
       {editable ? (
         <>
-          <ResizeHandle edge="start" span={span} onResize={onResize} />
-          <ResizeHandle edge="end" span={span} onResize={onResize} />
+          <ResizeHandle
+            edge="start"
+            session={session}
+            slotMinutes={slotMinutes}
+            onResize={onResize}
+          />
+          <ResizeHandle
+            edge="end"
+            session={session}
+            slotMinutes={slotMinutes}
+            onResize={onResize}
+          />
         </>
       ) : null}
 
@@ -1186,44 +1196,74 @@ function SessionBlock({
 /**
  * The edge of a class, dragged to make it longer or shorter.
  *
- * A timetable is read in hours, so the grid's own rows are the unit: the edge
- * moves in whole slots and the class is written when the pointer is let go.
- * The same thing happens with the arrow keys, because a planner nobody can
- * drive from the keyboard is a planner some people cannot use at all (R8).
+ * A timetable is read in hours, so the grid's own rows are the unit: a row of
+ * the table is one slot, the edge moves in whole slots, and the class is
+ * written when the pointer is let go. Measuring the row rather than the block
+ * matters — the block is as tall as what is written on it, which is not the
+ * hour it occupies, and measuring that made a whole row of movement round to
+ * nothing.
+ *
+ * The pointer is followed on the window, so a drag that leaves the six pixels
+ * of the handle — which every drag does — is still a drag. While it lasts the
+ * hour it would become is shown on the handle, because an edge that moves with
+ * no feedback is indistinguishable from one that does not work. The arrow keys
+ * do the same thing: a planner nobody can drive from the keyboard is a planner
+ * some people cannot use at all (R8).
  */
 function ResizeHandle({
   edge,
-  span,
+  session,
+  slotMinutes,
   onResize,
 }: {
   edge: 'start' | 'end'
-  span: number
+  session: PlannerSessionDto
+  slotMinutes: number
   onResize: (edge: 'start' | 'end', slots: number) => void
 }) {
   const { t } = useTranslation()
+  const [slots, setSlots] = useState<number | null>(null)
 
   const onPointerDown = (event: React.PointerEvent<HTMLButtonElement>) => {
     event.preventDefault()
     event.stopPropagation()
 
-    const block = event.currentTarget.parentElement
-    if (!block) return
-
-    // How tall one row of the grid is, measured rather than assumed: the
-    // planner is responsive and the number is different on every screen.
-    const slotHeight = block.getBoundingClientRect().height / Math.max(1, span)
-    const from = event.clientY
     const handle = event.currentTarget
-    handle.setPointerCapture(event.pointerId)
+    // One row of the grid is one slot, whatever the screen is doing to it.
+    const slotHeight = handle.closest('tr')?.getBoundingClientRect().height ?? 0
+    if (slotHeight <= 0) return
 
-    const finish = (up: PointerEvent) => {
-      handle.releasePointerCapture(event.pointerId)
-      handle.removeEventListener('pointerup', finish)
-      onResize(edge, Math.round((up.clientY - from) / slotHeight))
+    const from = event.clientY
+    const stepsFrom = (moved: { clientY: number }) =>
+      Math.round((moved.clientY - from) / slotHeight)
+
+    // Capture keeps the drag alive over anything it passes; where it is not
+    // available the window listeners below carry it anyway.
+    try {
+      handle.setPointerCapture(event.pointerId)
+    } catch {
+      // Nothing to do: the drag works without it.
     }
 
-    handle.addEventListener('pointerup', finish)
+    const move = (moved: PointerEvent) => setSlots(stepsFrom(moved))
+
+    const finish = (up: PointerEvent) => {
+      window.removeEventListener('pointermove', move)
+      window.removeEventListener('pointerup', finish)
+      window.removeEventListener('pointercancel', finish)
+      setSlots(null)
+      onResize(edge, stepsFrom(up))
+    }
+
+    window.addEventListener('pointermove', move)
+    window.addEventListener('pointerup', finish)
+    window.addEventListener('pointercancel', finish)
   }
+
+  const dragging = slots !== null
+  const preview = dragging
+    ? addMinutes(edge === 'start' ? session.startTime : session.endTime, slots * slotMinutes)
+    : null
 
   return (
     <button
@@ -1237,11 +1277,18 @@ function ResizeHandle({
         onResize(edge, event.key === 'ArrowDown' ? 1 : -1)
       }}
       className={cn(
-        'absolute inset-x-0 h-1.5 cursor-ns-resize touch-none focus-visible:bg-primary/40 focus-visible:outline-2 focus-visible:outline-ring',
-        'hover:bg-primary/30',
+        'absolute inset-x-0 z-10 h-2 cursor-ns-resize touch-none',
+        'hover:bg-primary/30 focus-visible:bg-primary/40 focus-visible:outline-2 focus-visible:outline-ring',
+        dragging && 'bg-primary/60',
         edge === 'start' ? 'top-0' : 'bottom-0',
       )}
-    />
+    >
+      {preview ? (
+        <span className="tabular pointer-events-none absolute left-1/2 -translate-x-1/2 rounded-sm bg-primary px-1 text-[10px] text-primary-contrast">
+          {preview}
+        </span>
+      ) : null}
+    </button>
   )
 }
 
