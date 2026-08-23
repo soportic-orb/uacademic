@@ -10,6 +10,8 @@ import { adminConsentUrl } from '../../auth/consent'
 import { EmptyState, ErrorState, TableSkeleton } from '../../components/feedback/states'
 import { Button } from '../../components/ui/button'
 import { Card, CardBody } from '../../components/ui/card'
+import { ColumnPicker } from '../../components/ui/column-picker'
+import { useColumnVisibility } from '../../hooks/use-columns'
 import { useToast } from '../../hooks/use-toast'
 import { currentLocale } from '../../i18n'
 import { ApiRequestError, apiFetch, apiJson, apiUpload } from '../../lib/api'
@@ -63,6 +65,16 @@ export function ResourcePage({ resource }: { resource: ResourceConfig }) {
       staleTime: 60_000,
     })),
   })
+
+  /**
+   * The columns this person keeps. Every admin listing is drawn from the same
+   * description, so they all get the control for free.
+   */
+  const columns = useColumnVisibility(
+    `admin:${resource.key}`,
+    resource.columns.map((column) => ({ key: column.key, label: t(column.labelKey) })),
+  )
+  const shown = resource.columns.filter((column) => columns.shows(column.key))
 
   const lookupOptions = (source: { path: string; labelField: string }) => {
     const rows = lookupQueries[lookupPaths.indexOf(source.path)]?.data?.items ?? []
@@ -272,10 +284,12 @@ export function ResourcePage({ resource }: { resource: ResourceConfig }) {
                 </select>
               </label>
             ))}
+
+            <ColumnPicker columns={columns} />
           </div>
 
           {query.isPending ? (
-            <TableSkeleton rows={6} columns={resource.columns.length + 1} />
+            <TableSkeleton rows={6} columns={shown.length + 1} />
           ) : query.isError ? (
             <ErrorState onRetry={() => void query.refetch()} />
           ) : query.data.items.length === 0 ? (
@@ -295,7 +309,7 @@ export function ResourcePage({ resource }: { resource: ResourceConfig }) {
                   <caption className="sr-only">{t(resource.titleKey)}</caption>
                   <thead>
                     <tr className="border-b border-border text-left text-text-muted">
-                      {resource.columns.map((column) => (
+                      {shown.map((column) => (
                         <th
                           key={column.key}
                           scope="col"
@@ -333,7 +347,7 @@ export function ResourcePage({ resource }: { resource: ResourceConfig }) {
                   <tbody>
                     {query.data.items.map((row) => (
                       <tr key={String(row.id)} className="border-b border-border/60">
-                        {resource.columns.map((column) => (
+                        {shown.map((column) => (
                           <td
                             key={column.key}
                             className={cn(

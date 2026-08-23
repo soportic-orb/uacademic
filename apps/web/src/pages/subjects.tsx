@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next'
 import { EmptyState, ErrorState, TableSkeleton } from '../components/feedback/states'
 import { Card, CardBody } from '../components/ui/card'
 import { useSubjects } from '../hooks/use-api'
+import { ColumnPicker } from '../components/ui/column-picker'
+import { useColumnVisibility } from '../hooks/use-columns'
 import { useToast } from '../hooks/use-toast'
 import { currentLocale } from '../i18n'
 
@@ -20,6 +22,13 @@ export function SubjectsPage() {
   const query = useSubjects()
   const locale = currentLocale()
 
+  const columns = useColumnVisibility('subjects', [
+    { key: 'ects', label: t('subjects.ects') },
+    { key: 'term', label: t('subjects.term') },
+    { key: 'groups', label: t('subjects.groups') },
+    { key: 'assigned', label: t('load.assigned') },
+  ])
+
   return (
     <div className="space-y-6">
       <header>
@@ -28,7 +37,11 @@ export function SubjectsPage() {
       </header>
 
       <Card>
-        <CardBody>
+        <CardBody className="space-y-4">
+          <div className="flex justify-end">
+            <ColumnPicker columns={columns} />
+          </div>
+
           {query.isPending ? (
             <TableSkeleton rows={6} columns={6} />
           ) : query.isError ? (
@@ -52,18 +65,26 @@ export function SubjectsPage() {
                     <th scope="col" className="py-2 pr-4 font-medium">
                       {t('subjects.name')}
                     </th>
-                    <th scope="col" className="py-2 pr-4 text-right font-medium">
-                      {t('subjects.ects')}
-                    </th>
-                    <th scope="col" className="py-2 pr-4 font-medium">
-                      {t('subjects.term')}
-                    </th>
-                    <th scope="col" className="py-2 pr-4 text-right font-medium">
-                      {t('subjects.groups')}
-                    </th>
-                    <th scope="col" className="py-2 text-right font-medium">
-                      {t('load.assigned')}
-                    </th>
+                    {columns.shows('ects') ? (
+                      <th scope="col" className="py-2 pr-4 text-right font-medium">
+                        {t('subjects.ects')}
+                      </th>
+                    ) : null}
+                    {columns.shows('term') ? (
+                      <th scope="col" className="py-2 pr-4 font-medium">
+                        {t('subjects.term')}
+                      </th>
+                    ) : null}
+                    {columns.shows('groups') ? (
+                      <th scope="col" className="py-2 pr-4 text-right font-medium">
+                        {t('subjects.groups')}
+                      </th>
+                    ) : null}
+                    {columns.shows('assigned') ? (
+                      <th scope="col" className="py-2 text-right font-medium">
+                        {t('load.assigned')}
+                      </th>
+                    ) : null}
                   </tr>
                 </thead>
                 <tbody>
@@ -73,16 +94,24 @@ export function SubjectsPage() {
                       <th scope="row" className="py-3 pr-4 text-left font-medium text-text">
                         {subjectName(subject, locale)}
                       </th>
-                      <td className="tabular py-3 pr-4 text-right text-text">
-                        {formatNumber(locale, subject.ects)}
-                      </td>
-                      <td className="py-3 pr-4 text-text-muted">{t(`term.${subject.term}`)}</td>
-                      <td className="tabular py-3 pr-4 text-right text-text">
-                        {subject.groupCount}
-                      </td>
-                      <td className="tabular py-3 text-right text-text">
-                        {`${formatHours(locale, subject.assignedHours)} / ${formatHours(locale, subject.plannedHours)}`}
-                      </td>
+                      {columns.shows('ects') ? (
+                        <td className="tabular py-3 pr-4 text-right text-text">
+                          {formatNumber(locale, subject.ects)}
+                        </td>
+                      ) : null}
+                      {columns.shows('term') ? (
+                        <td className="py-3 pr-4 text-text-muted">{t(`term.${subject.term}`)}</td>
+                      ) : null}
+                      {columns.shows('groups') ? (
+                        <td className="tabular py-3 pr-4 text-right text-text">
+                          {subject.groupCount}
+                        </td>
+                      ) : null}
+                      {columns.shows('assigned') ? (
+                        <td className="tabular py-3 text-right text-text">
+                          {`${formatHours(locale, subject.assignedHours)} / ${formatHours(locale, subject.plannedHours)}`}
+                        </td>
+                      ) : null}
                     </tr>
                   ))}
                 </tbody>

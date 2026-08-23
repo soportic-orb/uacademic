@@ -479,27 +479,30 @@ model AcademicYear {
 // ───────────────────────────────────────────────────────────────────────────────
 
 model User {
-  id             String          @id @default(uuid(7)) @db.Char(36)
+  id              String          @id @default(uuid(7)) @db.Char(36)
   /// Entra ID `oid` claim — the stable identifier (R3). Null until first login.
-  entraOid       String?         @unique @map("entra_oid") @db.Char(36)
-  email          String          @unique @db.VarChar(255)
-  firstName      String          @map("first_name") @db.VarChar(100)
-  lastName       String          @map("last_name") @db.VarChar(150)
-  locale         Locale          @default(ca)
-  theme          ThemePreference @default(system)
-  avatarUrl      String?         @map("avatar_url") @db.VarChar(500)
-  status         UserStatus      @default(invited)
-  lastLoginAt    DateTime?       @map("last_login_at")
+  entraOid        String?         @unique @map("entra_oid") @db.Char(36)
+  email           String          @unique @db.VarChar(255)
+  firstName       String          @map("first_name") @db.VarChar(100)
+  lastName        String          @map("last_name") @db.VarChar(150)
+  locale          Locale          @default(ca)
+  theme           ThemePreference @default(system)
+  avatarUrl       String?         @map("avatar_url") @db.VarChar(500)
+  status          UserStatus      @default(invited)
+  lastLoginAt     DateTime?       @map("last_login_at")
   /// Last time this person's daily digest went out, so the next one only
   /// carries what happened since.
-  digestSentAt   DateTime?       @map("digest_sent_at")
+  digestSentAt    DateTime?       @map("digest_sent_at")
   /// How this person has arranged their own menu: an ordered list of item
   /// keys and the separators they inserted between them. Null until they
   /// touch it, and never a copy of the menu — what a role may reach is still
   /// decided by the roles.
-  menuLayoutJson Json?           @map("menu_layout_json")
-  createdAt      DateTime        @default(now()) @map("created_at")
-  updatedAt      DateTime        @updatedAt @map("updated_at")
+  menuLayoutJson  Json?           @map("menu_layout_json")
+  /// Which columns this person has hidden, per listing. Hidden rather than
+  /// shown, so a column added later is visible to everybody by default.
+  tableLayoutJson Json?           @map("table_layout_json")
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
 
   centerRoles          UserCenterRole[]
   coordinatedSubjects  SubjectCoordinator[]
@@ -1766,22 +1769,22 @@ model CalendarType {
 }
 
 model AcademicCalendarEntry {
-  id             String            @id @default(uuid(7)) @db.Char(36)
-  centerId       String            @map("center_id") @db.Char(36)
-  academicYearId String            @map("academic_year_id") @db.Char(36)
+  id             String   @id @default(uuid(7)) @db.Char(36)
+  centerId       String   @map("center_id") @db.Char(36)
+  academicYearId String   @map("academic_year_id") @db.Char(36)
   /// One of the keys the platform ships with, or one of this center's own
   /// (`calendar_types`). A key rather than a database enum, because what
   /// counts as a kind of day differs between centers.
-  type           String            @db.VarChar(50)
-  dateFrom       DateTime          @map("date_from") @db.Date
-  dateTo         DateTime          @map("date_to") @db.Date
-  nameCa         String            @map("name_ca") @db.VarChar(200)
-  nameEs         String            @map("name_es") @db.VarChar(200)
-  nameEn         String            @map("name_en") @db.VarChar(200)
+  type           String   @db.VarChar(50)
+  dateFrom       DateTime @map("date_from") @db.Date
+  dateTo         DateTime @map("date_to") @db.Date
+  nameCa         String   @map("name_ca") @db.VarChar(200)
+  nameEs         String   @map("name_es") @db.VarChar(200)
+  nameEn         String   @map("name_en") @db.VarChar(200)
   /// False for holidays and closures: the planner skips those days.
-  isTeachingDay  Boolean           @default(false) @map("is_teaching_day")
-  createdAt      DateTime          @default(now()) @map("created_at")
-  updatedAt      DateTime          @updatedAt @map("updated_at")
+  isTeachingDay  Boolean  @default(false) @map("is_teaching_day")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
 
   center       Center       @relation(fields: [centerId], references: [id], onDelete: Cascade)
   academicYear AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Cascade)

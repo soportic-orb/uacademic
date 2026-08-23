@@ -2,6 +2,8 @@ import type { CurrentUser, Role } from '@uacademic/shared'
 import {
   AWAITING_COORDINATOR,
   menuLayoutSchema,
+  tableLayoutSchema,
+  tableLayoutsSchema,
   roleSchema,
   sortRolesByRank,
 } from '@uacademic/shared'
@@ -131,4 +133,54 @@ export function registerMeRoutes(app: FastifyInstance): void {
 
     return input
   })
+
+  /**
+   * Which columns somebody has hidden, in each listing they have arranged.
+   *
+   * On the account for the same reason the menu is: it is a thing a person
+   * arranged, and re-arranging it because they opened the screen on another
+   * machine is losing their work. It carries no permission either — what a
+   * listing contains is decided on every request (R3) — so hiding a column is
+   * theirs to do with no further check.
+   */
+  app.get('/api/v1/me/tables', async (request) => {
+    const user = requireUser(request)
+
+    const row = await prisma().user.findUnique({
+      where: { id: user.userId },
+      select: { tableLayoutJson: true },
+    })
+
+    const parsed = tableLayoutsSchema.safeParse(row?.tableLayoutJson ?? { tables: {} })
+    // Something we cannot read is not something the person can fix from the
+    // interface: every column comes back rather than an error.
+    return parsed.success ? parsed.data : { tables: {} }
+  })
+
+  app.put(
+    '/api/v1/me/tables/:table',
+    async (request: FastifyRequest<{ Params: { table: string } }>) => {
+      const user = requireUser(request)
+      const input = parseWith(tableLayoutSchema, request.body)
+      const table = parseWith(z.string().trim().min(1).max(64), request.params.table)
+
+      const row = await prisma().user.findUnique({
+        where: { id: user.userId },
+        select: { tableLayoutJson: true },
+      })
+      const current = tableLayoutsSchema.safeParse(row?.tableLayoutJson ?? { tables: {} })
+
+      const tables = {
+        ...(current.success ? current.data.tables : {}),
+        [table]: input,
+      }
+
+      await prisma().user.update({
+        where: { id: user.userId },
+        data: { tableLayoutJson: toJson({ tables }) },
+      })
+
+      return { tables }
+    },
+  )
 }

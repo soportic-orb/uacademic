@@ -35,6 +35,8 @@ import {
 } from '../features/documents/queries'
 import { UploadForm } from '../features/documents/upload-form'
 import { useSubjects } from '../hooks/use-api'
+import { ColumnPicker } from '../components/ui/column-picker'
+import { useColumnVisibility } from '../hooks/use-columns'
 import { useToast } from '../hooks/use-toast'
 import { ApiRequestError, apiFetch } from '../lib/api'
 import { currentLocale } from '../i18n'
@@ -63,6 +65,13 @@ export function DocumentsPage() {
 
   const [filters, setFilters] = useState<DocumentFilters>({ validity: 'all' })
   const [ocrFor, setOcrFor] = useState<DocumentDto | null>(null)
+
+  /** The title and what to do with it always stay; the rest is theirs. */
+  const columns = useColumnVisibility('documents', [
+    { key: 'scope', label: t('documents.fields.scope') },
+    { key: 'validTo', label: t('documents.fields.validTo') },
+    { key: 'status', label: t('documents.fields.status') },
+  ])
 
   const list = useDocuments(filters)
   const remove = useDeleteDocument()
@@ -223,6 +232,10 @@ export function DocumentsPage() {
             </label>
           </div>
 
+          <div className="flex justify-end">
+            <ColumnPicker columns={columns} />
+          </div>
+
           {list.isPending ? (
             <TableSkeleton rows={5} columns={5} />
           ) : list.isError ? (
@@ -238,15 +251,21 @@ export function DocumentsPage() {
                     <th scope="col" className="py-2 pr-4 font-medium">
                       {t('documents.fields.title')}
                     </th>
-                    <th scope="col" className="py-2 pr-4 font-medium">
-                      {t('documents.fields.scope')}
-                    </th>
-                    <th scope="col" className="py-2 pr-4 font-medium">
-                      {t('documents.fields.validTo')}
-                    </th>
-                    <th scope="col" className="py-2 pr-4 font-medium">
-                      {t('documents.fields.status')}
-                    </th>
+                    {columns.shows('scope') ? (
+                      <th scope="col" className="py-2 pr-4 font-medium">
+                        {t('documents.fields.scope')}
+                      </th>
+                    ) : null}
+                    {columns.shows('validTo') ? (
+                      <th scope="col" className="py-2 pr-4 font-medium">
+                        {t('documents.fields.validTo')}
+                      </th>
+                    ) : null}
+                    {columns.shows('status') ? (
+                      <th scope="col" className="py-2 pr-4 font-medium">
+                        {t('documents.fields.status')}
+                      </th>
+                    ) : null}
                     <th scope="col" className="py-2 pl-4 text-right font-medium">
                       {t('documents.actions')}
                     </th>
@@ -275,59 +294,67 @@ export function DocumentsPage() {
                         </p>
                       </td>
 
-                      <td className="py-3 pr-4 text-text-muted">
-                        {t(`documents.scope.${document.scope}`)}
-                      </td>
+                      {columns.shows('scope') ? (
+                        <td className="py-3 pr-4 text-text-muted">
+                          {t(`documents.scope.${document.scope}`)}
+                        </td>
+                      ) : null}
 
-                      <td className="py-3 pr-4">
-                        <span className="tabular-nums text-text-muted">
-                          {document.validTo
-                            ? formatDate(locale, new Date(document.validTo))
-                            : t('common.none')}
-                        </span>
-                        {document.expired ? (
-                          <span className="ml-2 inline-flex items-center gap-1 rounded-control border border-danger/30 bg-danger/10 px-2 py-0.5 text-xs text-danger">
-                            <AlertTriangle className="size-3" aria-hidden="true" />
-                            {t('documents.expired')}
+                      {columns.shows('validTo') ? (
+                        <td className="py-3 pr-4">
+                          <span className="tabular-nums text-text-muted">
+                            {document.validTo
+                              ? formatDate(locale, new Date(document.validTo))
+                              : t('common.none')}
                           </span>
-                        ) : document.expiringSoon ? (
-                          <span className="ml-2 inline-flex items-center gap-1 rounded-control border border-warning/30 bg-warning/10 px-2 py-0.5 text-xs text-warning">
-                            <Clock className="size-3" aria-hidden="true" />
-                            {t('documents.expiringSoon')}
-                          </span>
-                        ) : null}
-                      </td>
+                          {document.expired ? (
+                            <span className="ml-2 inline-flex items-center gap-1 rounded-control border border-danger/30 bg-danger/10 px-2 py-0.5 text-xs text-danger">
+                              <AlertTriangle className="size-3" aria-hidden="true" />
+                              {t('documents.expired')}
+                            </span>
+                          ) : document.expiringSoon ? (
+                            <span className="ml-2 inline-flex items-center gap-1 rounded-control border border-warning/30 bg-warning/10 px-2 py-0.5 text-xs text-warning">
+                              <Clock className="size-3" aria-hidden="true" />
+                              {t('documents.expiringSoon')}
+                            </span>
+                          ) : null}
+                        </td>
+                      ) : null}
 
-                      <td className="py-3 pr-4">
-                        <span
-                          className={`inline-flex items-center gap-1 rounded-control border px-2 py-0.5 text-xs ${STATUS_STYLE[document.status]}`}
-                        >
-                          <FileText className="size-3" aria-hidden="true" />
-                          {t(`documents.status.${document.status}`)}
-                        </span>
-                        {document.errorKey ? (
-                          <div className="mt-1 max-w-xs space-y-1">
-                            <p className="text-xs text-danger">
-                              {t(`documents.errors.${document.errorKey}`)}
+                      {columns.shows('status') ? (
+                        <td className="py-3 pr-4">
+                          <span
+                            className={`inline-flex items-center gap-1 rounded-control border px-2 py-0.5 text-xs ${STATUS_STYLE[document.status]}`}
+                          >
+                            <FileText className="size-3" aria-hidden="true" />
+                            {t(`documents.status.${document.status}`)}
+                          </span>
+                          {document.errorKey ? (
+                            <div className="mt-1 max-w-xs space-y-1">
+                              <p className="text-xs text-danger">
+                                {t(`documents.errors.${document.errorKey}`)}
+                              </p>
+                              {manages && document.errorDetail ? (
+                                // What the parser actually said, for whoever can
+                                // act on it. A person who uploaded a file that
+                                // will not read needs the reason, not a guess.
+                                <details className="text-xs text-text-muted">
+                                  <summary className="cursor-pointer">
+                                    {t('documents.errorDetail')}
+                                  </summary>
+                                  <p className="mt-1 break-words font-mono">
+                                    {document.errorDetail}
+                                  </p>
+                                </details>
+                              ) : null}
+                            </div>
+                          ) : document.status === 'indexed' ? (
+                            <p className="mt-1 text-xs text-text-muted">
+                              {t('documents.fragments', { count: document.chunkCount ?? 0 })}
                             </p>
-                            {manages && document.errorDetail ? (
-                              // What the parser actually said, for whoever can
-                              // act on it. A person who uploaded a file that
-                              // will not read needs the reason, not a guess.
-                              <details className="text-xs text-text-muted">
-                                <summary className="cursor-pointer">
-                                  {t('documents.errorDetail')}
-                                </summary>
-                                <p className="mt-1 break-words font-mono">{document.errorDetail}</p>
-                              </details>
-                            ) : null}
-                          </div>
-                        ) : document.status === 'indexed' ? (
-                          <p className="mt-1 text-xs text-text-muted">
-                            {t('documents.fragments', { count: document.chunkCount ?? 0 })}
-                          </p>
-                        ) : null}
-                      </td>
+                          ) : null}
+                        </td>
+                      ) : null}
 
                       <td className="py-3 pl-4">
                         <div className="flex justify-end gap-1">

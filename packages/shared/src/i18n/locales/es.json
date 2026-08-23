@@ -44,7 +44,8 @@
     "attach": "Adjuntar",
     "unread": "No leído",
     "saving": "Guardando…",
-    "choose": "Selecciona…"
+    "choose": "Selecciona…",
+    "columns": "Columnas"
   },
   "nav": {
     "dashboard": "Panel",

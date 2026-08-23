@@ -514,3 +514,91 @@ describe('who coordinates a subject', () => {
     })
   })
 })
+
+/**
+ * A listing shows what its screen thought was interesting, which is never what
+ * everybody in front of it needs.
+ */
+describe('putting a column away', () => {
+  const fetchMock = vi.fn()
+  let hidden: string[] = []
+
+  beforeEach(() => {
+    vi.stubGlobal('fetch', fetchMock)
+    fetchMock.mockReset()
+    hidden = []
+    fetchMock.mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input)
+
+      if (url.includes('/me/tables') && init?.method === 'PUT') {
+        hidden = (JSON.parse(String(init.body)) as { hidden: string[] }).hidden
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ tables: { 'admin:spaces': { hidden } } }),
+        } as Response)
+      }
+
+      if (url.includes('/me/tables')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({ tables: { 'admin:spaces': { hidden } } }),
+        } as Response)
+      }
+
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          items: [
+            { id: '1', name: 'Aula 1.1', building: 'Edifici A', capacity: 60, type: 'classroom' },
+          ],
+          page: 1,
+          pageSize: 25,
+          total: 1,
+          totalPages: 1,
+        }),
+      } as Response)
+    })
+  })
+
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('hides the column, and says so to the server so it survives the session', async () => {
+    const user = userEvent.setup()
+    render(wrap(<ResourcePage resource={resourceByKey('spaces')!} />))
+
+    expect(
+      await within(await screen.findByRole('table')).findByText('Edifici A'),
+    ).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Columnes' }))
+    await user.click(screen.getByLabelText('Edifici'))
+
+    await waitFor(() => {
+      expect(within(screen.getByRole('table')).queryByText('Edifici A')).not.toBeInTheDocument()
+    })
+
+    const saved = fetchMock.mock.calls.find(
+      ([url, init]) =>
+        String(url).includes('/me/tables') && (init as RequestInit | undefined)?.method === 'PUT',
+    )
+    expect(JSON.parse(String((saved![1] as RequestInit).body))).toEqual({ hidden: ['building'] })
+  })
+
+  it('draws a column the person had hidden before, when they put it back', async () => {
+    const user = userEvent.setup()
+    hidden = ['building']
+    render(wrap(<ResourcePage resource={resourceByKey('spaces')!} />))
+
+    await waitFor(() => {
+      expect(within(screen.getByRole('table')).queryByText('Edifici A')).not.toBeInTheDocument()
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Columnes' }))
+    await user.click(screen.getByLabelText('Edifici'))
+
+    expect(await within(screen.getByRole('table')).findByText('Edifici A')).toBeInTheDocument()
+  })
+})

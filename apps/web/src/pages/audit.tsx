@@ -14,6 +14,8 @@ import { EmptyState, ErrorState, TableSkeleton } from '../components/feedback/st
 import { Button } from '../components/ui/button'
 import { Card, CardBody, CardHeader } from '../components/ui/card'
 import { type AuditQuery, useAudit } from '../features/collaboration/queries'
+import { ColumnPicker } from '../components/ui/column-picker'
+import { useColumnVisibility } from '../hooks/use-columns'
 import { currentLocale } from '../i18n'
 
 const SOURCES = ['user', 'ai', 'system'] as const
@@ -36,6 +38,14 @@ export function AuditPage() {
   const locale = currentLocale()
   const [filters, setFilters] = useState<AuditQuery>({ page: 1 })
   const [expanded, setExpanded] = useState<string | null>(null)
+
+  /** The log is wide, and what somebody is auditing is usually two of these. */
+  const columns = useColumnVisibility('audit', [
+    { key: 'entity', label: t('audit.entity') },
+    { key: 'action', label: t('audit.action') },
+    { key: 'user', label: t('audit.user') },
+    { key: 'source', label: t('audit.source') },
+  ])
   const query = useAudit(filters)
 
   const set = (patch: Partial<AuditQuery>) =>
@@ -109,6 +119,10 @@ export function AuditPage() {
       <Card>
         <CardHeader title={t('audit.title')} />
         <CardBody className="overflow-x-auto">
+          <div className="mb-3 flex justify-end">
+            <ColumnPicker columns={columns} />
+          </div>
+
           {query.isPending ? <TableSkeleton rows={6} columns={5} /> : null}
           {query.isError ? <ErrorState onRetry={() => void query.refetch()} /> : null}
           {query.data && query.data.items.length === 0 ? (
@@ -124,18 +138,26 @@ export function AuditPage() {
                     <th scope="col" className="py-2 pr-4 font-medium">
                       {t('audit.date')}
                     </th>
-                    <th scope="col" className="px-3 py-2 font-medium">
-                      {t('audit.entity')}
-                    </th>
-                    <th scope="col" className="px-3 py-2 font-medium">
-                      {t('audit.action')}
-                    </th>
-                    <th scope="col" className="px-3 py-2 font-medium">
-                      {t('audit.user')}
-                    </th>
-                    <th scope="col" className="px-3 py-2 font-medium">
-                      {t('audit.source')}
-                    </th>
+                    {columns.shows('entity') ? (
+                      <th scope="col" className="px-3 py-2 font-medium">
+                        {t('audit.entity')}
+                      </th>
+                    ) : null}
+                    {columns.shows('action') ? (
+                      <th scope="col" className="px-3 py-2 font-medium">
+                        {t('audit.action')}
+                      </th>
+                    ) : null}
+                    {columns.shows('user') ? (
+                      <th scope="col" className="px-3 py-2 font-medium">
+                        {t('audit.user')}
+                      </th>
+                    ) : null}
+                    {columns.shows('source') ? (
+                      <th scope="col" className="px-3 py-2 font-medium">
+                        {t('audit.source')}
+                      </th>
+                    ) : null}
                     <th scope="col" className="px-3 py-2 font-medium">
                       {t('audit.details')}
                     </th>
@@ -150,14 +172,22 @@ export function AuditPage() {
                           timeStyle: 'short',
                         })}
                       </td>
-                      <td className="px-3 py-3 text-text">{entry.entity}</td>
-                      <td className="px-3 py-3 text-text">{entry.action}</td>
-                      <td className="px-3 py-3 text-text-muted">
-                        {entry.userName ?? t('common.none')}
-                      </td>
-                      <td className="px-3 py-3 text-text-muted">
-                        {t(`audit.sources.${entry.source}`)}
-                      </td>
+                      {columns.shows('entity') ? (
+                        <td className="px-3 py-3 text-text">{entry.entity}</td>
+                      ) : null}
+                      {columns.shows('action') ? (
+                        <td className="px-3 py-3 text-text">{entry.action}</td>
+                      ) : null}
+                      {columns.shows('user') ? (
+                        <td className="px-3 py-3 text-text-muted">
+                          {entry.userName ?? t('common.none')}
+                        </td>
+                      ) : null}
+                      {columns.shows('source') ? (
+                        <td className="px-3 py-3 text-text-muted">
+                          {t(`audit.sources.${entry.source}`)}
+                        </td>
+                      ) : null}
                       <td className="px-3 py-3">
                         <Button
                           size="sm"

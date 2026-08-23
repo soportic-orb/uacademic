@@ -44,7 +44,8 @@
     "attach": "Attach",
     "unread": "Unread",
     "saving": "Saving…",
-    "choose": "Choose…"
+    "choose": "Choose…",
+    "columns": "Columns"
   },
   "nav": {
     "dashboard": "Dashboard",

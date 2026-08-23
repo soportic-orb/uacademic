@@ -431,6 +431,25 @@ export const menuLayoutSchema = z.object({
 export type MenuLayoutInput = z.infer<typeof menuLayoutSchema>
 
 /**
+ * Which columns of a listing somebody has hidden.
+ *
+ * Hidden rather than shown, so a column added later shows up for everybody
+ * instead of quietly staying invisible to whoever had arranged that table
+ * before it existed. Keyed by table, and on the account rather than in the
+ * browser: it is a thing a person arranged, not a thing about the machine
+ * they arranged it on.
+ */
+export const tableLayoutSchema = z.object({
+  hidden: z.array(z.string().trim().min(1).max(64)).max(64),
+})
+export type TableLayoutInput = z.infer<typeof tableLayoutSchema>
+
+export const tableLayoutsSchema = z.object({
+  tables: z.record(z.string().trim().min(1).max(64), tableLayoutSchema),
+})
+export type TableLayouts = z.infer<typeof tableLayoutsSchema>
+
+/**
  * The menu each role starts with, set once for the whole installation.
  *
  * Only the three center roles. A platform administrator arranges their own —

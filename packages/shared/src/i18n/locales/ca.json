@@ -44,7 +44,8 @@
     "attach": "Adjunta",
     "unread": "No llegit",
     "saving": "S’està desant…",
-    "choose": "Selecciona…"
+    "choose": "Selecciona…",
+    "columns": "Columnes"
   },
   "nav": {
     "dashboard": "Tauler",

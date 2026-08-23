@@ -9,6 +9,8 @@ import { EmptyState, ErrorState, TableSkeleton } from '../../components/feedback
 import { Avatar } from '../../components/ui/avatar'
 import { Button } from '../../components/ui/button'
 import { Card, CardBody, CardHeader } from '../../components/ui/card'
+import { ColumnPicker } from '../../components/ui/column-picker'
+import { useColumnVisibility } from '../../hooks/use-columns'
 import { useToast } from '../../hooks/use-toast'
 import { currentLocale } from '../../i18n'
 import { ApiRequestError, apiFetch, apiJson } from '../../lib/api'
@@ -64,6 +66,13 @@ export function UsersPage() {
   const toast = useToast()
   const queryClient = useQueryClient()
   const locale = currentLocale()
+
+  /** What of each person this administrator wants on screen. */
+  const columns = useColumnVisibility('users', [
+    { key: 'roles', label: t('admin.roles') },
+    { key: 'status', label: t('teachers.status') },
+    { key: 'linked', label: t('auth.linkedAccount') },
+  ])
 
   const [creating, setCreating] = useState(false)
   const EMPTY = {
@@ -488,10 +497,12 @@ export function UsersPage() {
                 ))}
               </select>
             </label>
+
+            <ColumnPicker columns={columns} />
           </div>
 
           {query.isPending ? (
-            <TableSkeleton rows={6} columns={5} />
+            <TableSkeleton rows={6} columns={2 + columns.choices.length - columns.hidden.length} />
           ) : query.isError ? (
             <ErrorState onRetry={() => void query.refetch()} />
           ) : query.data.items.length === 0 ? (
@@ -506,15 +517,21 @@ export function UsersPage() {
                       <th scope="col" className="py-2 pr-4 font-medium">
                         {t('teachers.name')}
                       </th>
-                      <th scope="col" className="py-2 pr-4 font-medium">
-                        {t('admin.roles')}
-                      </th>
-                      <th scope="col" className="py-2 pr-4 font-medium">
-                        {t('teachers.status')}
-                      </th>
-                      <th scope="col" className="py-2 pr-4 font-medium">
-                        {t('auth.linkedAccount')}
-                      </th>
+                      {columns.shows('roles') ? (
+                        <th scope="col" className="py-2 pr-4 font-medium">
+                          {t('admin.roles')}
+                        </th>
+                      ) : null}
+                      {columns.shows('status') ? (
+                        <th scope="col" className="py-2 pr-4 font-medium">
+                          {t('teachers.status')}
+                        </th>
+                      ) : null}
+                      {columns.shows('linked') ? (
+                        <th scope="col" className="py-2 pr-4 font-medium">
+                          {t('auth.linkedAccount')}
+                        </th>
+                      ) : null}
                       <th scope="col" className="py-2 text-right font-medium">
                         {t('admin.actions')}
                       </th>
@@ -538,19 +555,25 @@ export function UsersPage() {
                               </span>
                             </span>
                           </th>
-                          <td className="py-3 pr-4 text-text-muted">
-                            {user.roles.map((item) => t(`roles.${item}`)).join(', ')}
-                          </td>
-                          <td className="py-3 pr-4 text-text-muted">
-                            {t(`userStatus.${user.status}`)}
-                          </td>
-                          <td className="py-3 pr-4 text-text-muted">
-                            {user.linkedToEntra
-                              ? user.lastLoginAt
-                                ? formatDate(locale, new Date(user.lastLoginAt))
-                                : t('common.yes')
-                              : t('common.no')}
-                          </td>
+                          {columns.shows('roles') ? (
+                            <td className="py-3 pr-4 text-text-muted">
+                              {user.roles.map((item) => t(`roles.${item}`)).join(', ')}
+                            </td>
+                          ) : null}
+                          {columns.shows('status') ? (
+                            <td className="py-3 pr-4 text-text-muted">
+                              {t(`userStatus.${user.status}`)}
+                            </td>
+                          ) : null}
+                          {columns.shows('linked') ? (
+                            <td className="py-3 pr-4 text-text-muted">
+                              {user.linkedToEntra
+                                ? user.lastLoginAt
+                                  ? formatDate(locale, new Date(user.lastLoginAt))
+                                  : t('common.yes')
+                                : t('common.no')}
+                            </td>
+                          ) : null}
                           <td className="py-3 text-right">
                             <div className="flex flex-wrap justify-end gap-2">
                               {user.status === 'pending_activation' ? (
@@ -613,7 +636,10 @@ export function UsersPage() {
 
                         {editing === user.id ? (
                           <tr className="border-b border-border/60 bg-surface-muted">
-                            <td colSpan={5} className="p-4">
+                            <td
+                              colSpan={2 + columns.choices.length - columns.hidden.length}
+                              className="p-4"
+                            >
                               <div className="grid gap-6 lg:grid-cols-2">
                                 <form
                                   className="grid gap-4 sm:grid-cols-2"

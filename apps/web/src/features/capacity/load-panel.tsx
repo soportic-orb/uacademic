@@ -19,6 +19,8 @@ import { Avatar } from '../../components/ui/avatar'
 import { Button } from '../../components/ui/button'
 import { Card, CardBody } from '../../components/ui/card'
 import { ContractTeacher } from './contract-teacher'
+import { ColumnPicker } from '../../components/ui/column-picker'
+import { useColumnVisibility } from '../../hooks/use-columns'
 import { useToast } from '../../hooks/use-toast'
 import { currentLocale } from '../../i18n'
 import { ApiRequestError, apiDownload } from '../../lib/api'
@@ -37,6 +39,15 @@ export function LoadPanel() {
   const { t } = useTranslation()
   const toast = useToast()
   const locale = currentLocale()
+
+  /** The name always stays: a row of hours with nobody attached says nothing. */
+  const columns = useColumnVisibility('teacher-load', [
+    { key: 'capacity', label: t('load.capacity') },
+    { key: 'assigned', label: t('load.assigned') },
+    { key: 'ratio', label: t('load.ratio') },
+    { key: 'status', label: t('teachers.status') },
+    { key: 'category', label: t('teachers.category') },
+  ])
 
   const [filters, setFilters] = useState<LoadPanelFilters>({ sort: 'name', order: 'asc' })
   const [exporting, setExporting] = useState(false)
@@ -191,6 +202,8 @@ export function LoadPanel() {
                 {t('common.clear')}
               </Button>
             ) : null}
+
+            <ColumnPicker columns={columns} />
           </div>
 
           {query.isPending ? (
@@ -210,7 +223,7 @@ export function LoadPanel() {
                 <caption className="sr-only">{t('teachers.panel.title')}</caption>
                 <thead>
                   <tr className="border-b border-border text-left text-text-muted">
-                    {SORTABLE.map((column) => (
+                    {SORTABLE.filter((column) => columns.shows(column.key)).map((column) => (
                       <th
                         key={column.key}
                         scope="col"
@@ -243,9 +256,11 @@ export function LoadPanel() {
                         </button>
                       </th>
                     ))}
-                    <th scope="col" className="py-2 pr-4 font-medium">
-                      {t('teachers.category')}
-                    </th>
+                    {columns.shows('category') ? (
+                      <th scope="col" className="py-2 pr-4 font-medium">
+                        {t('teachers.category')}
+                      </th>
+                    ) : null}
                   </tr>
                 </thead>
                 <tbody>
@@ -263,21 +278,31 @@ export function LoadPanel() {
                           {formatPersonName(teacher.firstName, teacher.lastName)}
                         </Link>
                       </th>
-                      <td className="tabular py-3 pr-4 text-right text-text">
-                        {formatHours(locale, teacher.capacityHours)}
-                      </td>
-                      <td className="tabular py-3 pr-4 text-right text-text">
-                        {formatHours(locale, teacher.assignedHours)}
-                      </td>
-                      <td className="tabular py-3 pr-4 text-right text-text">
-                        {formatPercent(locale, teacher.ratioPercent)}
-                      </td>
-                      <td className="py-3 pr-4">
-                        <LoadBadge status={teacher.status} ratioPercent={teacher.ratioPercent} />
-                      </td>
-                      <td className="py-3 pr-4 text-text-muted">
-                        {t(`teacherCategory.${teacher.category}`)}
-                      </td>
+                      {columns.shows('capacity') ? (
+                        <td className="tabular py-3 pr-4 text-right text-text">
+                          {formatHours(locale, teacher.capacityHours)}
+                        </td>
+                      ) : null}
+                      {columns.shows('assigned') ? (
+                        <td className="tabular py-3 pr-4 text-right text-text">
+                          {formatHours(locale, teacher.assignedHours)}
+                        </td>
+                      ) : null}
+                      {columns.shows('ratio') ? (
+                        <td className="tabular py-3 pr-4 text-right text-text">
+                          {formatPercent(locale, teacher.ratioPercent)}
+                        </td>
+                      ) : null}
+                      {columns.shows('status') ? (
+                        <td className="py-3 pr-4">
+                          <LoadBadge status={teacher.status} ratioPercent={teacher.ratioPercent} />
+                        </td>
+                      ) : null}
+                      {columns.shows('category') ? (
+                        <td className="py-3 pr-4 text-text-muted">
+                          {t(`teacherCategory.${teacher.category}`)}
+                        </td>
+                      ) : null}
                     </tr>
                   ))}
                 </tbody>
