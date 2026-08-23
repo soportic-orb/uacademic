@@ -1223,6 +1223,7 @@
       "dateTo": "To",
       "plannedHours": "Planned hours",
       "requiredSpaceType": "Required space type",
+      "space": "Room",
       "isTeachingDay": "Teaching day",
       "ects": "ECTS",
       "year": "Year",
@@ -1600,7 +1601,9 @@
       "none": "Nobody is contracted for the active year yet."
     },
     "assignTeacher": "Assign a teacher",
+    "assignSpace": "Assign a room",
     "addTeacher": "Add a teacher",
+    "removeTeacher": "Take {{name}} off the class",
     "warnings": {
       "unavailable": "{{name}} said they are not available from {{start}} to {{end}}. Not assigned.",
       "avoid": "{{name}} asked to avoid teaching from {{start}} to {{end}}. Assigned anyway."
@@ -1621,7 +1624,17 @@
     },
     "jumpedToWeek": "This group's term starts on {{date}} — taken you to that week.",
     "topic": "Class topic",
-    "topicPlaceholder": "Topic…"
+    "topicPlaceholder": "Topic…",
+    "duplicate": {
+      "title": "Duplicate the class",
+      "action": "Duplicate",
+      "weekdays": "Days of the week",
+      "from": "Start time",
+      "to": "End time",
+      "until": "Until",
+      "hint": "One class is created per chosen day. Holidays and closures are skipped.",
+      "done": "{{created}} classes created, {{skipped}} skipped"
+    }
   },
   "calendar": {
     "title": "My calendar",
@@ -1673,7 +1686,12 @@
       "print": "Print this view",
       "printHint": "The PDF carries the filters you have on and the period you are looking at.",
       "empty": "No published classes match these filters.",
-      "none": "You do not coordinate any subject yet, so there is nothing to show."
+      "none": "You do not coordinate any subject yet, so there is nothing to show.",
+      "errors": {
+        "roomBusy": "That room is already taken at this hour."
+      },
+      "changeRoom": "Change the room",
+      "roomChanged": "The room has been changed"
     }
   },
   "changes": {

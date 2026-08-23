@@ -198,9 +198,13 @@ export function registerAdminResources(app: FastifyInstance): void {
     defaultSort: 'code',
     searchFields: ['code'],
     filterFields: ['subjectId', 'type'],
-    include: { subject: { select: { code: true, nameCa: true } } },
+    include: {
+      subject: { select: { code: true, nameCa: true } },
+      space: { select: { name: true } },
+    },
     serialize: (row) => {
       const subject = row.subject as { code?: string; nameCa?: string } | undefined
+      const space = row.space as { name?: string } | undefined
       return {
         id: asString(row.id),
         code: asString(row.code),
@@ -208,6 +212,8 @@ export function registerAdminResources(app: FastifyInstance): void {
         plannedHours: asNumber(row.plannedHours),
         capacity: row.capacity ?? null,
         requiredSpaceType: row.requiredSpaceType ?? null,
+        spaceId: row.spaceId ?? null,
+        spaceName: space?.name ?? null,
         subjectId: asString(row.subjectId),
         subjectCode: asString(subject?.code),
         subjectName: asString(subject?.nameCa),

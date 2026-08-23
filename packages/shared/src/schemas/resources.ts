@@ -100,6 +100,14 @@ export const groupInputSchema = z.object({
   requiredSpaceType: z
     .enum(['classroom', 'seminar_room', 'computer_lab', 'lab', 'auditorium', 'other'])
     .nullish(),
+  /**
+   * The room this group normally meets in.
+   *
+   * A default rather than a rule: a session placed for this group starts in
+   * this room, and the coordinator can move that one session somewhere else
+   * without the group changing.
+   */
+  spaceId: uuidSchema.nullish(),
 })
 export type GroupInput = z.infer<typeof groupInputSchema>
 

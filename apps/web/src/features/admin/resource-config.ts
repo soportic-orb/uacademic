@@ -374,6 +374,7 @@ export const ADMIN_RESOURCES: ResourceConfig[] = [
         codeKey: 'subjectCode',
       },
       { key: 'type', labelKey: 'admin.fields.type', render: 'enum', enumPrefix: 'groupType' },
+      { key: 'spaceName', labelKey: 'admin.fields.space' },
       {
         key: 'plannedHours',
         labelKey: 'admin.fields.plannedHours',
@@ -414,6 +415,14 @@ export const ADMIN_RESOURCES: ResourceConfig[] = [
         step: '0.5',
       },
       { name: 'capacity', labelKey: 'admin.fields.capacity', type: 'number' },
+      {
+        // The room this group normally meets in: a session placed for it
+        // starts there instead of being typed in again every time.
+        name: 'spaceId',
+        labelKey: 'admin.fields.space',
+        type: 'select',
+        optionsFrom: { path: 'admin/spaces', labelField: 'name' },
+      },
       {
         name: 'requiredSpaceType',
         labelKey: 'admin.fields.requiredSpaceType',

@@ -1223,6 +1223,7 @@
       "dateTo": "Fins al",
       "plannedHours": "Hores previstes",
       "requiredSpaceType": "Tipus d'espai necessari",
+      "space": "Aula",
       "isTeachingDay": "Dia lectiu",
       "ects": "ECTS",
       "year": "Curs",
@@ -1600,7 +1601,9 @@
       "none": "Encara no hi ha professorat amb contracte per al curs actiu."
     },
     "assignTeacher": "Assigna docent",
+    "assignSpace": "Assigna aula",
     "addTeacher": "Afegeix un docent",
+    "removeTeacher": "Treu {{name}} de la classe",
     "warnings": {
       "unavailable": "{{name}} ha indicat que no té disponibilitat de {{start}} a {{end}}. No s'ha assignat.",
       "avoid": "{{name}} ha indicat que prefereix no fer classe de {{start}} a {{end}}. S’ha assignat igualment."
@@ -1621,7 +1624,17 @@
     },
     "jumpedToWeek": "El grup es planifica a partir del {{date}}: t'hi hem portat.",
     "topic": "Tema de la classe",
-    "topicPlaceholder": "Tema…"
+    "topicPlaceholder": "Tema…",
+    "duplicate": {
+      "title": "Duplica la sessió",
+      "action": "Duplica",
+      "weekdays": "Dies de la setmana",
+      "from": "Hora d’inici",
+      "to": "Hora de fi",
+      "until": "Fins al dia",
+      "hint": "Es crearà una sessió per cada dia triat. Els dies festius i no lectius se salten.",
+      "done": "{{created}} sessions creades, {{skipped}} omeses"
+    }
   },
   "calendar": {
     "title": "El meu calendari",
@@ -1673,7 +1686,12 @@
       "print": "Imprimeix aquesta vista",
       "printHint": "El PDF surt amb els filtres actius i el període que estàs veient.",
       "empty": "No hi ha cap classe publicada amb aquests filtres.",
-      "none": "Encara no coordines cap assignatura, així que no hi ha res a mostrar."
+      "none": "Encara no coordines cap assignatura, així que no hi ha res a mostrar.",
+      "errors": {
+        "roomBusy": "Aquesta aula ja està ocupada en aquesta hora."
+      },
+      "changeRoom": "Canvia l'aula",
+      "roomChanged": "S'ha canviat l'aula"
     }
   },
   "changes": {

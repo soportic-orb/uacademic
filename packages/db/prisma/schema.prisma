@@ -639,6 +639,9 @@ model Group {
   plannedHours          Decimal    @map("planned_hours") @db.Decimal(6, 2)
   capacity              Int?       @db.SmallInt
   requiredSpaceType     SpaceType? @map("required_space_type")
+  /// The room this group normally has. A default, not a rule: a session takes
+  /// it when it is placed, and the planner may put that one session elsewhere.
+  spaceId               String?    @map("space_id") @db.Char(36)
   /// Equipment the room must have for this group, e.g. ["workstations"].
   /// A hard constraint of the planner (phase 3).
   requiredEquipmentJson Json?      @map("required_equipment_json")
@@ -647,12 +650,14 @@ model Group {
 
   center  Center  @relation(fields: [centerId], references: [id], onDelete: Cascade)
   subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  space   Space?  @relation(fields: [spaceId], references: [id], onDelete: SetNull)
 
   assignments Assignment[]
   sessions    ClassSession[]
 
   @@unique([subjectId, code])
   @@index([centerId, subjectId])
+  @@index([spaceId])
   @@map("groups")
 }
 
@@ -782,6 +787,7 @@ model Space {
 
   center   Center         @relation(fields: [centerId], references: [id], onDelete: Cascade)
   sessions ClassSession[]
+  groups   Group[]
 
   @@unique([centerId, building, name])
   @@index([centerId, type])

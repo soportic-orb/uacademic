@@ -10,14 +10,24 @@
  * the center, because that is what they administer. Neither sees another
  * center: the sessions are read through the tenant-scoped client (R2).
  */
-import { calendarColor, occurrencesBetween, translate } from '@uacademic/shared'
+import {
+  type PlannedSession,
+  type Weekday,
+  calendarColor,
+  detectSessionConflicts,
+  occurrencesBetween,
+  translate,
+} from '@uacademic/shared'
 import type { FastifyInstance, FastifyRequest } from 'fastify'
 import PDFDocument from 'pdfkit'
 import { z } from 'zod'
 
-import { type PrismaClient } from '../../lib/prisma.js'
+import { writeAuditLog } from '../../lib/audit.js'
+import { AppError } from '../../lib/errors.js'
+import { type PrismaClient, prisma } from '../../lib/prisma.js'
 import { parseWith } from '../../lib/validate.js'
 import { requireCenterScope, requireUser } from '../../plugins/context.js'
+import { enqueueCalendarSync } from '../../services/calendar/sync.js'
 import {
   type CalendarSession,
   nonTeachingDates,
@@ -130,6 +140,144 @@ export function registerCoordinationCalendarRoutes(app: FastifyInstance): void {
         .send(await finished)
     },
   )
+
+  registerRoomRoutes(app)
+}
+
+/* ──────────────────────────── changing the room ─────────────────────────── */
+
+const roomSchema = z.object({ spaceId: z.uuid().nullable() })
+
+/**
+ * Moving one class to another room, from the calendar somebody is looking at.
+ *
+ * The room is the one thing about a published class that changes for reasons
+ * that have nothing to do with the timetable — a broken projector, a room
+ * being painted — and sending a coordinator back to the planner to redraft
+ * and republish a whole version for it is out of proportion. Everything else
+ * about a published class still goes through the change ladder.
+ *
+ * The room has to be free: a clash is refused with the class it clashes with,
+ * and whoever gives the class gets their calendar resynced (R4 records it).
+ */
+function registerRoomRoutes(app: FastifyInstance): void {
+  app.patch(
+    '/api/v1/calendar/coordination/sessions/:id',
+    { config: { roles: [...COORDINATION] } },
+    async (request: FastifyRequest<{ Params: { id: string } }>) => {
+      const user = requireUser(request)
+      const { centerId, db } = requireCenterScope(request)
+      const input = parseWith(roomSchema, request.body)
+
+      const session = await db.classSession.findFirst({
+        where: { id: request.params.id, scheduleVersion: { status: 'published' } },
+        include: { coTeachers: { select: { teacherProfileId: true } } },
+      })
+      if (!session) throw AppError.notFound()
+
+      const mine = await visibleSessions(request, db, {
+        from: isoOf(session.dateFrom),
+        to: isoOf(session.dateTo),
+      })
+      // Only the classes this person is responsible for: the calendar shows
+      // them, and nothing outside it is theirs to move.
+      if (!mine.some((visible) => visible.id === session.id)) throw AppError.notFound()
+
+      if (input.spaceId) {
+        const space = await db.space.findFirst({ where: { id: input.spaceId } })
+        if (!space) throw AppError.notFound()
+
+        const others = await db.classSession.findMany({
+          where: {
+            spaceId: input.spaceId,
+            id: { not: session.id },
+            scheduleVersion: { status: 'published' },
+          },
+          take: 500,
+        })
+
+        // The class as it would be, not as it is: comparing the room it is
+        // leaving would never find the clash being asked about.
+        const candidate = { ...toPlanned(session), spaceId: input.spaceId }
+
+        const clash = detectSessionConflicts([...others.map(toPlanned), candidate], {
+          kinds: ['space'],
+        }).find((conflict) => conflict.sessionIds.includes(session.id))
+
+        if (clash) {
+          throw new AppError(409, 'CONFLICT', 'calendar.coordination.errors.roomBusy')
+        }
+      }
+
+      const updated = await db.classSession.update({
+        where: { id: session.id },
+        data: { spaceId: input.spaceId },
+      })
+
+      await writeAuditLog(prisma(), {
+        centerId,
+        userId: user.userId,
+        entity: 'class_session',
+        entityId: session.id,
+        action: 'room',
+        before: { spaceId: session.spaceId },
+        after: { spaceId: updated.spaceId },
+        source: 'user',
+        ip: request.ip,
+      })
+
+      // The people giving it are the people whose calendar now says the wrong
+      // room.
+      const teaching = [
+        session.teacherProfileId,
+        ...session.coTeachers.map((entry) => entry.teacherProfileId),
+      ].filter((id): id is string => Boolean(id))
+
+      if (teaching.length > 0) {
+        const profiles = await prisma().teacherProfile.findMany({
+          where: { id: { in: teaching } },
+          select: { userId: true },
+        })
+        await enqueueCalendarSync(
+          prisma(),
+          profiles.map((profile) => profile.userId),
+          { reason: 'room' },
+        )
+      }
+
+      return { id: session.id, spaceId: updated.spaceId }
+    },
+  )
+}
+
+function isoOf(date: Date): string {
+  return date.toISOString().slice(0, 10)
+}
+
+function toPlanned(row: {
+  id: string
+  groupId: string
+  teacherProfileId: string | null
+  spaceId: string | null
+  weekday: number
+  startTime: string
+  endTime: string
+  dateFrom: Date
+  dateTo: Date
+  recurrence: string
+}): PlannedSession {
+  return {
+    id: row.id,
+    groupId: row.groupId,
+    teacherProfileId: row.teacherProfileId,
+    spaceId: row.spaceId,
+    weekday: row.weekday as Weekday,
+    startTime: row.startTime as PlannedSession['startTime'],
+    endTime: row.endTime as PlannedSession['endTime'],
+    dateFrom: row.dateFrom,
+    dateTo: row.dateTo,
+    recurrence: row.recurrence as PlannedSession['recurrence'],
+  }
 }
 
 /* ─────────────────────────────── the sessions ──────────────────────────── */

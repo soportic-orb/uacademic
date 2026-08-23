@@ -190,4 +190,106 @@ describe.skipIf(!hasDatabase)('the teaching programme', () => {
       expect((await print('view=agenda', asTeacher())).statusCode).toBe(403)
     })
   })
+
+  /**
+   * A room changes for reasons that have nothing to do with the timetable, and
+   * this is the screen somebody is looking at when they find out.
+   */
+  describe('moving a class to another room', () => {
+    const move = (sessionId: string, spaceId: string | null, headers = asAdmin()) =>
+      app.inject({
+        method: 'PATCH',
+        url: `/api/v1/calendar/coordination/sessions/${sessionId}`,
+        headers,
+        payload: { spaceId },
+      })
+
+    it('changes the room of a published class, and records it (R4)', async () => {
+      const session = await prisma.classSession.findFirstOrThrow({
+        where: { centerId, scheduleVersion: { status: 'published' } },
+      })
+      const space = await prisma.space.findFirstOrThrow({
+        where: { centerId, id: { not: session.spaceId ?? undefined } },
+      })
+
+      const response = await move(session.id, space.id)
+
+      expect(response.statusCode).toBe(200)
+      expect(
+        (await prisma.classSession.findFirstOrThrow({ where: { id: session.id } })).spaceId,
+      ).toBe(space.id)
+
+      const entry = await prisma.auditLog.findFirst({
+        where: { entity: 'class_session', entityId: session.id, action: 'room' },
+        orderBy: { createdAt: 'desc' },
+      })
+      expect(entry?.source).toBe('user')
+
+      await prisma.classSession.update({
+        where: { id: session.id },
+        data: { spaceId: session.spaceId },
+      })
+    })
+
+    it('refuses a room that is already taken at that hour', async () => {
+      const [first, second] = await prisma.classSession.findMany({
+        where: { centerId, scheduleVersion: { status: 'published' } },
+        orderBy: [{ weekday: 'asc' }, { startTime: 'asc' }],
+        take: 2,
+      })
+
+      // Put the second class in the same slot as the first, then try to give
+      // it the first one's room.
+      await prisma.classSession.update({
+        where: { id: second!.id },
+        data: {
+          weekday: first!.weekday,
+          startTime: first!.startTime,
+          endTime: first!.endTime,
+          dateFrom: first!.dateFrom,
+          dateTo: first!.dateTo,
+          recurrence: first!.recurrence,
+        },
+      })
+
+      try {
+        const response = await move(second!.id, first!.spaceId)
+
+        expect(response.statusCode).toBe(409)
+        expect(response.json().error.messageKey).toBe('calendar.coordination.errors.roomBusy')
+      } finally {
+        // The room too: a refusal must leave nothing behind, and a test that
+        // trusts that has no way of saying so if it is wrong.
+        await prisma.classSession.update({
+          where: { id: second!.id },
+          data: {
+            weekday: second!.weekday,
+            startTime: second!.startTime,
+            endTime: second!.endTime,
+            dateFrom: second!.dateFrom,
+            dateTo: second!.dateTo,
+            recurrence: second!.recurrence,
+            spaceId: second!.spaceId,
+          },
+        })
+      }
+    })
+
+    it('is not a lecturer’s to change', async () => {
+      const session = await prisma.classSession.findFirstOrThrow({
+        where: { centerId, scheduleVersion: { status: 'published' } },
+      })
+
+      expect((await move(session.id, null, asTeacher())).statusCode).toBe(403)
+    })
+
+    it('will not move a class the coordinator does not coordinate', async () => {
+      const session = await prisma.classSession.findFirstOrThrow({
+        where: { centerId, scheduleVersion: { status: 'published' } },
+      })
+
+      // No `coordinate()` here: they coordinate nothing, so this is not theirs.
+      expect((await move(session.id, null, asCoordinator())).statusCode).toBe(404)
+    })
+  })
 })

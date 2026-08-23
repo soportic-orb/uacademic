@@ -358,6 +358,121 @@ describe.skipIf(!hasDatabase)('the planner', () => {
       )
     })
 
+    it('puts a class in the room its group normally meets in', async () => {
+      const version = await createVersion('group room')
+      const group = await prisma.group.findFirstOrThrow({ where: { centerId } })
+      const space = await prisma.space.findFirstOrThrow({ where: { centerId } })
+      await prisma.group.update({ where: { id: group.id }, data: { spaceId: space.id } })
+
+      try {
+        const created = await app.inject({
+          method: 'POST',
+          url: `/api/v1/planner/versions/${version.id}/sessions`,
+          headers: asCoordinator(),
+          payload: {
+            groupId: group.id,
+            date: ON[4],
+            startTime: '17:00',
+            endTime: '18:00',
+          },
+        })
+
+        expect(created.json().sessions[0].spaceId).toBe(space.id)
+
+        // A default, not a rule: this one class can be somewhere else.
+        const moved = await app.inject({
+          method: 'PATCH',
+          url: `/api/v1/planner/versions/${version.id}/sessions/${created.json().sessions[0].id}`,
+          headers: asCoordinator(),
+          payload: { spaceId: null },
+        })
+        expect(moved.json().sessions[0].spaceId).toBeNull()
+      } finally {
+        await prisma.group.update({ where: { id: group.id }, data: { spaceId: null } })
+      }
+    })
+
+    it('repeats a class across the term, one ordinary session per day', async () => {
+      const version = await createVersion('series')
+      const group = await prisma.group.findFirstOrThrow({ where: { centerId } })
+
+      const created = await app.inject({
+        method: 'POST',
+        url: `/api/v1/planner/versions/${version.id}/sessions`,
+        headers: asCoordinator(),
+        payload: { groupId: group.id, date: ON[1], startTime: '12:00', endTime: '13:00' },
+      })
+      const sessionId = created.json().sessions[0].id
+
+      const monday = new Date(`${ON[1]}T00:00:00Z`)
+      const until = new Date(monday)
+      until.setUTCDate(until.getUTCDate() + 14)
+
+      const series = await app.inject({
+        method: 'POST',
+        url: `/api/v1/planner/versions/${version.id}/sessions/${sessionId}/duplicate`,
+        headers: asCoordinator(),
+        payload: { weekdays: [1, 3], until: until.toISOString().slice(0, 10) },
+      })
+
+      expect(series.statusCode).toBe(201)
+      const sessions = series.json().sessions as { weekday: number; recurrence: string }[]
+
+      // Inside the fortnight: the Monday it was copied from, two more
+      // Mondays and two Wednesdays.
+      expect(sessions).toHaveLength(5)
+      expect(sessions.every((session) => session.recurrence === 'once')).toBe(true)
+      expect(new Set(sessions.map((session) => session.weekday))).toEqual(new Set([1, 3]))
+    })
+
+    it('does not put a class on a day the center is closed', async () => {
+      const version = await createVersion('series over a holiday')
+      const group = await prisma.group.findFirstOrThrow({ where: { centerId } })
+      const year = await prisma.academicYear.findFirstOrThrow({
+        where: { centerId, status: 'active' },
+      })
+
+      const monday = new Date(`${ON[1]}T00:00:00Z`)
+      const nextMonday = new Date(monday)
+      nextMonday.setUTCDate(nextMonday.getUTCDate() + 7)
+      const closed = nextMonday.toISOString().slice(0, 10)
+
+      const holiday = await prisma.academicCalendarEntry.create({
+        data: {
+          centerId,
+          academicYearId: year.id,
+          type: 'holiday',
+          dateFrom: nextMonday,
+          dateTo: nextMonday,
+          nameCa: 'Prova festiu sèrie',
+          nameEs: 'Prova festiu sèrie',
+          nameEn: 'Prova festiu sèrie',
+          isTeachingDay: false,
+        },
+      })
+
+      try {
+        const created = await app.inject({
+          method: 'POST',
+          url: `/api/v1/planner/versions/${version.id}/sessions`,
+          headers: asCoordinator(),
+          payload: { groupId: group.id, date: ON[1], startTime: '13:00', endTime: '14:00' },
+        })
+
+        const series = await app.inject({
+          method: 'POST',
+          url: `/api/v1/planner/versions/${version.id}/sessions/${created.json().sessions[0].id}/duplicate`,
+          headers: asCoordinator(),
+          payload: { weekdays: [1], until: closed },
+        })
+
+        expect(series.json().created).toBe(0)
+        expect(series.json().skipped).toBe(1)
+      } finally {
+        await prisma.academicCalendarEntry.delete({ where: { id: holiday.id } })
+      }
+    })
+
     it('refuses to touch a published version', async () => {
       const group = await prisma.group.findFirst({ where: { centerId } })
       const response = await app.inject({

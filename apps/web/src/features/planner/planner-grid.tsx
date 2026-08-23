@@ -10,6 +10,7 @@
  */
 import {
   type CellEvaluation,
+  type SpaceResource,
   closuresInRange,
   firstClassDate,
   occursOn,
@@ -17,7 +18,7 @@ import {
   isoDateOf,
 } from '@uacademic/shared'
 import { formatDate, formatHours, minutesToHours } from '@uacademic/shared'
-import { Trash2, Undo2, Redo2 } from 'lucide-react'
+import { CopyPlus, Trash2, Undo2, Redo2, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -34,6 +35,7 @@ import {
   type VersionDetailDto,
   useCreateSession,
   useDeleteSession,
+  useDuplicateSession,
   useUpdateSession,
 } from './queries'
 import { TeacherRail } from './teacher-rail'
@@ -75,6 +77,7 @@ export function PlannerGrid({
   const createSession = useCreateSession(version.id)
   const updateSession = useUpdateSession(version.id)
   const deleteSession = useDeleteSession(version.id)
+  const duplicateSession = useDuplicateSession(version.id)
 
   const [held, setHeld] = useState<HeldSession | null>(null)
   const [cursor, setCursor] = useState({ day: 0, slot: 0 })
@@ -144,6 +147,18 @@ export function PlannerGrid({
         sessionId: session.id,
         values: { topic: topic.trim() || null },
       })
+    } catch (error) {
+      onError(error)
+    }
+  }
+
+  /** The class whose series is being written, if somebody pressed duplicate. */
+  const [duplicating, setDuplicating] = useState<PlannerSessionDto | null>(null)
+
+  /** The room, changed on the block: a group's usual one is only a default. */
+  const setSpace = async (session: PlannerSessionDto, spaceId: string | null) => {
+    try {
+      await updateSession.mutateAsync({ sessionId: session.id, values: { spaceId } })
     } catch (error) {
       onError(error)
     }
@@ -626,6 +641,9 @@ export function PlannerGrid({
                                   void assignTeachers(session, teacherProfileIds)
                                 }
                                 onTopic={(topic) => void setTopic(session, topic)}
+                                spaces={context.spaces}
+                                onSpace={(spaceId) => void setSpace(session, spaceId)}
+                                onDuplicate={() => setDuplicating(session)}
                                 onPick={() => {
                                   setHeld(heldFromSession(session))
                                   setCursor({ day: dayIndex, slot: slotIndex })
@@ -734,6 +752,158 @@ export function PlannerGrid({
       </div>
 
       <StatusBar version={version} />
+
+      {duplicating ? (
+        <DuplicateDialog
+          session={duplicating}
+          until={version.range.to}
+          onClose={() => setDuplicating(null)}
+          onConfirm={async (input) => {
+            try {
+              const result = await duplicateSession.mutateAsync({
+                sessionId: duplicating.id,
+                ...input,
+              })
+              setDuplicating(null)
+              toast.success('planner.duplicate.done', {
+                params: { created: result.created, skipped: result.skipped },
+              })
+            } catch (error) {
+              onError(error)
+            }
+          }}
+        />
+      ) : null}
+    </div>
+  )
+}
+
+/**
+ * Repeating one class across the term.
+ *
+ * Nothing in this planner repeats by itself, and this does not change that:
+ * what it writes is ordinary sessions, one per day, each of which can then be
+ * moved or removed on its own. It only saves somebody placing the same class
+ * fifteen times by hand.
+ */
+function DuplicateDialog({
+  session,
+  until,
+  onClose,
+  onConfirm,
+}: {
+  session: PlannerSessionDto
+  /** The end of the year: as far as a series can possibly run. */
+  until: string
+  onClose: () => void
+  onConfirm: (input: {
+    weekdays: number[]
+    startTime: string
+    endTime: string
+    until: string
+  }) => Promise<void>
+}) {
+  const { t } = useTranslation()
+  const [weekdays, setWeekdays] = useState<number[]>([session.weekday])
+  const [startTime, setStartTime] = useState(session.startTime)
+  const [endTime, setEndTime] = useState(session.endTime)
+  const [lastDate, setLastDate] = useState(until)
+  const [busy, setBusy] = useState(false)
+
+  const toggle = (weekday: number) =>
+    setWeekdays((current) =>
+      current.includes(weekday)
+        ? current.filter((entry) => entry !== weekday)
+        : [...current, weekday].sort((a, b) => a - b),
+    )
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={t('planner.duplicate.title')}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+    >
+      <div className="w-full max-w-md space-y-4 rounded-card border border-border bg-surface p-5">
+        <div>
+          <h2 className="text-lg font-semibold text-text">{t('planner.duplicate.title')}</h2>
+          <p className="mt-1 text-sm text-text-muted">
+            {`${session.subjectCode} ${session.groupCode}`}
+          </p>
+        </div>
+
+        <fieldset>
+          <legend className="mb-1 text-xs text-text-muted">
+            {t('planner.duplicate.weekdays')}
+          </legend>
+          <div className="flex flex-wrap gap-2">
+            {[1, 2, 3, 4, 5, 6, 7].map((weekday) => (
+              <label key={weekday} className="flex items-center gap-1 text-sm text-text">
+                <input
+                  type="checkbox"
+                  checked={weekdays.includes(weekday)}
+                  onChange={() => toggle(weekday)}
+                  className="size-4 rounded border-border"
+                />
+                {t(`weekday.${weekday}`)}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+
+        <div className="grid grid-cols-2 gap-3">
+          <label className="block text-sm">
+            <span className="mb-1 block text-xs text-text-muted">
+              {t('planner.duplicate.from')}
+            </span>
+            <input
+              type="time"
+              value={startTime}
+              onChange={(event) => setStartTime(event.target.value)}
+              className="h-10 w-full rounded-control border border-border bg-surface px-2 text-sm text-text"
+            />
+          </label>
+          <label className="block text-sm">
+            <span className="mb-1 block text-xs text-text-muted">{t('planner.duplicate.to')}</span>
+            <input
+              type="time"
+              value={endTime}
+              onChange={(event) => setEndTime(event.target.value)}
+              className="h-10 w-full rounded-control border border-border bg-surface px-2 text-sm text-text"
+            />
+          </label>
+        </div>
+
+        <label className="block text-sm">
+          <span className="mb-1 block text-xs text-text-muted">{t('planner.duplicate.until')}</span>
+          <input
+            type="date"
+            value={lastDate}
+            max={until}
+            onChange={(event) => setLastDate(event.target.value)}
+            className="h-10 w-full rounded-control border border-border bg-surface px-2 text-sm text-text"
+          />
+        </label>
+
+        <p className="text-xs text-text-muted">{t('planner.duplicate.hint')}</p>
+
+        <div className="flex justify-end gap-2">
+          <Button variant="ghost" onClick={onClose}>
+            {t('common.cancel')}
+          </Button>
+          <Button
+            disabled={busy || weekdays.length === 0 || endTime <= startTime || !lastDate}
+            onClick={() => {
+              setBusy(true)
+              void onConfirm({ weekdays, startTime, endTime, until: lastDate }).finally(() =>
+                setBusy(false),
+              )
+            }}
+          >
+            {t('planner.duplicate.action')}
+          </Button>
+        </div>
+      </div>
     </div>
   )
 }
@@ -794,6 +964,9 @@ function SessionBlock({
   onRemove,
   onAssign,
   onTopic,
+  spaces,
+  onSpace,
+  onDuplicate,
   onKeyDown,
 }: {
   session: PlannerSessionDto
@@ -808,6 +981,10 @@ function SessionBlock({
   onAssign: (teacherProfileIds: string[]) => void
   /** What this class is about, typed on the block. Saved when the box is left. */
   onTopic: (topic: string) => void
+  spaces: SpaceResource[]
+  onSpace: (spaceId: string | null) => void
+  /** Opens the panel that repeats this class across the term. */
+  onDuplicate: () => void
   onKeyDown: (event: React.KeyboardEvent) => void
 }) {
   const { t } = useTranslation()
@@ -854,10 +1031,36 @@ function SessionBlock({
           {session.subjectCode}
         </span>
         <span className="block text-text-muted">{session.groupCode}</span>
-        <span className="block truncate text-text-muted">
-          {session.spaceName ?? t('planner.unassignedSpace')}
-        </span>
+        {editable ? null : (
+          <span className="block truncate text-text-muted">
+            {session.spaceName ?? t('planner.unassignedSpace')}
+          </span>
+        )}
       </button>
+
+      {/*
+        The room. A group has one it normally meets in, and a session starts
+        there — but a week has exceptions, so it is changed here rather than by
+        editing the group.
+      */}
+      {editable ? (
+        <label className="block">
+          <span className="sr-only">{t('planner.assignSpace')}</span>
+          <select
+            value={session.spaceId ?? ''}
+            onChange={(event) => onSpace(event.target.value || null)}
+            onClick={(event) => event.stopPropagation()}
+            className="w-full truncate rounded-sm border border-border bg-surface px-1 py-0.5 text-xs text-text"
+          >
+            <option value="">{t('planner.unassignedSpace')}</option>
+            {spaces.map((space) => (
+              <option key={space.spaceId} value={space.spaceId}>
+                {space.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
 
       {/*
         What the class is about, written on the block itself.
@@ -901,28 +1104,35 @@ function SessionBlock({
       {editable ? (
         <TeacherPickers session={session} directory={directory} onAssign={onAssign} />
       ) : session.teachers.length > 0 ? (
-        session.teachers.map((person) => (
-          <span
-            key={person.teacherProfileId}
-            className="block truncate text-text-muted"
-            title={person.name}
-          >
-            {person.name}
-          </span>
-        ))
+        <span
+          className="block truncate text-text-muted"
+          title={session.teachers.map((person) => person.name).join(' · ')}
+        >
+          {session.teachers.map((person) => person.name).join(' · ')}
+        </span>
       ) : (
         <span className="block truncate text-text-muted">{t('planner.unassignedTeacher')}</span>
       )}
 
       {editable ? (
-        <button
-          type="button"
-          aria-label={t('common.remove')}
-          onClick={onRemove}
-          className="absolute right-0.5 top-0.5 hidden rounded-sm p-0.5 text-text-muted hover:bg-surface hover:text-danger group-hover:block focus-visible:block"
-        >
-          <Trash2 className="size-3" aria-hidden="true" />
-        </button>
+        <div className="absolute right-0.5 top-0.5 hidden gap-0.5 group-hover:flex group-focus-within:flex">
+          <button
+            type="button"
+            aria-label={t('planner.duplicate.action')}
+            onClick={onDuplicate}
+            className="rounded-sm p-0.5 text-text-muted hover:bg-surface hover:text-primary"
+          >
+            <CopyPlus className="size-3" aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            aria-label={t('common.remove')}
+            onClick={onRemove}
+            className="rounded-sm p-0.5 text-text-muted hover:bg-surface hover:text-danger"
+          >
+            <Trash2 className="size-3" aria-hidden="true" />
+          </button>
+        </div>
       ) : null}
     </div>
   )
@@ -931,12 +1141,11 @@ function SessionBlock({
 /**
  * Who gives this class — one person, or several.
  *
- * Most classes have one teacher, so the first row is the picker that has
- * always been here. A class given by two lecturers, or by a titular with an
- * assistant, gets a row each: choosing somebody in the empty row adds them,
- * and clearing a row removes that person. A cell in a week grid has no space
- * for a dialog, and a plain list of selects is the one control that is both
- * small enough and reachable from the keyboard (R8).
+ * The names read as one line: a class given by two lecturers is a class, not
+ * two, and a picker per person turned a cell in a week grid into a column of
+ * dropdowns. Each name carries the button that takes that person off the
+ * class, and one dropdown underneath adds the next one. A cell has no room
+ * for a dialog, and both controls are reachable from the keyboard (R8).
  */
 function TeacherPickers({
   session,
@@ -949,46 +1158,55 @@ function TeacherPickers({
 }) {
   const { t } = useTranslation()
   const current = session.teachers.map((person) => person.teacherProfileId)
-
-  /** The rows drawn: everyone on the class, plus one empty row to add by. */
-  const rows = current.length < MAX_TEACHERS_PER_SESSION ? [...current, ''] : current
-
-  const replace = (index: number, teacherProfileId: string) => {
-    const next = [...current]
-    if (index >= next.length) {
-      if (teacherProfileId) next.push(teacherProfileId)
-    } else if (teacherProfileId) {
-      next[index] = teacherProfileId
-    } else {
-      next.splice(index, 1)
-    }
-    onAssign([...new Set(next)])
-  }
+  const full = current.length >= MAX_TEACHERS_PER_SESSION
 
   return (
-    <div className="flex flex-col gap-0.5">
-      {rows.map((teacherProfileId, index) => (
-        <label className="block" key={teacherProfileId || 'add'}>
+    <div className="min-w-0 space-y-0.5">
+      {session.teachers.length > 0 ? (
+        <div
+          className="flex flex-wrap items-center gap-x-1 text-xs text-text-muted"
+          title={session.teachers.map((person) => person.name).join(' · ')}
+        >
+          {session.teachers.map((person, index) => (
+            <span key={person.teacherProfileId} className="inline-flex items-center gap-0.5">
+              {index > 0 ? <span aria-hidden="true">·</span> : null}
+              <span className="truncate">{person.name}</span>
+              <button
+                type="button"
+                aria-label={t('planner.removeTeacher', { name: person.name })}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  onAssign(current.filter((id) => id !== person.teacherProfileId))
+                }}
+                className="rounded-sm text-text-muted hover:text-danger focus-visible:outline-2 focus-visible:outline-ring"
+              >
+                <X className="size-3" aria-hidden="true" />
+              </button>
+            </span>
+          ))}
+        </div>
+      ) : null}
+
+      {full ? null : (
+        <label className="block">
           <span className="sr-only">
-            {index === 0 ? t('planner.assignTeacher') : t('planner.addTeacher')}
+            {current.length === 0 ? t('planner.assignTeacher') : t('planner.addTeacher')}
           </span>
           <select
-            value={teacherProfileId}
-            onChange={(event) => replace(index, event.target.value)}
+            // Always empty: this is the control that adds somebody, and the
+            // people already on the class are the line above it.
+            value=""
+            onChange={(event) => {
+              if (event.target.value) onAssign([...current, event.target.value])
+            }}
             onClick={(event) => event.stopPropagation()}
             className="w-full truncate rounded-sm border border-border bg-surface px-1 py-0.5 text-xs text-text"
           >
             <option value="">
-              {index === 0 || current.length === 0
-                ? t('planner.unassignedTeacher')
-                : t('planner.addTeacher')}
+              {current.length === 0 ? t('planner.unassignedTeacher') : t('planner.addTeacher')}
             </option>
             {directory
-              .filter(
-                (teacher) =>
-                  teacher.teacherProfileId === teacherProfileId ||
-                  !current.includes(teacher.teacherProfileId),
-              )
+              .filter((teacher) => !current.includes(teacher.teacherProfileId))
               .map((teacher) => (
                 <option key={teacher.teacherProfileId} value={teacher.teacherProfileId}>
                   {teacher.name}
@@ -996,7 +1214,7 @@ function TeacherPickers({
               ))}
           </select>
         </label>
-      ))}
+      )}
     </div>
   )
 }

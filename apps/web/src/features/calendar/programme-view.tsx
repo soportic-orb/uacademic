@@ -19,7 +19,7 @@ import listPlugin from '@fullcalendar/list'
 import FullCalendar from '@fullcalendar/react'
 import timeGridPlugin from '@fullcalendar/timegrid'
 import { calendarColor } from '@uacademic/shared'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { FileText, FilterX } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -29,7 +29,7 @@ import { Button } from '../../components/ui/button'
 import { Card, CardBody } from '../../components/ui/card'
 import { useToast } from '../../hooks/use-toast'
 import { currentLocale } from '../../i18n'
-import { ApiRequestError, apiDownload, apiFetch } from '../../lib/api'
+import { ApiRequestError, apiDownload, apiFetch, apiJson } from '../../lib/api'
 import { useSessionStore } from '../../stores/session'
 
 interface ProgrammeEvent {
@@ -41,6 +41,7 @@ interface ProgrammeEvent {
   subjectCode: string
   subjectName: string
   groupCode: string
+  spaceId: string | null
   spaceName: string | null
   teacherName: string | null
   /** Everyone giving the class, the one above first. */
@@ -104,6 +105,19 @@ export function ProgrammeView() {
     spaceId: '',
   })
   const calendarRef = useRef<FullCalendar>(null)
+
+  /**
+   * The class whose room is being changed.
+   *
+   * A room changes for reasons that have nothing to do with the timetable — a
+   * broken projector, a room being painted — and it is this calendar somebody
+   * is looking at when they find out.
+   */
+  const [movingRoom, setMovingRoom] = useState<{
+    sessionId: string
+    title: string
+    spaceId: string
+  } | null>(null)
 
   const search = new URLSearchParams({ from: range.from, to: range.to })
   for (const [key, value] of Object.entries(filters)) if (value) search.set(key, value)
@@ -281,6 +295,17 @@ export function ProgrammeView() {
                 // alternative text; its own localised words read better.
                 buttonIcons={false}
                 events={events}
+                eventClick={(argument) => {
+                  const event = (programme.data?.events ?? []).find(
+                    (candidate) => `${candidate.sessionId}-${candidate.date}` === argument.event.id,
+                  )
+                  if (!event) return
+                  setMovingRoom({
+                    sessionId: event.sessionId,
+                    title: `${event.subjectCode} ${event.groupCode} · ${event.date} ${event.startTime}`,
+                    spaceId: event.spaceId ?? '',
+                  })
+                }}
                 eventContent={(argument) => (
                   <div className="px-1 py-0.5 text-xs">
                     <span className="block font-medium">{argument.event.title}</span>
@@ -296,6 +321,98 @@ export function ProgrammeView() {
           )}
         </CardBody>
       </Card>
+
+      {movingRoom ? (
+        <RoomDialog
+          session={movingRoom}
+          onClose={() => setMovingRoom(null)}
+          onSaved={() => {
+            setMovingRoom(null)
+            void programme.refetch()
+          }}
+        />
+      ) : null}
+    </div>
+  )
+}
+
+/** Moving one class to another room, without redrafting a whole version. */
+function RoomDialog({
+  session,
+  onClose,
+  onSaved,
+}: {
+  session: { sessionId: string; title: string; spaceId: string }
+  onClose: () => void
+  onSaved: () => void
+}) {
+  const { t } = useTranslation()
+  const toast = useToast()
+  const [spaceId, setSpaceId] = useState(session.spaceId)
+
+  const spaces = useQuery({
+    queryKey: ['admin-options', 'admin/spaces'],
+    queryFn: () =>
+      apiFetch<{ items: { id: string; name: string }[] }>('/api/v1/admin/spaces?pageSize=100'),
+    staleTime: 60_000,
+  })
+
+  const save = useMutation({
+    mutationFn: () =>
+      apiJson(`/api/v1/calendar/coordination/sessions/${session.sessionId}`, 'PATCH', {
+        spaceId: spaceId || null,
+      }),
+    onSuccess: () => {
+      toast.success('calendar.coordination.roomChanged')
+      onSaved()
+    },
+    onError: (error) => {
+      if (error instanceof ApiRequestError)
+        toast.raw({ variant: 'error', message: error.localizedMessage })
+      else toast.error('errors.generic')
+    },
+  })
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={t('calendar.coordination.changeRoom')}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+    >
+      <div className="w-full max-w-sm space-y-4 rounded-card border border-border bg-surface p-5">
+        <div>
+          <h2 className="text-lg font-semibold text-text">
+            {t('calendar.coordination.changeRoom')}
+          </h2>
+          <p className="mt-1 text-sm text-text-muted">{session.title}</p>
+        </div>
+
+        <label className="block text-sm">
+          <span className="mb-1 block text-xs text-text-muted">{t('admin.fields.space')}</span>
+          <select
+            value={spaceId}
+            onChange={(event) => setSpaceId(event.target.value)}
+            className="h-10 w-full rounded-control border border-border bg-surface px-2 text-sm text-text"
+          >
+            <option value="">{t('planner.unassignedSpace')}</option>
+            {(spaces.data?.items ?? []).map((space) => (
+              <option key={space.id} value={space.id}>
+                {space.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <div className="flex justify-end gap-2">
+          <Button variant="ghost" onClick={onClose}>
+            {t('common.cancel')}
+          </Button>
+          <Button onClick={() => save.mutate()} disabled={save.isPending}>
+            {t('common.save')}
+          </Button>
+        </div>
+      </div>
     </div>
   )
 }

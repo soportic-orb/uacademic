@@ -591,7 +591,8 @@ describe('the visual planner', () => {
       const user = userEvent.setup()
       render(wrap(<PlannerGrid version={VERSION} context={CONTEXT} />))
 
-      await user.selectOptions(screen.getByLabelText('Assigna docent'), 'p2')
+      // The class already has somebody, so this control adds the second.
+      await user.selectOptions(screen.getByLabelText('Afegeix un docent'), 'p2')
 
       expect(await screen.findByText(/no té disponibilitat/)).toBeInTheDocument()
       // Nothing was written: the refusal is the answer, not a warning after it.
@@ -604,7 +605,8 @@ describe('the visual planner', () => {
     it('names the teacher in the week beside the grid, with their hours', () => {
       render(wrap(<PlannerGrid version={VERSION} context={CONTEXT} />))
 
-      const rail = screen.getByRole('button', { name: /Marta Puig/ })
+      // Their own button in the rail, not the one that takes them off a class.
+      const rail = screen.getByRole('button', { name: /^Marta Puig/ })
       // One placed hour of the eight this contract leaves for a week.
       expect(rail).toHaveTextContent('1')
       expect(rail).toHaveTextContent('8')
@@ -613,8 +615,7 @@ describe('the visual planner', () => {
     it('shows who is teaching each class, not only the subject code', () => {
       render(wrap(<PlannerGrid version={VERSION} context={CONTEXT} />))
 
-      const assigned = screen.getByLabelText('Assigna docent') as HTMLSelectElement
-      expect(assigned.value).toBe('p1')
+      expect(within(screen.getByRole('grid')).getByText('Marta Puig')).toBeInTheDocument()
     })
 
     it('lets a second person be added to a class, and sends both', async () => {
@@ -631,7 +632,7 @@ describe('the visual planner', () => {
       })
     })
 
-    it('draws a row for each person already giving the class', () => {
+    it('reads the people giving a class as one line, not a column', () => {
       const shared = {
         ...VERSION,
         sessions: [
@@ -647,11 +648,77 @@ describe('the visual planner', () => {
 
       render(wrap(<PlannerGrid version={shared} context={CONTEXT} />))
 
-      expect((screen.getByLabelText('Assigna docent') as HTMLSelectElement).value).toBe('p1')
-      // The second row holds the second person, and there is still an empty
-      // one to add a third by.
-      const rows = screen.getAllByLabelText('Afegeix un docent') as HTMLSelectElement[]
-      expect(rows.map((row) => row.value)).toEqual(['p3', ''])
+      // Both names, one dropdown: the one that adds the next person. Scoped
+      // to the grid, because the rail beside it names them too.
+      const grid = within(screen.getByRole('grid'))
+      expect(grid.getByText('Marta Puig')).toBeInTheDocument()
+      expect(grid.getByText('Aina Bosch')).toBeInTheDocument()
+      expect(screen.getAllByLabelText('Afegeix un docent')).toHaveLength(1)
+    })
+
+    it('takes somebody off a class from the line their name is on', async () => {
+      const user = userEvent.setup()
+      const shared = {
+        ...VERSION,
+        sessions: [
+          {
+            ...VERSION.sessions[0]!,
+            teachers: [
+              { teacherProfileId: 'p1', name: 'Marta Puig' },
+              { teacherProfileId: 'p3', name: 'Aina Bosch' },
+            ],
+          },
+        ],
+      }
+
+      render(wrap(<PlannerGrid version={shared} context={CONTEXT} />))
+
+      await user.click(screen.getByRole('button', { name: 'Treu Aina Bosch de la classe' }))
+
+      const patch = fetchMock.mock.calls.find(
+        (call) => (call[1] as RequestInit | undefined)?.method === 'PATCH',
+      )
+      expect(JSON.parse(String((patch?.[1] as RequestInit).body))).toMatchObject({
+        teacherProfileIds: ['p1'],
+      })
+    })
+  })
+
+  describe('repeating a class across the term', () => {
+    it('asks which days, at what time, and until when', async () => {
+      const user = userEvent.setup()
+      render(wrap(<PlannerGrid version={VERSION} context={CONTEXT} />))
+
+      await user.click(screen.getByRole('button', { name: 'Duplica' }))
+
+      const dialog = screen.getByRole('dialog')
+      // The day it is already on is ticked; the rest are there to add.
+      expect(within(dialog).getByLabelText('Dilluns')).toBeChecked()
+      expect(within(dialog).getByLabelText('Dimecres')).not.toBeChecked()
+
+      await user.click(within(dialog).getByLabelText('Dimecres'))
+      await user.click(within(dialog).getByRole('button', { name: 'Duplica' }))
+
+      await waitFor(() => {
+        const call = fetchMock.mock.calls.find((entry) => String(entry[0]).includes('/duplicate'))
+        expect(call).toBeDefined()
+        expect(JSON.parse(String((call![1] as RequestInit).body))).toMatchObject({
+          weekdays: [1, 3],
+          startTime: '09:00',
+          endTime: '10:00',
+        })
+      })
+    })
+
+    it('will not send a series with no day in it', async () => {
+      const user = userEvent.setup()
+      render(wrap(<PlannerGrid version={VERSION} context={CONTEXT} />))
+
+      await user.click(screen.getByRole('button', { name: 'Duplica' }))
+      const dialog = screen.getByRole('dialog')
+      await user.click(within(dialog).getByLabelText('Dilluns'))
+
+      expect(within(dialog).getByRole('button', { name: 'Duplica' })).toBeDisabled()
     })
   })
 

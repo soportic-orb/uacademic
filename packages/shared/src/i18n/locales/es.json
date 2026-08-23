@@ -1223,6 +1223,7 @@
       "dateTo": "Hasta el",
       "plannedHours": "Horas previstas",
       "requiredSpaceType": "Tipo de espacio necesario",
+      "space": "Aula",
       "isTeachingDay": "Día lectivo",
       "ects": "ECTS",
       "year": "Curso",
@@ -1600,7 +1601,9 @@
       "none": "Todavía no hay profesorado con contrato para el curso activo."
     },
     "assignTeacher": "Asignar docente",
+    "assignSpace": "Asignar aula",
     "addTeacher": "Añadir docente",
+    "removeTeacher": "Quitar a {{name}} de la clase",
     "warnings": {
       "unavailable": "{{name}} ha indicado que no tiene disponibilidad de {{start}} a {{end}}. No se ha asignado.",
       "avoid": "{{name}} ha indicado que prefiere no dar clase de {{start}} a {{end}}. Se ha asignado igualmente."
@@ -1621,7 +1624,17 @@
     },
     "jumpedToWeek": "El grupo se planifica a partir del {{date}}: te hemos llevado allí.",
     "topic": "Tema de la clase",
-    "topicPlaceholder": "Tema…"
+    "topicPlaceholder": "Tema…",
+    "duplicate": {
+      "title": "Duplicar la sesión",
+      "action": "Duplicar",
+      "weekdays": "Días de la semana",
+      "from": "Hora de inicio",
+      "to": "Hora de fin",
+      "until": "Hasta el día",
+      "hint": "Se creará una sesión por cada día elegido. Los festivos y días no lectivos se saltan.",
+      "done": "{{created}} sesiones creadas, {{skipped}} omitidas"
+    }
   },
   "calendar": {
     "title": "Mi calendario",
@@ -1673,7 +1686,12 @@
       "print": "Imprimir esta vista",
       "printHint": "El PDF sale con los filtros activos y el periodo que estás viendo.",
       "empty": "No hay ninguna clase publicada con estos filtros.",
-      "none": "Todavía no coordinas ninguna asignatura, así que no hay nada que mostrar."
+      "none": "Todavía no coordinas ninguna asignatura, así que no hay nada que mostrar.",
+      "errors": {
+        "roomBusy": "Esta aula ya está ocupada a esta hora."
+      },
+      "changeRoom": "Cambiar el aula",
+      "roomChanged": "Se ha cambiado el aula"
     }
   },
   "changes": {

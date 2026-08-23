@@ -37,6 +37,7 @@ import {
   toSnapshot,
 } from './context.js'
 import { publishVersion, readSnapshot } from './publish.js'
+import { nonTeachingDates } from '../calendar/routes.js'
 
 const COORDINATION = ['CENTER_ADMIN', 'COORDINATOR'] as const
 
@@ -110,6 +111,30 @@ const sessionPatchSchema = z.object({
     .regex(/^([01]\d|2[0-3]):[0-5]\d$/)
     .optional(),
   topic: z.string().trim().max(200).nullable().optional(),
+})
+
+/**
+ * Repeating one class across the term, on the days somebody chooses.
+ *
+ * The platform never repeats a class by itself — a week is planned by placing
+ * that week's classes — but "the same class every Tuesday and Thursday until
+ * December" is a thing a coordinator does by hand fifteen times. This does it
+ * once, and what it writes is fifteen ordinary sessions: each on its own date,
+ * each editable and removable on its own, with nothing linking them.
+ */
+const duplicateSchema = z.object({
+  /** ISO weekdays, 1 = Monday. Empty means the day the class is already on. */
+  weekdays: z.array(z.number().int().min(1).max(7)).max(7).default([]),
+  startTime: z
+    .string()
+    .regex(/^([01]\d|2[0-3]):[0-5]\d$/)
+    .optional(),
+  endTime: z
+    .string()
+    .regex(/^([01]\d|2[0-3]):[0-5]\d$/)
+    .optional(),
+  /** The last day of the series, inclusive. */
+  until: z.iso.date(),
 })
 
 const validateSchema = sessionSchema.extend({
@@ -353,7 +378,10 @@ function registerSessionRoutes(app: FastifyInstance): void {
           scheduleVersionId: version.id,
           groupId: input.groupId,
           teacherProfileId: input.teacherProfileId,
-          spaceId: input.spaceId,
+          // A group normally meets in the same room, so a class placed for it
+          // starts there. It is a starting point, not a rule: this session can
+          // be moved to another room without the group changing.
+          spaceId: input.spaceId ?? (await defaultSpaceFor(context, input.groupId)),
           weekday: day.weekday,
           startTime: input.startTime,
           endTime: input.endTime,
@@ -435,6 +463,100 @@ function registerSessionRoutes(app: FastifyInstance): void {
     },
   )
 
+  app.post(
+    '/api/v1/planner/versions/:id/sessions/:sessionId/duplicate',
+    { config: { roles: [...COORDINATION] } },
+    async (request: FastifyRequest<{ Params: { id: string; sessionId: string } }>, reply) => {
+      const context = await plannerContext(request)
+      const version = await requireEditable(context, request.params.id)
+      const input = parseWith(duplicateSchema, request.body)
+
+      const source = await context.db.classSession.findFirst({
+        where: { id: request.params.sessionId, scheduleVersionId: version.id },
+        include: { coTeachers: { select: { teacherProfileId: true } } },
+      })
+      if (!source) throw AppError.notFound()
+
+      const from = isoOf(source.dateFrom)
+      if (input.until < from) {
+        throw AppError.validation([{ path: 'until', messageKey: 'validation.invalidDateRange' }])
+      }
+
+      const weekdays = input.weekdays.length > 0 ? [...new Set(input.weekdays)] : [source.weekday]
+      const startTime = input.startTime ?? source.startTime
+      const endTime = input.endTime ?? source.endTime
+      if (endTime <= startTime) {
+        throw AppError.validation([{ path: 'endTime', messageKey: 'validation.invalidRange' }])
+      }
+
+      // Holidays and closures are days nothing happens on, so a series steps
+      // over them rather than booking a class nobody will attend.
+      const closed = new Set(await nonTeachingDates(context.db, from, input.until))
+
+      const already = await context.db.classSession.findMany({
+        where: { scheduleVersionId: version.id, groupId: source.groupId, startTime },
+        select: { dateFrom: true },
+      })
+      const taken = new Set(already.map((row) => isoOf(row.dateFrom)))
+
+      let created = 0
+      let skipped = 0
+
+      for (const date of datesBetween(from, input.until)) {
+        const day = dayOf(date)
+        if (!weekdays.includes(day.weekday)) continue
+        // The class it was copied from stays exactly as it is.
+        if (date === from && day.weekday === source.weekday && startTime === source.startTime) {
+          continue
+        }
+        if (closed.has(date) || taken.has(date)) {
+          skipped += 1
+          continue
+        }
+
+        const copy = await context.db.classSession.create({
+          data: {
+            centerId: context.centerId,
+            scheduleVersionId: version.id,
+            groupId: source.groupId,
+            teacherProfileId: source.teacherProfileId,
+            spaceId: source.spaceId,
+            weekday: day.weekday,
+            startTime,
+            endTime,
+            dateFrom: day.date,
+            dateTo: day.date,
+            recurrence: 'once',
+            topic: source.topic,
+            coTeachers: {
+              create: source.coTeachers.map((entry) => ({
+                teacherProfileId: entry.teacherProfileId,
+                centerId: context.centerId,
+              })),
+            },
+          },
+        })
+
+        taken.add(date)
+        created += 1
+
+        await audit(
+          request,
+          context,
+          copy.id,
+          'session.duplicate',
+          null,
+          { from: source.id, date, startTime, endTime },
+          'class_session',
+        )
+      }
+
+      return reply
+        .code(201)
+        .send({ ...(await versionDetail(context, version.id)), created, skipped })
+    },
+  )
+
   app.delete(
     '/api/v1/planner/versions/:id/sessions/:sessionId',
     { config: { roles: [...COORDINATION] } },
@@ -499,6 +621,35 @@ function registerSessionRoutes(app: FastifyInstance): void {
       return evaluateCell(candidate, others, context.schedule)
     },
   )
+}
+
+function isoOf(date: Date): string {
+  return date.toISOString().slice(0, 10)
+}
+
+/** Every date from one day to another, inclusive, as `YYYY-MM-DD`. */
+function datesBetween(from: string, to: string): string[] {
+  const dates: string[] = []
+  const cursor = new Date(`${from}T00:00:00Z`)
+  const end = new Date(`${to}T00:00:00Z`)
+
+  // A term is a few hundred days; a mistyped year would be a few hundred
+  // thousand. Two years is more than any series a person means.
+  for (let guard = 0; cursor.getTime() <= end.getTime() && guard < 800; guard += 1) {
+    dates.push(cursor.toISOString().slice(0, 10))
+    cursor.setUTCDate(cursor.getUTCDate() + 1)
+  }
+
+  return dates
+}
+
+/** The room a group normally meets in, if somebody recorded one. */
+async function defaultSpaceFor(context: PlannerContext, groupId: string): Promise<string | null> {
+  const group = await context.db.group.findFirst({
+    where: { id: groupId },
+    select: { spaceId: true },
+  })
+  return group?.spaceId ?? null
 }
 
 /**

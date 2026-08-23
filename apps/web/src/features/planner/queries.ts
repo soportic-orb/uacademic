@@ -234,6 +234,38 @@ export function useUpdateSession(versionId: string) {
   })
 }
 
+/**
+ * Repeating one class across the term.
+ *
+ * The platform never repeats anything by itself; this is a person saying "and
+ * every Tuesday until December", and what it writes is ordinary sessions —
+ * each on its own date, each editable and removable on its own.
+ */
+export function useDuplicateSession(versionId: string) {
+  const invalidate = useInvalidate()
+
+  return useMutation({
+    mutationFn: (input: {
+      sessionId: string
+      weekdays: number[]
+      startTime?: string
+      endTime?: string
+      until: string
+    }) =>
+      apiJson<VersionDetailDto & { created: number; skipped: number }>(
+        `/api/v1/planner/versions/${versionId}/sessions/${input.sessionId}/duplicate`,
+        'POST',
+        {
+          weekdays: input.weekdays,
+          until: input.until,
+          ...(input.startTime ? { startTime: input.startTime } : {}),
+          ...(input.endTime ? { endTime: input.endTime } : {}),
+        },
+      ),
+    onSuccess: invalidate,
+  })
+}
+
 export function useDeleteSession(versionId: string) {
   const invalidate = useInvalidate()
 
