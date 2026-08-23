@@ -495,6 +495,178 @@ describe.skipIf(!hasDatabase)('teaching capacity', () => {
     })
   })
 
+  /**
+   * A center that plans straight into the planner never writes a teaching
+   * order down, and its teachers had a full week and a load screen saying
+   * zero.
+   */
+  describe('teaching that only exists on the timetable', () => {
+    const workload = (headers: Record<string, string>) =>
+      app.inject({ method: 'GET', url: '/api/v1/teachers/me/workload', headers })
+
+    it('counts the published classes of a group nobody was assigned to', async () => {
+      const before = (await workload(asTeacher())).json().assignedHours as number
+
+      const version = await prisma.scheduleVersion.findFirstOrThrow({
+        where: { centerId, status: 'published' },
+      })
+      // A group this person holds no assignment on.
+      const assigned = await prisma.assignment.findMany({
+        where: { teacherProfileId },
+        select: { groupId: true },
+      })
+      const group = await prisma.group.findFirstOrThrow({
+        where: { centerId, id: { notIn: assigned.map((row) => row.groupId) } },
+      })
+
+      const session = await prisma.classSession.create({
+        data: {
+          centerId,
+          scheduleVersionId: version.id,
+          groupId: group.id,
+          teacherProfileId,
+          weekday: 3,
+          startTime: '18:00',
+          endTime: '20:00',
+          dateFrom: new Date('2026-09-16'),
+          dateTo: new Date('2026-09-16'),
+          recurrence: 'once',
+        },
+      })
+
+      try {
+        const after = (await workload(asTeacher())).json()
+
+        expect(after.assignedHours).toBe(before + 2)
+        expect(
+          (after.bySubject as { subjectId: string }[]).some(
+            (entry) => entry.subjectId === group.subjectId,
+          ),
+        ).toBe(true)
+      } finally {
+        await prisma.classSession.delete({ where: { id: session.id } })
+      }
+    })
+
+    it('does not count the same teaching twice when there is an order for it', async () => {
+      const assignment = await prisma.assignment.findFirstOrThrow({
+        where: { teacherProfileId },
+      })
+      const before = (await workload(asTeacher())).json().assignedHours as number
+
+      const version = await prisma.scheduleVersion.findFirstOrThrow({
+        where: { centerId, status: 'published' },
+      })
+
+      // Hours of a group they were already given: the order is what counts.
+      const session = await prisma.classSession.create({
+        data: {
+          centerId,
+          scheduleVersionId: version.id,
+          groupId: assignment.groupId,
+          teacherProfileId,
+          weekday: 4,
+          startTime: '18:00',
+          endTime: '20:00',
+          dateFrom: new Date('2026-09-17'),
+          dateTo: new Date('2026-09-17'),
+          recurrence: 'once',
+        },
+      })
+
+      try {
+        expect((await workload(asTeacher())).json().assignedHours).toBe(before)
+      } finally {
+        await prisma.classSession.delete({ where: { id: session.id } })
+      }
+    })
+
+    it('counts a class somebody gives alongside a colleague', async () => {
+      const before = (await workload(asTeacher())).json().assignedHours as number
+
+      const version = await prisma.scheduleVersion.findFirstOrThrow({
+        where: { centerId, status: 'published' },
+      })
+      const assigned = await prisma.assignment.findMany({
+        where: { teacherProfileId },
+        select: { groupId: true },
+      })
+      const group = await prisma.group.findFirstOrThrow({
+        where: { centerId, id: { notIn: assigned.map((row) => row.groupId) } },
+      })
+      const other = await prisma.teacherProfile.findFirstOrThrow({
+        where: { centerId, id: { not: teacherProfileId } },
+      })
+
+      const session = await prisma.classSession.create({
+        data: {
+          centerId,
+          scheduleVersionId: version.id,
+          groupId: group.id,
+          teacherProfileId: other.id,
+          weekday: 5,
+          startTime: '18:00',
+          endTime: '19:00',
+          dateFrom: new Date('2026-09-18'),
+          dateTo: new Date('2026-09-18'),
+          recurrence: 'once',
+          coTeachers: { create: [{ teacherProfileId, centerId }] },
+        },
+      })
+
+      try {
+        expect((await workload(asTeacher())).json().assignedHours).toBe(before + 1)
+      } finally {
+        await prisma.classSession.delete({ where: { id: session.id } })
+      }
+    })
+
+    it('ignores a draft: a timetable nobody published is nobody’s week', async () => {
+      const before = (await workload(asTeacher())).json().assignedHours as number
+
+      const year = await prisma.academicYear.findFirstOrThrow({
+        where: { centerId, status: 'active' },
+      })
+      const assigned = await prisma.assignment.findMany({
+        where: { teacherProfileId },
+        select: { groupId: true },
+      })
+      const group = await prisma.group.findFirstOrThrow({
+        where: { centerId, id: { notIn: assigned.map((row) => row.groupId) } },
+      })
+
+      const draft = await prisma.scheduleVersion.create({
+        data: {
+          centerId,
+          academicYearId: year.id,
+          name: 'Prova esborrany càrrega',
+          status: 'draft',
+          sessions: {
+            create: [
+              {
+                centerId,
+                groupId: group.id,
+                teacherProfileId,
+                weekday: 2,
+                startTime: '18:00',
+                endTime: '20:00',
+                dateFrom: new Date('2026-09-15'),
+                dateTo: new Date('2026-09-15'),
+                recurrence: 'once',
+              },
+            ],
+          },
+        },
+      })
+
+      try {
+        expect((await workload(asTeacher())).json().assignedHours).toBe(before)
+      } finally {
+        await prisma.scheduleVersion.delete({ where: { id: draft.id } })
+      }
+    })
+  })
+
   describe('the center panel', () => {
     it('filters by status and by category, and summarises what is left', async () => {
       const all = await app.inject({

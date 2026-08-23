@@ -30,6 +30,53 @@ describe.skipIf(!hasDatabase)('the teacher calendar', () => {
   })
 
   describe('occurrences', () => {
+    /*
+      The person here holds coordination as well as a contract. Their own
+      classes are theirs whichever hat they are wearing: roles are resolved
+      from the database on every request (R3), and no screen's idea of an
+      "active role" reaches this answer.
+    */
+    it('answers somebody who coordinates as well as teaches', async () => {
+      const roles = await prisma.userCenterRole.findMany({
+        where: { centerId, user: { email: SEED.teacherEmail } },
+        select: { role: true },
+      })
+      expect(roles.map((entry) => entry.role).sort()).toEqual(['COORDINATOR', 'TEACHER'])
+
+      const response = await app.inject({
+        method: 'GET',
+        url: `/api/v1/calendar/sessions?${range}`,
+        headers: asTeacher(),
+      })
+
+      expect(response.statusCode).toBe(200)
+      expect(response.json().events.length).toBeGreaterThan(0)
+    })
+
+    it('says what each class is and where, not only when', async () => {
+      const response = await app.inject({
+        method: 'GET',
+        url: `/api/v1/calendar/sessions?${range}`,
+        headers: asTeacher(),
+      })
+
+      const event = response.json().events[0] as {
+        startTime: string
+        endTime: string
+        subjectName: string
+        topic: string | null
+        teachers: string[]
+      }
+
+      // Everything a person needs to read a day: the whole hour, the subject
+      // in full, the topic when one was written, and who else is giving it.
+      expect(event.startTime).toMatch(/^\d{2}:\d{2}$/)
+      expect(event.endTime > event.startTime).toBe(true)
+      expect(event.subjectName.length).toBeGreaterThan(0)
+      expect('topic' in event).toBe(true)
+      expect(Array.isArray(event.teachers)).toBe(true)
+    })
+
     it('expands the weekly sessions of the published version over a range', async () => {
       const response = await app.inject({
         method: 'GET',

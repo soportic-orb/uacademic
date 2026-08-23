@@ -8,6 +8,7 @@ import { disconnectPrisma, getPrismaClient } from '@uacademic/db'
 import type { FastifyInstance } from 'fastify'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 
+import { extractText } from '../src/services/documents/extract.js'
 import { SEED, createTestApp, hasDatabase, seedCenterId } from './helpers.js'
 
 describe.skipIf(!hasDatabase)('the teaching programme', () => {
@@ -160,6 +161,38 @@ describe.skipIf(!hasDatabase)('the teaching programme', () => {
       expect(response.statusCode).toBe(200)
       expect(response.headers['content-type']).toBe('application/pdf')
       expect(response.rawPayload.subarray(0, 5).toString()).toBe('%PDF-')
+    })
+
+    it('says the whole hour, what the class is and where', async () => {
+      const { subjectId } = await coordinate()
+      const session = await prisma.classSession.findFirstOrThrow({
+        where: { centerId, group: { subjectId }, scheduleVersion: { status: 'published' } },
+      })
+      const space = await prisma.space.findFirstOrThrow({ where: { centerId } })
+
+      await prisma.classSession.update({
+        where: { id: session.id },
+        data: { spaceId: space.id, topic: 'Prova tema programa' },
+      })
+
+      try {
+        const response = await print('view=agenda')
+        const { pages } = await extractText(
+          new Uint8Array(response.rawPayload),
+          'application/pdf',
+          'programme.pdf',
+        )
+        const text = pages.map((page) => page.text).join(' ')
+
+        expect(text).toContain(`${session.startTime}–${session.endTime}`)
+        expect(text).toContain('Prova tema programa')
+        expect(text).toContain(space.name)
+      } finally {
+        await prisma.classSession.update({
+          where: { id: session.id },
+          data: { spaceId: session.spaceId, topic: session.topic },
+        })
+      }
     })
 
     it('prints the week being looked at, not the whole fetched range', async () => {

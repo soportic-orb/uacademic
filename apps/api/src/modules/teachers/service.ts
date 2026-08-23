@@ -16,11 +16,14 @@ import {
   type Role,
   type TeacherProfileDto,
   type TeacherWorkloadDto,
+  type TimetabledGroup,
   type Weekday,
   computeWorkload,
   hasRole,
   parseCenterSettings,
+  toMinutes,
   weeklyAvailableHours,
+  withTimetabledTeaching,
 } from '@uacademic/shared'
 import type { Prisma } from '@uacademic/db'
 import type { FastifyRequest } from 'fastify'
@@ -161,6 +164,45 @@ const PROFILE_INCLUDE = {
       },
     },
   },
+  /*
+    The classes they are actually in front of, as published.
+
+    A center that plans straight into the planner never writes the teaching
+    order down, and its teachers had no load at all: a full week, and their own
+    screen saying zero.
+  */
+  sessions: {
+    where: { scheduleVersion: { status: 'published' as const } },
+    select: {
+      startTime: true,
+      endTime: true,
+      group: {
+        select: {
+          id: true,
+          code: true,
+          subject: { select: { id: true, code: true, nameCa: true, degreeId: true } },
+        },
+      },
+    },
+  },
+  coTaughtSessions: {
+    where: { session: { scheduleVersion: { status: 'published' as const } } },
+    select: {
+      session: {
+        select: {
+          startTime: true,
+          endTime: true,
+          group: {
+            select: {
+              id: true,
+              code: true,
+              subject: { select: { id: true, code: true, nameCa: true, degreeId: true } },
+            },
+          },
+        },
+      },
+    },
+  },
 } as const
 
 type ProfileRow = Prisma.TeacherProfileGetPayload<{ include: typeof PROFILE_INCLUDE }>
@@ -177,6 +219,36 @@ function assignmentDetails(profile: ProfileRow): AssignmentDetail[] {
   }))
 }
 
+/** Every class this person is on, added up per group. */
+function timetabledGroups(profile: ProfileRow): TimetabledGroup[] {
+  const classes = [
+    ...profile.sessions,
+    // A class given with a colleague is one they give too.
+    ...profile.coTaughtSessions.map((entry) => entry.session),
+  ]
+
+  const byGroup = new Map<string, TimetabledGroup>()
+
+  for (const session of classes) {
+    const minutes = toMinutes(session.endTime) - toMinutes(session.startTime)
+    const current = byGroup.get(session.group.id)
+
+    if (current) current.minutes += minutes
+    else {
+      byGroup.set(session.group.id, {
+        subjectId: session.group.subject.id,
+        subjectCode: session.group.subject.code,
+        subjectName: session.group.subject.nameCa,
+        groupId: session.group.id,
+        groupCode: session.group.code,
+        minutes,
+      })
+    }
+  }
+
+  return [...byGroup.values()]
+}
+
 function workloadInput(profile: ProfileRow) {
   return {
     contractedHours: Number(profile.contractedHours),
@@ -184,7 +256,9 @@ function workloadInput(profile: ProfileRow) {
       hours: Number(reduction.hours),
       approved: reduction.status === 'approved',
     })),
-    assignments: assignmentDetails(profile),
+    // The teaching order where the center wrote one, and the timetable where
+    // it did not (R7 decides which; this only supplies both).
+    assignments: withTimetabledTeaching(assignmentDetails(profile), timetabledGroups(profile)),
   }
 }
 

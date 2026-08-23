@@ -71,6 +71,8 @@ export interface CalendarSession {
   groupCode: string
   spaceId: string | null
   spaceName: string | null
+  /** What the class is about, as written on the planner block. */
+  topic: string | null
   teacherProfileId: string | null
   teacherName: string | null
   /** Everyone giving the class, the one above first. */
@@ -107,6 +109,10 @@ export function registerCalendarRoutes(app: FastifyInstance): void {
         subjectName: session.subjectName,
         groupCode: session.groupCode,
         spaceName: session.spaceName,
+        // What the class is about, written on the block by whoever planned it.
+        topic: session.topic,
+        // Everyone giving it: a class shared with a colleague says so.
+        teachers: session.teachers.map((person) => person.name),
       })),
     )
 
@@ -507,6 +513,7 @@ export async function publishedSessionsWhere(
     dateFrom: Date
     dateTo: Date
     recurrence: 'weekly' | 'biweekly' | 'once'
+    topic: string | null
     group: { id: string; code: string; subject: { id: string; code: string; nameCa: string } }
     space: { id: string; name: string } | null
     teacherProfile: { id: string; user: { firstName: string; lastName: string } } | null
@@ -525,6 +532,7 @@ export async function publishedSessionsWhere(
     groupCode: row.group.code,
     spaceId: row.space?.id ?? null,
     spaceName: row.space?.name ?? null,
+    topic: row.topic,
     teacherProfileId: row.teacherProfile?.id ?? null,
     teacherName: row.teacherProfile
       ? `${row.teacherProfile.user.firstName} ${row.teacherProfile.user.lastName}`

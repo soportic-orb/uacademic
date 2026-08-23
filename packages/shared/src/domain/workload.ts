@@ -32,6 +32,56 @@ export interface AssignmentDetail {
   hours: number
 }
 
+/** Classes somebody is on in the published timetable, for one group. */
+export interface TimetabledGroup {
+  subjectId: string
+  subjectCode: string
+  subjectName: string
+  groupId: string
+  groupCode: string
+  /** Minutes of class, added up across the year. */
+  minutes: number
+}
+
+/**
+ * The teaching somebody has, from both places it can be written down.
+ *
+ * A center records the teaching order as assignments — "you have 60 hours of
+ * this group" — and coordination then places those hours on the timetable.
+ * Where both exist the assignment is what counts: it is what the center
+ * decided the person is owed, and the timetable is a term still being drawn.
+ *
+ * But a center that plans straight into the planner without writing the order
+ * down first is a center whose teachers had no load at all: their week was
+ * full and their own screen said zero. So a group somebody is timetabled for
+ * and holds no assignment on counts as the hours they are actually teaching.
+ */
+export function withTimetabledTeaching(
+  assignments: readonly AssignmentDetail[],
+  timetabled: readonly TimetabledGroup[],
+): AssignmentDetail[] {
+  const ordered = new Set(
+    assignments.map((assignment) => assignment.groupId).filter((id): id is string => Boolean(id)),
+  )
+
+  return [
+    ...assignments,
+    ...timetabled
+      .filter((group) => !ordered.has(group.groupId) && group.minutes > 0)
+      .map((group) => ({
+        subjectId: group.subjectId,
+        subjectCode: group.subjectCode,
+        subjectName: group.subjectName,
+        groupId: group.groupId,
+        groupCode: group.groupCode,
+        // Classes in front of a group are teaching; nothing else about them is
+        // known here, and inventing a finer concept would be inventing.
+        concept: 'lecture' as AssignmentConcept,
+        hours: round2(group.minutes / 60),
+      })),
+  ]
+}
+
 export interface ConceptTotals {
   concept: AssignmentConcept
   hours: number

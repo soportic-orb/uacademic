@@ -1642,6 +1642,13 @@
     "resize": {
       "start": "Allarga o escurça per dalt",
       "end": "Allarga o escurça per baix"
+    },
+    "hours": {
+      "edit": "Edita l'horari",
+      "start": "Hora d’inici",
+      "end": "Hora de fi",
+      "invalid": "L’hora de fi ha de ser posterior a la d’inici.",
+      "outsideDay": "La graella va de {{start}} a {{end}}."
     }
   },
   "calendar": {

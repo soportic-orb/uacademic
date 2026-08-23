@@ -9,6 +9,7 @@ import { disconnectPrisma, getPrismaClient } from '@uacademic/db'
 import type { FastifyInstance } from 'fastify'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
+import { extractText } from '../src/services/documents/extract.js'
 import { SEED, createTestApp, hasDatabase, seedCenterId } from './helpers.js'
 
 describe.skipIf(!hasDatabase)('the printable timetable', () => {
@@ -46,6 +47,62 @@ describe.skipIf(!hasDatabase)('the printable timetable', () => {
     // A real document, not an empty file with the right header.
     expect(response.rawPayload.subarray(0, 5).toString()).toBe('%PDF-')
     expect(response.rawPayload.length).toBeGreaterThan(1000)
+  })
+
+  /**
+   * A printed timetable is read away from the screen, so it has to answer on
+   * its own: when does this finish, what is it, and where.
+   */
+  it('prints the whole hour, what the class is, and the room', async () => {
+    const session = await prisma.classSession.findFirstOrThrow({
+      where: { teacherProfileId: profileId, scheduleVersion: { status: 'published' } },
+      include: { group: { select: { subject: { select: { nameCa: true } } } }, space: true },
+    })
+    const space = await prisma.space.findFirstOrThrow({ where: { centerId } })
+
+    await prisma.classSession.update({
+      where: { id: session.id },
+      data: { spaceId: space.id, topic: 'Prova tema imprès' },
+    })
+
+    try {
+      const response = await download('me', 'from=2026-09-01&to=2026-12-31', asTeacher())
+      const { pages } = await extractText(
+        new Uint8Array(response.rawPayload),
+        'application/pdf',
+        'timetable.pdf',
+      )
+      const text = pages.map((page) => page.text).join(' ')
+
+      expect(text).toContain(`${session.startTime}–${session.endTime}`)
+      expect(text).toContain('Prova tema imprès')
+      expect(text).toContain(space.name)
+    } finally {
+      await prisma.classSession.update({
+        where: { id: session.id },
+        data: { spaceId: session.spaceId, topic: session.topic },
+      })
+    }
+  })
+
+  it('names the subject when nobody wrote a topic on the class', async () => {
+    const session = await prisma.classSession.findFirstOrThrow({
+      where: { teacherProfileId: profileId, scheduleVersion: { status: 'published' } },
+      include: { group: { select: { subject: { select: { nameCa: true } } } } },
+    })
+
+    await prisma.classSession.update({ where: { id: session.id }, data: { topic: null } })
+
+    const response = await download('me', 'from=2026-09-01&to=2026-12-31', asTeacher())
+    const { pages } = await extractText(
+      new Uint8Array(response.rawPayload),
+      'application/pdf',
+      'timetable.pdf',
+    )
+
+    expect(pages.map((page) => page.text).join(' ')).toContain(
+      session.group.subject.nameCa.slice(0, 12),
+    )
   })
 
   it('draws a page per month of the range', async () => {

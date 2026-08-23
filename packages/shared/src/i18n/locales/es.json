@@ -1642,6 +1642,13 @@
     "resize": {
       "start": "Alargar o acortar por arriba",
       "end": "Alargar o acortar por abajo"
+    },
+    "hours": {
+      "edit": "Editar el horario",
+      "start": "Hora de inicio",
+      "end": "Hora de fin",
+      "invalid": "La hora de fin debe ser posterior a la de inicio.",
+      "outsideDay": "La rejilla va de {{start}} a {{end}}."
     }
   },
   "calendar": {

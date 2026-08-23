@@ -18,7 +18,7 @@ import {
   isoDateOf,
 } from '@uacademic/shared'
 import { formatDate, formatHours, minutesToHours } from '@uacademic/shared'
-import { CopyPlus, Trash2, Undo2, Redo2, X } from 'lucide-react'
+import { Clock, CopyPlus, Trash2, Undo2, Redo2, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -174,6 +174,33 @@ export function PlannerGrid({
 
     if (minutesBetween(startTime, endTime) < version.grid.slotMinutes) return
     if (startTime < version.grid.dayStart || endTime > version.grid.dayEnd) return
+
+    try {
+      await updateSession.mutateAsync({ sessionId: session.id, values: { startTime, endTime } })
+    } catch (error) {
+      onError(error)
+    }
+  }
+
+  /**
+   * The hour, typed rather than dragged.
+   *
+   * The same rule as dragging: a class never becomes shorter than nothing and
+   * never leaves the day the grid draws — refused rather than clamped, because
+   * a class that silently moves somewhere else is worse than one that does
+   * not move.
+   */
+  const setHours = async (session: PlannerSessionDto, startTime: string, endTime: string) => {
+    if (minutesBetween(startTime, endTime) <= 0) {
+      toast.error('planner.hours.invalid')
+      return
+    }
+    if (startTime < version.grid.dayStart || endTime > version.grid.dayEnd) {
+      toast.error('planner.hours.outsideDay', {
+        params: { start: version.grid.dayStart, end: version.grid.dayEnd },
+      })
+      return
+    }
 
     try {
       await updateSession.mutateAsync({ sessionId: session.id, values: { startTime, endTime } })
@@ -576,7 +603,7 @@ export function PlannerGrid({
 
             <div className="overflow-x-auto">
               <table
-                className="w-full min-w-200 border-separate border-spacing-0.5 text-xs"
+                className="w-full min-w-200 table-fixed border-separate border-spacing-0.5 text-xs"
                 role="grid"
                 aria-label={t('planner.gridLabel')}
               >
@@ -627,7 +654,14 @@ export function PlannerGrid({
                 </thead>
                 <tbody>
                   {geometry.slots.map((slot, slotIndex) => (
-                    <tr key={slot.start}>
+                    /*
+                      Every row is exactly one slot tall, whatever is written
+                      in it. A block used to push its row open until an hour
+                      with a topic and three names was twice the height of an
+                      hour without — the grid stopped being to scale, and
+                      dragging an edge by "one row" meant nothing.
+                    */
+                    <tr key={slot.start} className="h-9">
                       <th
                         scope="row"
                         className="tabular py-1 pr-2 text-right font-normal text-text-muted"
@@ -658,7 +692,7 @@ export function PlannerGrid({
                           )
 
                           return (
-                            <td key={weekday} rowSpan={span} className="p-0 align-top">
+                            <td key={weekday} rowSpan={span} className="relative p-0 align-top">
                               <SessionBlock
                                 session={session}
                                 held={held?.sessionId === session.id}
@@ -676,6 +710,9 @@ export function PlannerGrid({
                                 onDuplicate={() => setDuplicating(session)}
                                 slotMinutes={version.grid.slotMinutes}
                                 onResize={(edge, slots) => void resizeSession(session, edge, slots)}
+                                onHours={(startTime, endTime) =>
+                                  void setHours(session, startTime, endTime)
+                                }
                                 onPick={() => {
                                   setHeld(heldFromSession(session))
                                   setCursor({ day: dayIndex, slot: slotIndex })
@@ -1001,6 +1038,7 @@ function SessionBlock({
   onDuplicate,
   slotMinutes,
   onResize,
+  onHours,
   onKeyDown,
 }: {
   session: PlannerSessionDto
@@ -1023,84 +1061,144 @@ function SessionBlock({
   slotMinutes: number
   /** An edge was dragged: `slots` rows, positive downwards. */
   onResize: (edge: 'start' | 'end', slots: number) => void
+  /** The hour was typed instead. */
+  onHours: (startTime: string, endTime: string) => void
   onKeyDown: (event: React.KeyboardEvent) => void
 }) {
   const { t } = useTranslation()
+  /** Whether the hour is being typed rather than dragged. */
+  const [typing, setTyping] = useState(false)
 
   return (
     <div
       className={cn(
-        'group relative flex h-full flex-col gap-0.5 rounded-sm border border-primary/30 bg-primary-surface p-1 text-left',
+        // Exactly the box of the hour it occupies. The edges and the buttons
+        // hang off this, so they stay where the hour is; the writing scrolls
+        // inside instead of spilling over the hours below.
+        'group absolute inset-0 rounded-sm border border-primary/30 bg-primary-surface text-left',
         held && 'ring-2 ring-ring',
         dimmed && 'opacity-40',
       )}
     >
-      <button
-        type="button"
-        draggable={editable}
-        disabled={!editable}
-        aria-pressed={held}
-        aria-label={t('planner.sessionLabel', {
-          group: `${session.subjectCode} ${session.groupCode}`,
-          weekday: t(`weekday.${session.weekday}`),
-          start: session.startTime,
-          end: session.endTime,
-        })}
-        onClick={() => (held ? onDrop() : onPick())}
-        onDragStart={onPick}
-        onKeyDown={(event) => {
-          if (event.key === ' ' || event.key === 'Enter') {
-            event.preventDefault()
-            if (held) onDrop()
-            else onPick()
-            return
-          }
-          onKeyDown(event)
-        }}
-        className="flex-1 text-left focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring"
-      >
+      <div className="flex h-full flex-col gap-0.5 overflow-y-auto p-1">
         {/*
+          The hour, typed.
+
+          Dragging an edge is quick when the change is small and the grid is
+          in front of you; typing is what somebody does when a class moves to
+          08:45, or when they are working on a trackpad. Both write the same
+          thing, and the server checks the same rule.
+        */}
+        {editable && typing ? (
+          <div className="flex items-center gap-1">
+            <label className="min-w-0 flex-1">
+              <span className="sr-only">{t('planner.hours.start')}</span>
+              <input
+                type="time"
+                defaultValue={session.startTime}
+                onClick={(event) => event.stopPropagation()}
+                onKeyDown={(event) => {
+                  event.stopPropagation()
+                  if (event.key === 'Enter') (event.target as HTMLInputElement).blur()
+                }}
+                onBlur={(event) => {
+                  if (event.target.value && event.target.value !== session.startTime) {
+                    onHours(event.target.value, session.endTime)
+                  }
+                }}
+                className="tabular w-full rounded-sm border border-border bg-surface px-1 py-0.5 text-xs text-text"
+              />
+            </label>
+            <span aria-hidden="true" className="text-text-muted">
+              –
+            </span>
+            <label className="min-w-0 flex-1">
+              <span className="sr-only">{t('planner.hours.end')}</span>
+              <input
+                type="time"
+                defaultValue={session.endTime}
+                onClick={(event) => event.stopPropagation()}
+                onKeyDown={(event) => {
+                  event.stopPropagation()
+                  if (event.key === 'Enter') (event.target as HTMLInputElement).blur()
+                }}
+                onBlur={(event) => {
+                  if (event.target.value && event.target.value !== session.endTime) {
+                    onHours(session.startTime, event.target.value)
+                  }
+                }}
+                className="tabular w-full rounded-sm border border-border bg-surface px-1 py-0.5 text-xs text-text"
+              />
+            </label>
+          </div>
+        ) : null}
+
+        <button
+          type="button"
+          draggable={editable}
+          disabled={!editable}
+          aria-pressed={held}
+          aria-label={t('planner.sessionLabel', {
+            group: `${session.subjectCode} ${session.groupCode}`,
+            weekday: t(`weekday.${session.weekday}`),
+            start: session.startTime,
+            end: session.endTime,
+          })}
+          onClick={() => (held ? onDrop() : onPick())}
+          onDragStart={onPick}
+          onKeyDown={(event) => {
+            if (event.key === ' ' || event.key === 'Enter') {
+              event.preventDefault()
+              if (held) onDrop()
+              else onPick()
+              return
+            }
+            onKeyDown(event)
+          }}
+          className="flex-1 text-left focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring"
+        >
+          {/*
           Subject, group, teacher and room. The subject code alone identified a
           class only to somebody who had the catalogue memorised, and the one
           thing a coordinator most needs to see at a glance — who is teaching
           it — was not on the card at all.
         */}
-        <span className="block font-medium text-text" title={session.subjectName}>
-          {session.subjectCode}
-        </span>
-        <span className="block text-text-muted">{session.groupCode}</span>
-        {editable ? null : (
-          <span className="block truncate text-text-muted">
-            {session.spaceName ?? t('planner.unassignedSpace')}
+          <span className="block font-medium text-text" title={session.subjectName}>
+            {session.subjectCode}
           </span>
-        )}
-      </button>
+          <span className="block text-text-muted">{session.groupCode}</span>
+          {editable ? null : (
+            <span className="block truncate text-text-muted">
+              {session.spaceName ?? t('planner.unassignedSpace')}
+            </span>
+          )}
+        </button>
 
-      {/*
+        {/*
         The room. A group has one it normally meets in, and a session starts
         there — but a week has exceptions, so it is changed here rather than by
         editing the group.
       */}
-      {editable ? (
-        <label className="block">
-          <span className="sr-only">{t('planner.assignSpace')}</span>
-          <select
-            value={session.spaceId ?? ''}
-            onChange={(event) => onSpace(event.target.value || null)}
-            onClick={(event) => event.stopPropagation()}
-            className="w-full truncate rounded-sm border border-border bg-surface px-1 py-0.5 text-xs text-text"
-          >
-            <option value="">{t('planner.unassignedSpace')}</option>
-            {spaces.map((space) => (
-              <option key={space.spaceId} value={space.spaceId}>
-                {space.name}
-              </option>
-            ))}
-          </select>
-        </label>
-      ) : null}
+        {editable ? (
+          <label className="block">
+            <span className="sr-only">{t('planner.assignSpace')}</span>
+            <select
+              value={session.spaceId ?? ''}
+              onChange={(event) => onSpace(event.target.value || null)}
+              onClick={(event) => event.stopPropagation()}
+              className="w-full truncate rounded-sm border border-border bg-surface px-1 py-0.5 text-xs text-text"
+            >
+              <option value="">{t('planner.unassignedSpace')}</option>
+              {spaces.map((space) => (
+                <option key={space.spaceId} value={space.spaceId}>
+                  {space.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
 
-      {/*
+        {/*
         What the class is about, written on the block itself.
 
         Above the teacher because it is what a coordinator scans a week for —
@@ -1109,48 +1207,49 @@ function SessionBlock({
         leaving the box rather than on every keystroke: a session is a row on
         the server, and a request per letter is a request per letter.
       */}
-      {editable ? (
-        <label className="block">
-          <span className="sr-only">{t('planner.topic')}</span>
-          <input
-            type="text"
-            maxLength={200}
-            defaultValue={session.topic ?? ''}
-            placeholder={t('planner.topicPlaceholder')}
-            onClick={(event) => event.stopPropagation()}
-            onKeyDown={(event) => {
-              event.stopPropagation()
-              if (event.key === 'Enter') (event.target as HTMLInputElement).blur()
-            }}
-            onBlur={(event) => {
-              if (event.target.value !== (session.topic ?? '')) onTopic(event.target.value)
-            }}
-            className="w-full rounded-sm border border-border bg-surface px-1 py-0.5 text-xs text-text"
-          />
-        </label>
-      ) : session.topic ? (
-        <span className="block truncate font-medium text-text" title={session.topic}>
-          {session.topic}
-        </span>
-      ) : null}
+        {editable ? (
+          <label className="block">
+            <span className="sr-only">{t('planner.topic')}</span>
+            <input
+              type="text"
+              maxLength={200}
+              defaultValue={session.topic ?? ''}
+              placeholder={t('planner.topicPlaceholder')}
+              onClick={(event) => event.stopPropagation()}
+              onKeyDown={(event) => {
+                event.stopPropagation()
+                if (event.key === 'Enter') (event.target as HTMLInputElement).blur()
+              }}
+              onBlur={(event) => {
+                if (event.target.value !== (session.topic ?? '')) onTopic(event.target.value)
+              }}
+              className="w-full rounded-sm border border-border bg-surface px-1 py-0.5 text-xs text-text"
+            />
+          </label>
+        ) : session.topic ? (
+          <span className="block truncate font-medium text-text" title={session.topic}>
+            {session.topic}
+          </span>
+        ) : null}
 
-      {/*
+        {/*
         The teacher, chosen here rather than only by dragging from the pending
         column: a class that is already placed still needs somebody to teach it,
         and there was nowhere in the planner to say who.
       */}
-      {editable ? (
-        <TeacherPickers session={session} directory={directory} onAssign={onAssign} />
-      ) : session.teachers.length > 0 ? (
-        <span
-          className="block truncate text-text-muted"
-          title={session.teachers.map((person) => person.name).join(' · ')}
-        >
-          {session.teachers.map((person) => person.name).join(' · ')}
-        </span>
-      ) : (
-        <span className="block truncate text-text-muted">{t('planner.unassignedTeacher')}</span>
-      )}
+        {editable ? (
+          <TeacherPickers session={session} directory={directory} onAssign={onAssign} />
+        ) : session.teachers.length > 0 ? (
+          <span
+            className="block truncate text-text-muted"
+            title={session.teachers.map((person) => person.name).join(' · ')}
+          >
+            {session.teachers.map((person) => person.name).join(' · ')}
+          </span>
+        ) : (
+          <span className="block truncate text-text-muted">{t('planner.unassignedTeacher')}</span>
+        )}
+      </div>
 
       {editable ? (
         <>
@@ -1171,6 +1270,15 @@ function SessionBlock({
 
       {editable ? (
         <div className="absolute right-0.5 top-0.5 hidden gap-0.5 group-hover:flex group-focus-within:flex">
+          <button
+            type="button"
+            aria-label={t('planner.hours.edit')}
+            aria-expanded={typing}
+            onClick={() => setTyping(!typing)}
+            className="rounded-sm p-0.5 text-text-muted hover:bg-surface hover:text-primary"
+          >
+            <Clock className="size-3" aria-hidden="true" />
+          </button>
           <button
             type="button"
             aria-label={t('planner.duplicate.action')}

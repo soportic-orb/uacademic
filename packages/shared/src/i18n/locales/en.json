@@ -1642,6 +1642,13 @@
     "resize": {
       "start": "Lengthen or shorten from the top",
       "end": "Lengthen or shorten from the bottom"
+    },
+    "hours": {
+      "edit": "Edit the hour",
+      "start": "Start time",
+      "end": "End time",
+      "invalid": "The end has to come after the start.",
+      "outsideDay": "The grid runs from {{start}} to {{end}}."
     }
   },
   "calendar": {

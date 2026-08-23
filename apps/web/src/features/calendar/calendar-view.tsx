@@ -20,7 +20,7 @@ import { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 
-import { CardSkeleton, EmptyState, ErrorState } from '../../components/feedback/states'
+import { CardSkeleton, ErrorState } from '../../components/feedback/states'
 import { Button } from '../../components/ui/button'
 import { Card, CardBody, CardHeader } from '../../components/ui/card'
 import { useToast } from '../../hooks/use-toast'
@@ -38,6 +38,8 @@ interface CalendarEvent {
   subjectName: string
   groupCode: string
   spaceName: string | null
+  /** What the class is about, as written on the planner block. */
+  topic: string | null
 }
 
 interface CalendarResponse {
@@ -58,11 +60,17 @@ type ViewKey = keyof typeof VIEWS
 
 const LOCALES = { ca: caLocale, es: esLocale, en: enLocale }
 
-/** A generous window: the four views all read from the same fetched range. */
-function defaultRange(): { from: string; to: string } {
-  const now = new Date()
-  const from = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1))
-  const to = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 3, 0))
+/**
+ * The window fetched around whatever the calendar is showing.
+ *
+ * A month either side, so paging to the next month draws immediately from what
+ * is already here and then refreshes. The range used to be fixed at the month
+ * the screen opened on: paging past it found nothing, and the calendar said
+ * there were no classes in a period nobody had asked the server about.
+ */
+function rangeAround(date: Date): { from: string; to: string } {
+  const from = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() - 1, 1))
+  const to = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 2, 0))
   return { from: from.toISOString().slice(0, 10), to: to.toISOString().slice(0, 10) }
 }
 
@@ -75,7 +83,7 @@ export function CalendarView() {
 
   const [view, setView] = useState<ViewKey>('week')
   const [subjectId, setSubjectId] = useState('')
-  const [range] = useState(defaultRange)
+  const [range, setRange] = useState(() => rangeAround(new Date()))
   const calendarRef = useRef<FullCalendar>(null)
 
   const query = `from=${range.from}&to=${range.to}${subjectId ? `&subjectId=${subjectId}` : ''}`
@@ -93,7 +101,12 @@ export function CalendarView() {
         title: `${event.subjectCode} ${event.groupCode}`,
         start: `${event.date}T${event.startTime}:00`,
         end: `${event.date}T${event.endTime}:00`,
-        extendedProps: { room: event.spaceName, subject: event.subjectName },
+        extendedProps: {
+          room: event.spaceName,
+          // The topic where somebody wrote one, the subject's name where
+          // they did not: a code alone means nothing to whoever is reading.
+          subject: event.topic ?? event.subjectName,
+        },
       })),
     [sessions.data],
   )
@@ -182,12 +195,22 @@ export function CalendarView() {
             </label>
           </div>
 
+          {/*
+            An empty month is a month, not a dead end. The calendar used to be
+            replaced by "no classes in this period", which took away the very
+            arrows somebody needed to go and look at the month that does have
+            them.
+          */}
+          {sessions.isSuccess && events.length === 0 ? (
+            <p className="rounded-control border border-border bg-surface-muted px-3 py-2 text-sm text-text-muted">
+              {t('calendar.empty')}
+            </p>
+          ) : null}
+
           {sessions.isPending ? (
             <CardSkeleton />
           ) : sessions.isError ? (
             <ErrorState onRetry={() => void sessions.refetch()} />
-          ) : events.length === 0 ? (
-            <EmptyState title={t('calendar.empty')} />
           ) : (
             <div className="uacademic-calendar">
               <FullCalendar
@@ -207,9 +230,24 @@ export function CalendarView() {
                 // and announceable, so the icons go.
                 buttonIcons={false}
                 events={events}
+                /*
+                  Whatever the calendar moves to, the server is asked about:
+                  the four views and the arrows all end up here, so there is
+                  one place that keeps the data and the screen in step.
+                */
+                datesSet={(argument) => {
+                  const middle = new Date((argument.start.getTime() + argument.end.getTime()) / 2)
+                  const next = rangeAround(middle)
+                  setRange((current) =>
+                    current.from === next.from && current.to === next.to ? current : next,
+                  )
+                }}
                 eventContent={(argument) => (
                   <div className="px-1 py-0.5 text-xs">
                     <span className="block font-medium">{argument.event.title}</span>
+                    <span className="block opacity-80">
+                      {String(argument.event.extendedProps.subject ?? '')}
+                    </span>
                     <span className="block opacity-80">
                       {String(argument.event.extendedProps.room ?? '')}
                     </span>

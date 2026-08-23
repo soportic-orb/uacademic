@@ -9,6 +9,7 @@ import {
   filterLoadRows,
   groupBySubject,
   sortLoadRows,
+  withTimetabledTeaching,
 } from '../src/domain/workload.js'
 
 function assignment(overrides: Partial<AssignmentDetail> = {}): AssignmentDetail {
@@ -271,5 +272,43 @@ describe('center load table', () => {
     const original = [...rows]
     sortLoadRows(rows, 'ratio', 'desc')
     expect(rows).toEqual(original)
+  })
+})
+
+describe('teaching that only exists on the timetable', () => {
+  const timetabled = {
+    subjectId: 's2',
+    subjectCode: 'ALG201',
+    subjectName: 'Algorísmica',
+    groupId: 'g9',
+    groupCode: 'T1',
+    minutes: 90,
+  }
+
+  it('counts a group somebody teaches and holds no assignment on', () => {
+    const result = withTimetabledTeaching([], [timetabled])
+
+    expect(result).toHaveLength(1)
+    expect(result[0]).toMatchObject({ groupId: 'g9', concept: 'lecture', hours: 1.5 })
+  })
+
+  it('leaves the teaching order alone where there is one', () => {
+    const assignment: AssignmentDetail = {
+      subjectId: 's2',
+      subjectCode: 'ALG201',
+      subjectName: 'Algorísmica',
+      groupId: 'g9',
+      groupCode: 'T1',
+      concept: 'lecture',
+      hours: 60,
+    }
+
+    // Sixty hours were agreed; an hour and a half of them are on the calendar
+    // so far, and that is not a second commitment.
+    expect(withTimetabledTeaching([assignment], [timetabled])).toEqual([assignment])
+  })
+
+  it('ignores a group with nothing placed yet', () => {
+    expect(withTimetabledTeaching([], [{ ...timetabled, minutes: 0 }])).toEqual([])
   })
 })

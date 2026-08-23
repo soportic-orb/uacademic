@@ -826,6 +826,62 @@ describe('the visual planner', () => {
     })
   })
 
+  describe('typing the hour instead of dragging it', () => {
+    const openHours = async (user: ReturnType<typeof userEvent.setup>) => {
+      await user.click(screen.getByRole('button', { name: "Edita l'horari" }))
+    }
+
+    it('writes the hour that was typed', async () => {
+      const user = userEvent.setup()
+      render(wrap(<PlannerGrid version={VERSION} context={CONTEXT} />))
+
+      await openHours(user)
+      const end = screen.getByLabelText('Hora de fi')
+      fireEvent.change(end, { target: { value: '11:30' } })
+      fireEvent.blur(end)
+
+      await waitFor(() => {
+        const patch = fetchMock.mock.calls.find(
+          (call) => (call[1] as RequestInit | undefined)?.method === 'PATCH',
+        )
+        expect(JSON.parse(String((patch![1] as RequestInit).body))).toMatchObject({
+          startTime: '09:00',
+          endTime: '11:30',
+        })
+      })
+    })
+
+    it('refuses an hour that ends before it starts, and says so', async () => {
+      const user = userEvent.setup()
+      render(wrap(<PlannerGrid version={VERSION} context={CONTEXT} />))
+
+      await openHours(user)
+      const end = screen.getByLabelText('Hora de fi')
+      fireEvent.change(end, { target: { value: '08:00' } })
+      fireEvent.blur(end)
+
+      expect(await screen.findByText(/ha de ser posterior/)).toBeInTheDocument()
+      expect(
+        fetchMock.mock.calls.filter(
+          (call) => (call[1] as RequestInit | undefined)?.method === 'PATCH',
+        ),
+      ).toHaveLength(0)
+    })
+
+    it('refuses an hour the grid does not draw', async () => {
+      const user = userEvent.setup()
+      render(wrap(<PlannerGrid version={VERSION} context={CONTEXT} />))
+
+      // The fixture's grid runs 09:00–12:00.
+      await openHours(user)
+      const end = screen.getByLabelText('Hora de fi')
+      fireEvent.change(end, { target: { value: '14:00' } })
+      fireEvent.blur(end)
+
+      expect(await screen.findByText(/09:00 a 12:00/)).toBeInTheDocument()
+    })
+  })
+
   describe('repeating a class across the term', () => {
     it('asks which days, at what time, and until when', async () => {
       const user = userEvent.setup()

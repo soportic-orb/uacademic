@@ -27,8 +27,12 @@ export interface ScheduleEntry {
   startTime: string
   endTime: string
   subjectCode: string
+  /** The subject in full: a code identifies a class only to whoever knows it. */
+  subjectName: string
   groupCode: string
   spaceName: string | null
+  /** What the class is about, when whoever planned it wrote it down. */
+  topic: string | null
 }
 
 export interface SchedulePdfInput {
@@ -203,10 +207,25 @@ function drawMonth(document: PDFKit.PDFDocument, options: MonthOptions): void {
           break
         }
 
+        // The whole hour, not only when it starts: a printed timetable is
+        // read away from the screen, and "when does this finish?" is the
+        // second question anybody asks of it.
         document
           .fillColor(INK)
           .fontSize(6.5)
-          .text(`${entry.startTime} ${entry.subjectCode} ${entry.groupCode}`, x + 4, lineY, {
+          .text(
+            `${entry.startTime}–${entry.endTime} ${entry.subjectCode} ${entry.groupCode}`,
+            x + 4,
+            lineY,
+            { width: cellWidth - 8, lineBreak: false, ellipsis: true },
+          )
+
+        // What the class is: its topic where somebody wrote one, and the
+        // subject's name where they did not.
+        document
+          .fillColor(MUTED)
+          .fontSize(6)
+          .text(entry.topic ?? entry.subjectName, x + 4, lineY + 7, {
             width: cellWidth - 8,
             lineBreak: false,
             ellipsis: true,
@@ -216,14 +235,14 @@ function drawMonth(document: PDFKit.PDFDocument, options: MonthOptions): void {
           document
             .fillColor(MUTED)
             .fontSize(6)
-            .text(entry.spaceName, x + 4, lineY + 7, {
+            .text(entry.spaceName, x + 4, lineY + 13, {
               width: cellWidth - 8,
               lineBreak: false,
               ellipsis: true,
             })
         }
 
-        lineY += 16
+        lineY += entry.spaceName ? 22 : 16
       }
     })
   })
@@ -281,8 +300,10 @@ export async function buildSchedulePdf(
       startTime: row.startTime,
       endTime: row.endTime,
       subjectCode: row.subjectCode,
+      subjectName: row.subjectName,
       groupCode: row.groupCode,
       spaceName: row.spaceName,
+      topic: row.topic,
     })),
   })
 

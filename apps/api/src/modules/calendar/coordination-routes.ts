@@ -347,6 +347,7 @@ interface ColouredOccurrence {
   groupCode: string
   spaceId: string | null
   spaceName: string | null
+  topic: string | null
   teacherProfileId: string | null
   teacherName: string | null
   /** Everyone giving the class, the one above first. */
@@ -380,6 +381,7 @@ function expandWithColour(
         groupCode: session.groupCode,
         spaceId: session.spaceId,
         spaceName: session.spaceName,
+        topic: session.topic,
         teacherProfileId: session.teacherProfileId,
         teacherName: session.teacherName,
         teachers: session.teachers,
@@ -513,6 +515,9 @@ function writeDays(document: PDFKit.PDFDocument, rows: readonly ColouredOccurren
         [
           `${row.startTime}–${row.endTime}`,
           `${row.subjectCode} ${row.groupCode}`,
+          // What the class is: its topic where somebody wrote one, and the
+          // subject's name where they did not.
+          row.topic ?? row.subjectName,
           row.teachers.map((person) => person.name).join(', '),
           row.spaceName ?? '',
         ]
