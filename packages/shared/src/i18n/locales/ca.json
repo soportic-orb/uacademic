@@ -966,7 +966,8 @@
       "assign_teacher_to_group": "Preparant una assignació",
       "move_session": "Preparant un canvi de sessió",
       "rebalance_workload": "Preparant una redistribució de càrrega",
-      "draft_announcement": "Redactant un anunci"
+      "draft_announcement": "Redactant un anunci",
+      "import_schedule": "Llegint el document adjunt"
     },
     "warningsText": {
       "loadAfterAssignment": "La càrrega quedaria al {{percent}}% ({{status}}).",
@@ -983,7 +984,27 @@
       "staleProposal": "L’horari ha canviat des de la proposta: torna-la a demanar.",
       "noChannel": "No hi ha cap canal on publicar l’anunci."
     },
-    "reopen": "Obre l'assistent"
+    "reopen": "Obre l'assistent",
+    "attachments": {
+      "title": "Documents adjunts",
+      "add": "Adjunta un document",
+      "hint": "Excel, Word o PDF amb un horari. L'assistent el llegirà i et preguntarà el que li calgui abans de proposar res.",
+      "attached": "{{name}} adjuntat",
+      "unsupported": "Només es poden adjuntar fitxers Excel, Word, PDF, CSV o de text.",
+      "tooLarge": "El fitxer és massa gran (màxim 10 MB).",
+      "noText": "Aquest fitxer no conté text llegible. Si és un escaneig, caldrà passar-hi un OCR abans.",
+      "corruptFile": "No s'ha pogut llegir el fitxer.",
+      "unsupportedType": "No sabem llegir aquest tipus de fitxer."
+    },
+    "import": {
+      "unknownGroup": "Fila {{row}}: no sabem quin grup és «{{value}}».",
+      "ambiguousGroup": "Fila {{row}}: «{{value}}» pot ser més d'un grup. Cal dir de quina assignatura és.",
+      "unknownTeacher": "Fila {{row}}: no sabem qui és «{{value}}».",
+      "ambiguousTeacher": "Fila {{row}}: «{{value}}» pot ser més d'una persona. Cal dir qui és.",
+      "unknownSpace": "Fila {{row}}: no sabem quin espai és «{{value}}».",
+      "ambiguousSpace": "Fila {{row}}: «{{value}}» pot ser més d'un espai. Cal dir quin és.",
+      "badDate": "Fila {{row}}: «{{value}}» no és una data vàlida."
+    }
   },
   "states": {
     "loadingLabel": "Carregant contingut",

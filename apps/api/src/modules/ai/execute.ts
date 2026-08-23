@@ -15,9 +15,11 @@
 import {
   type AiProposal,
   type PlannedSession,
+  type ScheduleVersionStatus,
   type Weekday,
   evaluatePlacement,
   isConfirmable,
+  isEditable,
 } from '@uacademic/shared'
 
 import { writeAuditLog } from '../../lib/audit.js'
@@ -54,15 +56,13 @@ export async function executeProposal(
   }
 
   const result =
-    row.tool === 'move_session'
+    row.tool === 'move_session' || row.tool === 'propose_schedule' || row.tool === 'import_schedule'
       ? await applySessionChanges(context, proposal, options.ip ?? null)
-      : row.tool === 'propose_schedule'
-        ? await applySessionChanges(context, proposal, options.ip ?? null)
-        : row.tool === 'assign_teacher_to_group' || row.tool === 'rebalance_workload'
-          ? await applyAssignments(context, proposal, options.ip ?? null)
-          : row.tool === 'draft_announcement'
-            ? await applyAnnouncement(context, proposal, options.ip ?? null)
-            : { applied: 0, entity: 'unknown' }
+      : row.tool === 'assign_teacher_to_group' || row.tool === 'rebalance_workload'
+        ? await applyAssignments(context, proposal, options.ip ?? null)
+        : row.tool === 'draft_announcement'
+          ? await applyAnnouncement(context, proposal, options.ip ?? null)
+          : { applied: 0, entity: 'unknown' }
 
   await prisma().aiInteraction.updateMany({
     where: { centerId: context.centerId, userId: row.userId },
@@ -101,7 +101,22 @@ async function applySessionChanges(
   let applied = 0
 
   for (const change of changes) {
-    if (!change.entityId || !change.after) continue
+    if (!change.after) continue
+
+    /*
+      No id means this class does not exist yet — an import read out of a
+      document. It is created rather than moved, into the draft the proposal
+      named, and audited as the assistant's like everything else here.
+    */
+    if (!change.entityId) {
+      applied += await createFromImport(
+        context,
+        change.after as Record<string, unknown>,
+        ip ?? undefined,
+      )
+      continue
+    }
+
     const current = published.find((row) => row.id === change.entityId)
     if (!current) continue
 
@@ -322,4 +337,67 @@ function shiftToWeekday(from: Date, fromWeekday: number, toWeekday: number): Dat
   const moved = new Date(from)
   moved.setUTCDate(moved.getUTCDate() + (toWeekday - fromWeekday))
   return moved
+}
+
+/**
+ * One class, created from a confirmed import.
+ *
+ * Everything was resolved to an identifier when the proposal was built, and
+ * it is checked again here: the draft must still be editable and the group,
+ * the teacher and the room must still belong to this center. A proposal is
+ * allowed to be a day old, and the world moves.
+ */
+async function createFromImport(
+  context: AiContext,
+  after: Record<string, unknown>,
+  ip?: string,
+): Promise<number> {
+  const versionId = String(after.versionId ?? '')
+  const groupId = String(after.groupId ?? '')
+  const date = String(after.date ?? '')
+
+  if (!versionId || !groupId || !date) return 0
+
+  const version = await context.db.scheduleVersion.findFirst({
+    where: { id: versionId, academicYearId: context.academicYearId },
+  })
+  if (!version || !isEditable(version.status as ScheduleVersionStatus)) {
+    throw new AppError(409, 'CONFLICT', 'planner.version.errors.notEditable')
+  }
+
+  const day = new Date(`${date}T00:00:00Z`)
+  if (Number.isNaN(day.getTime())) return 0
+
+  const created = await context.db.classSession.create({
+    data: {
+      centerId: context.centerId,
+      scheduleVersionId: version.id,
+      groupId,
+      teacherProfileId: (after.teacherProfileId as string | null) ?? null,
+      spaceId: (after.spaceId as string | null) ?? null,
+      weekday: day.getUTCDay() === 0 ? 7 : day.getUTCDay(),
+      startTime: String(after.startTime ?? ''),
+      endTime: String(after.endTime ?? ''),
+      // Placed on its day and never repeated, like every other class.
+      dateFrom: day,
+      dateTo: day,
+      recurrence: 'once',
+      topic: (after.topic as string | undefined) ?? null,
+    },
+  })
+
+  await writeAuditLog(prisma(), {
+    centerId: context.centerId,
+    userId: context.userId,
+    entity: 'class_session',
+    entityId: created.id,
+    action: 'create',
+    before: null,
+    after,
+    // R4: read out of a document by the assistant, confirmed by a person.
+    source: 'ai',
+    ip,
+  })
+
+  return 1
 }

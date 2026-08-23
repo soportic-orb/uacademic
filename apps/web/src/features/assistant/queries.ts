@@ -10,7 +10,7 @@ import type { Citation } from '@uacademic/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { currentLocale } from '../../i18n'
-import { ApiRequestError, apiFetch, apiJson } from '../../lib/api'
+import { ApiRequestError, apiFetch, apiJson, apiUpload } from '../../lib/api'
 import { API_BASE_URL } from '../../lib/api-base'
 import { useSessionStore } from '../../stores/session'
 
@@ -112,6 +112,31 @@ export function useConversations(subjectId?: string | null) {
   })
 }
 
+export interface AttachmentDto {
+  id: string
+  fileName: string
+  mime: string
+  pageCount: number
+  characters: number
+}
+
+/** Handing the assistant a document: a timetable to read, not a regulation. */
+export function useAttachDocument(conversationId: string | null) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (file: File) => {
+      const form = new FormData()
+      form.append('file', file)
+      return apiUpload<AttachmentDto>(
+        `/api/v1/ai/conversations/${conversationId}/attachments`,
+        form,
+      )
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['ai-conversation'] }),
+  })
+}
+
 export interface ConversationDetail {
   id: string
   title: string | null
@@ -123,6 +148,7 @@ export interface ConversationDetail {
     citations: Citation[]
     createdAt: string
   }[]
+  attachments: AttachmentDto[]
   proposals: {
     id: string
     tool: string

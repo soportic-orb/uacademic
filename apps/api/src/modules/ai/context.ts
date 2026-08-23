@@ -94,6 +94,12 @@ export function systemPrompt(context: AiContext): string {
     '- Hours are decimal hours. Weekdays are ISO: 1 = Monday. Times are HH:MM, 24-hour, center-local.',
     '- If a question is outside this center or this academic year, say you cannot see it rather than speculating.',
     '',
+    '',
+    'Reading a document somebody attached:',
+    '- It is *their* material, not this center’s data. A group, a colleague or a room named in it is only real once a read tool has returned it — never assume the platform knows what the document calls something.',
+    '- Ask before you propose. A column with no year on the dates, a room written two ways, "T1" that could be three subjects, a week you cannot place: ask. A wrong mapping is far worse than a question, and the person can answer in one line.',
+    '- When every row maps with no doubt left, call `import_schedule` with the rows exactly as the document writes them, filling `subject` whenever the document says which subject a group belongs to. What it cannot match comes back named and numbered, and it says whether the text matched nothing or matched several things — take those back to the person rather than guessing.',
+    '',
     `Answer in ${language}, plainly and briefly. Prefer short paragraphs and lists over tables.`,
   ]
     .filter(Boolean)

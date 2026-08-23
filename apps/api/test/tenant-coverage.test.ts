@@ -40,6 +40,9 @@ const DELIBERATELY_UNSCOPED = new Set([
   'SettingExtractionRun',
   'AiConversation',
   'AiProposal',
+  // Reached through the conversation it was dropped into, which is already
+  // scoped to one center and one person.
+  'AiAttachment',
   // The support chat: written with the center the person was in, read by them
   // and — deliberately, and only by the role that crosses centers — by the
   // platform administrator, who has to see what everybody is asking.

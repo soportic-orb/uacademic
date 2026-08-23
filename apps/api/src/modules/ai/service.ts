@@ -25,6 +25,7 @@ import { z } from 'zod'
 import { toJson } from '../../lib/json.js'
 import { prisma } from '../../lib/prisma.js'
 import { anthropic, assistantAvailable, assistantModel } from './client.js'
+import { attachmentBlock } from './attachments.js'
 import { buildDocumentContext, extractCitations } from './documents.js'
 import type { AiContext } from './context.js'
 import { systemPrompt } from './context.js'
@@ -133,6 +134,10 @@ export async function ask(input: AskInput): Promise<AskResult> {
     })
   }
 
+  // Whatever was attached to this conversation, ahead of the transcript: the
+  // question is almost always about it.
+  const attachments = await attachmentBlock(prisma(), input.conversationId)
+
   const history = await prisma().aiMessage.findMany({
     where: { conversationId: input.conversationId },
     orderBy: { createdAt: 'asc' },
@@ -143,6 +148,7 @@ export async function ask(input: AskInput): Promise<AskResult> {
     // The documents lead, and stay byte-identical between questions about the
     // same subject: that prefix is what the cache is keyed on.
     ...(documents.blocks.length > 0 ? [{ role: 'user' as const, content: documents.blocks }] : []),
+    ...(attachments ? [{ role: 'user' as const, content: attachments }] : []),
     ...history.map((message) => ({
       role: message.role === 'assistant' ? ('assistant' as const) : ('user' as const),
       content: message.content,

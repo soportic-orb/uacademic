@@ -11,7 +11,7 @@
  * screen changes: the platform is fully usable by hand, always.
  */
 import type { Citation } from '@uacademic/shared'
-import { Bot, Loader2, Send, Sparkles, X } from 'lucide-react'
+import { Bot, Loader2, Paperclip, Send, Sparkles, X } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -24,6 +24,7 @@ import {
   type AiProposal,
   type DocumentSource,
   askAssistant,
+  useAttachDocument,
   useAssistantStatus,
   useConversation,
   useConversations,
@@ -57,6 +58,8 @@ export function AssistantPanel({ open, onClose, subjectId, subjectCode }: Assist
   const conversations = useConversations(subjectId)
   const [conversationId, setConversationId] = useState<string | null>(null)
   const history = useConversation(conversationId)
+  const attach = useAttachDocument(conversationId)
+  const filePicker = useRef<HTMLInputElement>(null)
 
   const [turns, setTurns] = useState<Turn[]>([])
   const [question, setQuestion] = useState('')
@@ -292,6 +295,67 @@ export function AssistantPanel({ open, onClose, subjectId, subjectCode }: Assist
             ) : null}
 
             <div ref={bottom} />
+          </div>
+
+          {/*
+            A timetable somebody was sent as a spreadsheet, a Word table or a
+            PDF. The assistant reads it, asks about whatever it cannot place,
+            and ends with a proposal — which is confirmed like any other (R5).
+
+            It attaches to a conversation, so there has to be one: the first
+            question opens it, and until then the button says so rather than
+            failing on a null id.
+          */}
+          <div className="border-t border-border px-3 pt-3">
+            <input
+              ref={filePicker}
+              type="file"
+              className="sr-only"
+              accept=".xlsx,.docx,.pdf,.csv,.txt"
+              onChange={(event) => {
+                const file = event.target.files?.[0]
+                event.target.value = ''
+                if (!file) return
+
+                attach.mutate(file, {
+                  onSuccess: (stored) =>
+                    toast.success('assistant.attachments.attached', {
+                      params: { name: stored.fileName },
+                    }),
+                  onError: (error) => {
+                    if (error instanceof ApiRequestError)
+                      toast.raw({ variant: 'error', message: error.localizedMessage })
+                    else toast.error('errors.generic')
+                  },
+                })
+              }}
+            />
+
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={!conversationId || attach.isPending}
+              title={conversationId ? undefined : t('assistant.attachments.hint')}
+              onClick={() => filePicker.current?.click()}
+            >
+              <Paperclip className="size-4" aria-hidden="true" />
+              {attach.isPending ? t('common.loading') : t('assistant.attachments.add')}
+            </Button>
+
+            {(history.data?.attachments ?? []).length > 0 ? (
+              <ul className="mt-2 flex flex-wrap gap-1">
+                {(history.data?.attachments ?? []).map((attachment) => (
+                  <li
+                    key={attachment.id}
+                    className="rounded-control border border-border px-2 py-0.5 text-xs text-text-muted"
+                  >
+                    {attachment.fileName}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-1 text-xs text-text-muted">{t('assistant.attachments.hint')}</p>
+            )}
           </div>
 
           <form

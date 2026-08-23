@@ -110,6 +110,36 @@ export const WRITE_TOOL_SCHEMAS = {
     teacherProfileIds: z.array(z.string().min(1)).max(20).optional(),
     subjectId: z.string().min(1).optional(),
   }),
+  /**
+   * A timetable read out of a document the coordinator attached.
+   *
+   * Rows carry what the *document* says — a group code, a teacher's name, a
+   * room's name — never identifiers, because the model has none to give. The
+   * server resolves each one against the center's own data and refuses
+   * anything it cannot match, which is what stops a plausible-looking
+   * invention becoming a class.
+   */
+  import_schedule: z.object({
+    rows: z
+      .array(
+        z.object({
+          /** `YYYY-MM-DD`. Every class is placed on a day of its own. */
+          date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+          startTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+          endTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+          /** As written in the document: "MAT101 T1", "Grup A", "T1". */
+          group: z.string().min(1).max(120),
+          subject: z.string().max(120).optional(),
+          teacher: z.string().max(160).optional(),
+          space: z.string().max(120).optional(),
+          topic: z.string().max(200).optional(),
+        }),
+      )
+      .min(1)
+      .max(400),
+    /** Which draft to add them to. The editable one, if this is left out. */
+    versionId: z.string().min(1).optional(),
+  }),
   draft_announcement: z.object({
     subjectId: z.string().min(1).optional(),
     audience: z.enum(['center', 'subject']).default('subject'),
@@ -204,6 +234,14 @@ export const AI_TOOLS: readonly AiToolDefinition[] = [
     description:
       'Propose moving assignments from overloaded teachers to colleagues with headroom and the right competence. Returns a proposal; it changes nothing by itself.',
     schema: WRITE_TOOL_SCHEMAS.rebalance_workload,
+  },
+  {
+    name: 'import_schedule',
+    kind: 'write',
+    labelKey: 'assistant.tools.import_schedule',
+    description:
+      'Propose adding classes read out of an attached document to the planner. Give one row per class, with the date, the times and the names exactly as the document writes them; the server matches them to this center and refuses what it cannot match. Ask the coordinator about anything ambiguous BEFORE calling this — a wrong mapping is worse than a question. Returns a proposal; it changes nothing by itself.',
+    schema: WRITE_TOOL_SCHEMAS.import_schedule,
   },
   {
     name: 'draft_announcement',

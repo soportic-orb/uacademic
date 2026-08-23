@@ -1406,11 +1406,12 @@ model AiConversation {
   lastMessageAt DateTime @default(now()) @map("last_message_at")
   createdAt     DateTime @default(now()) @map("created_at")
 
-  center    Center       @relation(fields: [centerId], references: [id], onDelete: Cascade)
-  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  subject   Subject?     @relation(fields: [subjectId], references: [id], onDelete: SetNull)
-  messages  AiMessage[]
-  proposals AiProposal[]
+  center      Center         @relation(fields: [centerId], references: [id], onDelete: Cascade)
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subject     Subject?       @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  messages    AiMessage[]
+  proposals   AiProposal[]
+  attachments AiAttachment[]
 
   @@index([userId, lastMessageAt])
   @@index([centerId, subjectId])
@@ -1435,6 +1436,32 @@ model AiMessage {
 
   @@index([conversationId, createdAt])
   @@map("ai_messages")
+}
+
+/// A document somebody handed the assistant mid-conversation.
+///
+/// Not a library document: those are the center's regulations, scoped, cited
+/// and kept. This is a timetable somebody was sent as a spreadsheet and wants
+/// read into the planner — working material, tied to the conversation it was
+/// dropped into and gone with it.
+///
+/// The text is extracted once, on upload, so every turn of the conversation
+/// reads the same thing and the file itself is never kept.
+model AiAttachment {
+  id             String   @id @default(uuid(7)) @db.Char(36)
+  conversationId String   @map("conversation_id") @db.Char(36)
+  centerId       String   @map("center_id") @db.Char(36)
+  fileName       String   @map("file_name") @db.VarChar(255)
+  mime           String   @db.VarChar(120)
+  /// What the model reads. Bounded on the way in — see `MAX_ATTACHMENT_CHARS`.
+  text           String   @db.MediumText
+  pageCount      Int      @default(1) @map("page_count")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  conversation AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+  @@map("ai_attachments")
 }
 
 /// R5: what the assistant would do, waiting for a person to say yes.

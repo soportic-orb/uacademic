@@ -966,7 +966,8 @@
       "assign_teacher_to_group": "Preparando una asignación",
       "move_session": "Preparando un cambio de sesión",
       "rebalance_workload": "Preparando una redistribución de carga",
-      "draft_announcement": "Redactando un anuncio"
+      "draft_announcement": "Redactando un anuncio",
+      "import_schedule": "Leyendo el documento adjunto"
     },
     "warningsText": {
       "loadAfterAssignment": "La carga quedaría al {{percent}}% ({{status}}).",
@@ -983,7 +984,27 @@
       "staleProposal": "El horario ha cambiado desde la propuesta: vuelve a pedirla.",
       "noChannel": "No hay ningún canal donde publicar el anuncio."
     },
-    "reopen": "Abrir el asistente"
+    "reopen": "Abrir el asistente",
+    "attachments": {
+      "title": "Documentos adjuntos",
+      "add": "Adjuntar un documento",
+      "hint": "Excel, Word o PDF con un horario. La asistente lo leerá y te preguntará lo que le haga falta antes de proponer nada.",
+      "attached": "{{name}} adjuntado",
+      "unsupported": "Solo se pueden adjuntar archivos Excel, Word, PDF, CSV o de texto.",
+      "tooLarge": "El archivo es demasiado grande (máximo 10 MB).",
+      "noText": "Este archivo no contiene texto legible. Si es un escaneo, habrá que pasarle un OCR antes.",
+      "corruptFile": "No se ha podido leer el archivo.",
+      "unsupportedType": "No sabemos leer este tipo de archivo."
+    },
+    "import": {
+      "unknownGroup": "Fila {{row}}: no sabemos qué grupo es «{{value}}».",
+      "ambiguousGroup": "Fila {{row}}: «{{value}}» puede ser más de un grupo. Hay que indicar de qué asignatura es.",
+      "unknownTeacher": "Fila {{row}}: no sabemos quién es «{{value}}».",
+      "ambiguousTeacher": "Fila {{row}}: «{{value}}» puede ser más de una persona. Hay que indicar quién es.",
+      "unknownSpace": "Fila {{row}}: no sabemos qué espacio es «{{value}}».",
+      "ambiguousSpace": "Fila {{row}}: «{{value}}» puede ser más de un espacio. Hay que indicar cuál es.",
+      "badDate": "Fila {{row}}: «{{value}}» no es una fecha válida."
+    }
   },
   "states": {
     "loadingLabel": "Cargando contenido",

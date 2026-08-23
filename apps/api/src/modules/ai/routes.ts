@@ -18,6 +18,7 @@ import { AppError } from '../../lib/errors.js'
 import { prisma } from '../../lib/prisma.js'
 import { parseWith } from '../../lib/validate.js'
 import { assistantAvailable } from './client.js'
+import { attachDocument, listAttachments } from './attachments.js'
 import { buildAiContext } from './context.js'
 import { executeProposal } from './execute.js'
 import {
@@ -100,6 +101,7 @@ export function registerAiRoutes(app: FastifyInstance): void {
           citations: (message.citationsJson ?? []) as unknown[],
           createdAt: message.createdAt.toISOString(),
         })),
+        attachments: await listAttachments(prisma(), conversation.id),
         proposals: conversation.proposals.map((proposal) => ({
           id: proposal.id,
           tool: proposal.tool,
@@ -108,6 +110,48 @@ export function registerAiRoutes(app: FastifyInstance): void {
           createdAt: proposal.createdAt.toISOString(),
         })),
       }
+    },
+  )
+
+  /**
+   * A document handed to the assistant.
+   *
+   * A timetable somebody was sent as a spreadsheet, a Word table or a PDF.
+   * Read once on the way in and kept as text with the conversation; the file
+   * is not stored, and this is not the center's document library.
+   */
+  app.post(
+    '/api/v1/ai/conversations/:id/attachments',
+    { config: { roles: [...COORDINATION] } },
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply) => {
+      const context = await buildAiContext(request)
+
+      const conversation = await prisma().aiConversation.findFirst({
+        where: { id: request.params.id, centerId: context.centerId, userId: context.userId },
+      })
+      if (!conversation) throw AppError.notFound()
+
+      const file = await request.file()
+      if (!file) throw AppError.validation([{ path: 'file', messageKey: 'validation.required' }])
+
+      const stored = await attachDocument(prisma(), {
+        conversationId: conversation.id,
+        centerId: context.centerId,
+        file,
+      })
+
+      await writeAuditLog(prisma(), {
+        centerId: context.centerId,
+        userId: context.userId,
+        entity: 'ai_attachment',
+        entityId: stored.id,
+        action: 'create',
+        after: { fileName: stored.fileName, mime: stored.mime, characters: stored.characters },
+        source: 'user',
+        ip: request.ip,
+      })
+
+      return reply.code(201).send(stored)
     },
   )
 

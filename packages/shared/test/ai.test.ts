@@ -48,6 +48,7 @@ describe('the tool catalog', () => {
       'assign_teacher_to_group',
       'move_session',
       'rebalance_workload',
+      'import_schedule',
       'draft_announcement',
     ])
   })

@@ -966,7 +966,8 @@
       "assign_teacher_to_group": "Preparing an assignment",
       "move_session": "Preparing a class change",
       "rebalance_workload": "Preparing a load rebalance",
-      "draft_announcement": "Drafting an announcement"
+      "draft_announcement": "Drafting an announcement",
+      "import_schedule": "Reading the attached document"
     },
     "warningsText": {
       "loadAfterAssignment": "The load would reach {{percent}}% ({{status}}).",
@@ -983,7 +984,27 @@
       "staleProposal": "The timetable changed since the proposal: ask for it again.",
       "noChannel": "There is no channel to publish the announcement in."
     },
-    "reopen": "Open the assistant"
+    "reopen": "Open the assistant",
+    "attachments": {
+      "title": "Attached documents",
+      "add": "Attach a document",
+      "hint": "Excel, Word or PDF with a timetable. The assistant reads it and asks whatever it needs before proposing anything.",
+      "attached": "{{name}} attached",
+      "unsupported": "Only Excel, Word, PDF, CSV or text files can be attached.",
+      "tooLarge": "The file is too large (10 MB maximum).",
+      "noText": "There is no readable text in this file. If it is a scan, it needs OCR first.",
+      "corruptFile": "The file could not be read.",
+      "unsupportedType": "We cannot read this kind of file."
+    },
+    "import": {
+      "unknownGroup": "Row {{row}}: we do not know which group “{{value}}” is.",
+      "ambiguousGroup": "Row {{row}}: “{{value}}” could be more than one group. Say which subject it belongs to.",
+      "unknownTeacher": "Row {{row}}: we do not know who “{{value}}” is.",
+      "ambiguousTeacher": "Row {{row}}: “{{value}}” could be more than one person. Say who it is.",
+      "unknownSpace": "Row {{row}}: we do not know which space “{{value}}” is.",
+      "ambiguousSpace": "Row {{row}}: “{{value}}” could be more than one space. Say which one.",
+      "badDate": "Row {{row}}: “{{value}}” is not a valid date."
+    }
   },
   "states": {
     "loadingLabel": "Loading content",
