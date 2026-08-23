@@ -39,13 +39,28 @@ import {
   tombstoneToIcsSession,
 } from '../../services/calendar/drafts.js'
 import { registerCalendarConnectionRoutes } from './connections-routes.js'
-import { registerCoordinationCalendarRoutes } from './coordination-routes.js'
+import { rangeForView, registerCoordinationCalendarRoutes } from './coordination-routes.js'
+import { scheduleMonthlyPdf } from '../../services/schedule-pdf.js'
 import { requireCenterScope, requireUser } from '../../plugins/context.js'
 
 const rangeSchema = z.object({
   from: z.iso.date(),
   to: z.iso.date(),
   subjectId: z.uuid().optional(),
+})
+
+/**
+ * What the screen is showing when somebody presses print.
+ *
+ * A printed calendar that is not the calendar in front of them is a different
+ * document: the period is the one on screen, and the shape of the page is the
+ * shape of the view — a month prints as a month, a week as a week, and the
+ * agenda as the list it already is.
+ */
+const printSchema = rangeSchema.extend({
+  view: z.enum(['day', 'week', 'month', 'agenda']).default('agenda'),
+  /** The date the view is centred on. Ignored by `agenda`. */
+  date: z.iso.date().optional(),
 })
 
 /**
@@ -353,13 +368,49 @@ function registerExportRoutes(app: FastifyInstance): void {
 
   app.get('/api/v1/calendar/export.pdf', async (request, reply) => {
     const user = requireUser(request)
-    const { db } = requireCenterScope(request)
-    const query = parseWith(rangeSchema, request.query)
+    const { centerId, db } = requireCenterScope(request)
+    const query = parseWith(printSchema, request.query)
     const t = (key: string) => translate(request.locale, key)
 
+    // The period on screen, not the window the browser happened to fetch.
+    const range = rangeForView(query)
     const sessions = await publishedSessionsFor(db, user.userId, query.subjectId)
-    const excluded = await nonTeachingDates(db, query.from, query.to)
-    const rows = expand(sessions, query.from, query.to, excluded)
+    const excluded = await nonTeachingDates(db, range.from, range.to)
+    const rows = expand(sessions, range.from, range.to, excluded)
+
+    // A month and a week are drawn as a calendar page, which is what the
+    // screen shows; a day and the agenda are a list, which is also what the
+    // screen shows.
+    if (query.view === 'month' || query.view === 'week') {
+      const center = await prisma().center.findUnique({
+        where: { id: centerId },
+        select: { name: true },
+      })
+
+      const grid = await scheduleMonthlyPdf({
+        teacherName: `${user.firstName} ${user.lastName}`,
+        centerName: center?.name ?? '',
+        from: range.from,
+        to: range.to,
+        locale: request.locale,
+        layout: query.view === 'week' ? 'weeks' : 'month',
+        entries: rows.map((row) => ({
+          date: row.date,
+          startTime: row.startTime,
+          endTime: row.endTime,
+          subjectCode: row.subjectCode,
+          subjectName: row.subjectName,
+          groupCode: row.groupCode,
+          spaceName: row.spaceName,
+          topic: row.topic,
+        })),
+      })
+
+      return reply
+        .header('content-type', 'application/pdf')
+        .header('content-disposition', 'attachment; filename="uacademic-calendar.pdf"')
+        .send(grid)
+    }
 
     const document = new PDFDocument({ size: 'A4', margin: 40 })
     const chunks: Buffer[] = []
@@ -372,7 +423,7 @@ function registerExportRoutes(app: FastifyInstance): void {
     document
       .fontSize(10)
       .fillColor('#475569')
-      .text(`${user.firstName} ${user.lastName} · ${query.from} – ${query.to}`)
+      .text(`${user.firstName} ${user.lastName} · ${range.from} – ${range.to}`)
     document.moveDown().fillColor('#0f172a')
 
     if (rows.length === 0) {
@@ -384,13 +435,18 @@ function registerExportRoutes(app: FastifyInstance): void {
           currentDate = row.date
           document.moveDown(0.5).fontSize(12).text(row.date, { underline: true })
         }
-        document
-          .fontSize(10)
-          .text(
-            `${row.startTime}–${row.endTime}  ${row.subjectCode} ${row.groupCode}  ${
-              row.spaceName ?? ''
-            }`.trim(),
-          )
+        document.fontSize(10).text(
+          [
+            `${row.startTime}–${row.endTime}`,
+            `${row.subjectCode} ${row.groupCode}`,
+            // What the class is: the topic where somebody wrote one, the
+            // subject in full where they did not.
+            row.topic ?? row.subjectName,
+            row.spaceName ?? '',
+          ]
+            .filter(Boolean)
+            .join('  '),
+        )
       }
     }
 

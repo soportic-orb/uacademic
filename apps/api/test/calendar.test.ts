@@ -7,6 +7,7 @@ import ExcelJS from 'exceljs'
 import type { FastifyInstance } from 'fastify'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
+import { extractText } from '../src/services/documents/extract.js'
 import { SEED, createTestApp, hasDatabase, seedCenterId } from './helpers.js'
 
 describe.skipIf(!hasDatabase)('the teacher calendar', () => {
@@ -280,6 +281,98 @@ describe.skipIf(!hasDatabase)('the teacher calendar', () => {
       expect(response.headers['content-type']).toBe('application/pdf')
       expect(response.rawPayload.subarray(0, 4).toString()).toBe('%PDF')
       expect(response.rawPayload.length).toBeGreaterThan(1000)
+    })
+
+    /**
+     * A printed calendar that is not the calendar in front of somebody is a
+     * different document: the period is the one on screen, and the shape of
+     * the page follows the view.
+     */
+    it('prints the week being looked at, not the window the browser fetched', async () => {
+      const week = await app.inject({
+        method: 'GET',
+        url: `/api/v1/calendar/export.pdf?${range}&view=week&date=2026-09-16`,
+        headers: asTeacher(),
+      })
+      const everything = await app.inject({
+        method: 'GET',
+        url: `/api/v1/calendar/export.pdf?${range}&view=agenda`,
+        headers: asTeacher(),
+      })
+
+      expect(week.statusCode).toBe(200)
+      const { pages } = await extractText(
+        new Uint8Array(week.rawPayload),
+        'application/pdf',
+        'week.pdf',
+      )
+      const text = pages.map((page) => page.text).join(' ')
+
+      // The week of the 16th, and nothing from the term either side of it.
+      expect(text).toContain('2026-09-14')
+      expect(text).toContain('2026-09-20')
+      expect(text).not.toContain('2026-12-18')
+      // Three months of agenda weigh more than one week of grid.
+      expect(everything.rawPayload.length).toBeGreaterThan(week.rawPayload.length)
+    })
+
+    it('prints a month as a month', async () => {
+      const response = await app.inject({
+        method: 'GET',
+        url: `/api/v1/calendar/export.pdf?${range}&view=month&date=2026-10-05`,
+        headers: asTeacher(),
+      })
+
+      const { pages } = await extractText(
+        new Uint8Array(response.rawPayload),
+        'application/pdf',
+        'month.pdf',
+      )
+      const text = pages.map((page) => page.text).join(' ')
+
+      // Named as the month it is, and bounded by it.
+      expect(text.toLowerCase()).toContain('octubre')
+      expect(text).toContain('2026-10-01')
+      expect(text).not.toContain('2026-12-18')
+    })
+
+    it('says the hour, the class and the room on the agenda', async () => {
+      const session = await prisma.classSession.findFirstOrThrow({
+        where: {
+          centerId,
+          scheduleVersion: { status: 'published' },
+          teacherProfile: { user: { email: SEED.teacherEmail } },
+        },
+      })
+      const space = await prisma.space.findFirstOrThrow({ where: { centerId } })
+
+      await prisma.classSession.update({
+        where: { id: session.id },
+        data: { spaceId: space.id, topic: 'Prova tema agenda' },
+      })
+
+      try {
+        const response = await app.inject({
+          method: 'GET',
+          url: `/api/v1/calendar/export.pdf?${range}&view=agenda`,
+          headers: asTeacher(),
+        })
+        const { pages } = await extractText(
+          new Uint8Array(response.rawPayload),
+          'application/pdf',
+          'agenda.pdf',
+        )
+        const text = pages.map((page) => page.text).join(' ')
+
+        expect(text).toContain(`${session.startTime}–${session.endTime}`)
+        expect(text).toContain('Prova tema agenda')
+        expect(text).toContain(space.name)
+      } finally {
+        await prisma.classSession.update({
+          where: { id: session.id },
+          data: { spaceId: session.spaceId, topic: session.topic },
+        })
+      }
     })
 
     it('refuses a range it cannot parse instead of guessing', async () => {

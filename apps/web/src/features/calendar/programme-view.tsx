@@ -24,7 +24,7 @@ import { FileText, FilterX } from 'lucide-react'
 import { useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { CardSkeleton, EmptyState, ErrorState } from '../../components/feedback/states'
+import { CardSkeleton, ErrorState } from '../../components/feedback/states'
 import { Button } from '../../components/ui/button'
 import { Card, CardBody } from '../../components/ui/card'
 import { useToast } from '../../hooks/use-toast'
@@ -78,11 +78,13 @@ type ViewKey = keyof typeof VIEWS
 
 const LOCALES = { ca: caLocale, es: esLocale, en: enLocale }
 
-/** A generous window: the four views all read from the same fetched range. */
-function defaultRange(): { from: string; to: string } {
-  const now = new Date()
-  const from = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1))
-  const to = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 3, 0))
+/**
+ * The window fetched around whatever the calendar is showing: a month either
+ * side, so paging draws from what is already here and then refreshes.
+ */
+function rangeAround(date: Date): { from: string; to: string } {
+  const from = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() - 1, 1))
+  const to = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 2, 0))
   return { from: from.toISOString().slice(0, 10), to: to.toISOString().slice(0, 10) }
 }
 
@@ -96,7 +98,7 @@ export function ProgrammeView() {
   const mockUserEmail = useSessionStore((state) => state.mockUserEmail)
 
   const [view, setView] = useState<ViewKey>('week')
-  const [range] = useState(defaultRange)
+  const [range, setRange] = useState(() => rangeAround(new Date()))
   /** None active by default: coordination arrives wanting the whole picture. */
   const [filters, setFilters] = useState<Record<FilterKey, string>>({
     subjectId: '',
@@ -127,6 +129,9 @@ export function ProgrammeView() {
     queryKey: ['programme', mockUserEmail, centerId, query],
     queryFn: () => apiFetch<ProgrammeResponse>(`/api/v1/calendar/coordination?${query}`),
     enabled: Boolean(centerId),
+    // What is on screen stays there while the next months are fetched: a
+    // calendar that unmounts forgets the month somebody navigated to.
+    placeholderData: (previous) => previous,
   })
 
   const events = useMemo<EventInput[]>(
@@ -140,6 +145,9 @@ export function ProgrammeView() {
         borderColor: event.background,
         textColor: event.color,
         extendedProps: {
+          // The hour as the timetable holds it: read off the class, not
+          // reconstructed from a timestamp in some other zone.
+          time: `${event.startTime}–${event.endTime}`,
           room: event.spaceName,
           // Both names on a class given by two people: the point of this
           // calendar is seeing who is where.
@@ -265,18 +273,19 @@ export function ProgrammeView() {
 
           {options && options.subjects.length > 0 ? <Legend subjects={options.subjects} /> : null}
 
-          {programme.isPending ? (
+          {/* An empty month is a month: the arrows have to survive it. */}
+          {programme.data && events.length === 0 ? (
+            <p className="rounded-control border border-border bg-surface-muted px-3 py-2 text-sm text-text-muted">
+              {options && options.subjects.length === 0
+                ? t('calendar.coordination.none')
+                : t('calendar.coordination.empty')}
+            </p>
+          ) : null}
+
+          {!programme.data && programme.isPending ? (
             <CardSkeleton />
-          ) : programme.isError ? (
+          ) : !programme.data && programme.isError ? (
             <ErrorState onRetry={() => void programme.refetch()} />
-          ) : events.length === 0 ? (
-            <EmptyState
-              title={
-                options && options.subjects.length === 0
-                  ? t('calendar.coordination.none')
-                  : t('calendar.coordination.empty')
-              }
-            />
           ) : (
             <div className="uacademic-calendar">
               <FullCalendar
@@ -295,6 +304,14 @@ export function ProgrammeView() {
                 // alternative text; its own localised words read better.
                 buttonIcons={false}
                 events={events}
+                // Whatever the calendar moves to, the server is asked about.
+                datesSet={(argument) => {
+                  const middle = new Date((argument.start.getTime() + argument.end.getTime()) / 2)
+                  const next = rangeAround(middle)
+                  setRange((current) =>
+                    current.from === next.from && current.to === next.to ? current : next,
+                  )
+                }}
                 eventClick={(argument) => {
                   const event = (programme.data?.events ?? []).find(
                     (candidate) => `${candidate.sessionId}-${candidate.date}` === argument.event.id,
@@ -308,6 +325,9 @@ export function ProgrammeView() {
                 }}
                 eventContent={(argument) => (
                   <div className="px-1 py-0.5 text-xs">
+                    <span className="tabular block opacity-90">
+                      {String(argument.event.extendedProps.time ?? '')}
+                    </span>
                     <span className="block font-medium">{argument.event.title}</span>
                     <span className="block opacity-80">
                       {[argument.event.extendedProps.teacher, argument.event.extendedProps.room]

@@ -69,6 +69,35 @@ export function weeksOfMonth(year: number, month: number): string[][] {
   return weeks
 }
 
+/**
+ * The weeks a range covers, each seven ISO dates from Monday.
+ *
+ * For printing what is on screen when that is a week rather than a month: the
+ * page is the same rectangle, one row of it.
+ */
+export function weeksBetween(from: string, to: string): string[][] {
+  const first = new Date(`${from}T00:00:00Z`)
+  const last = new Date(`${to}T00:00:00Z`)
+  if (Number.isNaN(first.getTime()) || Number.isNaN(last.getTime()) || last < first) return []
+
+  const cursor = new Date(first.getTime())
+  cursor.setUTCDate(cursor.getUTCDate() - ((first.getUTCDay() + 6) % 7))
+
+  const weeks: string[][] = []
+  // A year of weeks is more than any view prints; the guard is against a range
+  // somebody typed wrong, not against a real one.
+  while (cursor.getTime() <= last.getTime() && weeks.length < 60) {
+    const week: string[] = []
+    for (let day = 0; day < 7; day += 1) {
+      week.push(cursor.toISOString().slice(0, 10))
+      cursor.setUTCDate(cursor.getUTCDate() + 1)
+    }
+    weeks.push(week)
+  }
+
+  return weeks
+}
+
 /** Whether an ISO date belongs to the month being drawn, or is filler. */
 export function isInMonth(date: string, year: number, month: number): boolean {
   return date.startsWith(`${year}-${String(month).padStart(2, '0')}`)

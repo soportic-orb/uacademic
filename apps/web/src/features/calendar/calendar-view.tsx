@@ -92,6 +92,15 @@ export function CalendarView() {
     queryKey: ['calendar', mockUserEmail, centerId, query],
     queryFn: () => apiFetch<CalendarResponse>(`/api/v1/calendar/sessions?${query}`),
     enabled: Boolean(centerId),
+    /*
+      The previous months stay on screen while the next ones are fetched.
+
+      Without this the query goes back to pending every time the range moves,
+      the calendar is replaced by a skeleton — and a calendar that unmounts
+      forgets which month it was on and comes back at today. Paging forward
+      twice landed you back where you started.
+    */
+    placeholderData: (previous) => previous,
   })
 
   const events = useMemo<EventInput[]>(
@@ -102,6 +111,9 @@ export function CalendarView() {
         start: `${event.date}T${event.startTime}:00`,
         end: `${event.date}T${event.endTime}:00`,
         extendedProps: {
+          // The hour as the timetable holds it, so the card says when a class
+          // finishes as well as when it starts.
+          time: `${event.startTime}–${event.endTime}`,
           room: event.spaceName,
           // The topic where somebody wrote one, the subject's name where
           // they did not: a code alone means nothing to whoever is reading.
@@ -113,7 +125,14 @@ export function CalendarView() {
 
   const download = async (format: 'pdf' | 'xlsx') => {
     try {
-      const blob = await apiDownload(`/api/v1/calendar/export.${format}?${query}`)
+      // The page prints what is on screen: this view, on this date. The Excel
+      // export stays the whole fetched range, which is what a spreadsheet is
+      // for.
+      const shown = calendarRef.current?.getApi().getDate() ?? new Date()
+      const printQuery =
+        format === 'pdf' ? `${query}&view=${view}&date=${shown.toISOString().slice(0, 10)}` : query
+
+      const blob = await apiDownload(`/api/v1/calendar/export.${format}?${printQuery}`)
       const url = URL.createObjectURL(blob)
       const anchor = document.createElement('a')
       anchor.href = url
@@ -201,15 +220,20 @@ export function CalendarView() {
             arrows somebody needed to go and look at the month that does have
             them.
           */}
-          {sessions.isSuccess && events.length === 0 ? (
+          {sessions.data && events.length === 0 ? (
             <p className="rounded-control border border-border bg-surface-muted px-3 py-2 text-sm text-text-muted">
               {t('calendar.empty')}
             </p>
           ) : null}
 
-          {sessions.isPending ? (
+          {/*
+            Only ever before the first answer: after that the calendar stays
+            mounted, because unmounting it is what loses the month somebody
+            navigated to.
+          */}
+          {!sessions.data && sessions.isPending ? (
             <CardSkeleton />
-          ) : sessions.isError ? (
+          ) : !sessions.data && sessions.isError ? (
             <ErrorState onRetry={() => void sessions.refetch()} />
           ) : (
             <div className="uacademic-calendar">
@@ -244,12 +268,15 @@ export function CalendarView() {
                 }}
                 eventContent={(argument) => (
                   <div className="px-1 py-0.5 text-xs">
+                    <span className="tabular block opacity-90">
+                      {String(argument.event.extendedProps.time ?? '')}
+                    </span>
                     <span className="block font-medium">{argument.event.title}</span>
                     <span className="block opacity-80">
                       {String(argument.event.extendedProps.subject ?? '')}
                     </span>
                     <span className="block opacity-80">
-                      {String(argument.event.extendedProps.room ?? '')}
+                      {String(argument.event.extendedProps.room ?? t('planner.unassignedSpace'))}
                     </span>
                   </div>
                 )}

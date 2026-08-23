@@ -91,6 +91,74 @@ describe('the teacher calendar', () => {
     })
   })
 
+  /**
+   * Paging forward used to walk into a month outside the fetched window: the
+   * query went back to pending, the calendar was swapped for a skeleton, and a
+   * calendar that unmounts forgets where it was and comes back at today.
+   */
+  describe('paging through the year', () => {
+    const monthTitle = () => document.querySelector('.fc-toolbar-title')?.textContent ?? ''
+
+    it('asks the server about the months it is moved to', async () => {
+      const user = userEvent.setup()
+      render(wrap(<CalendarView />))
+      await waitFor(() => expect(fetchMock).toHaveBeenCalled())
+
+      await user.click(screen.getByRole('button', { name: 'Mes' }))
+      const before = monthTitle()
+
+      // Far enough to leave the window fetched around today.
+      const next = document.querySelector<HTMLButtonElement>('.fc-next-button')!
+      await user.click(next)
+      await user.click(next)
+      await user.click(next)
+
+      expect(monthTitle()).not.toBe(before)
+      await waitFor(() => {
+        const ranges = fetchMock.mock.calls
+          .map((call) => String(call[0]))
+          .filter((url) => url.includes('/calendar/sessions'))
+        expect(new Set(ranges).size).toBeGreaterThan(1)
+      })
+    })
+
+    it('stays on that month while the next ones are still loading', async () => {
+      const user = userEvent.setup()
+      let answered = 0
+
+      fetchMock.mockImplementation((input: string) => {
+        if (String(input).includes('/calendar/feed')) {
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            json: async () => ({ active: false, id: null }),
+          } as Response)
+        }
+        answered += 1
+        // Only the first window ever answers. Everything after it hangs, which
+        // is the state the calendar used to disappear in.
+        return answered === 1
+          ? Promise.resolve({ ok: true, status: 200, json: async () => SESSIONS } as Response)
+          : new Promise(() => {})
+      })
+
+      render(wrap(<CalendarView />))
+      await waitFor(() => expect(fetchMock).toHaveBeenCalled())
+
+      await user.click(screen.getByRole('button', { name: 'Mes' }))
+      const next = document.querySelector<HTMLButtonElement>('.fc-next-button')!
+      const start = monthTitle()
+
+      await user.click(next)
+      await user.click(next)
+      await user.click(next)
+
+      // Still a calendar, still on the month it was moved to.
+      expect(document.querySelector('.fc-toolbar-title')).not.toBeNull()
+      expect(monthTitle()).not.toBe(start)
+    })
+  })
+
   it('downloads the range as PDF and as Excel', async () => {
     const user = userEvent.setup()
     const createObjectURL = vi.fn(() => 'blob:calendar')

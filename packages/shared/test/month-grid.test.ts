@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { isInMonth, monthsBetween, weeksOfMonth } from '../src/domain/month-grid.js'
+import { isInMonth, monthsBetween, weeksBetween, weeksOfMonth } from '../src/domain/month-grid.js'
 
 /**
  * A month per page, printed and handed to somebody who will stand in a room at
@@ -71,5 +71,23 @@ describe('the weeks of a month', () => {
 
   it('handles a leap February', () => {
     expect(weeksOfMonth(2028, 2).flat()).toContain('2028-02-29')
+  })
+})
+
+describe('the weeks a range covers', () => {
+  it('starts on the Monday of the week the range opens in', () => {
+    // 2026-09-16 is a Wednesday.
+    expect(weeksBetween('2026-09-16', '2026-09-18')[0]?.[0]).toBe('2026-09-14')
+  })
+
+  it('covers every week the range touches, ends included', () => {
+    const weeks = weeksBetween('2026-09-14', '2026-09-27')
+
+    expect(weeks).toHaveLength(2)
+    expect(weeks[1]?.[6]).toBe('2026-09-27')
+  })
+
+  it('has nothing to draw for a range that runs backwards', () => {
+    expect(weeksBetween('2026-09-27', '2026-09-14')).toEqual([])
   })
 })

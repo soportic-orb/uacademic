@@ -11,7 +11,7 @@
  * the same class: the weekly template, minus the days the center is shut.
  */
 import type { AppLocale } from '@uacademic/shared'
-import { isInMonth, monthsBetween, translate, weeksOfMonth } from '@uacademic/shared'
+import { isInMonth, monthsBetween, translate, weeksBetween, weeksOfMonth } from '@uacademic/shared'
 import PDFDocument from 'pdfkit'
 
 import {
@@ -42,6 +42,14 @@ export interface SchedulePdfInput {
   to: string
   locale: AppLocale
   entries: readonly ScheduleEntry[]
+  /**
+   * How the page is laid out.
+   *
+   * `month` is a page per month, which is what somebody pins above a desk.
+   * `weeks` is a page of exactly the weeks asked for — what the week view on
+   * screen looks like, so printing it gives back the thing being looked at.
+   */
+  layout?: 'month' | 'weeks'
 }
 
 /** A4 landscape, in points. */
@@ -97,6 +105,23 @@ export async function scheduleMonthlyPdf(input: SchedulePdfInput): Promise<Buffe
     return finished
   }
 
+  if (input.layout === 'weeks') {
+    // One page, the weeks the range covers: every day in it belongs to the
+    // period asked for, so nothing is greyed out as filler.
+    document.addPage()
+    drawHeader(document, input, t, '')
+    drawGrid(document, {
+      weeks: weeksBetween(input.from, input.to),
+      byDate,
+      locale: input.locale,
+      from: input.from,
+      to: input.to,
+      belongs: () => true,
+    })
+    document.end()
+    return finished
+  }
+
   for (const { year, month } of months) {
     document.addPage()
     const monthName = new Intl.DateTimeFormat(input.locale, {
@@ -106,13 +131,13 @@ export async function scheduleMonthlyPdf(input: SchedulePdfInput): Promise<Buffe
     }).format(new Date(Date.UTC(year, month - 1, 1)))
 
     drawHeader(document, input, t, monthName)
-    drawMonth(document, {
-      year,
-      month,
+    drawGrid(document, {
+      weeks: weeksOfMonth(year, month),
       byDate,
       locale: input.locale,
       from: input.from,
       to: input.to,
+      belongs: (date) => isInMonth(date, year, month),
     })
   }
 
@@ -141,17 +166,19 @@ function drawHeader(
     )
 }
 
-interface MonthOptions {
-  year: number
-  month: number
+interface GridOptions {
+  /** The rows of the page, each seven ISO dates from Monday. */
+  weeks: string[][]
   byDate: Map<string, ScheduleEntry[]>
   locale: AppLocale
   from: string
   to: string
+  /** Whether a date is part of the period, or filler from a neighbour. */
+  belongs: (date: string) => boolean
 }
 
-function drawMonth(document: PDFKit.PDFDocument, options: MonthOptions): void {
-  const weeks = weeksOfMonth(options.year, options.month)
+function drawGrid(document: PDFKit.PDFDocument, options: GridOptions): void {
+  const weeks = options.weeks
   const top = MARGIN + HEADER_HEIGHT
   const width = PAGE.width - MARGIN * 2
   const height = PAGE.height - top - MARGIN
@@ -171,7 +198,7 @@ function drawMonth(document: PDFKit.PDFDocument, options: MonthOptions): void {
     week.forEach((date, columnIndex) => {
       const x = MARGIN + columnIndex * cellWidth
       const y = top + WEEKDAY_ROW + rowIndex * cellHeight
-      const inMonth = isInMonth(date, options.year, options.month)
+      const inMonth = options.belongs(date)
       // Outside the requested range is drawn like a neighbouring month: the
       // page is the month, but only what was asked for is filled in.
       const inRange = date >= options.from && date <= options.to
