@@ -5,6 +5,7 @@ import {
   detectSessionConflicts,
   findConflictsFor,
   occurrencesCanCollide,
+  sessionTeacherIds,
 } from '../src/domain/conflicts.js'
 
 const TERM = { dateFrom: new Date('2026-09-14'), dateTo: new Date('2026-12-18') }
@@ -172,5 +173,49 @@ describe('candidate placement', () => {
     const conflicts = findConflictsFor(candidate, existing)
     expect(conflicts.map((conflict) => conflict.kind).sort()).toEqual(['space', 'teacher'])
     expect(findConflictsFor(candidate, existing, { kinds: ['group'] })).toEqual([])
+  })
+})
+
+describe('a class given by more than one person', () => {
+  it('names everyone giving it, the first one first', () => {
+    expect(
+      sessionTeacherIds(session({ id: 'a', teacherProfileId: 't1', coTeacherIds: ['t2', 't1'] })),
+    ).toEqual(['t1', 't2'])
+    expect(sessionTeacherIds(session({ id: 'a', coTeacherIds: ['t2'] }))).toEqual(['t2'])
+    expect(sessionTeacherIds(session({ id: 'a' }))).toEqual([])
+  })
+
+  it('catches the second teacher being booked elsewhere', () => {
+    const conflicts = detectSessionConflicts([
+      session({ id: 'a', teacherProfileId: 't1', coTeacherIds: ['t2'] }),
+      session({ id: 'b', teacherProfileId: 't2', startTime: '10:00', endTime: '12:00' }),
+    ])
+
+    expect(conflicts).toHaveLength(1)
+    expect(conflicts[0]).toMatchObject({ kind: 'teacher', resourceId: 't2', overlapMinutes: 60 })
+  })
+
+  it('reports one clash per person, so each of them hears about it', () => {
+    const conflicts = detectSessionConflicts([
+      session({ id: 'a', teacherProfileId: 't1', coTeacherIds: ['t2'] }),
+      session({ id: 'b', teacherProfileId: 't1', coTeacherIds: ['t2'], startTime: '10:00' }),
+    ])
+
+    expect(conflicts.map((conflict) => conflict.resourceId).sort()).toEqual(['t1', 't2'])
+  })
+
+  it('lets the two of them share the one class without clashing with itself', () => {
+    expect(
+      detectSessionConflicts([session({ id: 'a', teacherProfileId: 't1', coTeacherIds: ['t2'] })]),
+    ).toEqual([])
+  })
+
+  it('sees the clash from the side of the class being placed too', () => {
+    const conflicts = findConflictsFor(
+      session({ id: 'candidate', teacherProfileId: 't9', coTeacherIds: ['t2'] }),
+      [session({ id: 'b', teacherProfileId: 't2', startTime: '10:00' })],
+    )
+
+    expect(conflicts.map((conflict) => conflict.resourceId)).toEqual(['t2'])
   })
 })

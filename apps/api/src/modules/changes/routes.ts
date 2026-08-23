@@ -219,7 +219,12 @@ export function registerChangeRoutes(app: FastifyInstance, bus: RealtimeTranspor
     const sessions = await context.db.classSession.findMany({
       where: {
         scheduleVersion: { status: 'published' },
-        teacherProfile: { userId: context.user.userId },
+        // Their own, whether they are the first name on the class or give it
+        // alongside somebody else.
+        OR: [
+          { teacherProfile: { userId: context.user.userId } },
+          { coTeachers: { some: { teacherProfile: { userId: context.user.userId } } } },
+        ],
       },
       include: {
         group: { select: { code: true, subject: { select: { code: true, nameCa: true } } } },

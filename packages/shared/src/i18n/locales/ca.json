@@ -1587,6 +1587,7 @@
       "none": "Encara no hi ha professorat amb contracte per al curs actiu."
     },
     "assignTeacher": "Assigna docent",
+    "addTeacher": "Afegeix un docent",
     "warnings": {
       "unavailable": "{{name}} ha indicat que no té disponibilitat de {{start}} a {{end}}. No s'ha assignat.",
       "avoid": "{{name}} ha indicat que prefereix no fer classe de {{start}} a {{end}}. S’ha assignat igualment."

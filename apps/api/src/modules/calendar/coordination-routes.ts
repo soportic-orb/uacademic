@@ -168,7 +168,14 @@ async function visibleSessions(
 
   if (filters.subjectId) group.subjectId = filters.subjectId
   if (filters.groupId) where.groupId = filters.groupId
-  if (filters.teacherProfileId) where.teacherProfileId = filters.teacherProfileId
+  if (filters.teacherProfileId) {
+    // Filtering by a person means the classes they give, including the ones
+    // they give with somebody else.
+    where.OR = [
+      { teacherProfileId: filters.teacherProfileId },
+      { coTeachers: { some: { teacherProfileId: filters.teacherProfileId } } },
+    ]
+  }
   if (filters.spaceId) where.spaceId = filters.spaceId
   if (Object.keys(group).length > 0) where.group = group
 
@@ -194,6 +201,8 @@ interface ColouredOccurrence {
   spaceName: string | null
   teacherProfileId: string | null
   teacherName: string | null
+  /** Everyone giving the class, the one above first. */
+  teachers: { teacherProfileId: string; name: string }[]
   /** From the subject id, so the screen and this agree without being told. */
   color: string
   background: string
@@ -225,6 +234,7 @@ function expandWithColour(
         spaceName: session.spaceName,
         teacherProfileId: session.teacherProfileId,
         teacherName: session.teacherName,
+        teachers: session.teachers,
         color: colour.text,
         background: colour.background,
       }))
@@ -247,11 +257,10 @@ function filterOptions(sessions: readonly ColouredOccurrence[]) {
       id: session.groupId,
       label: `${session.subjectCode} ${session.groupCode}`,
     })
-    if (session.teacherProfileId && session.teacherName) {
-      teachers.set(session.teacherProfileId, {
-        id: session.teacherProfileId,
-        label: session.teacherName,
-      })
+    // Every person who gives a class is somebody the coordinator can filter
+    // by, whether or not they are the first name on it.
+    for (const person of session.teachers) {
+      teachers.set(person.teacherProfileId, { id: person.teacherProfileId, label: person.name })
     }
     if (session.spaceId && session.spaceName) {
       spaces.set(session.spaceId, { id: session.spaceId, label: session.spaceName })
@@ -312,7 +321,10 @@ function describeFilters(
 
   if (query.subjectId) parts.push(`${t('calendar.filterSubject')}: ${first?.subjectCode ?? ''}`)
   if (query.teacherProfileId) {
-    parts.push(`${t('calendar.coordination.filterTeacher')}: ${first?.teacherName ?? ''}`)
+    const named = first?.teachers.find(
+      (person) => person.teacherProfileId === query.teacherProfileId,
+    )
+    parts.push(`${t('calendar.coordination.filterTeacher')}: ${named?.name ?? ''}`)
   }
   if (query.groupId)
     parts.push(`${t('calendar.coordination.filterGroup')}: ${first?.groupCode ?? ''}`)
@@ -353,7 +365,7 @@ function writeDays(document: PDFKit.PDFDocument, rows: readonly ColouredOccurren
         [
           `${row.startTime}–${row.endTime}`,
           `${row.subjectCode} ${row.groupCode}`,
-          row.teacherName ?? '',
+          row.teachers.map((person) => person.name).join(', '),
           row.spaceName ?? '',
         ]
           .filter(Boolean)

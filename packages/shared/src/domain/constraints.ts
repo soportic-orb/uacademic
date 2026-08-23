@@ -14,7 +14,12 @@
  * assistant all render the same fact in the reader's language.
  */
 import { type AvailabilityEntry, effectiveAvailability } from './availability.js'
-import { type SessionConflict, type SessionLike, findConflictsFor } from './conflicts.js'
+import {
+  type SessionConflict,
+  type SessionLike,
+  findConflictsFor,
+  sessionTeacherIds,
+} from './conflicts.js'
 import type { CenterSettings } from './settings.js'
 import { type ClockTime, type Weekday, durationHours, round2, toMinutes, sumHours } from './time.js'
 
@@ -57,6 +62,7 @@ export const SOFT_CONSTRAINTS: readonly SoftConstraint[] = [
 /** A session as the engine sees it: a slot plus the three resources it uses. */
 export interface PlannedSession extends SessionLike {
   groupId: string
+  /** The first person giving the class; the rest are in `coTeacherIds`. */
   teacherProfileId: string | null
   spaceId: string | null
 }
@@ -206,24 +212,29 @@ function resourceName(conflict: SessionConflict, context: ScheduleContext): stri
 }
 
 function availabilityViolations(candidate: PlannedSession, context: ScheduleContext): Violation[] {
-  if (!candidate.teacherProfileId) return []
-  const teacher = context.teachers.get(candidate.teacherProfileId)
-  if (!teacher) return []
+  const violations: Violation[] = []
 
-  const level = effectiveAvailability(
-    { weekday: candidate.weekday, start: candidate.startTime, end: candidate.endTime },
-    teacher.availability,
-  )
-  if (level !== 'unavailable') return []
+  // Every person giving the class has to be able to be there, not just the
+  // first one named.
+  for (const teacherProfileId of sessionTeacherIds(candidate)) {
+    const teacher = context.teachers.get(teacherProfileId)
+    if (!teacher) continue
 
-  return [
-    {
+    const level = effectiveAvailability(
+      { weekday: candidate.weekday, start: candidate.startTime, end: candidate.endTime },
+      teacher.availability,
+    )
+    if (level !== 'unavailable') continue
+
+    violations.push({
       constraint: 'teacherUnavailable',
       sessionId: candidate.id,
       messageKey: hardKey('teacherUnavailable'),
       params: { start: candidate.startTime, end: candidate.endTime, weekday: candidate.weekday },
-    },
-  ]
+    })
+  }
+
+  return violations
 }
 
 /**
@@ -236,30 +247,35 @@ function capacityViolations(
   others: readonly PlannedSession[],
   context: ScheduleContext,
 ): Violation[] {
-  if (!candidate.teacherProfileId) return []
-  const teacher = context.teachers.get(candidate.teacherProfileId)
-  if (!teacher || teacher.weeklyCapacityHours === null) return []
+  const violations: Violation[] = []
 
-  const ceiling = round2(
-    teacher.weeklyCapacityHours * (context.settings.load.maxOverloadPercent / 100),
-  )
-  const scheduled = sumHours([
-    sessionHours(candidate),
-    ...others
-      .filter((session) => session.teacherProfileId === candidate.teacherProfileId)
-      .map(sessionHours),
-  ])
+  // A class given by two people costs both of them the hour: co-teaching
+  // shares the room, not the contract.
+  for (const teacherProfileId of sessionTeacherIds(candidate)) {
+    const teacher = context.teachers.get(teacherProfileId)
+    if (!teacher || teacher.weeklyCapacityHours === null) continue
 
-  if (scheduled <= ceiling) return []
+    const ceiling = round2(
+      teacher.weeklyCapacityHours * (context.settings.load.maxOverloadPercent / 100),
+    )
+    const scheduled = sumHours([
+      sessionHours(candidate),
+      ...others
+        .filter((session) => sessionTeacherIds(session).includes(teacherProfileId))
+        .map(sessionHours),
+    ])
 
-  return [
-    {
+    if (scheduled <= ceiling) continue
+
+    violations.push({
       constraint: 'teacherCapacity',
       sessionId: candidate.id,
       messageKey: hardKey('teacherCapacity'),
       params: { scheduled, ceiling },
-    },
-  ]
+    })
+  }
+
+  return violations
 }
 
 function spaceViolations(candidate: PlannedSession, context: ScheduleContext): Violation[] {
@@ -308,16 +324,13 @@ function byTeacherAndDay(sessions: readonly PlannedSession[]): DaySessions[] {
   const days = new Map<string, DaySessions>()
 
   for (const session of sessions) {
-    if (!session.teacherProfileId) continue
-    const key = `${session.teacherProfileId}#${session.weekday}`
-    const day = days.get(key)
-    if (day) day.sessions.push(session)
-    else {
-      days.set(key, {
-        teacherProfileId: session.teacherProfileId,
-        weekday: session.weekday,
-        sessions: [session],
-      })
+    // A class given by two people sits in both their days: the gap it leaves
+    // is a gap for each of them.
+    for (const teacherProfileId of sessionTeacherIds(session)) {
+      const key = `${teacherProfileId}#${session.weekday}`
+      const day = days.get(key)
+      if (day) day.sessions.push(session)
+      else days.set(key, { teacherProfileId, weekday: session.weekday, sessions: [session] })
     }
   }
 
@@ -600,11 +613,12 @@ export function summarizePlan(
 
   const hoursByTeacher = new Map<string, number>()
   for (const session of sessions) {
-    if (!session.teacherProfileId) continue
-    hoursByTeacher.set(
-      session.teacherProfileId,
-      round2((hoursByTeacher.get(session.teacherProfileId) ?? 0) + sessionHours(session)),
-    )
+    for (const teacherProfileId of sessionTeacherIds(session)) {
+      hoursByTeacher.set(
+        teacherProfileId,
+        round2((hoursByTeacher.get(teacherProfileId) ?? 0) + sessionHours(session)),
+      )
+    }
   }
 
   let teachersOutOfRange = 0

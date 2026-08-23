@@ -23,6 +23,13 @@ export interface SessionSnapshot {
   subjectName: string
   teacherProfileId: string | null
   teacherName: string | null
+  /**
+   * Everyone giving the class, `teacherProfileId` first.
+   *
+   * Absent on a snapshot taken before co-teaching existed, and on the many
+   * classes given by one person, where it says nothing `teacherName` does not.
+   */
+  teachers?: readonly { teacherProfileId: string; name: string }[]
   spaceId: string | null
   spaceName: string | null
   weekday: Weekday
@@ -88,10 +95,20 @@ function similarity(before: SessionSnapshot, after: SessionSnapshot): number {
   return score
 }
 
+/** Everyone giving the class, as a stable string to compare two of them by. */
+function teachersOf(session: SessionSnapshot): string {
+  const ids = session.teachers?.map((entry) => entry.teacherProfileId) ?? [
+    ...(session.teacherProfileId ? [session.teacherProfileId] : []),
+  ]
+  return [...new Set(ids)].sort().join(',')
+}
+
 function changedFields(before: SessionSnapshot, after: SessionSnapshot): ChangedField[] {
   const fields: ChangedField[] = []
   if (slotOf(before) !== slotOf(after)) fields.push('slot')
-  if (before.teacherProfileId !== after.teacherProfileId) fields.push('teacher')
+  // Losing a second lecturer is a change of teacher even when the first one
+  // stayed put, and the people it drops have to hear about it.
+  if (teachersOf(before) !== teachersOf(after)) fields.push('teacher')
   if (before.spaceId !== after.spaceId) fields.push('space')
   return fields
 }
@@ -99,7 +116,9 @@ function changedFields(before: SessionSnapshot, after: SessionSnapshot): Changed
 function affected(...sessions: (SessionSnapshot | null)[]): string[] {
   return [
     ...new Set(
-      sessions.flatMap((session) => (session?.teacherProfileId ? [session.teacherProfileId] : [])),
+      sessions.flatMap((session) =>
+        session ? teachersOf(session).split(',').filter(Boolean) : [],
+      ),
     ),
   ]
 }

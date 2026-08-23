@@ -73,6 +73,8 @@ export interface CalendarSession {
   spaceName: string | null
   teacherProfileId: string | null
   teacherName: string | null
+  /** Everyone giving the class, the one above first. */
+  teachers: { teacherProfileId: string; name: string }[]
   weekday: number
   startTime: string
   endTime: string
@@ -451,7 +453,9 @@ export async function publishedSessionsFor(
   subjectId?: string,
 ): Promise<CalendarSession[]> {
   return publishedSessionsWhere(client, {
-    teacherProfile: { userId },
+    // A class given by two people is on both their calendars, so being the
+    // second name on it counts exactly as much as being the first.
+    OR: [{ teacherProfile: { userId } }, { coTeachers: { some: { teacherProfile: { userId } } } }],
     ...(subjectId ? { group: { subjectId } } : {}),
   })
 }
@@ -461,7 +465,9 @@ export async function publishedSessionsForProfile(
   client: PrismaClient,
   teacherProfileId: string,
 ): Promise<CalendarSession[]> {
-  return publishedSessionsWhere(client, { teacherProfileId })
+  return publishedSessionsWhere(client, {
+    OR: [{ teacherProfileId }, { coTeachers: { some: { teacherProfileId } } }],
+  })
 }
 
 export async function publishedSessionsWhere(
@@ -485,6 +491,12 @@ export async function publishedSessionsWhere(
       teacherProfile: {
         select: { id: true, user: { select: { firstName: true, lastName: true } } },
       },
+      coTeachers: {
+        select: {
+          teacherProfileId: true,
+          teacherProfile: { select: { user: { select: { firstName: true, lastName: true } } } },
+        },
+      },
     },
     orderBy: [{ weekday: 'asc' }, { startTime: 'asc' }],
   })) as unknown as {
@@ -498,6 +510,10 @@ export async function publishedSessionsWhere(
     group: { id: string; code: string; subject: { id: string; code: string; nameCa: string } }
     space: { id: string; name: string } | null
     teacherProfile: { id: string; user: { firstName: string; lastName: string } } | null
+    coTeachers: {
+      teacherProfileId: string
+      teacherProfile: { user: { firstName: string; lastName: string } }
+    }[]
   }[]
 
   return rows.map((row) => ({
@@ -513,6 +529,20 @@ export async function publishedSessionsWhere(
     teacherName: row.teacherProfile
       ? `${row.teacherProfile.user.firstName} ${row.teacherProfile.user.lastName}`
       : null,
+    teachers: [
+      ...(row.teacherProfile
+        ? [
+            {
+              teacherProfileId: row.teacherProfile.id,
+              name: `${row.teacherProfile.user.firstName} ${row.teacherProfile.user.lastName}`,
+            },
+          ]
+        : []),
+      ...row.coTeachers.map((entry) => ({
+        teacherProfileId: entry.teacherProfileId,
+        name: `${entry.teacherProfile.user.firstName} ${entry.teacherProfile.user.lastName}`,
+      })),
+    ],
     weekday: row.weekday,
     startTime: row.startTime,
     endTime: row.endTime,

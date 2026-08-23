@@ -93,6 +93,12 @@ async function publishedSessions(context: AiContext, where: Record<string, unkno
       teacherProfile: {
         select: { id: true, user: { select: { firstName: true, lastName: true } } },
       },
+      coTeachers: {
+        select: {
+          teacherProfileId: true,
+          teacherProfile: { select: { user: { select: { firstName: true, lastName: true } } } },
+        },
+      },
     },
     orderBy: [{ weekday: 'asc' }, { startTime: 'asc' }],
     take: 500,
@@ -106,6 +112,7 @@ function toPlanned(session: SessionRow): PlannedSession {
     id: session.id,
     groupId: session.groupId,
     teacherProfileId: session.teacherProfileId,
+    coTeacherIds: session.coTeachers.map((entry) => entry.teacherProfileId),
     spaceId: session.spaceId,
     weekday: session.weekday as Weekday,
     startTime: session.startTime as PlannedSession['startTime'],
@@ -130,6 +137,12 @@ function describe(session: SessionRow) {
     teacherName: session.teacherProfile
       ? `${session.teacherProfile.user.firstName} ${session.teacherProfile.user.lastName}`
       : null,
+    // Named in full when a class is given by more than one person, so the
+    // assistant never answers "who gives this?" with half the answer.
+    teacherNames: [
+      ...(session.teacherProfile ? [session.teacherProfile.user] : []),
+      ...session.coTeachers.map((entry) => entry.teacherProfile.user),
+    ].map((user) => `${user.firstName} ${user.lastName}`.trim()),
   }
 }
 
@@ -387,9 +400,14 @@ export const readTools: Record<
     const targets = input.sessionId
       ? sessions.filter((session) => session.id === input.sessionId)
       : sessions.filter((session) => {
-          if (!input.teacherProfileId || session.teacherProfileId !== input.teacherProfileId) {
-            return false
-          }
+          if (!input.teacherProfileId) return false
+          // The class of whoever is away, whether they give it alone or with
+          // somebody else.
+          const teaching = [
+            session.teacherProfileId,
+            ...session.coTeachers.map((entry) => entry.teacherProfileId),
+          ]
+          if (!teaching.includes(input.teacherProfileId)) return false
           if (!input.date) return true
           const date = new Date(`${input.date}T00:00:00Z`)
           const weekday = ((date.getUTCDay() + 6) % 7) + 1

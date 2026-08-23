@@ -48,6 +48,7 @@ interface SessionRow {
   }
   space: { name: string; building: string | null } | null
   teacherProfile: { user: { firstName: string; lastName: string } } | null
+  coTeachers: { teacherProfile: { user: { firstName: string; lastName: string } } }[]
 }
 
 /**
@@ -63,7 +64,8 @@ export async function sessionsForUser(
 ): Promise<SessionRow[]> {
   const own = {
     scheduleVersion: { status: 'published' as const },
-    teacherProfile: { userId },
+    // Their own classes: the ones they give alone and the ones they share.
+    OR: [{ teacherProfile: { userId } }, { coTeachers: { some: { teacherProfile: { userId } } } }],
     ...(filters.subjectId ? { group: { subjectId: filters.subjectId } } : {}),
     ...(filters.academicYearId
       ? { group: { subject: { academicYearId: filters.academicYearId } } }
@@ -99,6 +101,11 @@ export async function sessionsForUser(
       },
       space: { select: { name: true, building: true } },
       teacherProfile: { select: { user: { select: { firstName: true, lastName: true } } } },
+      coTeachers: {
+        select: {
+          teacherProfile: { select: { user: { select: { firstName: true, lastName: true } } } },
+        },
+      },
     },
     orderBy: [{ weekday: 'asc' }, { startTime: 'asc' }],
     take: 1_000,
@@ -113,9 +120,14 @@ function values(row: SessionRow, context: DraftContext): Record<string, string> 
     groupType: row.group.type,
     spaceName: row.space?.name ?? '',
     building: row.space?.building ?? '',
-    teacherName: row.teacherProfile
-      ? `${row.teacherProfile.user.firstName} ${row.teacherProfile.user.lastName}`
-      : '',
+    // Everyone giving it, so a shared class does not reach a phone under one
+    // person's name.
+    teacherName: [
+      ...(row.teacherProfile ? [row.teacherProfile.user] : []),
+      ...row.coTeachers.map((entry) => entry.teacherProfile.user),
+    ]
+      .map((user) => `${user.firstName} ${user.lastName}`.trim())
+      .join(', '),
     centerName: context.centerName,
   }
 }

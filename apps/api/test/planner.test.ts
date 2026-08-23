@@ -275,6 +275,89 @@ describe.skipIf(!hasDatabase)('the planner', () => {
       expect(removed.json().sessions).toHaveLength(0)
     })
 
+    it('places a class given by two people, and keeps both of them', async () => {
+      const version = await createVersion('co-teaching')
+      const group = await prisma.group.findFirstOrThrow({ where: { centerId } })
+      const [first, second] = await prisma.teacherProfile.findMany({
+        where: { centerId },
+        take: 2,
+      })
+
+      const created = await app.inject({
+        method: 'POST',
+        url: `/api/v1/planner/versions/${version.id}/sessions`,
+        headers: asCoordinator(),
+        payload: {
+          groupId: group.id,
+          teacherProfileIds: [first!.id, second!.id],
+          date: ON[3],
+          startTime: '16:00',
+          endTime: '17:00',
+        },
+      })
+
+      expect(created.statusCode).toBe(201)
+      const session = created.json().sessions[0]
+      // The first of them is the session's own teacher, which is what every
+      // screen that knows about one teacher goes on showing.
+      expect(session.teacherProfileId).toBe(first!.id)
+      expect(
+        session.teachers.map((person: { teacherProfileId: string }) => person.teacherProfileId),
+      ).toEqual([first!.id, second!.id])
+
+      // Handing it to one person alone drops the other.
+      const alone = await app.inject({
+        method: 'PATCH',
+        url: `/api/v1/planner/versions/${version.id}/sessions/${session.id}`,
+        headers: asCoordinator(),
+        payload: { teacherProfileIds: [second!.id] },
+      })
+
+      expect(alone.json().sessions[0].teacherProfileId).toBe(second!.id)
+      expect(alone.json().sessions[0].teachers).toHaveLength(1)
+      expect(await prisma.sessionTeacher.count({ where: { sessionId: session.id } })).toBe(0)
+    })
+
+    it('will not book the second teacher where they are already teaching', async () => {
+      const version = await createVersion('co-teaching clash')
+      const group = await prisma.group.findFirstOrThrow({ where: { centerId } })
+      const [first, second] = await prisma.teacherProfile.findMany({
+        where: { centerId },
+        take: 2,
+      })
+
+      await app.inject({
+        method: 'POST',
+        url: `/api/v1/planner/versions/${version.id}/sessions`,
+        headers: asCoordinator(),
+        payload: {
+          groupId: group.id,
+          teacherProfileId: second!.id,
+          date: ON[3],
+          startTime: '18:00',
+          endTime: '19:00',
+        },
+      })
+
+      const verdict = await app.inject({
+        method: 'POST',
+        url: `/api/v1/planner/versions/${version.id}/validate`,
+        headers: asCoordinator(),
+        payload: {
+          groupId: group.id,
+          teacherProfileIds: [first!.id, second!.id],
+          date: ON[3],
+          startTime: '18:00',
+          endTime: '19:00',
+        },
+      })
+
+      const violations = verdict.json().violations as { messageKey: string }[]
+      expect(violations.map((violation) => violation.messageKey)).toContain(
+        'planner.hard.teacherOverlap',
+      )
+    })
+
     it('refuses to touch a published version', async () => {
       const group = await prisma.group.findFirst({ where: { centerId } })
       const response = await app.inject({

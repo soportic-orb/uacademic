@@ -602,3 +602,61 @@ describe('weekly geometry', () => {
     ])
   })
 })
+
+describe('a class given by two people', () => {
+  it('will not place it when the second of them is not available then', () => {
+    const afternoon = session('a', {
+      teacherProfileId: 't1',
+      coTeacherIds: ['t2'],
+      startTime: '15:00',
+      endTime: '16:00',
+    })
+
+    const violations = evaluatePlacement(
+      afternoon,
+      [],
+      context({
+        // t1 works afternoons too; t2 does not.
+        teachers: [
+          teacher('t1', {
+            availability: [
+              { weekday: 1, startTime: '08:00', endTime: '20:00', level: 'available' },
+            ],
+          }),
+          teacher('t2'),
+        ],
+      }),
+    )
+
+    expect(constraintsOf(violations)).toEqual(['teacherUnavailable'])
+  })
+
+  it('spends the hour out of both contracts, not just the first one’s', () => {
+    const shared = session('a', { teacherProfileId: 't1', coTeacherIds: ['t2'] })
+    // t2 already has a full week of their own.
+    const theirOwnWeek = [
+      session('b', { teacherProfileId: 't2', weekday: 2, startTime: '09:00', endTime: '13:00' }),
+      session('c', { teacherProfileId: 't2', weekday: 3, startTime: '09:00', endTime: '13:00' }),
+    ]
+
+    const violations = evaluatePlacement(shared, theirOwnWeek, context())
+
+    expect(constraintsOf(violations)).toEqual(['teacherCapacity'])
+  })
+
+  it('counts the class in the weekly hours of everyone giving it', () => {
+    const summary = summarizePlan(
+      [session('a', { teacherProfileId: 't1', coTeacherIds: ['t2'] })],
+      0,
+      context({
+        teachers: [
+          teacher('t1', { weeklyCapacityHours: 2 }),
+          teacher('t2', { weeklyCapacityHours: 20 }),
+        ],
+      }),
+    )
+
+    // t1 is at their two hours; t2 has two of twenty, and is under-loaded.
+    expect(summary.teachersOutOfRange).toBe(1)
+  })
+})

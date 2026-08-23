@@ -26,6 +26,7 @@ export const TENANT_SCOPED_MODELS: readonly string[] = [
   'Space',
   'ScheduleVersion',
   'ClassSession',
+  'SessionTeacher',
   'Assignment',
   'ChangeRequest',
   'Absence',

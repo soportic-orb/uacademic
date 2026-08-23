@@ -52,6 +52,9 @@ import {
   useUndoRedo,
 } from './use-planner'
 
+/** The same ceiling the API keeps: a class, not a department meeting. */
+const MAX_TEACHERS_PER_SESSION = 6
+
 const STATUS_STYLE: Record<string, string> = {
   valid: 'bg-load-optimal-surface hover:ring-2 hover:ring-load-optimal',
   warning: 'bg-load-limit-surface hover:ring-2 hover:ring-load-limit',
@@ -192,8 +195,14 @@ export function PlannerGrid({
    * read the same rules the engine uses, so the planner and the generator
    * cannot disagree about what is allowed.
    */
-  const assignTeacher = async (session: PlannerSessionDto, teacherProfileId: string | null) => {
-    if (teacherProfileId) {
+  const assignTeachers = async (session: PlannerSessionDto, teacherProfileIds: string[]) => {
+    // Whoever was not on the class a moment ago is the one to check: nobody
+    // needs to be told again about a colleague who was already teaching it.
+    const added = teacherProfileIds.filter(
+      (id) => !session.teachers.some((person) => person.teacherProfileId === id),
+    )
+
+    for (const teacherProfileId of added) {
       const teacher = context.teachers.find((entry) => entry.teacherProfileId === teacherProfileId)
       const level = teacher
         ? effectiveAvailability(
@@ -228,7 +237,7 @@ export function PlannerGrid({
     try {
       await updateSession.mutateAsync({
         sessionId: session.id,
-        values: { teacherProfileId },
+        values: { teacherProfileIds },
       })
     } catch (error) {
       if (error instanceof ApiRequestError)
@@ -613,8 +622,8 @@ export function PlannerGrid({
                                   teacherFilter && session.teacherProfileId !== teacherFilter,
                                 )}
                                 directory={context.directory}
-                                onAssign={(teacherProfileId) =>
-                                  void assignTeacher(session, teacherProfileId)
+                                onAssign={(teacherProfileIds) =>
+                                  void assignTeachers(session, teacherProfileIds)
                                 }
                                 onTopic={(topic) => void setTopic(session, topic)}
                                 onPick={() => {
@@ -796,7 +805,7 @@ function SessionBlock({
   onPick: () => void
   onDrop: () => void
   onRemove: () => void
-  onAssign: (teacherProfileId: string | null) => void
+  onAssign: (teacherProfileIds: string[]) => void
   /** What this class is about, typed on the block. Saved when the box is left. */
   onTopic: (topic: string) => void
   onKeyDown: (event: React.KeyboardEvent) => void
@@ -890,26 +899,19 @@ function SessionBlock({
         and there was nowhere in the planner to say who.
       */}
       {editable ? (
-        <label className="block">
-          <span className="sr-only">{t('planner.assignTeacher')}</span>
-          <select
-            value={session.teacherProfileId ?? ''}
-            onChange={(event) => onAssign(event.target.value || null)}
-            onClick={(event) => event.stopPropagation()}
-            className="w-full truncate rounded-sm border border-border bg-surface px-1 py-0.5 text-xs text-text"
+        <TeacherPickers session={session} directory={directory} onAssign={onAssign} />
+      ) : session.teachers.length > 0 ? (
+        session.teachers.map((person) => (
+          <span
+            key={person.teacherProfileId}
+            className="block truncate text-text-muted"
+            title={person.name}
           >
-            <option value="">{t('planner.unassignedTeacher')}</option>
-            {directory.map((teacher) => (
-              <option key={teacher.teacherProfileId} value={teacher.teacherProfileId}>
-                {teacher.name}
-              </option>
-            ))}
-          </select>
-        </label>
+            {person.name}
+          </span>
+        ))
       ) : (
-        <span className="block truncate text-text-muted">
-          {session.teacherName ?? t('planner.unassignedTeacher')}
-        </span>
+        <span className="block truncate text-text-muted">{t('planner.unassignedTeacher')}</span>
       )}
 
       {editable ? (
@@ -922,6 +924,79 @@ function SessionBlock({
           <Trash2 className="size-3" aria-hidden="true" />
         </button>
       ) : null}
+    </div>
+  )
+}
+
+/**
+ * Who gives this class — one person, or several.
+ *
+ * Most classes have one teacher, so the first row is the picker that has
+ * always been here. A class given by two lecturers, or by a titular with an
+ * assistant, gets a row each: choosing somebody in the empty row adds them,
+ * and clearing a row removes that person. A cell in a week grid has no space
+ * for a dialog, and a plain list of selects is the one control that is both
+ * small enough and reachable from the keyboard (R8).
+ */
+function TeacherPickers({
+  session,
+  directory,
+  onAssign,
+}: {
+  session: PlannerSessionDto
+  directory: TeacherDirectoryEntry[]
+  onAssign: (teacherProfileIds: string[]) => void
+}) {
+  const { t } = useTranslation()
+  const current = session.teachers.map((person) => person.teacherProfileId)
+
+  /** The rows drawn: everyone on the class, plus one empty row to add by. */
+  const rows = current.length < MAX_TEACHERS_PER_SESSION ? [...current, ''] : current
+
+  const replace = (index: number, teacherProfileId: string) => {
+    const next = [...current]
+    if (index >= next.length) {
+      if (teacherProfileId) next.push(teacherProfileId)
+    } else if (teacherProfileId) {
+      next[index] = teacherProfileId
+    } else {
+      next.splice(index, 1)
+    }
+    onAssign([...new Set(next)])
+  }
+
+  return (
+    <div className="flex flex-col gap-0.5">
+      {rows.map((teacherProfileId, index) => (
+        <label className="block" key={teacherProfileId || 'add'}>
+          <span className="sr-only">
+            {index === 0 ? t('planner.assignTeacher') : t('planner.addTeacher')}
+          </span>
+          <select
+            value={teacherProfileId}
+            onChange={(event) => replace(index, event.target.value)}
+            onClick={(event) => event.stopPropagation()}
+            className="w-full truncate rounded-sm border border-border bg-surface px-1 py-0.5 text-xs text-text"
+          >
+            <option value="">
+              {index === 0 || current.length === 0
+                ? t('planner.unassignedTeacher')
+                : t('planner.addTeacher')}
+            </option>
+            {directory
+              .filter(
+                (teacher) =>
+                  teacher.teacherProfileId === teacherProfileId ||
+                  !current.includes(teacher.teacherProfileId),
+              )
+              .map((teacher) => (
+                <option key={teacher.teacherProfileId} value={teacher.teacherProfileId}>
+                  {teacher.name}
+                </option>
+              ))}
+          </select>
+        </label>
+      ))}
     </div>
   )
 }

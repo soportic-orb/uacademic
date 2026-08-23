@@ -53,6 +53,13 @@ const CONTEXT = {
       capacityHours: 120,
       weeklyCapacityHours: 4,
     },
+    {
+      teacherProfileId: 'p3',
+      name: 'Aina Bosch',
+      avatarUrl: null,
+      capacityHours: 240,
+      weeklyCapacityHours: 8,
+    },
   ],
   teachers: [
     {
@@ -77,6 +84,13 @@ const CONTEXT = {
         { weekday: 1 as const, startTime: '15:00', endTime: '18:00', level: 'avoid' as const },
       ],
       weeklyCapacityHours: 4,
+    },
+    {
+      teacherProfileId: 'p3',
+      availability: [
+        { weekday: 1 as const, startTime: '09:00', endTime: '14:00', level: 'available' as const },
+      ],
+      weeklyCapacityHours: 8,
     },
   ],
   spaces: [
@@ -142,6 +156,7 @@ const VERSION: VersionDetailDto = {
       subjectName: 'Matemàtiques I',
       teacherProfileId: 'p1',
       teacherName: 'Marta Puig',
+      teachers: [{ teacherProfileId: 'p1', name: 'Marta Puig' }],
       spaceId: 's1',
       spaceName: 'Aula 1.1',
       building: 'A',
@@ -600,6 +615,43 @@ describe('the visual planner', () => {
 
       const assigned = screen.getByLabelText('Assigna docent') as HTMLSelectElement
       expect(assigned.value).toBe('p1')
+    })
+
+    it('lets a second person be added to a class, and sends both', async () => {
+      const user = userEvent.setup()
+      render(wrap(<PlannerGrid version={VERSION} context={CONTEXT} />))
+
+      await user.selectOptions(screen.getByLabelText('Afegeix un docent'), 'p3')
+
+      const patch = fetchMock.mock.calls.find(
+        (call) => (call[1] as RequestInit | undefined)?.method === 'PATCH',
+      )
+      expect(JSON.parse(String((patch?.[1] as RequestInit).body))).toMatchObject({
+        teacherProfileIds: ['p1', 'p3'],
+      })
+    })
+
+    it('draws a row for each person already giving the class', () => {
+      const shared = {
+        ...VERSION,
+        sessions: [
+          {
+            ...VERSION.sessions[0]!,
+            teachers: [
+              { teacherProfileId: 'p1', name: 'Marta Puig' },
+              { teacherProfileId: 'p3', name: 'Aina Bosch' },
+            ],
+          },
+        ],
+      }
+
+      render(wrap(<PlannerGrid version={shared} context={CONTEXT} />))
+
+      expect((screen.getByLabelText('Assigna docent') as HTMLSelectElement).value).toBe('p1')
+      // The second row holds the second person, and there is still an empty
+      // one to add a third by.
+      const rows = screen.getAllByLabelText('Afegeix un docent') as HTMLSelectElement[]
+      expect(rows.map((row) => row.value)).toEqual(['p3', ''])
     })
   })
 

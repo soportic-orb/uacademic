@@ -79,7 +79,14 @@ export async function exportPersonalData(
   const [sessions, changes, absences, messages, notifications, connections, feeds] =
     await Promise.all([
       client.classSession.findMany({
-        where: { teacherProfileId: { in: profileIds } },
+        // Their classes, shared ones included: an export that leaves out the
+        // ones they give with a colleague is not their data.
+        where: {
+          OR: [
+            { teacherProfileId: { in: profileIds } },
+            { coTeachers: { some: { teacherProfileId: { in: profileIds } } } },
+          ],
+        },
         select: {
           id: true,
           weekday: true,

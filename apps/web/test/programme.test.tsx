@@ -46,6 +46,7 @@ const EVENT = {
   groupCode: 'T1',
   spaceName: 'Aula 1.1',
   teacherName: 'Marta Puig Serra',
+  teachers: [{ teacherProfileId: 'p1', name: 'Marta Puig Serra' }],
   color: '#00335C',
   background: '#D0E7FA',
 }

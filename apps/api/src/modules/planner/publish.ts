@@ -146,7 +146,13 @@ async function propagateToCalendars(input: PublishInput, diff: ScheduleDiff): Pr
     ...new Set(
       [
         ...diff.byTeacher.map((entry) => entry.teacherProfileId),
-        ...input.sessions.map((session) => session.teacherProfileId),
+        // Everyone giving each class, not only the first of them: a second
+        // lecturer's calendar is as wrong as anybody else's until it is synced.
+        ...input.sessions.flatMap((session) =>
+          session.teachers
+            ? session.teachers.map((person) => person.teacherProfileId)
+            : [session.teacherProfileId],
+        ),
       ].filter((id): id is string => Boolean(id)),
     ),
   ]
@@ -160,8 +166,12 @@ async function propagateToCalendars(input: PublishInput, diff: ScheduleDiff): Pr
   await clearTombstones(
     input.client,
     input.sessions.flatMap((session) => {
-      const profile = profiles.find((row) => row.id === session.teacherProfileId)
-      return profile ? [{ userId: profile.userId, sessionId: session.id }] : []
+      const ids = session.teachers
+        ? session.teachers.map((person) => person.teacherProfileId)
+        : [session.teacherProfileId]
+      return profiles
+        .filter((row) => ids.includes(row.id))
+        .map((profile) => ({ userId: profile.userId, sessionId: session.id }))
     }),
   )
 

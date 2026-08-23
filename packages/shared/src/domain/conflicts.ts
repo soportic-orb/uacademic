@@ -24,8 +24,26 @@ export interface SessionLike {
   dateTo: Date
   recurrence?: Recurrence
   teacherProfileId?: string | null
+  /**
+   * The other people who give this class.
+   *
+   * A lab with two lecturers, a seminar shared between a titular and an
+   * assistant: both are teaching, so both must be free, and the class belongs
+   * on both their calendars. `teacherProfileId` is the first of them and is
+   * what a single-teacher class has always used.
+   */
+  coTeacherIds?: readonly string[] | null
   spaceId?: string | null
   groupId?: string | null
+}
+
+/** Everyone who gives this class, the first one first, without repeats. */
+export function sessionTeacherIds(session: SessionLike): string[] {
+  const ids = session.teacherProfileId ? [session.teacherProfileId] : []
+  for (const id of session.coTeacherIds ?? []) {
+    if (id && !ids.includes(id)) ids.push(id)
+  }
+  return ids
 }
 
 export type ConflictKind = 'teacher' | 'space' | 'group'
@@ -94,27 +112,35 @@ export function occurrencesCanCollide(a: SessionLike, b: SessionLike): boolean {
   return true
 }
 
-function resourceIdFor(session: SessionLike, kind: ConflictKind): string | null {
+/**
+ * The resources of one kind a session occupies.
+ *
+ * Only teaching is plural: a class has one room and one group, and two or
+ * more people.
+ */
+function resourceIdsFor(session: SessionLike, kind: ConflictKind): string[] {
   switch (kind) {
     case 'teacher':
-      return session.teacherProfileId ?? null
+      return sessionTeacherIds(session)
     case 'space':
-      return session.spaceId ?? null
+      return session.spaceId ? [session.spaceId] : []
     case 'group':
-      return session.groupId ?? null
+      return session.groupId ? [session.groupId] : []
   }
 }
 
+/** Whether both sessions occupy this exact resource, and clash over it. */
 function conflictBetween(
   a: SessionLike,
   b: SessionLike,
   kind: ConflictKind,
+  resourceId: string,
 ): SessionConflict | null {
   if (a.id === b.id) return null
   if (a.weekday !== b.weekday) return null
 
-  const resourceId = resourceIdFor(a, kind)
-  if (!resourceId || resourceId !== resourceIdFor(b, kind)) return null
+  if (!resourceIdsFor(a, kind).includes(resourceId)) return null
+  if (!resourceIdsFor(b, kind).includes(resourceId)) return null
 
   const minutes = overlapMinutes(
     { start: a.startTime, end: a.endTime },
@@ -147,17 +173,17 @@ export function detectSessionConflicts(
   const conflicts: SessionConflict[] = []
 
   for (const kind of kinds) {
-    const buckets = new Map<string, SessionLike[]>()
+    const buckets = new Map<string, { resourceId: string; sessions: SessionLike[] }>()
     for (const session of sessions) {
-      const resourceId = resourceIdFor(session, kind)
-      if (!resourceId) continue
-      const key = `${resourceId}#${session.weekday}`
-      const bucket = buckets.get(key)
-      if (bucket) bucket.push(session)
-      else buckets.set(key, [session])
+      for (const resourceId of resourceIdsFor(session, kind)) {
+        const key = `${resourceId}#${session.weekday}`
+        const bucket = buckets.get(key)
+        if (bucket) bucket.sessions.push(session)
+        else buckets.set(key, { resourceId, sessions: [session] })
+      }
     }
 
-    for (const bucket of buckets.values()) {
+    for (const { resourceId, sessions: bucket } of buckets.values()) {
       if (bucket.length < 2) continue
       const ordered = [...bucket].sort((x, y) => x.startTime.localeCompare(y.startTime))
       for (let i = 0; i < ordered.length; i += 1) {
@@ -168,7 +194,7 @@ export function detectSessionConflicts(
           // Sorted by start time: once a session starts after this one ends,
           // no later session in the bucket can overlap it either.
           if (candidate.startTime >= current.endTime) break
-          const conflict = conflictBetween(current, candidate, kind)
+          const conflict = conflictBetween(current, candidate, kind, resourceId)
           if (conflict) conflicts.push(conflict)
         }
       }
@@ -198,8 +224,12 @@ export function findConflictsFor(
 
   for (const session of existing) {
     for (const kind of kinds) {
-      const conflict = conflictBetween(candidate, session, kind)
-      if (conflict) conflicts.push(conflict)
+      // One conflict per shared resource: a pair of classes given by the same
+      // two people clashes twice over, and each person has to hear about it.
+      for (const resourceId of resourceIdsFor(candidate, kind)) {
+        const conflict = conflictBetween(candidate, session, kind, resourceId)
+        if (conflict) conflicts.push(conflict)
+      }
     }
   }
 

@@ -216,6 +216,13 @@ const SESSION_INCLUDE = {
   teacherProfile: {
     select: { id: true, user: { select: { firstName: true, lastName: true } } },
   },
+  // The rest of the people giving this class, if it is given by more than one.
+  coTeachers: {
+    select: {
+      teacherProfileId: true,
+      teacherProfile: { select: { user: { select: { firstName: true, lastName: true } } } },
+    },
+  },
   space: { select: { id: true, name: true, building: true } },
 } as const
 
@@ -224,6 +231,10 @@ export type SessionRow = Awaited<
 >[number] & {
   group: { id: string; code: string; subject: { id: string; code: string; nameCa: string } }
   teacherProfile: { id: string; user: { firstName: string; lastName: string } } | null
+  coTeachers: {
+    teacherProfileId: string
+    teacherProfile: { user: { firstName: string; lastName: string } }
+  }[]
   space: { id: string; name: string; building: string | null } | null
 }
 
@@ -235,6 +246,7 @@ export function toPlannedSession(row: {
   id: string
   groupId: string
   teacherProfileId: string | null
+  coTeachers?: { teacherProfileId: string }[]
   spaceId: string | null
   weekday: number
   startTime: string
@@ -247,6 +259,7 @@ export function toPlannedSession(row: {
     id: row.id,
     groupId: row.groupId,
     teacherProfileId: row.teacherProfileId,
+    coTeacherIds: (row.coTeachers ?? []).map((entry) => entry.teacherProfileId),
     spaceId: row.spaceId,
     weekday: row.weekday as Weekday,
     startTime: row.startTime,
@@ -255,6 +268,28 @@ export function toPlannedSession(row: {
     dateTo: row.dateTo,
     recurrence: row.recurrence as PlannedSession['recurrence'],
   }
+}
+
+/** Everyone giving the class, the one on the session itself first. */
+export function sessionTeachers(row: SessionRow): { teacherProfileId: string; name: string }[] {
+  const named = row.teacherProfile
+    ? [
+        {
+          teacherProfileId: row.teacherProfile.id,
+          name: `${row.teacherProfile.user.firstName} ${row.teacherProfile.user.lastName}`.trim(),
+        },
+      ]
+    : []
+
+  for (const entry of row.coTeachers) {
+    if (named.some((person) => person.teacherProfileId === entry.teacherProfileId)) continue
+    named.push({
+      teacherProfileId: entry.teacherProfileId,
+      name: `${entry.teacherProfile.user.firstName} ${entry.teacherProfile.user.lastName}`.trim(),
+    })
+  }
+
+  return named
 }
 
 /** A session with the names the UI, the diff and the ICS feed all need. */
@@ -269,6 +304,7 @@ export function toSnapshot(row: SessionRow): SessionSnapshot {
     teacherName: row.teacherProfile
       ? `${row.teacherProfile.user.firstName} ${row.teacherProfile.user.lastName}`
       : null,
+    teachers: sessionTeachers(row),
     spaceId: row.spaceId,
     spaceName: row.space?.name ?? null,
     weekday: row.weekday as Weekday,

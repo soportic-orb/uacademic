@@ -32,6 +32,7 @@ async function publishedPlan(context: AiContext): Promise<{
 }> {
   const rows = await context.db.classSession.findMany({
     where: { scheduleVersion: { status: 'published' } },
+    include: { coTeachers: { select: { teacherProfileId: true } } },
     orderBy: [{ weekday: 'asc' }, { startTime: 'asc' }],
     take: 500,
   })
@@ -42,6 +43,9 @@ async function publishedPlan(context: AiContext): Promise<{
       id: row.id,
       groupId: row.groupId,
       teacherProfileId: row.teacherProfileId,
+      // A class given by two people occupies both of them, and a proposal
+      // that ignores the second books somebody who is already teaching.
+      coTeacherIds: row.coTeachers.map((entry) => entry.teacherProfileId),
       spaceId: row.spaceId,
       weekday: row.weekday as Weekday,
       startTime: row.startTime as PlannedSession['startTime'],
@@ -619,6 +623,7 @@ async function targetVersion(context: AiContext, versionId?: string) {
 async function versionSessions(context: AiContext, versionId: string): Promise<PlannedSession[]> {
   const rows = await context.db.classSession.findMany({
     where: { scheduleVersionId: versionId },
+    include: { coTeachers: { select: { teacherProfileId: true } } },
     take: 1_000,
   })
 
@@ -626,6 +631,7 @@ async function versionSessions(context: AiContext, versionId: string): Promise<P
     id: row.id,
     groupId: row.groupId,
     teacherProfileId: row.teacherProfileId,
+    coTeacherIds: row.coTeachers.map((entry) => entry.teacherProfileId),
     spaceId: row.spaceId,
     weekday: row.weekday as Weekday,
     startTime: row.startTime as PlannedSession['startTime'],

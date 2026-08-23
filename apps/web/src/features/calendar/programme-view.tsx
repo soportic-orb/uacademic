@@ -43,6 +43,8 @@ interface ProgrammeEvent {
   groupCode: string
   spaceName: string | null
   teacherName: string | null
+  /** Everyone giving the class, the one above first. */
+  teachers: { teacherProfileId: string; name: string }[]
   color: string
   background: string
 }
@@ -123,7 +125,12 @@ export function ProgrammeView() {
         backgroundColor: event.background,
         borderColor: event.background,
         textColor: event.color,
-        extendedProps: { room: event.spaceName, teacher: event.teacherName },
+        extendedProps: {
+          room: event.spaceName,
+          // Both names on a class given by two people: the point of this
+          // calendar is seeing who is where.
+          teacher: event.teachers.map((person) => person.name).join(' · ') || event.teacherName,
+        },
       })),
     [programme.data],
   )

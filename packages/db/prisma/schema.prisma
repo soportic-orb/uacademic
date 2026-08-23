@@ -432,6 +432,7 @@ model Center {
   spaces                 Space[]
   scheduleVersions       ScheduleVersion[]
   sessions               ClassSession[]
+  sessionTeachers        SessionTeacher[]
   assignments            Assignment[]
   changeRequests         ChangeRequest[]
   absences               Absence[]
@@ -692,6 +693,7 @@ model TeacherProfile {
   availabilityExceptions AvailabilityException[]
   assignments            Assignment[]
   sessions               ClassSession[]
+  coTaughtSessions       SessionTeacher[]
   absences               Absence[]               @relation("AbsentTeacher")
   substitutions          Absence[]               @relation("SubstituteTeacher")
   externalBusySlots      ExternalBusySlot[]
@@ -863,6 +865,7 @@ model ClassSession {
 
   changeRequests   ChangeRequest[]
   calendarMappings CalendarEventMap[]
+  coTeachers       SessionTeacher[]
 
   @@index([scheduleVersionId, weekday])
   @@index([teacherProfileId, weekday, startTime])
@@ -870,6 +873,29 @@ model ClassSession {
   @@index([centerId, scheduleVersionId])
   @@index([groupId])
   @@map("sessions")
+}
+
+/// The other people who give a class.
+///
+/// Most classes have one teacher, which is `sessions.teacher_profile_id`, and
+/// nothing here. A lab with two lecturers has the second one — and any
+/// further ones — as rows in this table: they teach the class too, so they
+/// have to be free for it, it costs their contract the same hour, and it
+/// belongs on their calendar.
+model SessionTeacher {
+  sessionId        String   @map("session_id") @db.Char(36)
+  teacherProfileId String   @map("teacher_profile_id") @db.Char(36)
+  centerId         String   @map("center_id") @db.Char(36)
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  session        ClassSession   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  teacherProfile TeacherProfile @relation(fields: [teacherProfileId], references: [id], onDelete: Cascade)
+  center         Center         @relation(fields: [centerId], references: [id], onDelete: Cascade)
+
+  @@id([sessionId, teacherProfileId])
+  @@index([teacherProfileId])
+  @@index([centerId, sessionId])
+  @@map("session_teachers")
 }
 
 model Assignment {

@@ -40,6 +40,13 @@ import { publishVersion, readSnapshot } from './publish.js'
 
 const COORDINATION = ['CENTER_ADMIN', 'COORDINATOR'] as const
 
+/**
+ * A ceiling on co-teaching, so a mistyped import cannot attach a department.
+ * Nothing in the regulations says four; what it says is that this is a class,
+ * not a meeting.
+ */
+const MAX_TEACHERS_PER_SESSION = 6
+
 const versionSchema = z.object({
   name: z.string().trim().min(3).max(150),
 })
@@ -64,6 +71,15 @@ const statusSchema = z.object({
 const sessionSchema = z.object({
   groupId: z.uuid(),
   teacherProfileId: z.uuid().nullable().default(null),
+  /**
+   * Everyone giving the class, when that is more than one person.
+   *
+   * Some classes are given by two lecturers, or by a titular with an
+   * assistant. The first of the list is the session's own teacher — the one
+   * every screen has always shown — and the rest are recorded alongside it.
+   * Sending this replaces `teacherProfileId`.
+   */
+  teacherProfileIds: z.array(z.uuid()).max(MAX_TEACHERS_PER_SESSION).optional(),
   spaceId: z.uuid().nullable().default(null),
   /** The day it happens, `YYYY-MM-DD`. */
   date: z.iso.date(),
@@ -81,6 +97,7 @@ const sessionSchema = z.object({
 const sessionPatchSchema = z.object({
   groupId: z.uuid().optional(),
   teacherProfileId: z.uuid().nullable().optional(),
+  teacherProfileIds: z.array(z.uuid()).max(MAX_TEACHERS_PER_SESSION).optional(),
   spaceId: z.uuid().nullable().optional(),
   /** Moving it to another day, which is the only way a session moves. */
   date: z.iso.date().optional(),
@@ -149,10 +166,14 @@ export function registerPlannerRoutes(app: FastifyInstance, bus: RealtimeTranspo
       if (input.fromVersionId) {
         const source = await context.db.classSession.findMany({
           where: { scheduleVersionId: input.fromVersionId },
+          include: { coTeachers: { select: { teacherProfileId: true } } },
         })
-        if (source.length > 0) {
-          await context.db.classSession.createMany({
-            data: source.map((session) => ({
+
+        // One at a time, because a copied class has to carry the rest of the
+        // people giving it, and those rows need the new session's id.
+        for (const session of source) {
+          await context.db.classSession.create({
+            data: {
               centerId: context.centerId,
               scheduleVersionId: created.id,
               groupId: session.groupId,
@@ -164,7 +185,14 @@ export function registerPlannerRoutes(app: FastifyInstance, bus: RealtimeTranspo
               dateFrom: session.dateFrom,
               dateTo: session.dateTo,
               recurrence: session.recurrence,
-            })),
+              topic: session.topic,
+              coTeachers: {
+                create: session.coTeachers.map((entry) => ({
+                  teacherProfileId: entry.teacherProfileId,
+                  centerId: context.centerId,
+                })),
+              },
+            },
           })
         }
       }
@@ -338,6 +366,9 @@ function registerSessionRoutes(app: FastifyInstance): void {
         },
       })
 
+      const teachers = requestedTeachers(input)
+      if (teachers && teachers.length > 1) await setSessionTeachers(context, created.id, teachers)
+
       await audit(request, context, created.id, 'session.create', null, input, 'class_session')
       return reply.code(201).send(await versionDetail(context, version.id))
     },
@@ -353,6 +384,7 @@ function registerSessionRoutes(app: FastifyInstance): void {
 
       const before = await context.db.classSession.findFirst({
         where: { id: request.params.sessionId, scheduleVersionId: version.id },
+        include: { coTeachers: { select: { teacherProfileId: true } } },
       })
       if (!before) throw AppError.notFound()
 
@@ -379,6 +411,9 @@ function registerSessionRoutes(app: FastifyInstance): void {
         },
       })
 
+      const teachers = requestedTeachers(input)
+      if (teachers) await setSessionTeachers(context, before.id, teachers)
+
       await audit(
         request,
         context,
@@ -389,6 +424,7 @@ function registerSessionRoutes(app: FastifyInstance): void {
           startTime: before.startTime,
           endTime: before.endTime,
           teacherProfileId: before.teacherProfileId,
+          coTeacherIds: before.coTeachers.map((entry) => entry.teacherProfileId),
           spaceId: before.spaceId,
         },
         input,
@@ -450,6 +486,7 @@ function registerSessionRoutes(app: FastifyInstance): void {
         id: input.sessionId ?? 'candidate',
         groupId: input.groupId,
         teacherProfileId: input.teacherProfileId,
+        coTeacherIds: (requestedTeachers(input) ?? []).slice(1),
         spaceId: input.spaceId,
         weekday: day.weekday as PlannedSession['weekday'],
         startTime: input.startTime,
@@ -462,6 +499,54 @@ function registerSessionRoutes(app: FastifyInstance): void {
       return evaluateCell(candidate, others, context.schedule)
     },
   )
+}
+
+/**
+ * The people a request asks for, in order and without repeats.
+ *
+ * `teacherProfileIds` wins when it is sent, because it is the whole list;
+ * `teacherProfileId` on its own still means "this one person, and nobody
+ * else", which is what every existing caller and every drag of a single block
+ * means by it. `null` means neither was sent: leave whoever is there.
+ */
+function requestedTeachers(input: {
+  teacherProfileId?: string | null
+  teacherProfileIds?: string[]
+}): string[] | null {
+  if (input.teacherProfileIds) return [...new Set(input.teacherProfileIds)]
+  if (input.teacherProfileId !== undefined) {
+    return input.teacherProfileId ? [input.teacherProfileId] : []
+  }
+  return null
+}
+
+/**
+ * Writes the people giving a class: the first onto the session itself, the
+ * rest into `session_teachers`. Replacing the list wholesale is what keeps the
+ * two in step — there is no path that updates one without the other.
+ */
+async function setSessionTeachers(
+  context: PlannerContext,
+  sessionId: string,
+  teacherProfileIds: string[],
+): Promise<void> {
+  await context.db.sessionTeacher.deleteMany({ where: { sessionId } })
+
+  const [lead, ...rest] = teacherProfileIds
+  await context.db.classSession.update({
+    where: { id: sessionId },
+    data: { teacherProfileId: lead ?? null },
+  })
+
+  if (rest.length > 0) {
+    await context.db.sessionTeacher.createMany({
+      data: rest.map((teacherProfileId) => ({
+        sessionId,
+        teacherProfileId,
+        centerId: context.centerId,
+      })),
+    })
+  }
 }
 
 /** The dates a group's sessions run between, from its subject's term. */

@@ -21,6 +21,8 @@ export interface PlannerSessionDto {
   subjectName: string
   teacherProfileId: string | null
   teacherName: string | null
+  /** Everyone giving the class, the one above first. */
+  teachers: { teacherProfileId: string; name: string }[]
   spaceId: string | null
   spaceName: string | null
   building: string | null
@@ -197,6 +199,8 @@ export function useVersionStatus(versionId: string) {
 export interface SessionInput {
   groupId: string
   teacherProfileId?: string | null
+  /** Everyone giving the class. Sending this replaces `teacherProfileId`. */
+  teacherProfileIds?: string[]
   spaceId?: string | null
   /** The day it happens, `YYYY-MM-DD`. A class is placed on a date. */
   date: string

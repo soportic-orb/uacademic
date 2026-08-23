@@ -1587,6 +1587,7 @@
       "none": "Nobody is contracted for the active year yet."
     },
     "assignTeacher": "Assign a teacher",
+    "addTeacher": "Add a teacher",
     "warnings": {
       "unavailable": "{{name}} said they are not available from {{start}} to {{end}}. Not assigned.",
       "avoid": "{{name}} asked to avoid teaching from {{start}} to {{end}}. Assigned anyway."
