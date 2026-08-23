@@ -453,6 +453,34 @@ curl -fsS http://127.0.0.1:3001/health
 ss -ltnp | grep 3001                # quién escucha, si es que hay alguien
 ```
 
+**`pm2 status` vacío, justo después de reiniciar el servidor.** El caso más
+frecuente de todos: PM2 no se ha resucitado solo porque su lista no está
+guardada para arrancar con la máquina. Arráncalo y, sobre todo, guárdalo:
+
+```bash
+cd /var/www/uacademic/current
+pm2 start ecosystem.config.cjs
+pm2 save
+pm2 startup        # ejecuta la línea que te devuelva; eso es lo que lo arregla
+```
+
+Sin el `pm2 startup`, el próximo reinicio volverá a dejar el sitio en 502.
+
+**`pm2 status` en `errored`, o con el contador de reinicios subiendo.** La API
+arranca y muere. Tras una parada sucia el sospechoso habitual es que **MariaDB
+todavía no estaba viva** cuando la API arrancó: sin base de datos no hay nada
+que servir, y PM2 acaba desistiendo.
+
+```bash
+systemctl status mariadb           # o mysql
+systemctl start mariadb
+pm2 restart uacademic uacademic-worker
+```
+
+Y antes de nada, si la máquina se había colgado: `df -h`. Con el disco al
+100 % ni MariaDB arranca ni la API escribe nada, y todo el resto del
+diagnóstico es ruido.
+
 **`pm2 status` vacío o en `errored`.** Los procesos no se han arrancado nunca, o
 han muerto. Arráncalos desde la raíz del repositorio:
 
@@ -485,6 +513,11 @@ curl -fsS https://uacademic.ejemplo.edu/health
 pm2 status
 tail -f /var/www/uacademic/shared/logs/api.error.log
 ```
+
+Y una vez, en la primera instalación: **reinicia la máquina** y comprueba que
+el sitio vuelve solo. Es la forma más barata de descubrir que el `pm2 startup`
+no se ha ejecutado nunca, y vale mucho más descubrirlo a propósito que un lunes
+a las ocho de la mañana.
 
 Y desde el navegador: entrar, ver el horario propio, abrir el calendario sin
 conexión (modo avión) y comprobar que la instalación en la pantalla de inicio

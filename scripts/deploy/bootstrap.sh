@@ -62,7 +62,10 @@ Layout ready. What is left, in order:
   1. Fill in ${ROOT}/shared/.env (database URL, secrets, origins).
   2. Deploy a release:   scripts/deploy/release.sh <version> <artifact.tar.gz>
   3. Start PM2:          pm2 start ${ROOT}/current/ecosystem.config.cjs
-                         pm2 save && pm2 startup
+                         pm2 save
+                         pm2 startup   <- run the line it prints back.
+     Without that last step PM2 does not come back after a reboot, and the
+     site answers 502 until somebody starts it by hand.
   4. Point Nginx at ${ROOT}/current/apps/web/dist and proxy /api to the API
      port — see scripts/deploy/nginx.conf.example.
   5. If PM2 daemons are not allowed on this host, use the cron worker instead:

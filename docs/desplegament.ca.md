@@ -449,8 +449,36 @@ curl -fsS http://127.0.0.1:3001/health
 ss -ltnp | grep 3001                # qui escolta, si és que hi ha algú
 ```
 
-**`pm2 status` buit o en `errored`.** Els processos no s'han arrencat mai, o han
-mort. Arrenca'ls des de l'arrel del repositori:
+**`pm2 status` buit, just després de reiniciar el servidor.** El cas més
+freqüent de tots: PM2 no s'ha resucitat sol perquè la seva llista no està
+desada per arrencar amb la màquina. Arrenca'l i, sobretot, desa-ho:
+
+```bash
+cd /var/www/uacademic/current
+pm2 start ecosystem.config.cjs
+pm2 save
+pm2 startup        # executa la línia que et torni; això és el que ho arregla
+```
+
+Sense el `pm2 startup`, el pròxim reinici tornarà a deixar el lloc en 502.
+
+**`pm2 status` en `errored`, o amb el comptador de reinicis pujant.** L'API
+arrenca i mor. Després d'una aturada bruta el sospitós habitual és que
+**MariaDB encara no era viva** quan l'API ha arrencat: sense base de dades no
+hi ha res a servir, i PM2 acaba desistint.
+
+```bash
+systemctl status mariadb           # o mysql
+systemctl start mariadb
+pm2 restart uacademic uacademic-worker
+```
+
+I abans de res, si la màquina s'havia penjat: `df -h`. Amb el disc al 100 %
+ni MariaDB arrenca ni l'API escriu res, i tota la resta del diagnòstic és
+soroll.
+
+**`pm2 status` buit sense haver reiniciat res.** Els processos no s'han
+arrencat mai. Arrenca'ls des de l'arrel del repositori:
 
 ```bash
 cd /var/www/uacademic/current
@@ -480,6 +508,11 @@ curl -fsS https://uacademic.exemple.edu/health
 pm2 status
 tail -f /var/www/uacademic/shared/logs/api.error.log
 ```
+
+I un cop, a la primera instal·lació: **reinicia la màquina** i comprova que el
+lloc torna sol. És la manera més barata de descobrir que el `pm2 startup` no
+s'ha executat mai, i val molt més descobrir-ho a posta que un dilluns a les
+vuit del matí.
 
 I des del navegador: entrar, veure l'horari propi, obrir el calendari sense
 connexió (mode avió) i comprovar que la instal·lació a la pantalla d'inici

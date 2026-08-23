@@ -440,8 +440,36 @@ curl -fsS http://127.0.0.1:3001/health
 ss -ltnp | grep 3001                # who is listening, if anybody
 ```
 
-**`pm2 status` empty or `errored`.** The processes were never started, or they
-died. Start them from the repository root:
+**`pm2 status` empty, right after rebooting the server.** The most common case
+of all: PM2 did not resurrect itself because its list is not saved to start
+with the machine. Start it and, above all, save it:
+
+```bash
+cd /var/www/uacademic/current
+pm2 start ecosystem.config.cjs
+pm2 save
+pm2 startup        # run the line it prints back — that is what fixes it
+```
+
+Without the `pm2 startup`, the next reboot puts the site back on 502.
+
+**`pm2 status` `errored`, or with the restart counter climbing.** The API
+starts and dies. After an unclean stop the usual suspect is that **MariaDB was
+not up yet** when the API started: with no database there is nothing to serve,
+and PM2 eventually gives up.
+
+```bash
+systemctl status mariadb           # or mysql
+systemctl start mariadb
+pm2 restart uacademic uacademic-worker
+```
+
+And before anything else, if the machine had hung: `df -h`. With the disk at
+100% neither MariaDB starts nor the API writes anything, and the rest of the
+diagnosis is noise.
+
+**`pm2 status` empty without a reboot.** The processes were never started.
+Start them from the repository root:
 
 ```bash
 cd /var/www/uacademic/current
@@ -471,6 +499,11 @@ curl -fsS https://uacademic.example.edu/health
 pm2 status
 tail -f /var/www/uacademic/shared/logs/api.error.log
 ```
+
+And once, on the first install: **reboot the machine** and check the site comes
+back on its own. It is the cheapest way to find out that `pm2 startup` was
+never run, and far better to find it out on purpose than at eight in the
+morning on a Monday.
 
 And from a browser: sign in, look at your own timetable, open the calendar with
 no connection (flight mode), and check that adding it to the home screen works
