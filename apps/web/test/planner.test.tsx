@@ -684,6 +684,45 @@ describe('the visual planner', () => {
     })
   })
 
+  describe('changing how long a class lasts', () => {
+    it('lengthens it from the keyboard, which the pointer alternative needs (R8)', async () => {
+      const user = userEvent.setup()
+      render(wrap(<PlannerGrid version={VERSION} context={CONTEXT} />))
+
+      // One slot down on the bottom edge: 09:00–10:00 becomes 09:00–11:00.
+      const bottom = screen.getByRole('button', { name: 'Allarga o escurça per baix' })
+      bottom.focus()
+      await user.keyboard('{ArrowDown}')
+
+      await waitFor(() => {
+        const patch = fetchMock.mock.calls.find(
+          (call) => (call[1] as RequestInit | undefined)?.method === 'PATCH',
+        )
+        expect(JSON.parse(String((patch![1] as RequestInit).body))).toMatchObject({
+          startTime: '09:00',
+          endTime: '11:00',
+        })
+      })
+    })
+
+    it('will not shorten a class into nothing', async () => {
+      const user = userEvent.setup()
+      render(wrap(<PlannerGrid version={VERSION} context={CONTEXT} />))
+
+      // The class is one slot long already: pulling its bottom edge up would
+      // leave no class at all.
+      const bottom = screen.getByRole('button', { name: 'Allarga o escurça per baix' })
+      bottom.focus()
+      await user.keyboard('{ArrowUp}')
+
+      expect(
+        fetchMock.mock.calls.filter(
+          (call) => (call[1] as RequestInit | undefined)?.method === 'PATCH',
+        ),
+      ).toHaveLength(0)
+    })
+  })
+
   describe('repeating a class across the term', () => {
     it('asks which days, at what time, and until when', async () => {
       const user = userEvent.setup()

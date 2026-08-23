@@ -370,6 +370,9 @@ function registerSessionRoutes(app: FastifyInstance): void {
       const context = await plannerContext(request)
       const version = await requireEditable(context, request.params.id)
       const input = parseWith(sessionSchema, request.body)
+      if (input.endTime <= input.startTime) {
+        throw AppError.validation([{ path: 'endTime', messageKey: 'validation.invalidRange' }])
+      }
       const day = dayOf(input.date)
 
       const created = await context.db.classSession.create({
@@ -415,6 +418,15 @@ function registerSessionRoutes(app: FastifyInstance): void {
         include: { coTeachers: { select: { teacherProfileId: true } } },
       })
       if (!before) throw AppError.notFound()
+
+      // A patch may carry one end of the hour or the other, so the check is
+      // against what the class would become — dragging an edge past the far
+      // one is the way this happens.
+      const startTime = input.startTime ?? before.startTime
+      const endTime = input.endTime ?? before.endTime
+      if (endTime <= startTime) {
+        throw AppError.validation([{ path: 'endTime', messageKey: 'validation.invalidRange' }])
+      }
 
       await context.db.classSession.update({
         where: { id: before.id },
@@ -783,7 +795,7 @@ async function versionDetail(context: PlannerContext, versionId: string) {
   // somebody is planning rather than only about what is left over.
   const groups = await context.db.group.findMany({
     where: { subject: { academicYearId: context.academicYearId } },
-    select: { id: true, plannedHours: true },
+    select: { id: true, plannedHours: true, sessionMinutes: true },
     orderBy: { code: 'asc' },
   })
 
@@ -865,7 +877,7 @@ function groupPlans(
     candidateTeacherIds: readonly string[]
     candidateSpaceIds: readonly string[]
   }[],
-  groups: readonly { id: string; plannedHours: unknown }[],
+  groups: readonly { id: string; plannedHours: unknown; sessionMinutes: number | null }[],
   sessions: readonly PlannedSession[],
 ) {
   const { teachingWeeks, defaultSessionMinutes } = context.settings.schedule
@@ -894,7 +906,7 @@ function groupPlans(
     const state = groupPlanState({
       plannedHours,
       teachingWeeks,
-      sessionMinutes: requirement?.durationMinutes ?? defaultSessionMinutes,
+      sessionMinutes: row.sessionMinutes ?? requirement?.durationMinutes ?? defaultSessionMinutes,
       placedMinutes: placedByGroup.get(row.id) ?? 0,
     })
 
@@ -905,7 +917,7 @@ function groupPlans(
       subjectCode: resource?.subjectCode ?? '',
       subjectName: resource?.subjectName ?? '',
       plannedHours,
-      durationMinutes: requirement?.durationMinutes ?? defaultSessionMinutes,
+      durationMinutes: row.sessionMinutes ?? requirement?.durationMinutes ?? defaultSessionMinutes,
       weeklyTargetMinutes: state.weeklyTargetMinutes,
       placedMinutes: state.placedMinutes,
       remainingMinutes: state.remainingMinutes,

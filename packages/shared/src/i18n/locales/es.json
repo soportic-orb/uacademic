@@ -1224,6 +1224,8 @@
       "plannedHours": "Horas previstas",
       "requiredSpaceType": "Tipo de espacio necesario",
       "space": "Aula",
+      "sessionMinutes": "Duración de la clase (min)",
+      "coordinators": "Coordinación",
       "isTeachingDay": "Día lectivo",
       "ects": "ECTS",
       "year": "Curso",
@@ -1261,7 +1263,8 @@
     "userSuspended": "El usuario tiene historial en la plataforma: la cuenta se ha suspendido en lugar de eliminarse",
     "errors": {
       "cannotDeleteSelf": "No puedes eliminar tu propia cuenta.",
-      "alreadyHasAccess": "Esta persona ya tiene ese rol en ese centro."
+      "alreadyHasAccess": "Esta persona ya tiene ese rol en ese centro.",
+      "notInCenter": "Esta persona no pertenece al centro."
     },
     "grantConsent": "Instalar en la organización",
     "accessTitle": "Acceso a universidades y centros",
@@ -1634,6 +1637,10 @@
       "until": "Hasta el día",
       "hint": "Se creará una sesión por cada día elegido. Los festivos y días no lectivos se saltan.",
       "done": "{{created}} sesiones creadas, {{skipped}} omitidas"
+    },
+    "resize": {
+      "start": "Alargar o acortar por arriba",
+      "end": "Alargar o acortar por abajo"
     }
   },
   "calendar": {

@@ -193,7 +193,12 @@ export function registerCrudRoutes<Input extends z.ZodType>(
       ? await resource.beforeWrite(input, { client, centerId, request })
       : (input as Record<string, unknown>)
 
-    const row = await runWrite(() => delegate(client, resource.model).create({ data }))
+    const row = await runWrite(() =>
+      delegate(client, resource.model).create({
+        data,
+        ...(resource.include ? { include: resource.include } : {}),
+      }),
+    )
 
     await writeAuditLog(prisma(), {
       centerId,
@@ -227,7 +232,15 @@ export function registerCrudRoutes<Input extends z.ZodType>(
       ? await resource.beforeWrite(input as z.infer<Input>, { client, centerId, id, request })
       : (input as Record<string, unknown>)
 
-    const after = await runWrite(() => model.update({ where: { id }, data }))
+    // With the relations the resource declares: the answer is what the form
+    // will draw next, and a row without them draws an empty list.
+    const after = await runWrite(() =>
+      model.update({
+        where: { id },
+        data,
+        ...(resource.include ? { include: resource.include } : {}),
+      }),
+    )
 
     await writeAuditLog(prisma(), {
       centerId,

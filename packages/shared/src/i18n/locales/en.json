@@ -1224,6 +1224,8 @@
       "plannedHours": "Planned hours",
       "requiredSpaceType": "Required space type",
       "space": "Room",
+      "sessionMinutes": "Class length (min)",
+      "coordinators": "Coordination",
       "isTeachingDay": "Teaching day",
       "ects": "ECTS",
       "year": "Year",
@@ -1261,7 +1263,8 @@
     "userSuspended": "This user has a history on the platform, so the account was suspended rather than deleted",
     "errors": {
       "cannotDeleteSelf": "You cannot delete your own account.",
-      "alreadyHasAccess": "This person already holds that role in that center."
+      "alreadyHasAccess": "This person already holds that role in that center.",
+      "notInCenter": "That person does not belong to this center."
     },
     "grantConsent": "Install in the organisation",
     "accessTitle": "Access to universities and centers",
@@ -1634,6 +1637,10 @@
       "until": "Until",
       "hint": "One class is created per chosen day. Holidays and closures are skipped.",
       "done": "{{created}} classes created, {{skipped}} skipped"
+    },
+    "resize": {
+      "start": "Lengthen or shorten from the top",
+      "end": "Lengthen or shorten from the bottom"
     }
   },
   "calendar": {

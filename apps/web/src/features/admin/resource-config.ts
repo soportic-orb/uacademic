@@ -35,7 +35,16 @@ export interface FieldOption {
 export interface FieldConfig {
   name: string
   labelKey: string
-  type: 'text' | 'number' | 'select' | 'date' | 'checkbox' | 'url' | 'image' | 'dateRange'
+  type:
+    | 'text'
+    | 'number'
+    | 'select'
+    | 'multiSelect'
+    | 'date'
+    | 'checkbox'
+    | 'url'
+    | 'image'
+    | 'dateRange'
   /**
    * `dateRange` only: the field holding the end of the range.
    *
@@ -288,6 +297,7 @@ export const ADMIN_RESOURCES: ResourceConfig[] = [
         enumPrefix: 'term',
         sortable: true,
       },
+      { key: 'coordinatorNames', labelKey: 'admin.fields.coordinators' },
     ],
     filters: [
       {
@@ -356,6 +366,15 @@ export const ADMIN_RESOURCES: ResourceConfig[] = [
           { value: 'other', labelKey: 'spaceType.other' },
         ],
       },
+      {
+        // Coordination is per subject: being on this list is what makes
+        // somebody the coordinator of this one.
+        name: 'coordinatorIds',
+        labelKey: 'admin.fields.coordinators',
+        type: 'multiSelect',
+        optionsFrom: { path: 'users', labelField: 'name' },
+        full: true,
+      },
       ...TRILINGUAL_FIELDS,
     ],
   },
@@ -415,6 +434,14 @@ export const ADMIN_RESOURCES: ResourceConfig[] = [
         step: '0.5',
       },
       { name: 'capacity', labelKey: 'admin.fields.capacity', type: 'number' },
+      {
+        // How long one of its classes lasts. Blank keeps the center's own
+        // default, which is what most groups want.
+        name: 'sessionMinutes',
+        labelKey: 'admin.fields.sessionMinutes',
+        type: 'number',
+        step: '5',
+      },
       {
         // The room this group normally meets in: a session placed for it
         // starts there instead of being typed in again every time.

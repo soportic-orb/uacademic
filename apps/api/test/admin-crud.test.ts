@@ -361,4 +361,144 @@ describe.skipIf(!hasDatabase)('admin CRUD', () => {
       expect(response.statusCode).toBe(404)
     })
   })
+
+  /**
+   * Who coordinates a subject is chosen where the subject is, and choosing
+   * somebody is the grant: every screen that asks "may they see this?" reads
+   * `subject_coordinators`.
+   */
+  describe('the coordination of a subject', () => {
+    const subjectOf = async () =>
+      prisma.subject.findFirstOrThrow({ where: { centerId }, orderBy: { code: 'asc' } })
+
+    const lecturer = async () =>
+      prisma.user.findFirstOrThrow({ where: { email: SEED.otherTeacherEmail } })
+
+    it('names them on the subject, and lets them coordinate it', async () => {
+      const subject = await subjectOf()
+      const person = await lecturer()
+      const before = await prisma.subjectCoordinator.findMany({ where: { subjectId: subject.id } })
+
+      try {
+        const response = await app.inject({
+          method: 'PATCH',
+          url: `/api/v1/admin/subjects/${subject.id}`,
+          headers: asAdmin(),
+          payload: { coordinatorIds: [person.id] },
+        })
+
+        expect(response.statusCode).toBe(200)
+        expect(response.json().coordinatorIds).toEqual([person.id])
+
+        // The row that every access check reads.
+        expect(
+          await prisma.subjectCoordinator.findFirst({
+            where: { subjectId: subject.id, userId: person.id },
+          }),
+        ).not.toBeNull()
+
+        // And the role without which the coordination screens would refuse
+        // them anyway.
+        expect(
+          await prisma.userCenterRole.findFirst({
+            where: { userId: person.id, centerId, role: 'COORDINATOR' },
+          }),
+        ).not.toBeNull()
+      } finally {
+        await prisma.subjectCoordinator.deleteMany({ where: { subjectId: subject.id } })
+        await prisma.subjectCoordinator.createMany({
+          data: before.map((row) => ({
+            subjectId: row.subjectId,
+            userId: row.userId,
+            centerId: row.centerId,
+          })),
+          skipDuplicates: true,
+        })
+        await prisma.userCenterRole.deleteMany({
+          where: { userId: person.id, centerId, role: 'COORDINATOR' },
+        })
+      }
+    })
+
+    it('takes the last of them off when the list is emptied', async () => {
+      const subject = await subjectOf()
+      const person = await lecturer()
+      const before = await prisma.subjectCoordinator.findMany({ where: { subjectId: subject.id } })
+
+      try {
+        await app.inject({
+          method: 'PATCH',
+          url: `/api/v1/admin/subjects/${subject.id}`,
+          headers: asAdmin(),
+          payload: { coordinatorIds: [person.id] },
+        })
+
+        const emptied = await app.inject({
+          method: 'PATCH',
+          url: `/api/v1/admin/subjects/${subject.id}`,
+          headers: asAdmin(),
+          payload: { coordinatorIds: [] },
+        })
+
+        expect(emptied.json().coordinatorIds).toEqual([])
+        expect(await prisma.subjectCoordinator.count({ where: { subjectId: subject.id } })).toBe(0)
+      } finally {
+        await prisma.subjectCoordinator.createMany({
+          data: before.map((row) => ({
+            subjectId: row.subjectId,
+            userId: row.userId,
+            centerId: row.centerId,
+          })),
+          skipDuplicates: true,
+        })
+        await prisma.userCenterRole.deleteMany({
+          where: { userId: person.id, centerId, role: 'COORDINATOR' },
+        })
+      }
+    })
+
+    it('refuses somebody who does not belong to this center (R2)', async () => {
+      const subject = await subjectOf()
+
+      const response = await app.inject({
+        method: 'PATCH',
+        url: `/api/v1/admin/subjects/${subject.id}`,
+        headers: asAdmin(),
+        payload: { coordinatorIds: [FOREIGN.userId] },
+      })
+
+      expect(response.statusCode).toBe(422)
+      expect(response.json().error.details[0].messageKey).toBe('admin.errors.notInCenter')
+    })
+
+    it('leaves the list alone when a patch does not mention it', async () => {
+      const subject = await subjectOf()
+      const person = await lecturer()
+
+      try {
+        await app.inject({
+          method: 'PATCH',
+          url: `/api/v1/admin/subjects/${subject.id}`,
+          headers: asAdmin(),
+          payload: { coordinatorIds: [person.id] },
+        })
+
+        const renamed = await app.inject({
+          method: 'PATCH',
+          url: `/api/v1/admin/subjects/${subject.id}`,
+          headers: asAdmin(),
+          payload: { year: subject.year },
+        })
+
+        expect(renamed.json().coordinatorIds).toEqual([person.id])
+      } finally {
+        await prisma.subjectCoordinator.deleteMany({
+          where: { subjectId: subject.id, userId: person.id },
+        })
+        await prisma.userCenterRole.deleteMany({
+          where: { userId: person.id, centerId, role: 'COORDINATOR' },
+        })
+      }
+    })
+  })
 })

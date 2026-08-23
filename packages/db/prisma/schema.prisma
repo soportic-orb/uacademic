@@ -642,6 +642,10 @@ model Group {
   /// The room this group normally has. A default, not a rule: a session takes
   /// it when it is placed, and the planner may put that one session elsewhere.
   spaceId               String?    @map("space_id") @db.Char(36)
+  /// How long a class of this group lasts, in minutes. Null means the center's
+  /// own default (`schedule.defaultSessionMinutes`), which is what most groups
+  /// want; a three-hour lab says so here.
+  sessionMinutes        Int?       @map("session_minutes") @db.SmallInt
   /// Equipment the room must have for this group, e.g. ["workstations"].
   /// A hard constraint of the planner (phase 3).
   requiredEquipmentJson Json?      @map("required_equipment_json")

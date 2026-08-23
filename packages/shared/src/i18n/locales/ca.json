@@ -1224,6 +1224,8 @@
       "plannedHours": "Hores previstes",
       "requiredSpaceType": "Tipus d'espai necessari",
       "space": "Aula",
+      "sessionMinutes": "Durada de la classe (min)",
+      "coordinators": "Coordinació",
       "isTeachingDay": "Dia lectiu",
       "ects": "ECTS",
       "year": "Curs",
@@ -1261,7 +1263,8 @@
     "userSuspended": "L'usuari té historial a la plataforma: el compte s'ha suspès en lloc d'eliminar-se",
     "errors": {
       "cannotDeleteSelf": "No pots eliminar el teu propi compte.",
-      "alreadyHasAccess": "Aquesta persona ja té aquest rol en aquest centre."
+      "alreadyHasAccess": "Aquesta persona ja té aquest rol en aquest centre.",
+      "notInCenter": "Aquesta persona no pertany al centre."
     },
     "grantConsent": "Instal·la a l'organització",
     "accessTitle": "Accés a universitats i centres",
@@ -1634,6 +1637,10 @@
       "until": "Fins al dia",
       "hint": "Es crearà una sessió per cada dia triat. Els dies festius i no lectius se salten.",
       "done": "{{created}} sessions creades, {{skipped}} omeses"
+    },
+    "resize": {
+      "start": "Allarga o escurça per dalt",
+      "end": "Allarga o escurça per baix"
     }
   },
   "calendar": {

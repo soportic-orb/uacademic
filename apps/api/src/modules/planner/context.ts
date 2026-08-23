@@ -403,8 +403,11 @@ export async function sessionRequirements(context: PlannerContext): Promise<Sess
       )
       .map((space) => space.spaceId)
 
+    // A group's own class length when it has one: a three-hour lab needs a
+    // third of the sessions an hour-long seminar does for the same hours.
+    const sessionMinutes = group.sessionMinutes ?? defaultSessionMinutes
     const weeklyMinutes = (Number(group.plannedHours) / teachingWeeks) * 60
-    const count = Math.max(1, Math.round(weeklyMinutes / defaultSessionMinutes))
+    const count = Math.max(1, Math.round(weeklyMinutes / sessionMinutes))
 
     const range = rangeForTerm(ranges, group.subject.term)
 
@@ -412,7 +415,7 @@ export async function sessionRequirements(context: PlannerContext): Promise<Sess
       requirements.push({
         id: `${group.id}#${index + 1}`,
         groupId: group.id,
-        durationMinutes: defaultSessionMinutes,
+        durationMinutes: sessionMinutes,
         candidateTeacherIds: teacherIds,
         candidateSpaceIds,
         dateFrom: range.from,

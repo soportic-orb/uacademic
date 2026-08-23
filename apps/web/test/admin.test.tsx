@@ -393,3 +393,124 @@ describe('the kinds of day in the academic calendar', () => {
     })
   })
 })
+
+/**
+ * Coordination is per subject, and it is chosen where the subject is.
+ */
+describe('who coordinates a subject', () => {
+  const fetchMock = vi.fn()
+
+  beforeEach(() => {
+    vi.stubGlobal('fetch', fetchMock)
+    fetchMock.mockReset()
+    fetchMock.mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input)
+
+      if (url.includes('/api/v1/users')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            items: [
+              { id: 'user-1', name: 'Marta Puig' },
+              { id: 'user-2', name: 'Sergi Vila' },
+            ],
+            page: 1,
+            pageSize: 25,
+            total: 2,
+            totalPages: 1,
+          }),
+        } as Response)
+      }
+
+      if (url.includes('/admin/academic-years')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            items: [{ id: 'year-1', name: '2026–2027' }],
+            page: 1,
+            pageSize: 25,
+            total: 1,
+            totalPages: 1,
+          }),
+        } as Response)
+      }
+
+      if (url.includes('/admin/degrees')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => ({
+            items: [{ id: 'degree-1', nameCa: 'Enginyeria' }],
+            page: 1,
+            pageSize: 25,
+            total: 1,
+            totalPages: 1,
+          }),
+        } as Response)
+      }
+
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          items: [
+            {
+              id: 'subject-1',
+              code: 'MAT101',
+              nameCa: 'Matemàtiques I',
+              nameEs: 'Matemáticas I',
+              nameEn: 'Mathematics I',
+              ects: 6,
+              year: 1,
+              term: 't1',
+              type: 'basic',
+              teachingLanguage: 'ca',
+              academicYearId: 'year-1',
+              degreeId: 'degree-1',
+              coordinatorIds: ['user-1'],
+              coordinatorNames: 'Marta Puig',
+            },
+          ],
+          page: 1,
+          pageSize: 25,
+          total: 1,
+          totalPages: 1,
+        }),
+      } as Response)
+    })
+  })
+
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('shows who coordinates each subject in the table', async () => {
+    render(wrap(<ResourcePage resource={resourceByKey('subjects')!} />))
+
+    expect(
+      await within(await screen.findByRole('table')).findByText('Marta Puig'),
+    ).toBeInTheDocument()
+  })
+
+  it('ticks the people already coordinating it, and sends the ones chosen', async () => {
+    const user = userEvent.setup()
+    render(wrap(<ResourcePage resource={resourceByKey('subjects')!} />))
+
+    await user.click(await screen.findByRole('button', { name: 'Edita' }))
+    const dialog = screen.getByRole('dialog')
+    const people = within(dialog).getByRole('group', { name: 'Coordinació' })
+
+    expect(within(people).getByLabelText('Marta Puig')).toBeChecked()
+    await user.click(within(people).getByLabelText('Sergi Vila'))
+    await user.click(within(dialog).getByRole('button', { name: 'Desa' }))
+
+    await waitFor(() => {
+      const patch = fetchMock.mock.calls.find(
+        (call) => (call[1] as RequestInit | undefined)?.method === 'PATCH',
+      )
+      expect(JSON.parse(String((patch![1] as RequestInit).body))).toMatchObject({
+        coordinatorIds: ['user-1', 'user-2'],
+      })
+    })
+  })
+})

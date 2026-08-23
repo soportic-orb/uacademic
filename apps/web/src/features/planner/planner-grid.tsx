@@ -51,6 +51,7 @@ import {
   evaluateGrid,
   gridGeometry,
   heldFromSession,
+  minutesBetween,
   useUndoRedo,
 } from './use-planner'
 
@@ -147,6 +148,35 @@ export function PlannerGrid({
         sessionId: session.id,
         values: { topic: topic.trim() || null },
       })
+    } catch (error) {
+      onError(error)
+    }
+  }
+
+  /**
+   * Lengthening or shortening a class by dragging its edge.
+   *
+   * `slots` is how many rows of the grid the edge moved by, positive
+   * downwards. A class never becomes shorter than one slot and never leaves
+   * the day the grid draws — both are refusals rather than clamps somewhere
+   * the person cannot see.
+   */
+  const resizeSession = async (
+    session: PlannerSessionDto,
+    edge: 'start' | 'end',
+    slots: number,
+  ) => {
+    if (slots === 0) return
+
+    const minutes = slots * version.grid.slotMinutes
+    const startTime = edge === 'start' ? addMinutes(session.startTime, minutes) : session.startTime
+    const endTime = edge === 'end' ? addMinutes(session.endTime, minutes) : session.endTime
+
+    if (minutesBetween(startTime, endTime) < version.grid.slotMinutes) return
+    if (startTime < version.grid.dayStart || endTime > version.grid.dayEnd) return
+
+    try {
+      await updateSession.mutateAsync({ sessionId: session.id, values: { startTime, endTime } })
     } catch (error) {
       onError(error)
     }
@@ -644,6 +674,8 @@ export function PlannerGrid({
                                 spaces={context.spaces}
                                 onSpace={(spaceId) => void setSpace(session, spaceId)}
                                 onDuplicate={() => setDuplicating(session)}
+                                span={span}
+                                onResize={(edge, slots) => void resizeSession(session, edge, slots)}
                                 onPick={() => {
                                   setHeld(heldFromSession(session))
                                   setCursor({ day: dayIndex, slot: slotIndex })
@@ -967,6 +999,8 @@ function SessionBlock({
   spaces,
   onSpace,
   onDuplicate,
+  span,
+  onResize,
   onKeyDown,
 }: {
   session: PlannerSessionDto
@@ -985,6 +1019,10 @@ function SessionBlock({
   onSpace: (spaceId: string | null) => void
   /** Opens the panel that repeats this class across the term. */
   onDuplicate: () => void
+  /** How many grid rows the class covers, which is how tall it is drawn. */
+  span: number
+  /** An edge was dragged: `slots` rows, positive downwards. */
+  onResize: (edge: 'start' | 'end', slots: number) => void
   onKeyDown: (event: React.KeyboardEvent) => void
 }) {
   const { t } = useTranslation()
@@ -1115,6 +1153,13 @@ function SessionBlock({
       )}
 
       {editable ? (
+        <>
+          <ResizeHandle edge="start" span={span} onResize={onResize} />
+          <ResizeHandle edge="end" span={span} onResize={onResize} />
+        </>
+      ) : null}
+
+      {editable ? (
         <div className="absolute right-0.5 top-0.5 hidden gap-0.5 group-hover:flex group-focus-within:flex">
           <button
             type="button"
@@ -1135,6 +1180,68 @@ function SessionBlock({
         </div>
       ) : null}
     </div>
+  )
+}
+
+/**
+ * The edge of a class, dragged to make it longer or shorter.
+ *
+ * A timetable is read in hours, so the grid's own rows are the unit: the edge
+ * moves in whole slots and the class is written when the pointer is let go.
+ * The same thing happens with the arrow keys, because a planner nobody can
+ * drive from the keyboard is a planner some people cannot use at all (R8).
+ */
+function ResizeHandle({
+  edge,
+  span,
+  onResize,
+}: {
+  edge: 'start' | 'end'
+  span: number
+  onResize: (edge: 'start' | 'end', slots: number) => void
+}) {
+  const { t } = useTranslation()
+
+  const onPointerDown = (event: React.PointerEvent<HTMLButtonElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+
+    const block = event.currentTarget.parentElement
+    if (!block) return
+
+    // How tall one row of the grid is, measured rather than assumed: the
+    // planner is responsive and the number is different on every screen.
+    const slotHeight = block.getBoundingClientRect().height / Math.max(1, span)
+    const from = event.clientY
+    const handle = event.currentTarget
+    handle.setPointerCapture(event.pointerId)
+
+    const finish = (up: PointerEvent) => {
+      handle.releasePointerCapture(event.pointerId)
+      handle.removeEventListener('pointerup', finish)
+      onResize(edge, Math.round((up.clientY - from) / slotHeight))
+    }
+
+    handle.addEventListener('pointerup', finish)
+  }
+
+  return (
+    <button
+      type="button"
+      aria-label={t(`planner.resize.${edge}`)}
+      onPointerDown={onPointerDown}
+      onKeyDown={(event) => {
+        if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return
+        event.preventDefault()
+        event.stopPropagation()
+        onResize(edge, event.key === 'ArrowDown' ? 1 : -1)
+      }}
+      className={cn(
+        'absolute inset-x-0 h-1.5 cursor-ns-resize touch-none focus-visible:bg-primary/40 focus-visible:outline-2 focus-visible:outline-ring',
+        'hover:bg-primary/30',
+        edge === 'start' ? 'top-0' : 'bottom-0',
+      )}
+    />
   )
 }
 

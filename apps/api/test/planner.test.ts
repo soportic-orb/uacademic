@@ -473,6 +473,47 @@ describe.skipIf(!hasDatabase)('the planner', () => {
       }
     })
 
+    it('starts a class of a group at the length that group teaches in', async () => {
+      const group = await prisma.group.findFirstOrThrow({ where: { centerId } })
+      await prisma.group.update({ where: { id: group.id }, data: { sessionMinutes: 180 } })
+
+      try {
+        const version = await createVersion('lab length')
+        const plan = (version.groups as { groupId: string; durationMinutes: number }[]).find(
+          (entry) => entry.groupId === group.id,
+        )
+
+        // What a drag from the groups column places, rather than the center's
+        // own default.
+        expect(plan?.durationMinutes).toBe(180)
+      } finally {
+        await prisma.group.update({ where: { id: group.id }, data: { sessionMinutes: null } })
+      }
+    })
+
+    it('refuses an hour that ends before it starts, however it was dragged', async () => {
+      const version = await createVersion('backwards')
+      const group = await prisma.group.findFirstOrThrow({ where: { centerId } })
+
+      const created = await app.inject({
+        method: 'POST',
+        url: `/api/v1/planner/versions/${version.id}/sessions`,
+        headers: asCoordinator(),
+        payload: { groupId: group.id, date: ON[2], startTime: '09:00', endTime: '10:00' },
+      })
+
+      // Dragging the top edge past the bottom one: only one end is sent, so
+      // the refusal has to come from what the class would become.
+      const resized = await app.inject({
+        method: 'PATCH',
+        url: `/api/v1/planner/versions/${version.id}/sessions/${created.json().sessions[0].id}`,
+        headers: asCoordinator(),
+        payload: { startTime: '11:00' },
+      })
+
+      expect(resized.statusCode).toBe(422)
+    })
+
     it('refuses to touch a published version', async () => {
       const group = await prisma.group.findFirst({ where: { centerId } })
       const response = await app.inject({

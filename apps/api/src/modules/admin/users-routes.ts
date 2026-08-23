@@ -193,6 +193,8 @@ export function registerUserRoutes(app: FastifyInstance): void {
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
+        /** Both together, for the pickers that show a person rather than a row. */
+        name: `${user.firstName} ${user.lastName}`.trim(),
         locale: user.locale,
         status: user.status,
         avatarUrl: user.avatarUrl,

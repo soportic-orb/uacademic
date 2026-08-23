@@ -14,6 +14,7 @@ import type { FastifyInstance } from 'fastify'
 import { calendarTypeOptions, registerCalendarTypeRoutes } from './calendar-types.js'
 import { type CrudResource, registerCrudRoutes } from '../../lib/crud.js'
 import { AppError } from '../../lib/errors.js'
+import type { PrismaClient } from '../../lib/prisma.js'
 
 const asString = (value: unknown): string => (typeof value === 'string' ? value : '')
 const asNumber = (value: unknown): number => Number(value ?? 0)
@@ -26,6 +27,61 @@ const names = (row: Record<string, unknown>) => ({
   nameEs: asString(row.nameEs),
   nameEn: asString(row.nameEn),
 })
+
+interface CoordinatorRow {
+  userId: string
+  user: { firstName: string; lastName: string }
+}
+
+function coordinatorsOf(row: Record<string, unknown>): CoordinatorRow[] {
+  return Array.isArray(row.coordinators) ? (row.coordinators as CoordinatorRow[]) : []
+}
+
+/**
+ * Turning "these people coordinate it" into rows, and into the access it means.
+ *
+ * Naming somebody here is the grant: the screens that ask whether a person may
+ * see a subject read `subject_coordinators`. It is also useless on its own —
+ * the coordination screens are gated on the role — so somebody who does not
+ * have COORDINATOR in this center is given it. Taking them off a subject does
+ * not take the role away: they may coordinate another, and roles are the
+ * users screen's to manage.
+ */
+async function coordinatorWrite(
+  client: PrismaClient,
+  centerId: string,
+  userIds: readonly string[],
+): Promise<Record<string, unknown>> {
+  const unique = [...new Set(userIds)]
+
+  if (unique.length > 0) {
+    const members = await client.userCenterRole.findMany({
+      where: { centerId, userId: { in: unique } },
+      select: { userId: true, role: true },
+    })
+
+    for (const userId of unique) {
+      const roles = members.filter((member) => member.userId === userId)
+      // Somebody with no role in this center is not somebody this center can
+      // hand a subject to (R2).
+      if (roles.length === 0) {
+        throw AppError.validation([
+          { path: 'coordinatorIds', messageKey: 'admin.errors.notInCenter' },
+        ])
+      }
+
+      if (!roles.some((entry) => entry.role === 'COORDINATOR')) {
+        await client.userCenterRole.create({ data: { userId, centerId, role: 'COORDINATOR' } })
+      }
+    }
+  }
+
+  return {
+    // The list replaces whatever was there: it is what the form showed.
+    deleteMany: {},
+    create: unique.map((userId) => ({ userId, centerId })),
+  }
+}
 
 /**
  * The academic structure, as data. Each entry becomes a full CRUD surface with
@@ -168,11 +224,21 @@ export function registerAdminResources(app: FastifyInstance): void {
     defaultSort: 'code',
     searchFields: ['code', 'nameCa', 'nameEs', 'nameEn'],
     filterFields: ['academicYearId', 'degreeId', 'term', 'type'],
-    include: { degree: { select: { code: true, nameCa: true } } },
+    include: {
+      degree: { select: { code: true, nameCa: true } },
+      coordinators: {
+        select: { userId: true, user: { select: { firstName: true, lastName: true } } },
+      },
+    },
     serialize: (row) => ({
       id: asString(row.id),
       code: asString(row.code),
       ...names(row),
+      coordinatorIds: coordinatorsOf(row).map((entry) => entry.userId),
+      // The names as well, so the table can say who without asking again.
+      coordinatorNames: coordinatorsOf(row)
+        .map((entry) => `${entry.user.firstName} ${entry.user.lastName}`.trim())
+        .join(', '),
       ects: asNumber(row.ects),
       year: asNumber(row.year),
       term: asString(row.term),
@@ -185,6 +251,16 @@ export function registerAdminResources(app: FastifyInstance): void {
       // the catalogue which degree this is, and nobody else.
       degreeName: asString((row.degree as { nameCa?: string } | undefined)?.nameCa),
     }),
+    beforeWrite: async (input, context) => {
+      const { coordinatorIds, ...rest } = input
+      if (!coordinatorIds) return rest
+      if (!context.centerId) throw AppError.forbidden()
+
+      return {
+        ...rest,
+        coordinators: await coordinatorWrite(context.client, context.centerId, coordinatorIds),
+      }
+    },
   } satisfies CrudResource<typeof subjectInputSchema>)
 
   registerCrudRoutes(app, {
@@ -214,6 +290,7 @@ export function registerAdminResources(app: FastifyInstance): void {
         requiredSpaceType: row.requiredSpaceType ?? null,
         spaceId: row.spaceId ?? null,
         spaceName: space?.name ?? null,
+        sessionMinutes: row.sessionMinutes ?? null,
         subjectId: asString(row.subjectId),
         subjectCode: asString(subject?.code),
         subjectName: asString(subject?.nameCa),

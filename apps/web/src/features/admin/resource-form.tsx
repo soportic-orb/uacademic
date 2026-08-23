@@ -165,7 +165,11 @@ export function ResourceForm({
 
               return (
                 <div key={field.name} className={cn(field.full && 'sm:col-span-2')}>
-                  <label htmlFor={inputId} className="mb-1 block text-sm font-medium text-text">
+                  <label
+                    id={`${inputId}-label`}
+                    htmlFor={inputId}
+                    className="mb-1 block text-sm font-medium text-text"
+                  >
                     {t(field.labelKey)}
                     {field.required ? <span aria-hidden="true"> *</span> : null}
                   </label>
@@ -216,6 +220,47 @@ export function ResourceForm({
                         />
                       ) : null}
                     </>
+                  ) : field.type === 'multiSelect' ? (
+                    /*
+                      A list of tick boxes rather than a multiple `<select>`:
+                      ctrl-clicking to keep a selection is a convention most
+                      people do not know and nobody can guess, and it is
+                      unusable on a phone (R8).
+                    */
+                    <div
+                      role="group"
+                      aria-labelledby={`${inputId}-label`}
+                      className="max-h-48 space-y-1 overflow-y-auto rounded-control border border-border bg-surface p-2"
+                    >
+                      {optionsFor(field).length === 0 ? (
+                        <p className="text-sm text-text-muted">{t('admin.noResults')}</p>
+                      ) : (
+                        optionsFor(field).map((option) => {
+                          const chosen = selectedValues(values[field.name])
+                          return (
+                            <label
+                              key={option.value}
+                              className="flex items-center gap-2 text-sm text-text"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={chosen.includes(option.value)}
+                                onChange={(event) =>
+                                  setValues({
+                                    ...values,
+                                    [field.name]: event.target.checked
+                                      ? [...chosen, option.value]
+                                      : chosen.filter((entry) => entry !== option.value),
+                                  })
+                                }
+                                className="size-4 rounded border-border"
+                              />
+                              {option.label}
+                            </label>
+                          )
+                        })
+                      )}
+                    </div>
                   ) : field.type === 'checkbox' ? (
                     <input
                       id={inputId}
@@ -378,6 +423,12 @@ function initialValues(fields: FieldConfig[], row: Values | null): Values {
   const values: Values = {}
   for (const field of fields) {
     const current = row?.[field.name]
+    if (field.type === 'multiSelect') {
+      // An empty list, never an empty string: "nobody" is a value this field
+      // has to be able to send.
+      values[field.name] = selectedValues(current)
+      continue
+    }
     values[field.name] = current ?? (field.type === 'checkbox' ? false : '')
   }
   return values
@@ -393,6 +444,12 @@ function cleanValues(fields: FieldConfig[], values: Values): Values {
     if (field.type === 'image') continue
 
     const value = values[field.name]
+    if (field.type === 'multiSelect') {
+      // Including the empty list: taking the last person off a subject is a
+      // change, and dropping it here would silently keep them on it.
+      cleaned[field.name] = selectedValues(value)
+      continue
+    }
     if (value !== '' && value !== undefined && value !== null) {
       cleaned[field.name] = field.type === 'number' ? Number(value) : value
     }
@@ -495,6 +552,11 @@ function DateRangeField({
  * accepts contains a colon.
  */
 const NEW_OPTION = '__new__'
+
+/** Whatever is in a multi-select field, as the list of ids it is meant to be. */
+function selectedValues(value: unknown): string[] {
+  return Array.isArray(value) ? value.map(String) : []
+}
 
 /**
  * Adding an option to a center's own list, without leaving the form.

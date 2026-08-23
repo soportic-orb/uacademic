@@ -88,6 +88,15 @@ export const subjectInputSchema = trilingualNameSchema.extend({
   term: z.enum(['t1', 't2', 't3', 'annual']),
   type: z.enum(['basic', 'compulsory', 'elective', 'practicum', 'final_project']),
   teachingLanguage: z.enum(['ca', 'es', 'en', 'other']).default('ca'),
+  /**
+   * Who coordinates this subject.
+   *
+   * Coordination is per subject, not per center: being on this list is what
+   * makes somebody the coordinator of this one, and it is what every screen
+   * that asks "may they see this?" reads. Optional so that a patch which does
+   * not mention it leaves the list alone.
+   */
+  coordinatorIds: z.array(uuidSchema).max(10).optional(),
 })
 export type SubjectInput = z.infer<typeof subjectInputSchema>
 
@@ -108,6 +117,15 @@ export const groupInputSchema = z.object({
    * without the group changing.
    */
   spaceId: uuidSchema.nullish(),
+  /**
+   * How long one class of this group lasts, in minutes.
+   *
+   * Null means the center's own default: most groups have ordinary classes,
+   * and a three-hour lab is the exception that says so. The planner starts a
+   * class of this group at this length and the coordinator can still change
+   * that one class.
+   */
+  sessionMinutes: z.coerce.number().int().min(15).max(480).nullish(),
 })
 export type GroupInput = z.infer<typeof groupInputSchema>
 
