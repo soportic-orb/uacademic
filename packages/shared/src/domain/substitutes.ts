@@ -12,7 +12,7 @@
  */
 import { type AvailabilityEntry, effectiveAvailability } from './availability.js'
 import type { PlannedSession, ScheduleContext } from './constraints.js'
-import { evaluatePlacement } from './constraints.js'
+import { findConflictsFor } from './conflicts.js'
 import { round2 } from './time.js'
 
 export interface SubstituteCandidate {
@@ -124,13 +124,20 @@ export function evaluateCandidate(
     reasons.push({ messageKey: 'substitutes.reasons.avoidSlot', params: {} })
   }
 
-  // The clash check runs the real engine against the candidate's own week.
+  // The clash check runs against the candidate's own week.
   const candidateSession: PlannedSession = {
     ...search.session,
     teacherProfileId: candidate.teacherProfileId,
   }
-  const violations = evaluatePlacement(candidateSession, candidate.sessions, search.context)
-  if (violations.some((violation) => violation.constraint === 'teacherOverlap')) {
+
+  /*
+    Being in two places at once is allowed when a coordinator plans it on
+    purpose — three groups at eleven, one lecturer opening two practicals —
+    but it is not something to *offer* somebody as cover: whoever is asked is
+    already teaching. So this is read from the clash itself rather than from
+    the hard rules, which no longer refuse it.
+  */
+  if (findConflictsFor(candidateSession, candidate.sessions, { kinds: ['teacher'] }).length > 0) {
     blockers.push('busy')
   }
 

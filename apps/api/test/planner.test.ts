@@ -369,9 +369,9 @@ describe.skipIf(!hasDatabase)('the planner', () => {
       expect(await prisma.sessionTeacher.count({ where: { sessionId: session.id } })).toBe(0)
     })
 
-    it('will not book the second teacher where they are already teaching', async () => {
+    it('warns when the second teacher is already teaching, and allows it', async () => {
       const version = await createVersion('co-teaching clash')
-      const group = await prisma.group.findFirstOrThrow({ where: { centerId } })
+      const [group, otherGroup] = await prisma.group.findMany({ where: { centerId }, take: 2 })
       const [first, second] = await prisma.teacherProfile.findMany({
         where: { centerId },
         take: 2,
@@ -382,7 +382,7 @@ describe.skipIf(!hasDatabase)('the planner', () => {
         url: `/api/v1/planner/versions/${version.id}/sessions`,
         headers: asCoordinator(),
         payload: {
-          groupId: group.id,
+          groupId: otherGroup!.id,
           teacherProfileId: second!.id,
           date: ON[3],
           startTime: '18:00',
@@ -395,7 +395,7 @@ describe.skipIf(!hasDatabase)('the planner', () => {
         url: `/api/v1/planner/versions/${version.id}/validate`,
         headers: asCoordinator(),
         payload: {
-          groupId: group.id,
+          groupId: group!.id,
           teacherProfileIds: [first!.id, second!.id],
           date: ON[3],
           startTime: '18:00',
@@ -403,9 +403,21 @@ describe.skipIf(!hasDatabase)('the planner', () => {
         },
       })
 
-      const violations = verdict.json().violations as { messageKey: string }[]
-      expect(violations.map((violation) => violation.messageKey)).toContain(
-        'planner.hard.teacherOverlap',
+      /*
+        Two groups meeting at once is what having two groups means, and one
+        person can be on both: they open both practicals and move between
+        them. It is said out loud and it is not refused.
+      */
+      const body = verdict.json() as {
+        status: string
+        violations: { messageKey: string }[]
+        penalties: { messageKey: string }[]
+      }
+
+      expect(body.violations).toEqual([])
+      expect(body.status).toBe('warning')
+      expect(body.penalties.map((penalty) => penalty.messageKey)).toContain(
+        'planner.soft.teacherOverlap',
       )
     })
 

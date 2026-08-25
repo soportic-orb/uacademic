@@ -106,9 +106,7 @@ describe('a proposal', () => {
           status="pending"
           proposal={{
             ...PROPOSAL,
-            violations: [
-              { messageKey: 'planner.hard.teacherOverlap', params: { name: 'Marta Puig' } },
-            ],
+            violations: [{ messageKey: 'planner.hard.spaceOverlap', params: { name: 'Aula 1.1' } }],
           }}
         />,
       ),
@@ -117,7 +115,7 @@ describe('a proposal', () => {
     expect(screen.getByText('Conflictes')).toBeInTheDocument()
     // The reason is rendered from the engine's own message, in the reader's
     // language — not a generic "there is a conflict".
-    expect(screen.getByText(/ja té una altra classe/)).toBeInTheDocument()
+    expect(screen.getByText(/ja està ocupada/)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Confirma i aplica' })).toBeDisabled()
     expect(screen.getByText(/no es pot aplicar/)).toBeInTheDocument()
   })

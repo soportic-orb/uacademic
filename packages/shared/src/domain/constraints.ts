@@ -17,6 +17,7 @@ import { type AvailabilityEntry, effectiveAvailability } from './availability.js
 import {
   type SessionConflict,
   type SessionLike,
+  detectSessionConflicts,
   findConflictsFor,
   sessionTeacherIds,
 } from './conflicts.js'
@@ -24,7 +25,6 @@ import type { CenterSettings } from './settings.js'
 import { type ClockTime, type Weekday, durationHours, round2, toMinutes, sumHours } from './time.js'
 
 export type HardConstraint =
-  | 'teacherOverlap'
   | 'spaceOverlap'
   | 'groupOverlap'
   | 'teacherUnavailable'
@@ -33,7 +33,6 @@ export type HardConstraint =
   | 'spaceEquipment'
 
 export const HARD_CONSTRAINTS: readonly HardConstraint[] = [
-  'teacherOverlap',
   'spaceOverlap',
   'groupOverlap',
   'teacherUnavailable',
@@ -43,6 +42,7 @@ export const HARD_CONSTRAINTS: readonly HardConstraint[] = [
 ]
 
 export type SoftConstraint =
+  | 'teacherOverlap'
   | 'avoidSlot'
   | 'teacherGaps'
   | 'singleSessionDay'
@@ -51,6 +51,7 @@ export type SoftConstraint =
   | 'weeklySpread'
 
 export const SOFT_CONSTRAINTS: readonly SoftConstraint[] = [
+  'teacherOverlap',
   'avoidSlot',
   'teacherGaps',
   'singleSessionDay',
@@ -156,14 +157,21 @@ function sessionHours(session: PlannedSession): number {
 // Hard constraints
 // ─────────────────────────────────────────────────────────────────────────────
 
-function overlapConstraint(conflict: SessionConflict): HardConstraint {
+/**
+ * Two classes in the same room, or one group in two places, are facts about
+ * the world: they cannot happen. One person down for two classes at once can
+ * — a lecturer opens two groups' practicals and moves between them, a session
+ * is shared — so it is reported and costed rather than refused. Hence only
+ * two kinds are checked here; the teacher is dealt with among the penalties.
+ */
+function overlapConstraint(conflict: SessionConflict): HardConstraint | null {
   switch (conflict.kind) {
-    case 'teacher':
-      return 'teacherOverlap'
     case 'space':
       return 'spaceOverlap'
     case 'group':
       return 'groupOverlap'
+    case 'teacher':
+      return null
   }
 }
 
@@ -181,12 +189,15 @@ export function evaluatePlacement(
   const violations: Violation[] = []
 
   for (const conflict of findConflictsFor(candidate, others)) {
+    const constraint = overlapConstraint(conflict)
+    if (!constraint) continue
+
     const other = conflict.sessionIds.find((id) => id !== candidate.id) ?? candidate.id
     violations.push({
-      constraint: overlapConstraint(conflict),
+      constraint,
       sessionId: candidate.id,
       otherSessionId: other,
-      messageKey: hardKey(overlapConstraint(conflict)),
+      messageKey: hardKey(constraint),
       params: { name: resourceName(conflict, context), minutes: conflict.overlapMinutes },
     })
   }
@@ -370,6 +381,8 @@ export function evaluateSoft(
   const penalties: Penalty[] = []
   const days = byTeacherAndDay(sessions)
 
+  penalties.push(...overlapPenalties(sessions, context))
+
   for (const session of sessions) {
     const avoid = avoidPenalty(session, context)
     if (avoid) penalties.push(avoid)
@@ -382,6 +395,36 @@ export function evaluateSoft(
   penalties.push(...spreadPenalties(sessions, context))
 
   return penalties
+}
+
+/**
+ * One person down for two classes at the same time.
+ *
+ * Three groups can share a Wednesday at eleven — that is what having three
+ * groups means — and the same lecturer can be on two of them: they open both
+ * practicals and move between them, or a colleague covers half. It is worth
+ * saying out loud every time, and it is not worth refusing: a planner that
+ * says "impossible" to something a department does every term is a planner
+ * people work around.
+ */
+function overlapPenalties(
+  sessions: readonly PlannedSession[],
+  context: ScheduleContext,
+): Penalty[] {
+  const weight = context.settings.engine.weights.teacherOverlap
+
+  return detectSessionConflicts(sessions, { kinds: ['teacher'] }).map((conflict) => ({
+    constraint: 'teacherOverlap' as SoftConstraint,
+    teacherProfileId: conflict.resourceId,
+    amount: round2(conflict.overlapMinutes / 60),
+    weight,
+    cost: round2((conflict.overlapMinutes / 60) * weight),
+    messageKey: softKey('teacherOverlap'),
+    // No name: the engine knows teachers by identifier and nothing else. The
+    // identifier travels on the penalty, and the screens that have the
+    // directory put a name to it.
+    params: { minutes: conflict.overlapMinutes, weekday: conflict.weekday },
+  }))
 }
 
 function avoidPenalty(session: PlannedSession, context: ScheduleContext): Penalty | null {

@@ -287,6 +287,14 @@ export const aiSettingsSchema = z.object({
 export const engineSettingsSchema = z.object({
   weights: z
     .object({
+      /**
+       * One person down for two classes at once.
+       *
+       * Allowed — three groups share a Wednesday at eleven and the same
+       * lecturer opens two of the practicals — but worth saying out loud, and
+       * worth avoiding where the week can be drawn another way.
+       */
+      teacherOverlap: z.number().min(0).max(10).default(6),
       /** Using a slot the teacher marked "better avoided". */
       avoidSlot: z.number().min(0).max(10).default(5),
       /** Idle hours between two classes of the same teacher on one day. */

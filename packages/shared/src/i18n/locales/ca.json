@@ -1491,7 +1491,6 @@
       "cost": "Cost"
     },
     "hard": {
-      "teacherOverlap": "El docent ja té una altra classe en aquesta franja ({{minutes}} min de solapament).",
       "spaceOverlap": "L'aula {{name}} ja està ocupada en aquesta franja.",
       "groupOverlap": "El grup {{name}} ja té una altra classe en aquesta franja.",
       "teacherUnavailable": "El docent ha marcat de {{start}} a {{end}} com a no disponible.",
@@ -1505,7 +1504,9 @@
       "singleSessionDay": "Un dia amb una sola sessió.",
       "buildingChange": "{{changes}} canvi(s) d'edifici entre classes consecutives.",
       "consecutiveHours": "{{hours}} h per sobre del màxim de {{limit}} h seguides.",
-      "weeklySpread": "Les sessions de {{group}} es concentren en {{days}} dia(es)."
+      "weeklySpread": "Les sessions de {{group}} es concentren en {{days}} dia(es).",
+      "teacherOverlap": "Hi ha un docent amb dues classes alhora ({{minutes}} min de solapament).",
+      "teacherOverlapNamed": "{{name}} té dues classes alhora ({{minutes}} min de solapament)."
     },
     "sacrifice": {
       "avoidSlot": "{{amount}} h en franges que els docents preferirien evitar.",
@@ -1611,7 +1612,8 @@
     "removeTeacher": "Treu {{name}} de la classe",
     "warnings": {
       "unavailable": "{{name}} ha indicat que no té disponibilitat de {{start}} a {{end}}. No s'ha assignat.",
-      "avoid": "{{name}} ha indicat que prefereix no fer classe de {{start}} a {{end}}. S’ha assignat igualment."
+      "avoid": "{{name}} ha indicat que prefereix no fer classe de {{start}} a {{end}}. S’ha assignat igualment.",
+      "teacherOverlap": "{{name}} ja té {{group}} de {{start}} a {{end}}. Es permet, però queda avisat."
     },
     "closedOn": "El centre és tancat: {{name}}",
     "closedLegend": "Centre tancat",

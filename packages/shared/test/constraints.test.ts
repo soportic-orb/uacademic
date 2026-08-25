@@ -118,13 +118,20 @@ describe('hard constraints', () => {
     expect(evaluatePlacement(session('a'), [], context())).toEqual([])
   })
 
-  it('blocks the same teacher in two places at once', () => {
+  /*
+    Three groups can share a Wednesday at eleven, and the same lecturer can be
+    on two of them — they open both practicals and move between them. It is
+    reported every time and refused never: a planner that says "impossible" to
+    something a department does every term is one people work around.
+  */
+  it('allows the same teacher in two places at once, and says so', () => {
     const existing = session('b', { groupId: 'g2', spaceId: 's2' })
-    const violations = evaluatePlacement(session('a'), [existing], context())
 
-    expect(constraintsOf(violations)).toContain('teacherOverlap')
-    expect(violations[0]?.otherSessionId).toBe('b')
-    expect(violations[0]?.messageKey).toBe('planner.hard.teacherOverlap')
+    expect(evaluatePlacement(session('a'), [existing], context())).toEqual([])
+
+    const cell = evaluateCell(session('a'), [existing], context())
+    expect(cell.status).toBe('warning')
+    expect(cell.penalties.map((penalty) => penalty.constraint)).toContain('teacherOverlap')
   })
 
   it('blocks two groups in the same room at once', () => {
@@ -458,6 +465,17 @@ describe('soft constraints', () => {
         session('a', { startTime: '08:00', endTime: '12:00' }),
         session('b', { groupId: 'g1', spaceId: 's2', startTime: '12:15', endTime: '14:00' }),
         session('c', { groupId: 'g2', weekday: 2, startTime: '08:00', endTime: '09:00' }),
+        // The same person on two groups at once, on a day of its own so it
+        // says nothing about the rest of the week: allowed, and costed rather
+        // than refused.
+        session('d', { groupId: 'g1', weekday: 3, startTime: '10:00', endTime: '11:00' }),
+        session('e', {
+          groupId: 'g2',
+          spaceId: 's2',
+          weekday: 3,
+          startTime: '10:00',
+          endTime: '11:00',
+        }),
       ],
       twoBuildings,
     )
@@ -468,13 +486,27 @@ describe('soft constraints', () => {
 
 describe('whole-week scoring', () => {
   it('counts a collision once, not once per session involved', () => {
+    // Two groups in the same room: that one cannot happen at all.
     const score = scoreSchedule(
-      [session('a'), session('b', { groupId: 'g2', spaceId: 's2' })],
+      [session('a'), session('b', { groupId: 'g2', teacherProfileId: 't2' })],
       context(),
     )
 
     expect(score.violations).toHaveLength(1)
     expect(score.feasible).toBe(false)
+  })
+
+  it('costs a teacher’s own clash once, and keeps the week publishable', () => {
+    const score = scoreSchedule(
+      [session('a'), session('b', { groupId: 'g2', spaceId: 's2' })],
+      context(),
+    )
+
+    expect(score.violations).toEqual([])
+    expect(score.feasible).toBe(true)
+    expect(
+      score.penalties.filter((penalty) => penalty.constraint === 'teacherOverlap'),
+    ).toHaveLength(1)
   })
 
   it('adds up the soft cost of a legal week', () => {
@@ -517,14 +549,15 @@ describe('planner cells', () => {
   })
 
   it('paints red with the blocking reason, and never a warning as well', () => {
+    // Two groups in one room at one hour: nothing to weigh up.
     const cell = evaluateCell(
       session('a'),
-      [session('b', { groupId: 'g2', spaceId: 's2' })],
+      [session('b', { groupId: 'g2', teacherProfileId: 't2' })],
       context(),
     )
 
     expect(cell.status).toBe('blocked')
-    expect(cell.violations[0]?.messageKey).toBe('planner.hard.teacherOverlap')
+    expect(cell.violations[0]?.messageKey).toBe('planner.hard.spaceOverlap')
     expect(cell.penalties).toEqual([])
   })
 
@@ -557,7 +590,8 @@ describe('planner cells', () => {
 describe('the planner summary', () => {
   it('reports what the bottom bar shows', () => {
     const summary = summarizePlan(
-      [session('a'), session('b', { groupId: 'g2', spaceId: 's2' })],
+      // Two groups in one room: one thing that cannot happen.
+      [session('a'), session('b', { groupId: 'g2', teacherProfileId: 't2' })],
       3,
       context(),
     )

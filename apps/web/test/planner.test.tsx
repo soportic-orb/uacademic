@@ -684,6 +684,58 @@ describe('the visual planner', () => {
     })
   })
 
+  /**
+   * Three groups can meet on Wednesday at eleven — that is what having three
+   * groups means. Only rooms and groups cannot be in two places at once.
+   */
+  describe('several groups sharing an hour', () => {
+    const together = (): VersionDetailDto => ({
+      ...VERSION,
+      sessions: [
+        VERSION.sessions[0]!,
+        {
+          ...VERSION.sessions[0]!,
+          id: 'session-2',
+          groupId: 'g2',
+          groupCode: 'T2',
+          spaceId: null,
+          spaceName: null,
+          teacherProfileId: 'p3',
+          teacherName: 'Aina Bosch',
+          teachers: [{ teacherProfileId: 'p3', name: 'Aina Bosch' }],
+        },
+      ],
+    })
+
+    it('draws both classes, not whichever was read last', () => {
+      render(wrap(<PlannerGrid version={together()} context={CONTEXT} />))
+
+      const grid = within(screen.getByRole('grid'))
+      expect(grid.getByText('T1')).toBeInTheDocument()
+      expect(grid.getByText('T2')).toBeInTheDocument()
+    })
+
+    it('warns when the same person is put on both, and sends it anyway', async () => {
+      const user = userEvent.setup()
+      render(wrap(<PlannerGrid version={together()} context={CONTEXT} />))
+
+      // Marta already gives T1 at this hour; this puts her on T2 as well.
+      const adders = screen.getAllByLabelText('Afegeix un docent')
+      await user.selectOptions(adders[1]!, 'p1')
+
+      expect(await screen.findByText(/ja té MAT101 T1/)).toBeInTheDocument()
+
+      await waitFor(() => {
+        const patch = fetchMock.mock.calls.find(
+          (call) => (call[1] as RequestInit | undefined)?.method === 'PATCH',
+        )
+        expect(JSON.parse(String((patch![1] as RequestInit).body))).toMatchObject({
+          teacherProfileIds: ['p3', 'p1'],
+        })
+      })
+    })
+  })
+
   describe('changing how long a class lasts', () => {
     /**
      * jsdom lays nothing out, so the grid's rows measure zero and a drag has

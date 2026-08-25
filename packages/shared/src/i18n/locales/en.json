@@ -1491,7 +1491,6 @@
       "cost": "Cost"
     },
     "hard": {
-      "teacherOverlap": "The teacher already has another class in this slot ({{minutes}} min overlap).",
       "spaceOverlap": "Room {{name}} is already taken in this slot.",
       "groupOverlap": "Group {{name}} already has another class in this slot.",
       "teacherUnavailable": "The teacher marked {{start}}–{{end}} as unavailable.",
@@ -1505,7 +1504,9 @@
       "singleSessionDay": "A day with a single session.",
       "buildingChange": "{{changes}} building change(s) between consecutive classes.",
       "consecutiveHours": "{{hours}} h beyond the {{limit}} h limit without a break.",
-      "weeklySpread": "{{group}} sessions are bunched into {{days}} day(s)."
+      "weeklySpread": "{{group}} sessions are bunched into {{days}} day(s).",
+      "teacherOverlap": "Somebody is down for two classes at once ({{minutes}} min overlapping).",
+      "teacherOverlapNamed": "{{name}} has two classes at once ({{minutes}} min overlapping)."
     },
     "sacrifice": {
       "avoidSlot": "{{amount}} h in slots teachers would rather avoid.",
@@ -1611,7 +1612,8 @@
     "removeTeacher": "Take {{name}} off the class",
     "warnings": {
       "unavailable": "{{name}} said they are not available from {{start}} to {{end}}. Not assigned.",
-      "avoid": "{{name}} asked to avoid teaching from {{start}} to {{end}}. Assigned anyway."
+      "avoid": "{{name}} asked to avoid teaching from {{start}} to {{end}}. Assigned anyway.",
+      "teacherOverlap": "{{name}} already has {{group}} from {{start}} to {{end}}. Allowed, but worth knowing."
     },
     "closedOn": "The center is closed: {{name}}",
     "closedLegend": "Center closed",

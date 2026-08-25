@@ -1491,7 +1491,6 @@
       "cost": "Coste"
     },
     "hard": {
-      "teacherOverlap": "El docente ya tiene otra clase en esta franja ({{minutes}} min de solapamiento).",
       "spaceOverlap": "El aula {{name}} ya está ocupada en esta franja.",
       "groupOverlap": "El grupo {{name}} ya tiene otra clase en esta franja.",
       "teacherUnavailable": "El docente ha marcado de {{start}} a {{end}} como no disponible.",
@@ -1505,7 +1504,9 @@
       "singleSessionDay": "Un día con una sola sesión.",
       "buildingChange": "{{changes}} cambio(s) de edificio entre clases consecutivas.",
       "consecutiveHours": "{{hours}} h por encima del máximo de {{limit}} h seguidas.",
-      "weeklySpread": "Las sesiones de {{group}} se concentran en {{days}} día(s)."
+      "weeklySpread": "Las sesiones de {{group}} se concentran en {{days}} día(s).",
+      "teacherOverlap": "Hay un docente con dos clases a la vez ({{minutes}} min de solapamiento).",
+      "teacherOverlapNamed": "{{name}} tiene dos clases a la vez ({{minutes}} min de solapamiento)."
     },
     "sacrifice": {
       "avoidSlot": "{{amount}} h en franjas que los docentes preferirían evitar.",
@@ -1611,7 +1612,8 @@
     "removeTeacher": "Quitar a {{name}} de la clase",
     "warnings": {
       "unavailable": "{{name}} ha indicado que no tiene disponibilidad de {{start}} a {{end}}. No se ha asignado.",
-      "avoid": "{{name}} ha indicado que prefiere no dar clase de {{start}} a {{end}}. Se ha asignado igualmente."
+      "avoid": "{{name}} ha indicado que prefiere no dar clase de {{start}} a {{end}}. Se ha asignado igualmente.",
+      "teacherOverlap": "{{name}} ya tiene {{group}} de {{start}} a {{end}}. Se permite, pero queda avisado."
     },
     "closedOn": "El centro está cerrado: {{name}}",
     "closedLegend": "Centro cerrado",

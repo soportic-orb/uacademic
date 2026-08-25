@@ -38,6 +38,7 @@ import {
   useDuplicateSession,
   useUpdateSession,
 } from './queries'
+import { laneLayout } from './lanes'
 import { TeacherRail } from './teacher-rail'
 import type { TeacherDirectoryEntry } from './use-planner'
 import { dateOfWeekday, isoDate, mondayOf, openingWeek, parseIsoDate } from './week-dates'
@@ -57,6 +58,18 @@ import {
 
 /** The same ceiling the API keeps: a class, not a department meeting. */
 const MAX_TEACHERS_PER_SESSION = 6
+
+/**
+ * One row of the grid, in pixels, and the gap the table leaves between rows
+ * (`border-spacing-0.5`).
+ *
+ * Fixed rather than measured: a row is one slot of the timetable, so a class
+ * of two slots is exactly twice as tall, and dragging an edge by a row means
+ * one slot on every screen. The grid stops being to scale the moment this is
+ * left to the content.
+ */
+const SLOT_HEIGHT = 36
+const SLOT_GAP = 2
 
 const STATUS_STYLE: Record<string, string> = {
   valid: 'bg-load-optimal-surface hover:ring-2 hover:ring-load-optimal',
@@ -306,6 +319,35 @@ export function PlannerGrid({
       }
     }
 
+    // Somebody down for two classes at once is allowed — three groups meet at
+    // eleven and one lecturer opens two of the practicals — and it is worth
+    // saying out loud every time, because the other one is usually a mistake.
+    for (const teacherProfileId of added) {
+      const clash = version.sessions.find(
+        (other) =>
+          other.id !== session.id &&
+          other.weekday === session.weekday &&
+          other.dateFrom === session.dateFrom &&
+          other.startTime < session.endTime &&
+          session.startTime < other.endTime &&
+          other.teachers.some((person) => person.teacherProfileId === teacherProfileId),
+      )
+
+      if (clash) {
+        toast.warning('planner.warnings.teacherOverlap', {
+          params: {
+            name:
+              context.directory.find((entry) => entry.teacherProfileId === teacherProfileId)
+                ?.name ?? '',
+            group: `${clash.subjectCode} ${clash.groupCode}`,
+            start: clash.startTime,
+            end: clash.endTime,
+          },
+          durationMs: 8_000,
+        })
+      }
+    }
+
     try {
       await updateSession.mutateAsync({
         sessionId: session.id,
@@ -491,25 +533,32 @@ export function PlannerGrid({
     [version.sessions, weekStart],
   )
 
-  const occupied = useMemo(() => {
-    const map = new Map<string, PlannerSessionDto>()
+  /**
+   * What starts in each cell.
+   *
+   * A list, not a class: three groups can meet on Wednesday at eleven, and
+   * the cell used to hold whichever of them happened to be read last. Classes
+   * that run past their first slot are not registered again in the cells
+   * below — they are drawn over them, from the cell they start in.
+   */
+  const starting = useMemo(() => {
+    const map = new Map<string, PlannerSessionDto[]>()
     for (const session of thisWeek) {
-      const span = Math.max(
-        1,
-        Math.round(
-          (Number(session.endTime.slice(0, 2)) * 60 +
-            Number(session.endTime.slice(3)) -
-            (Number(session.startTime.slice(0, 2)) * 60 + Number(session.startTime.slice(3)))) /
-            version.grid.slotMinutes,
-        ),
+      const key = cellKey(session.weekday, session.startTime)
+      const cell = map.get(key)
+      if (cell) cell.push(session)
+      else map.set(key, [session])
+    }
+    for (const cell of map.values()) {
+      cell.sort((a, b) =>
+        `${a.subjectCode} ${a.groupCode}`.localeCompare(`${b.subjectCode} ${b.groupCode}`),
       )
-      for (let index = 0; index < span; index += 1) {
-        const start = addMinutes(session.startTime, index * version.grid.slotMinutes)
-        map.set(cellKey(session.weekday, start), session)
-      }
     }
     return map
-  }, [thisWeek, version.grid.slotMinutes])
+  }, [thisWeek])
+
+  /** Which share of the column each class takes, when it shares its hour. */
+  const lanes = useMemo(() => laneLayout(thisWeek), [thisWeek])
 
   return (
     <div className="space-y-4">
@@ -661,7 +710,7 @@ export function PlannerGrid({
                       hour without — the grid stopped being to scale, and
                       dragging an edge by "one row" meant nothing.
                     */
-                    <tr key={slot.start} className="h-9">
+                    <tr key={slot.start} style={{ height: SLOT_HEIGHT }}>
                       <th
                         scope="row"
                         className="tabular py-1 pr-2 text-right font-normal text-text-muted"
@@ -670,73 +719,22 @@ export function PlannerGrid({
                       </th>
                       {geometry.weekdays.map((weekday, dayIndex) => {
                         const key = cellKey(weekday, slot.start)
-                        const session = occupied.get(key)
-                        const starts = session?.startTime === slot.start
+                        const here = starting.get(key) ?? []
                         const closed = closures.get(isoDateOf(dateOfWeekday(weekStart, weekday)))
-
-                        if (session && !starts) return null
 
                         const evaluation = evaluations.get(key)
                         const isCursor = cursor.day === dayIndex && cursor.slot === slotIndex
 
-                        if (session && starts) {
-                          const span = Math.max(
-                            1,
-                            Math.round(
-                              (Number(session.endTime.slice(0, 2)) * 60 +
-                                Number(session.endTime.slice(3)) -
-                                (Number(session.startTime.slice(0, 2)) * 60 +
-                                  Number(session.startTime.slice(3)))) /
-                                version.grid.slotMinutes,
-                            ),
-                          )
-
-                          return (
-                            <td key={weekday} rowSpan={span} className="relative p-0 align-top">
-                              <SessionBlock
-                                session={session}
-                                held={held?.sessionId === session.id}
-                                editable={version.editable}
-                                dimmed={Boolean(
-                                  teacherFilter && session.teacherProfileId !== teacherFilter,
-                                )}
-                                directory={context.directory}
-                                onAssign={(teacherProfileIds) =>
-                                  void assignTeachers(session, teacherProfileIds)
-                                }
-                                onTopic={(topic) => void setTopic(session, topic)}
-                                spaces={context.spaces}
-                                onSpace={(spaceId) => void setSpace(session, spaceId)}
-                                onDuplicate={() => setDuplicating(session)}
-                                slotMinutes={version.grid.slotMinutes}
-                                onResize={(edge, slots) => void resizeSession(session, edge, slots)}
-                                onHours={(startTime, endTime) =>
-                                  void setHours(session, startTime, endTime)
-                                }
-                                onPick={() => {
-                                  setHeld(heldFromSession(session))
-                                  setCursor({ day: dayIndex, slot: slotIndex })
-                                  setAnnouncement(
-                                    t('planner.holding', {
-                                      group: `${session.subjectCode} ${session.groupCode}`,
-                                    }),
-                                  )
-                                }}
-                                onDrop={() => void place({ weekday, start: slot.start })}
-                                onRemove={() => void remove(session)}
-                                onKeyDown={(event) => onKeyDown(event, dayIndex, slotIndex)}
-                              />
-                            </td>
-                          )
-                        }
-
                         return (
                           <td
                             key={weekday}
-                            // Shaded, not disabled: the week is a template, and
-                            // this same Monday slot is an ordinary Monday in
-                            // the other thirteen weeks of the term.
-                            className={cn('p-0', closed && 'bg-surface-muted')}
+                            /*
+                              Every cell is a cell: the classes that start here
+                              are drawn over it, so a slot that already has one
+                              group can still take another. Only rooms and
+                              groups cannot be in two places at once.
+                            */
+                            className={cn('relative p-0 align-top', closed && 'bg-surface-muted')}
                           >
                             <button
                               type="button"
@@ -774,7 +772,7 @@ export function PlannerGrid({
                               }}
                               onDrop={() => void place({ weekday, start: slot.start })}
                               className={cn(
-                                'h-7 w-full rounded-sm border border-transparent',
+                                'h-full w-full rounded-sm border border-transparent',
                                 evaluation
                                   ? STATUS_STYLE[evaluation.status]
                                   : 'bg-surface-muted/40',
@@ -789,6 +787,68 @@ export function PlannerGrid({
                                     : slot.start}
                               </span>
                             </button>
+
+                            {here.map((session) => {
+                              const span = Math.max(
+                                1,
+                                Math.round(
+                                  minutesBetween(session.startTime, session.endTime) /
+                                    version.grid.slotMinutes,
+                                ),
+                              )
+                              const lane = lanes.get(session.id) ?? { lane: 0, lanes: 1 }
+
+                              return (
+                                <div
+                                  key={session.id}
+                                  style={{
+                                    // The hour it occupies, in rows of the
+                                    // grid, and the share of the column its
+                                    // lane gives it.
+                                    height: span * SLOT_HEIGHT + (span - 1) * SLOT_GAP,
+                                    width: `${100 / lane.lanes}%`,
+                                    left: `${(lane.lane * 100) / lane.lanes}%`,
+                                  }}
+                                  className="absolute top-0 z-10 p-px"
+                                >
+                                  <SessionBlock
+                                    session={session}
+                                    held={held?.sessionId === session.id}
+                                    editable={version.editable}
+                                    dimmed={Boolean(
+                                      teacherFilter && session.teacherProfileId !== teacherFilter,
+                                    )}
+                                    directory={context.directory}
+                                    onAssign={(teacherProfileIds) =>
+                                      void assignTeachers(session, teacherProfileIds)
+                                    }
+                                    onTopic={(topic) => void setTopic(session, topic)}
+                                    spaces={context.spaces}
+                                    onSpace={(spaceId) => void setSpace(session, spaceId)}
+                                    onDuplicate={() => setDuplicating(session)}
+                                    slotMinutes={version.grid.slotMinutes}
+                                    onResize={(edge, slots) =>
+                                      void resizeSession(session, edge, slots)
+                                    }
+                                    onHours={(startTime, endTime) =>
+                                      void setHours(session, startTime, endTime)
+                                    }
+                                    onPick={() => {
+                                      setHeld(heldFromSession(session))
+                                      setCursor({ day: dayIndex, slot: slotIndex })
+                                      setAnnouncement(
+                                        t('planner.holding', {
+                                          group: `${session.subjectCode} ${session.groupCode}`,
+                                        }),
+                                      )
+                                    }}
+                                    onDrop={() => void place({ weekday, start: slot.start })}
+                                    onRemove={() => void remove(session)}
+                                    onKeyDown={(event) => onKeyDown(event, dayIndex, slotIndex)}
+                                  />
+                                </div>
+                              )
+                            })}
                           </td>
                         )
                       })}
@@ -1304,12 +1364,12 @@ function SessionBlock({
 /**
  * The edge of a class, dragged to make it longer or shorter.
  *
- * A timetable is read in hours, so the grid's own rows are the unit: a row of
- * the table is one slot, the edge moves in whole slots, and the class is
- * written when the pointer is let go. Measuring the row rather than the block
- * matters — the block is as tall as what is written on it, which is not the
- * hour it occupies, and measuring that made a whole row of movement round to
- * nothing.
+ * A timetable is read in hours, so the grid's own rows are the unit: a row is
+ * one slot and a fixed height, the edge moves in whole slots, and the class is
+ * written when the pointer is let go. It used to divide the block's own height
+ * by the hours it spanned — but a block is as tall as what is written on it,
+ * not as tall as the hour it occupies, so a whole row of movement rounded to
+ * nothing at all.
  *
  * The pointer is followed on the window, so a drag that leaves the six pixels
  * of the handle — which every drag does — is still a drag. While it lasts the
@@ -1337,9 +1397,9 @@ function ResizeHandle({
     event.stopPropagation()
 
     const handle = event.currentTarget
-    // One row of the grid is one slot, whatever the screen is doing to it.
-    const slotHeight = handle.closest('tr')?.getBoundingClientRect().height ?? 0
-    if (slotHeight <= 0) return
+    // One row of the grid is one slot, and a row is a fixed height: nothing
+    // to measure, and nothing that a long topic or a third name can change.
+    const slotHeight = SLOT_HEIGHT + SLOT_GAP
 
     const from = event.clientY
     const stepsFrom = (moved: { clientY: number }) =>
