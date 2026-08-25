@@ -64,6 +64,16 @@ export interface CrudResource<Input extends z.ZodType> {
   include?: Record<string, unknown>
   /** Maps a database row to the shape the client sees. */
   serialize: (row: Record<string, unknown>) => unknown
+  /**
+   * What happens once the row exists.
+   *
+   * For the things that can only be done with an id in hand — a new academic
+   * year starting with a copy of the days that come round every year.
+   */
+  afterCreate?: (
+    row: Record<string, unknown>,
+    context: { client: PrismaClient; centerId: string | null; request: FastifyRequest },
+  ) => Promise<void>
   /** Business rules that a Zod schema cannot express (cross-table checks). */
   beforeWrite?: (
     input: z.infer<Input>,
@@ -199,6 +209,8 @@ export function registerCrudRoutes<Input extends z.ZodType>(
         ...(resource.include ? { include: resource.include } : {}),
       }),
     )
+
+    if (resource.afterCreate) await resource.afterCreate(row, { client, centerId, request })
 
     await writeAuditLog(prisma(), {
       centerId,

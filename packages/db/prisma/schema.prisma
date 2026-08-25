@@ -1783,6 +1783,10 @@ model AcademicCalendarEntry {
   nameEn         String   @map("name_en") @db.VarChar(200)
   /// False for holidays and closures: the planner skips those days.
   isTeachingDay  Boolean  @default(false) @map("is_teaching_day")
+  /// A day that comes round every year — Sant Jordi, a patron saint, the
+  /// closure between Christmas and Epiphany. Carried into the calendar of each
+  /// new academic year on the same date, so nobody types it again.
+  repeatsYearly  Boolean  @default(false) @map("repeats_yearly")
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 

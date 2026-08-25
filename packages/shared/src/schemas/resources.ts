@@ -208,6 +208,13 @@ export const calendarEntryInputSchema = trilingualNameSchema
     dateFrom: isoDateSchema,
     dateTo: isoDateSchema,
     isTeachingDay: z.boolean().default(false),
+    /**
+     * A day that comes round every year.
+     *
+     * Ticking it does nothing to this calendar: it is a note for the next one,
+     * which starts with a copy of everything marked here.
+     */
+    repeatsYearly: z.boolean().default(false),
   })
   .refine((entry) => entry.dateTo >= entry.dateFrom, {
     message: 'validation.invalidDateRange',

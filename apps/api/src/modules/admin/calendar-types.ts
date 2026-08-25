@@ -40,7 +40,22 @@ export interface CalendarTypeOption {
 /** Every type this center may use, built-in first, then its own by name. */
 export async function calendarTypeOptions(request: FastifyRequest): Promise<CalendarTypeOption[]> {
   const { db } = requireCenterScope(request)
-  const rows = await db.calendarType.findMany({ orderBy: { nameCa: 'asc' } })
+
+  /*
+    The seven the platform ships with are code, not data, and they are what
+    almost every entry uses. A center's own are an addition — so if that table
+    cannot be read at all (a migration that has not run on this server, most
+    likely), the calendar keeps working with the built-in ones instead of the
+    whole screen failing with "something went wrong". The reason is logged,
+    because a center that had added its own types would otherwise watch them
+    quietly disappear.
+  */
+  const rows = await db.calendarType
+    .findMany({ orderBy: { nameCa: 'asc' } })
+    .catch((error: unknown) => {
+      request.log.error({ err: error }, 'calendar types unavailable; falling back to the built-ins')
+      return []
+    })
 
   const own = rows.map((row) => ({
     id: row.key,

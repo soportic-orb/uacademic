@@ -1228,6 +1228,7 @@
       "sessionMinutes": "Duración de la clase (min)",
       "coordinators": "Coordinación",
       "isTeachingDay": "Día lectivo",
+      "repeatsYearly": "Se repite cada año",
       "ects": "ECTS",
       "year": "Curso",
       "term": "Periodo",

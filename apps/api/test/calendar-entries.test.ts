@@ -207,6 +207,101 @@ describe.skipIf(!hasDatabase)('the academic calendar', () => {
     })
   })
 
+  /**
+   * A center types Sant Jordi once. Every calendar after that starts with it.
+   */
+  describe('days that come round every year', () => {
+    it('carries them into a new academic year, on the same date', async () => {
+      await app.inject({
+        method: 'POST',
+        url: '/api/v1/admin/calendar-entries',
+        headers,
+        payload: entry({
+          type: 'holiday',
+          dateFrom: '2026-12-25',
+          dateTo: '2026-12-25',
+          nameCa: 'Prova Nadal anual',
+          repeatsYearly: true,
+        }),
+      })
+
+      // And one that does not repeat: an exam period is different every year.
+      await app.inject({
+        method: 'POST',
+        url: '/api/v1/admin/calendar-entries',
+        headers,
+        payload: entry({
+          type: 'exam_period',
+          dateFrom: '2027-01-11',
+          dateTo: '2027-01-22',
+          nameCa: 'Prova exàmens',
+        }),
+      })
+
+      const created = await app.inject({
+        method: 'POST',
+        url: '/api/v1/admin/academic-years',
+        headers,
+        payload: { name: 'Prova 2027–2028', startDate: '2027-09-01', endDate: '2028-07-31' },
+      })
+
+      expect(created.statusCode).toBe(201)
+      const carried = await prisma.academicCalendarEntry.findMany({
+        where: { academicYearId: created.json().id },
+      })
+
+      try {
+        expect(carried).toHaveLength(1)
+        expect(carried[0]).toMatchObject({
+          nameCa: 'Prova Nadal anual',
+          // The same day, a year on, and still marked so the next year gets it.
+          repeatsYearly: true,
+        })
+        expect(carried[0]?.dateFrom.toISOString().slice(0, 10)).toBe('2027-12-25')
+      } finally {
+        await prisma.academicCalendarEntry.deleteMany({
+          where: { academicYearId: created.json().id },
+        })
+        await prisma.academicYear.delete({ where: { id: created.json().id } })
+      }
+    })
+
+    it('leaves behind a day that would fall outside the new year', async () => {
+      await app.inject({
+        method: 'POST',
+        url: '/api/v1/admin/calendar-entries',
+        headers,
+        payload: entry({
+          type: 'holiday',
+          // August: the gap between one academic year and the next.
+          dateFrom: '2026-08-15',
+          dateTo: '2026-08-15',
+          nameCa: 'Prova agost',
+          repeatsYearly: true,
+        }),
+      })
+
+      const created = await app.inject({
+        method: 'POST',
+        url: '/api/v1/admin/academic-years',
+        headers,
+        payload: { name: 'Prova 2027–2028 b', startDate: '2027-09-01', endDate: '2028-07-31' },
+      })
+
+      try {
+        const carried = await prisma.academicCalendarEntry.findMany({
+          where: { academicYearId: created.json().id, nameCa: 'Prova agost' },
+        })
+        expect(carried).toHaveLength(0)
+      } finally {
+        await prisma.academicCalendarEntry.deleteMany({
+          where: { academicYearId: created.json().id },
+        })
+        await prisma.academicYear.delete({ where: { id: created.json().id } })
+      }
+    })
+  })
+
   it('refuses a range that ends before it starts', async () => {
     const response = await app.inject({
       method: 'POST',

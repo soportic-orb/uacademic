@@ -535,6 +535,7 @@ export const ADMIN_RESOURCES: ResourceConfig[] = [
         sortable: true,
       },
       { key: 'isTeachingDay', labelKey: 'admin.fields.isTeachingDay', render: 'boolean' },
+      { key: 'repeatsYearly', labelKey: 'admin.fields.repeatsYearly', render: 'boolean' },
     ],
     filters: [{ name: 'type', labelKey: 'admin.fields.type', optionsFrom: CALENDAR_TYPES }],
     fields: [
@@ -557,6 +558,13 @@ export const ADMIN_RESOURCES: ResourceConfig[] = [
         creatable: { path: 'admin/calendar-types', titleKey: 'admin.calendarTypes.title' },
       },
       { name: 'isTeachingDay', labelKey: 'admin.fields.isTeachingDay', type: 'checkbox' },
+      {
+        // A note for the next calendar rather than for this one: everything
+        // ticked here is copied when a new academic year is opened.
+        name: 'repeatsYearly',
+        labelKey: 'admin.fields.repeatsYearly',
+        type: 'checkbox',
+      },
       {
         name: 'dateFrom',
         labelKey: 'admin.fields.dates',

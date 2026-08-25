@@ -1228,6 +1228,7 @@
       "sessionMinutes": "Class length (min)",
       "coordinators": "Coordination",
       "isTeachingDay": "Teaching day",
+      "repeatsYearly": "Comes round every year",
       "ects": "ECTS",
       "year": "Year",
       "term": "Term",

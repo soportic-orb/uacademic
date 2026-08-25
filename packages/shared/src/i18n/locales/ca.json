@@ -1228,6 +1228,7 @@
       "sessionMinutes": "Durada de la classe (min)",
       "coordinators": "Coordinació",
       "isTeachingDay": "Dia lectiu",
+      "repeatsYearly": "Es repeteix cada any",
       "ects": "ECTS",
       "year": "Curs",
       "term": "Període",

@@ -1,5 +1,6 @@
 import {
   academicYearInputSchema,
+  carryYearly,
   calendarEntryInputSchema,
   centerInputSchema,
   degreeInputSchema,
@@ -27,6 +28,73 @@ const names = (row: Record<string, unknown>) => ({
   nameEs: asString(row.nameEs),
   nameEn: asString(row.nameEn),
 })
+
+/**
+ * A new academic year starts with the days that come round every year.
+ *
+ * Sant Jordi, a patron saint, the closure between Christmas and Epiphany: a
+ * center marks them once and they are copied into each calendar after that,
+ * on the same date. Nothing else is copied — the term boundaries and the exam
+ * periods are different every year, which is why the flag is per entry.
+ *
+ * Copied from the year before this one, so opening 2028–29 after 2027–28
+ * carries what 2027–28 was itself given.
+ */
+async function carryYearlyEntries(
+  row: Record<string, unknown>,
+  client: PrismaClient,
+  centerId: string | null,
+): Promise<void> {
+  if (!centerId) return
+
+  const created = row as { id: string; startDate: Date; endDate: Date }
+
+  const previous = await client.academicYear.findFirst({
+    where: { centerId, id: { not: created.id }, startDate: { lt: created.startDate } },
+    orderBy: { startDate: 'desc' },
+  })
+  if (!previous) return
+
+  const entries = await client.academicCalendarEntry.findMany({
+    where: { centerId, academicYearId: previous.id, repeatsYearly: true },
+  })
+  if (entries.length === 0) return
+
+  const years = created.startDate.getUTCFullYear() - previous.startDate.getUTCFullYear()
+  if (years <= 0) return
+
+  const carried = carryYearly(
+    entries.map((entry) => ({
+      ...entry,
+      dateFrom: entry.dateFrom.toISOString().slice(0, 10),
+      dateTo: entry.dateTo.toISOString().slice(0, 10),
+    })),
+    years,
+    {
+      from: created.startDate.toISOString().slice(0, 10),
+      to: created.endDate.toISOString().slice(0, 10),
+    },
+  )
+
+  for (const entry of carried) {
+    await client.academicCalendarEntry.create({
+      data: {
+        centerId,
+        academicYearId: created.id,
+        type: entry.type,
+        dateFrom: new Date(`${entry.dateFrom}T00:00:00Z`),
+        dateTo: new Date(`${entry.dateTo}T00:00:00Z`),
+        nameCa: entry.nameCa,
+        nameEs: entry.nameEs,
+        nameEn: entry.nameEn,
+        isTeachingDay: entry.isTeachingDay,
+        // It goes on repeating: a holiday does not stop being annual because
+        // a year went by.
+        repeatsYearly: true,
+      },
+    })
+  }
+}
 
 interface CoordinatorRow {
   userId: string
@@ -192,6 +260,7 @@ export function registerAdminResources(app: FastifyInstance): void {
       ...(input.startDate ? { startDate: new Date(input.startDate) } : {}),
       ...(input.endDate ? { endDate: new Date(input.endDate) } : {}),
     }),
+    afterCreate: (row, context) => carryYearlyEntries(row, context.client, context.centerId),
   } satisfies CrudResource<typeof academicYearInputSchema>)
 
   registerCrudRoutes(app, {
@@ -342,6 +411,7 @@ export function registerAdminResources(app: FastifyInstance): void {
       dateFrom: asDate(row.dateFrom),
       dateTo: asDate(row.dateTo),
       isTeachingDay: Boolean(row.isTeachingDay),
+      repeatsYearly: Boolean(row.repeatsYearly),
       ...names(row),
     }),
     beforeWrite: async (input, context) => {

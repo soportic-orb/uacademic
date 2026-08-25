@@ -58,7 +58,21 @@ describe.skipIf(!hasDatabase)('the printable timetable', () => {
       where: { teacherProfileId: profileId, scheduleVersion: { status: 'published' } },
       include: { group: { select: { subject: { select: { nameCa: true } } } }, space: true },
     })
-    const space = await prisma.space.findFirstOrThrow({ where: { centerId } })
+    /*
+      A room of this test's own: borrowing one of the center's would put two
+      published classes in the same room at the same hour, and any other test
+      reading the timetable at that moment would see a conflict that has
+      nothing to do with it.
+    */
+    const space = await prisma.space.create({
+      data: {
+        centerId,
+        name: 'Prova aula impresa',
+        building: 'Prova',
+        capacity: 60,
+        type: 'classroom',
+      },
+    })
 
     await prisma.classSession.update({
       where: { id: session.id },
@@ -82,6 +96,7 @@ describe.skipIf(!hasDatabase)('the printable timetable', () => {
         where: { id: session.id },
         data: { spaceId: session.spaceId, topic: session.topic },
       })
+      await prisma.space.delete({ where: { id: space.id } })
     }
   })
 
