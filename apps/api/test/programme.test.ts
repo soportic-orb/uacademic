@@ -91,7 +91,7 @@ describe.skipIf(!hasDatabase)('the teaching programme', () => {
     expect(subjects.size).toBeGreaterThan(1)
   })
 
-  it('offers only the values that appear in the programme', async () => {
+  it('offers what the timetable holds', async () => {
     const response = await read(asAdmin())
     const filters = response.json().filters
 
@@ -100,9 +100,40 @@ describe.skipIf(!hasDatabase)('the teaching programme', () => {
     expect(filters.groups.length).toBeGreaterThan(0)
   })
 
+  /*
+    The pickers used to be built from the occurrences on screen, so a
+    colleague who teaches in the second term was missing from the list all
+    autumn — and choosing one was the only way to find out they were not
+    there.
+  */
+  it('offers the whole year, not only the week being looked at', async () => {
+    const wide = await read(asAdmin())
+    const narrow = await app.inject({
+      method: 'GET',
+      url: '/api/v1/calendar/coordination?from=2026-09-14&to=2026-09-15',
+      headers: asAdmin(),
+    })
+
+    // A day and a half of classes, and every subject, colleague, group and
+    // room of the year still on offer.
+    expect(narrow.json().events.length).toBeLessThan(wide.json().events.length)
+    expect(narrow.json().filters).toEqual(wide.json().filters)
+  })
+
   it('narrows by teacher without losing the list of teachers to choose from', async () => {
     const all = await read(asAdmin())
-    const teacher = all.json().filters.teachers[0] as { id: string; label: string }
+    /*
+      Somebody who actually teaches inside the months on screen. The pickers
+      now offer the whole year — a colleague who only teaches in the second
+      term is in the list all autumn, which is the point — so the first name
+      in it is not necessarily one with a class this week.
+    */
+    const teaching = (all.json().events as { teacherProfileId: string | null }[]).find(
+      (event) => event.teacherProfileId,
+    )
+    const teacher = (all.json().filters.teachers as { id: string; label: string }[]).find(
+      (option) => option.id === teaching?.teacherProfileId,
+    )!
 
     const filtered = await read(asAdmin(), `&teacherProfileId=${teacher.id}`)
 
@@ -168,7 +199,18 @@ describe.skipIf(!hasDatabase)('the teaching programme', () => {
       const session = await prisma.classSession.findFirstOrThrow({
         where: { centerId, group: { subjectId }, scheduleVersion: { status: 'published' } },
       })
-      const space = await prisma.space.findFirstOrThrow({ where: { centerId } })
+      // A room of this test's own: borrowing one of the center's would put
+      // two published classes in it at one hour, and anything else reading the
+      // timetable would see a conflict that has nothing to do with this.
+      const space = await prisma.space.create({
+        data: {
+          centerId,
+          name: 'Prova aula programa',
+          building: 'Prova',
+          capacity: 60,
+          type: 'classroom',
+        },
+      })
 
       await prisma.classSession.update({
         where: { id: session.id },
@@ -192,7 +234,36 @@ describe.skipIf(!hasDatabase)('the teaching programme', () => {
           where: { id: session.id },
           data: { spaceId: session.spaceId, topic: session.topic },
         })
+        await prisma.space.delete({ where: { id: space.id } })
       }
+    })
+
+    it('prints a month as a month and a week as a week', async () => {
+      await coordinate()
+
+      const month = await print('view=month&date=2026-10-05')
+      const { pages } = await extractText(
+        new Uint8Array(month.rawPayload),
+        'application/pdf',
+        'month.pdf',
+      )
+      const text = pages.map((page) => page.text).join(' ')
+
+      // A calendar page, named as the month it is and bounded by it.
+      expect(text.toLowerCase()).toContain('octubre')
+      expect(text).toContain('2026-10-01')
+
+      const week = await print('view=week&date=2026-09-16')
+      const weekPages = await extractText(
+        new Uint8Array(week.rawPayload),
+        'application/pdf',
+        'week.pdf',
+      )
+      const weekText = weekPages.pages.map((page) => page.text).join(' ')
+
+      expect(weekText).toContain('2026-09-14')
+      expect(weekText).toContain('2026-09-20')
+      expect(weekText).not.toContain('2026-10-01')
     })
 
     it('prints the week being looked at, not the whole fetched range', async () => {

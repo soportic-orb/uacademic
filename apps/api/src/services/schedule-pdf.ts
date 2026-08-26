@@ -36,8 +36,11 @@ export interface ScheduleEntry {
 }
 
 export interface SchedulePdfInput {
+  /** Whose timetable it is, or who asked for it. */
   teacherName: string
   centerName: string
+  /** Anything else the header should carry — the filters that were on. */
+  note?: string
   from: string
   to: string
   locale: AppLocale
@@ -160,7 +163,9 @@ function drawHeader(
     .fillColor(MUTED)
     .fontSize(9)
     .text(
-      `${input.teacherName} · ${input.centerName} · ${input.from} – ${input.to}`,
+      [input.teacherName, input.centerName, `${input.from} – ${input.to}`, input.note]
+        .filter(Boolean)
+        .join(' · '),
       MARGIN,
       MARGIN + 22,
     )

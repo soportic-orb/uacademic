@@ -23,6 +23,7 @@ import PDFDocument from 'pdfkit'
 import { z } from 'zod'
 
 import { writeAuditLog } from '../../lib/audit.js'
+import { scheduleMonthlyPdf } from '../../services/schedule-pdf.js'
 import { AppError } from '../../lib/errors.js'
 import { type PrismaClient, prisma } from '../../lib/prisma.js'
 import { parseWith } from '../../lib/validate.js'
@@ -76,7 +77,9 @@ export function registerCoordinationCalendarRoutes(app: FastifyInstance): void {
       return {
         from: query.from,
         to: query.to,
-        filters: filterOptions(expandWithColour(everything, query, excluded)),
+        // From the sessions themselves rather than from the occurrences the
+        // range expands to: the pickers are about the year, not the month.
+        filters: filterOptions(everything),
         events: expandWithColour(sessions, query, excluded),
       }
     },
@@ -98,12 +101,46 @@ export function registerCoordinationCalendarRoutes(app: FastifyInstance): void {
       const excluded = await nonTeachingDates(db, range.from, range.to)
       const rows = expandWithColour(sessions, { ...query, ...range }, excluded)
 
-      const landscape = query.view === 'week' || query.view === 'month'
-      const document = new PDFDocument({
-        size: 'A4',
-        layout: landscape ? 'landscape' : 'portrait',
-        margin: 36,
-      })
+      /*
+        A month prints as a month and a week as a week, the way the screen
+        shows them; a day and the agenda are the list they already are. A
+        printed calendar that is not the calendar in front of somebody is a
+        different document.
+      */
+      if (query.view === 'month' || query.view === 'week') {
+        const center = await prisma().center.findUnique({
+          where: { id: requireCenterScope(request).centerId },
+          select: { name: true },
+        })
+
+        const grid = await scheduleMonthlyPdf({
+          teacherName: `${user.firstName} ${user.lastName}`,
+          centerName: center?.name ?? '',
+          note: describeFilters(rows, query, t),
+          from: range.from,
+          to: range.to,
+          locale: request.locale,
+          layout: query.view === 'week' ? 'weeks' : 'month',
+          entries: rows.map((row) => ({
+            date: row.date,
+            startTime: row.startTime,
+            endTime: row.endTime,
+            subjectCode: row.subjectCode,
+            subjectName: row.subjectName,
+            groupCode: row.groupCode,
+            spaceName: row.spaceName,
+            topic: row.topic,
+          })),
+        })
+
+        return reply
+          .header('content-type', 'application/pdf')
+          .header('content-disposition', 'attachment; filename="uacademic-programme.pdf"')
+          .send(grid)
+      }
+
+      // A day and the agenda are lists, and a list reads down a page.
+      const document = new PDFDocument({ size: 'A4', margin: 36 })
       const chunks: Buffer[] = []
       document.on('data', (chunk: Buffer) => chunks.push(chunk))
       const finished = new Promise<Buffer>((resolve) =>
@@ -392,7 +429,16 @@ function expandWithColour(
     .sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime))
 }
 
-function filterOptions(sessions: readonly ColouredOccurrence[]) {
+/**
+ * What the four pickers offer.
+ *
+ * Every subject, colleague, group and room of the published timetable — not
+ * only the ones that happen to fall in the month being looked at. It used to
+ * be built from the occurrences on screen, so a colleague who teaches in the
+ * second term was missing from the list all autumn, and choosing one was the
+ * only way to find out they were not there.
+ */
+function filterOptions(sessions: readonly CalendarSession[]) {
   const subjects = new Map<string, { id: string; label: string }>()
   const teachers = new Map<string, { id: string; label: string }>()
   const groups = new Map<string, { id: string; label: string }>()
