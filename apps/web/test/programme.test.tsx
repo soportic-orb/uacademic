@@ -3,7 +3,7 @@
  * with, and printing what is actually being looked at.
  */
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { ReactNode } from 'react'
 import { MemoryRouter } from 'react-router'
@@ -160,22 +160,53 @@ describe('the teaching programme', () => {
     expect(await screen.findByText(/cap classe en aquest període/)).toBeInTheDocument()
   })
 
-  it('prints the view and the filters that are on', async () => {
+  /*
+    The period wanted on paper is rarely the month on screen — a term, the
+    fortnight of the exams, the week somebody is covering — so it is asked
+    for. The filters are not asked for again: they are the ones on screen.
+  */
+  it('asks which period and which shape, and prints the filters that are on', async () => {
+    const user = userEvent.setup()
     view(<ProgrammeView />)
 
     await ready()
-    await userEvent.selectOptions(screen.getByLabelText('Docent'), 'p1')
-    await userEvent.click(screen.getByRole('button', { name: 'Setmana' }))
-    await userEvent.click(screen.getByRole('button', { name: 'Imprimeix aquesta vista' }))
+    await user.selectOptions(screen.getByLabelText('Docent'), 'p1')
+    await user.click(screen.getByRole('button', { name: 'Imprimeix programació' }))
+
+    const dialog = screen.getByRole('dialog')
+    const dates = [...dialog.querySelectorAll<HTMLInputElement>('input[type="date"]')]
+    fireEvent.change(dates[0]!, { target: { value: '2026-10-01' } })
+    fireEvent.change(dates[1]!, { target: { value: '2026-10-31' } })
+    await user.click(within(dialog).getByLabelText('Mes'))
+
+    await user.click(within(dialog).getByRole('button', { name: 'Imprimeix programació' }))
 
     await waitFor(() => {
       const print = requested.find((url) => url.includes('/calendar/coordination.pdf'))
       expect(print).toBeDefined()
-      // What is on screen, not the whole fetched range and not everybody.
-      expect(print).toContain('view=week')
+      expect(print).toContain('from=2026-10-01')
+      expect(print).toContain('to=2026-10-31')
+      expect(print).toContain('view=month')
+      // The filter set on screen travels with it…
       expect(print).toContain('teacherProfileId=p1')
-      expect(print).toMatch(/date=\d{4}-\d{2}-\d{2}/)
+      // …and no day, which is what tells the server to print the range asked
+      // for rather than the month around one.
+      expect(print).not.toContain('date=')
     })
+  })
+
+  it('will not print a period that is only half typed', async () => {
+    const user = userEvent.setup()
+    view(<ProgrammeView />)
+
+    await ready()
+    await user.click(screen.getByRole('button', { name: 'Imprimeix programació' }))
+
+    const dialog = screen.getByRole('dialog')
+    const dates = [...dialog.querySelectorAll<HTMLInputElement>('input[type="date"]')]
+    fireEvent.change(dates[0]!, { target: { value: '' } })
+
+    expect(within(dialog).getByRole('button', { name: 'Imprimeix programació' })).toBeDisabled()
   })
 })
 

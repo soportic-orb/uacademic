@@ -291,6 +291,32 @@ describe.skipIf(!hasDatabase)('the teaching programme', () => {
       expect(weekText).not.toContain('2026-10-01')
     })
 
+    /*
+      The period on paper is asked for rather than assumed: the dialog sends a
+      range and a shape, and no day at all.
+    */
+    it('prints the period asked for, a page per week', async () => {
+      await coordinate()
+
+      // The dialog's own query: a range and a shape, and nothing else.
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/v1/calendar/coordination.pdf?from=2026-09-14&to=2026-09-27&view=week',
+        headers: asAdmin(),
+      })
+      const { pages } = await extractText(
+        new Uint8Array(response.rawPayload),
+        'application/pdf',
+        'weeks.pdf',
+      )
+
+      // Two weeks asked for, two pages, each headed by its own dates.
+      expect(pages).toHaveLength(2)
+      const text = pages.map((page) => page.text).join(' ')
+      expect(text).toContain('2026-09-14')
+      expect(text).toContain('2026-09-21')
+    })
+
     it('prints the week being looked at, not the whole fetched range', async () => {
       const week = await print('view=week&date=2026-09-16')
       const everything = await print('view=agenda')

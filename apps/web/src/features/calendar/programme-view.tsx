@@ -125,6 +125,9 @@ export function ProgrammeView() {
     spaceId: string
   } | null>(null)
 
+  /** Whether the print dialog is open. */
+  const [printing, setPrinting] = useState(false)
+
   const search = new URLSearchParams({ from: range.from, to: range.to })
   for (const [key, value] of Object.entries(filters)) if (value) search.set(key, value)
   const query = search.toString()
@@ -163,10 +166,16 @@ export function ProgrammeView() {
 
   const active = Object.values(filters).some(Boolean)
 
-  const print = async () => {
-    // The date the calendar is showing, so the paper matches the screen.
-    const shown = calendarRef.current?.getApi().getDate() ?? new Date()
-    const printQuery = `${query}&view=${view}&date=${shown.toISOString().slice(0, 10)}`
+  const print = async (asked: { from: string; to: string; view: PrintView }) => {
+    /*
+      The period and the shape are the ones asked for in the dialog; the
+      filters are whatever is on screen. No `date` is sent, which is what
+      tells the server to print the range itself rather than the week or the
+      month around a day.
+    */
+    const search = new URLSearchParams({ from: asked.from, to: asked.to, view: asked.view })
+    for (const [key, value] of Object.entries(filters)) if (value) search.set(key, value)
+    const printQuery = search.toString()
 
     try {
       const blob = await apiDownload(`/api/v1/calendar/coordination.pdf?${printQuery}`)
@@ -176,6 +185,7 @@ export function ProgrammeView() {
       anchor.download = 'uacademic-programme.pdf'
       anchor.click()
       URL.revokeObjectURL(url)
+      setPrinting(false)
       toast.success('calendar.export.done')
     } catch (error) {
       if (error instanceof ApiRequestError)
@@ -195,7 +205,7 @@ export function ProgrammeView() {
         </div>
 
         <div className="flex flex-col items-end gap-1">
-          <Button variant="secondary" onClick={() => void print()}>
+          <Button variant="secondary" onClick={() => setPrinting(true)}>
             <FileText className="size-4" aria-hidden="true" />
             {t('calendar.coordination.print')}
           </Button>
@@ -350,6 +360,15 @@ export function ProgrammeView() {
         </CardBody>
       </Card>
 
+      {printing ? (
+        <PrintDialog
+          range={range}
+          view={view === 'day' ? 'week' : view}
+          onClose={() => setPrinting(false)}
+          onPrint={print}
+        />
+      ) : null}
+
       {movingRoom ? (
         <RoomDialog
           session={movingRoom}
@@ -499,6 +518,115 @@ function Legend({ subjects }: { subjects: Option[] }) {
           )
         })}
       </ul>
+    </div>
+  )
+}
+
+/** The three shapes a printed programme comes in. */
+export type PrintView = 'week' | 'month' | 'agenda'
+
+/**
+ * What to print.
+ *
+ * The screen is a place to work in, and paper is a thing somebody hands
+ * round: the period wanted on paper is rarely the month being looked at — a
+ * term, the fortnight of the exams, the week a colleague is covering. So the
+ * dates are asked for rather than assumed. The filters are not asked for
+ * again: they are the ones on screen, which is where they were set.
+ */
+function PrintDialog({
+  range,
+  view,
+  onClose,
+  onPrint,
+}: {
+  range: { from: string; to: string }
+  view: PrintView
+  onClose: () => void
+  onPrint: (asked: { from: string; to: string; view: PrintView }) => Promise<void>
+}) {
+  const { t } = useTranslation()
+  const [from, setFrom] = useState(range.from)
+  const [to, setTo] = useState(range.to)
+  const [shape, setShape] = useState<PrintView>(view)
+  const [busy, setBusy] = useState(false)
+
+  // A half-typed date is not a date: the input reports an empty value until
+  // the whole of it is there.
+  const complete = /^\d{4}-\d{2}-\d{2}$/.test(from) && /^\d{4}-\d{2}-\d{2}$/.test(to)
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={t('calendar.coordination.print')}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+    >
+      <div className="w-full max-w-md space-y-4 rounded-card border border-border bg-surface p-5">
+        <h2 className="text-lg font-semibold text-text">{t('calendar.coordination.print')}</h2>
+
+        <div className="grid grid-cols-2 gap-3">
+          <label className="block text-sm">
+            <span className="mb-1 block text-xs text-text-muted">{t('admin.fields.dateFrom')}</span>
+            <input
+              type="date"
+              value={from}
+              onChange={(event) => setFrom(event.target.value)}
+              className="h-10 w-full rounded-control border border-border bg-surface px-2 text-sm text-text"
+            />
+          </label>
+
+          <label className="block text-sm">
+            <span className="mb-1 block text-xs text-text-muted">{t('admin.fields.dateTo')}</span>
+            <input
+              type="date"
+              value={to}
+              min={from}
+              onChange={(event) => setTo(event.target.value)}
+              className="h-10 w-full rounded-control border border-border bg-surface px-2 text-sm text-text"
+            />
+          </label>
+        </div>
+
+        <fieldset>
+          <legend className="mb-1 text-xs text-text-muted">
+            {t('calendar.coordination.printView')}
+          </legend>
+          <div className="flex flex-wrap gap-3">
+            {(['week', 'month', 'agenda'] as PrintView[]).map((option) => (
+              <label key={option} className="flex items-center gap-1.5 text-sm text-text">
+                <input
+                  type="radio"
+                  name="print-view"
+                  value={option}
+                  checked={shape === option}
+                  onChange={() => setShape(option)}
+                  className="size-4"
+                />
+                {t(`calendar.views.${option}`)}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+
+        <p className="text-xs text-text-muted">{t('calendar.coordination.printHint')}</p>
+
+        <div className="flex justify-end gap-2">
+          <Button variant="ghost" onClick={onClose}>
+            {t('common.cancel')}
+          </Button>
+          <Button
+            disabled={busy || !complete || to < from}
+            onClick={() => {
+              setBusy(true)
+              void onPrint({ from, to, view: shape }).finally(() => setBusy(false))
+            }}
+          >
+            <FileText className="size-4" aria-hidden="true" />
+            {busy ? t('common.loading') : t('calendar.coordination.print')}
+          </Button>
+        </div>
+      </div>
     </div>
   )
 }

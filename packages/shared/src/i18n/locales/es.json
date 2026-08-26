@@ -1707,15 +1707,16 @@
       "allSpaces": "Todos los espacios",
       "clearFilters": "Quitar los filtros",
       "legend": "Color por asignatura",
-      "print": "Imprimir esta vista",
-      "printHint": "El PDF sale con los filtros activos y el periodo que estás viendo.",
+      "print": "Imprimir programación",
+      "printHint": "El PDF sale con los filtros activos en la pantalla.",
       "empty": "No hay ninguna clase en este periodo con estos filtros. Prueba otro mes.",
       "none": "Todavía no coordinas ninguna asignatura, así que no hay nada que mostrar.",
       "errors": {
         "roomBusy": "Esta aula ya está ocupada a esta hora."
       },
       "changeRoom": "Cambiar el aula",
-      "roomChanged": "Se ha cambiado el aula"
+      "roomChanged": "Se ha cambiado el aula",
+      "printView": "Tipo de vista"
     }
   },
   "changes": {

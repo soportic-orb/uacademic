@@ -120,19 +120,38 @@ export async function scheduleMonthlyPdf(input: SchedulePdfInput): Promise<Buffe
   }
 
   if (input.layout === 'weeks') {
-    // One page, the weeks the range covers: every day in it belongs to the
-    // period asked for, so nothing is greyed out as filler.
-    document.addPage()
-    drawHeader(document, input, t, '')
-    drawLegend(document, input.entries)
-    drawGrid(document, {
-      weeks: weeksBetween(input.from, input.to),
-      byDate,
-      locale: input.locale,
-      from: input.from,
-      to: input.to,
-      belongs: () => true,
-    })
+    /*
+      A page per week, which is what a week view is: seven columns with room
+      to read them. A term printed as one page of fifteen rows would be a
+      month grid with the wrong title.
+    */
+    const weeks = weeksBetween(input.from, input.to)
+
+    for (const week of weeks) {
+      document.addPage()
+      drawHeader(document, input, t, `${week[0] ?? ''} – ${week[6] ?? ''}`)
+      drawLegend(document, input.entries)
+      drawGrid(document, {
+        weeks: [week],
+        byDate,
+        locale: input.locale,
+        from: input.from,
+        to: input.to,
+        // Days outside the period asked for are still drawn, greyed: a week
+        // is seven days even when the range starts on a Wednesday.
+        belongs: (date) => date >= input.from && date <= input.to,
+      })
+    }
+
+    if (weeks.length === 0) {
+      document.addPage()
+      drawHeader(document, input, t, '')
+      document
+        .fontSize(11)
+        .fillColor(MUTED)
+        .text(t('calendar.empty'), MARGIN, HEADER_HEIGHT + MARGIN)
+    }
+
     document.end()
     return finished
   }

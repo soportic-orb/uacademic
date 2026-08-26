@@ -1707,15 +1707,16 @@
       "allSpaces": "Tots els espais",
       "clearFilters": "Treu els filtres",
       "legend": "Color per assignatura",
-      "print": "Imprimeix aquesta vista",
-      "printHint": "El PDF surt amb els filtres actius i el període que estàs veient.",
+      "print": "Imprimeix programació",
+      "printHint": "El PDF surt amb els filtres actius a la pantalla.",
       "empty": "No hi ha cap classe en aquest període amb aquests filtres. Prova un altre mes.",
       "none": "Encara no coordines cap assignatura, així que no hi ha res a mostrar.",
       "errors": {
         "roomBusy": "Aquesta aula ja està ocupada en aquesta hora."
       },
       "changeRoom": "Canvia l'aula",
-      "roomChanged": "S'ha canviat l'aula"
+      "roomChanged": "S'ha canviat l'aula",
+      "printView": "Tipus de vista"
     }
   },
   "changes": {
