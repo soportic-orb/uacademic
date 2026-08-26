@@ -67,16 +67,23 @@ export function registerCoordinationCalendarRoutes(app: FastifyInstance): void {
       const sessions = await visibleSessions(request, db, query)
 
       /*
-        The pickers offer what is actually in the period on screen, not the
-        center's whole catalogue and not the whole year: a colleague who only
-        teaches in the second term is not a useful thing to offer somebody
-        looking at October, because choosing them empties the calendar.
+        The pickers offer everything this person may look at, over the whole
+        year — not what happens to fall in the month on screen. A colleague
+        who teaches in the second term was missing from the list all autumn,
+        and choosing one was the only way to find out they were not there.
       */
       const everything = await visibleSessions(request, db, unfiltered(query))
 
       return {
         from: query.from,
         to: query.to,
+        /*
+          How many subjects this person is responsible for, which is a fact
+          about them and not about the month on screen: the screen used to
+          read "you coordinate nothing" off an empty calendar — true in
+          August, wrong the rest of the year.
+        */
+        coordinates: await coordinatedSubjects(request, db),
         // From the sessions themselves rather than from the occurrences the
         // range expands to: the pickers are about the year, not the month.
         filters: filterOptions(everything),
@@ -326,6 +333,26 @@ function toPlanned(row: {
  * coordinates nothing sees nothing rather than everything — the safer of the
  * two readings of an empty list.
  */
+/**
+ * How many subjects this person coordinates here.
+ *
+ * A center administrator administers the center, so the question does not
+ * apply to them: they are responsible for all of it.
+ */
+async function coordinatedSubjects(request: FastifyRequest, db: PrismaClient): Promise<number> {
+  const user = requireUser(request)
+  const { centerId } = requireCenterScope(request)
+
+  const administers = user.memberships.some(
+    (membership) =>
+      membership.centerId === centerId &&
+      (membership.role === 'CENTER_ADMIN' || membership.role === 'SUPERADMIN'),
+  )
+  if (administers) return db.subject.count()
+
+  return db.subjectCoordinator.count({ where: { userId: user.userId } })
+}
+
 async function visibleSessions(
   request: FastifyRequest,
   db: PrismaClient,

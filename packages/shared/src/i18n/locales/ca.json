@@ -1703,7 +1703,7 @@
       "legend": "Color per assignatura",
       "print": "Imprimeix aquesta vista",
       "printHint": "El PDF surt amb els filtres actius i el període que estàs veient.",
-      "empty": "No hi ha cap classe publicada amb aquests filtres.",
+      "empty": "No hi ha cap classe en aquest període amb aquests filtres. Prova un altre mes.",
       "none": "Encara no coordines cap assignatura, així que no hi ha res a mostrar.",
       "errors": {
         "roomBusy": "Aquesta aula ja està ocupada en aquesta hora."

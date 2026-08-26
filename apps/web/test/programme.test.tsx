@@ -78,6 +78,7 @@ beforeEach(() => {
         json: async () => ({
           from: '2026-09-01',
           to: '2026-12-31',
+          coordinates: 2,
           filters: FILTERS,
           events: url.includes('subjectId=sub-2') ? [] : [EVENT],
         }),
@@ -156,9 +157,7 @@ describe('the teaching programme', () => {
     await ready()
     await userEvent.selectOptions(screen.getByLabelText('Assignatura'), 'sub-2')
 
-    expect(
-      await screen.findByText('No hi ha cap classe publicada amb aquests filtres.'),
-    ).toBeInTheDocument()
+    expect(await screen.findByText(/cap classe en aquest període/)).toBeInTheDocument()
   })
 
   it('prints the view and the filters that are on', async () => {
@@ -177,5 +176,52 @@ describe('the teaching programme', () => {
       expect(print).toContain('teacherProfileId=p1')
       expect(print).toMatch(/date=\d{4}-\d{2}-\d{2}/)
     })
+  })
+})
+
+/**
+ * "You coordinate nothing" is a fact about a person, and it used to be read
+ * off whatever month happened to be on screen.
+ */
+describe('an empty month', () => {
+  const fetchMock = vi.fn()
+
+  const answer = (coordinates: number) =>
+    fetchMock.mockImplementation(() =>
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          from: '2026-08-01',
+          to: '2026-08-31',
+          coordinates,
+          filters: FILTERS,
+          events: [],
+        }),
+      } as Response),
+    )
+
+  beforeEach(() => {
+    useSessionStore.getState().setCenterId('center-1')
+    vi.stubGlobal('fetch', fetchMock)
+    fetchMock.mockReset()
+  })
+
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('says the period is empty when there is teaching to coordinate', async () => {
+    answer(2)
+    view(<ProgrammeView />)
+
+    expect(await screen.findByText(/cap classe en aquest període/)).toBeInTheDocument()
+    // And the calendar is still there to page through.
+    expect(document.querySelector('.fc-toolbar-title')).not.toBeNull()
+  })
+
+  it('says so plainly when somebody coordinates nothing at all', async () => {
+    answer(0)
+    view(<ProgrammeView />)
+
+    expect(await screen.findByText(/no coordines cap assignatura/)).toBeInTheDocument()
   })
 })

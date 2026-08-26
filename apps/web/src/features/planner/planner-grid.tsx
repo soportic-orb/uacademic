@@ -710,7 +710,7 @@ export function PlannerGrid({
                       hour without — the grid stopped being to scale, and
                       dragging an edge by "one row" meant nothing.
                     */
-                    <tr key={slot.start} style={{ height: SLOT_HEIGHT }}>
+                    <tr key={slot.start}>
                       <th
                         scope="row"
                         className="tabular py-1 pr-2 text-right font-normal text-text-muted"
@@ -771,8 +771,17 @@ export function PlannerGrid({
                                 if (held && evaluation?.status !== 'blocked') event.preventDefault()
                               }}
                               onDrop={() => void place({ weekday, start: slot.start })}
+                              /*
+                                The height of a slot, in pixels, on the cell
+                                itself. A percentage would resolve against a
+                                table cell that has no height of its own — the
+                                whole grid collapsed into hairlines — and the
+                                blocks are drawn from this same number, so the
+                                two cannot disagree.
+                              */
+                              style={{ height: SLOT_HEIGHT }}
                               className={cn(
-                                'h-full w-full rounded-sm border border-transparent',
+                                'w-full rounded-sm border border-transparent',
                                 evaluation
                                   ? STATUS_STYLE[evaluation.status]
                                   : 'bg-surface-muted/40',

@@ -91,6 +91,31 @@ describe.skipIf(!hasDatabase)('the teaching programme', () => {
     expect(subjects.size).toBeGreaterThan(1)
   })
 
+  /*
+    "You coordinate nothing" is a fact about a person. Reading it off an empty
+    calendar made it true in August and wrong the rest of the year.
+  */
+  it('says how many subjects somebody is responsible for, whatever month is on screen', async () => {
+    const { subjectId } = await coordinate()
+    expect(subjectId).toBeTruthy()
+
+    const august = await app.inject({
+      method: 'GET',
+      url: '/api/v1/calendar/coordination?from=2026-08-01&to=2026-08-31',
+      headers: asCoordinator(),
+    })
+
+    // A month with no classes in it, and somebody who plainly coordinates one.
+    expect(august.json().events).toEqual([])
+    expect(august.json().coordinates).toBe(1)
+  })
+
+  it('says plainly when somebody coordinates nothing at all', async () => {
+    const response = await read(asCoordinator())
+
+    expect(response.json().coordinates).toBe(0)
+  })
+
   it('offers what the timetable holds', async () => {
     const response = await read(asAdmin())
     const filters = response.json().filters

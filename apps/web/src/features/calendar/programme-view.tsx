@@ -58,6 +58,8 @@ interface Option {
 interface ProgrammeResponse {
   from: string
   to: string
+  /** How many subjects this person is responsible for, across the year. */
+  coordinates: number
   filters: {
     subjects: Option[]
     teachers: Option[]
@@ -273,10 +275,14 @@ export function ProgrammeView() {
 
           {options && options.subjects.length > 0 ? <Legend subjects={options.subjects} /> : null}
 
-          {/* An empty month is a month: the arrows have to survive it. */}
+          {/*
+            An empty month is a month: the arrows have to survive it, and the
+            reason it is empty is not "you coordinate nothing" unless that is
+            actually true of the person rather than of August.
+          */}
           {programme.data && events.length === 0 ? (
             <p className="rounded-control border border-border bg-surface-muted px-3 py-2 text-sm text-text-muted">
-              {options && options.subjects.length === 0
+              {programme.data.coordinates === 0
                 ? t('calendar.coordination.none')
                 : t('calendar.coordination.empty')}
             </p>

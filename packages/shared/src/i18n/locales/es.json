@@ -1703,7 +1703,7 @@
       "legend": "Color por asignatura",
       "print": "Imprimir esta vista",
       "printHint": "El PDF sale con los filtros activos y el periodo que estás viendo.",
-      "empty": "No hay ninguna clase publicada con estos filtros.",
+      "empty": "No hay ninguna clase en este periodo con estos filtros. Prueba otro mes.",
       "none": "Todavía no coordinas ninguna asignatura, así que no hay nada que mostrar.",
       "errors": {
         "roomBusy": "Esta aula ya está ocupada a esta hora."

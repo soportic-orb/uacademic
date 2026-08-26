@@ -688,6 +688,22 @@ describe('the visual planner', () => {
    * Three groups can meet on Wednesday at eleven — that is what having three
    * groups means. Only rooms and groups cannot be in two places at once.
    */
+  /*
+    Every cell is an hour, and an hour has a height. The grid once collapsed
+    into hairlines because the cells asked for a percentage of a table cell
+    that had no height of its own.
+  */
+  it('gives every slot of the grid a height, in the same unit the blocks use', () => {
+    render(wrap(<PlannerGrid version={VERSION} context={CONTEXT} />))
+
+    const cell = within(screen.getByRole('grid')).getAllByRole('button', {
+      name: /^Dilluns a les/,
+    })[0]!
+
+    // A slot is drawn as a box somebody can aim at, not as a line.
+    expect(Number.parseInt(cell.style.height, 10)).toBeGreaterThan(24)
+  })
+
   describe('several groups sharing an hour', () => {
     const together = (): VersionDetailDto => ({
       ...VERSION,

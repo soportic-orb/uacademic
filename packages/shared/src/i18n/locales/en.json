@@ -1703,7 +1703,7 @@
       "legend": "Colour by subject",
       "print": "Print this view",
       "printHint": "The PDF carries the filters you have on and the period you are looking at.",
-      "empty": "No published classes match these filters.",
+      "empty": "No classes in this period with these filters. Try another month.",
       "none": "You do not coordinate any subject yet, so there is nothing to show.",
       "errors": {
         "roomBusy": "That room is already taken at this hour."
