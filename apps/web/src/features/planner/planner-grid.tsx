@@ -108,12 +108,6 @@ export function PlannerGrid({
   const geometry = useMemo(() => gridGeometry(version), [version])
   const engine = useMemo(() => buildScheduleContext(context), [context])
 
-  const evaluations = useMemo(
-    () =>
-      held ? evaluateGrid(held, version, engine, geometry) : new Map<string, CellEvaluation>(),
-    [held, version, engine, geometry],
-  )
-
   const onError = (error: unknown) => {
     if (error instanceof ApiRequestError)
       toast.raw({ variant: 'error', message: error.localizedMessage })
@@ -132,6 +126,19 @@ export function PlannerGrid({
    * has started yet.
    */
   const [weekStart, setWeekStart] = useState(() => openingWeek(version.range))
+
+  /*
+    The colour of every cell, judged against the week on screen: what is drawn
+    and what is compared have to be the same classes, or a cell goes red for a
+    class nobody can see.
+  */
+  const evaluations = useMemo(
+    () =>
+      held
+        ? evaluateGrid(held, version, engine, geometry, weekStart)
+        : new Map<string, CellEvaluation>(),
+    [held, version, engine, geometry, weekStart],
+  )
 
   /*
     The days the center is shut, for the week on screen.

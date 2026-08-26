@@ -18,10 +18,11 @@ import type {
   TeacherResource,
   Weekday,
 } from '@uacademic/shared'
-import { evaluateCell, slotsBetween } from '@uacademic/shared'
+import { evaluateCell, isoDateOf, occursOn, slotsBetween } from '@uacademic/shared'
 import { useCallback, useMemo, useState } from 'react'
 
 import type { PlannerSessionDto, VersionDetailDto } from './queries'
+import { dateOfWeekday } from './week-dates'
 
 export interface TeacherDirectoryEntry {
   teacherProfileId: string
@@ -121,18 +122,36 @@ export function gridGeometry(version: VersionDetailDto): GridGeometry {
  * The colour of every cell for the session currently held: green when nothing
  * complains, amber when it costs something, red when it cannot happen. The
  * reasons travel with it, so the tooltip never has to guess (R8).
+ *
+ * Judged against the week on screen, and as the dated class it would become.
+ *
+ * Both of those used to be wrong in the same direction. Every session of the
+ * version was compared, whatever week it fell in, and the candidate was
+ * treated as a weekly one — so a class placed in October painted that hour red
+ * in August, on a grid where nothing was drawn: "this group already has a
+ * class here", and no class anywhere to be seen.
  */
 export function evaluateGrid(
   held: HeldSession,
   version: VersionDetailDto,
   context: ScheduleContext,
   geometry: GridGeometry,
+  /** Monday of the week being shown. */
+  weekStart: Date,
 ): Map<string, CellEvaluation> {
-  const others = version.sessions.filter((session) => session.id !== held.sessionId).map(toPlanned)
+  const others = version.sessions
+    .filter((session) => session.id !== held.sessionId)
+    // The same filter the grid draws with: what actually happens this week.
+    .filter((session) =>
+      occursOn(session, isoDateOf(dateOfWeekday(weekStart, session.weekday as Weekday))),
+    )
+    .map(toPlanned)
 
   const evaluations = new Map<string, CellEvaluation>()
 
   for (const weekday of geometry.weekdays) {
+    const date = dateOfWeekday(weekStart, weekday)
+
     for (const slot of geometry.slots) {
       const endTime = addMinutes(slot.start, held.durationMinutes)
       if (endTime > version.grid.dayEnd) continue
@@ -145,9 +164,10 @@ export function evaluateGrid(
         weekday,
         startTime: slot.start,
         endTime,
-        dateFrom: new Date(held.dateFrom),
-        dateTo: new Date(held.dateTo),
-        recurrence: 'weekly',
+        // One day, once: what the server writes when this is dropped.
+        dateFrom: date,
+        dateTo: date,
+        recurrence: 'once',
       }
 
       evaluations.set(cellKey(weekday, slot.start), evaluateCell(candidate, others, context))

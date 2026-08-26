@@ -459,6 +459,101 @@ describe('the visual planner', () => {
       ).toBeInTheDocument()
     })
 
+    /*
+      The cell colours and the classes drawn have to be about the same week.
+      They were not: every session of the version was compared, whatever week
+      it fell in, so an hour taken in October was refused in August — on a
+      grid with nothing on it. "This group already has a class here", and no
+      class anywhere to be seen.
+    */
+    it('does not refuse an hour because of a class in another week', async () => {
+      const user = userEvent.setup()
+      const elsewhere: VersionDetailDto = {
+        ...VERSION,
+        sessions: [
+          {
+            ...VERSION.sessions[0]!,
+            id: 'session-elsewhere',
+            groupId: 'g2',
+            groupCode: 'T2',
+            weekday: 1,
+            startTime: '09:00',
+            endTime: '10:00',
+            // Ten weeks from the one the grid opens on.
+            dateFrom: isoDate(addDays(mondayOf(new Date()), 70)),
+            dateTo: isoDate(addDays(mondayOf(new Date()), 70)),
+            recurrence: 'once',
+          },
+        ],
+      }
+
+      render(wrap(<PlannerGrid version={elsewhere} context={CONTEXT} />))
+
+      // Nothing is drawn this week…
+      expect(within(screen.getByRole('grid')).queryByText('T2')).not.toBeInTheDocument()
+
+      await user.click(screen.getByRole('button', { name: 'Selecciona la sessió MAT101 T2' }))
+      const cell = target('MAT101 T2', 'Dilluns', '09:00')
+
+      // …so this hour is free, and pressing it places the class.
+      expect(cell.className).not.toContain('load-over')
+      expect(cell).toBeEnabled()
+      await user.click(cell)
+
+      await waitFor(() => {
+        const post = fetchMock.mock.calls.find(
+          (call) => (call[1] as RequestInit)?.method === 'POST',
+        )
+        expect(post).toBeDefined()
+      })
+    })
+
+    it('still refuses an hour the group is already taking this week', async () => {
+      const user = userEvent.setup()
+      const monday = isoDate(mondayOf(new Date()))
+      const here: VersionDetailDto = {
+        ...VERSION,
+        sessions: [
+          {
+            ...VERSION.sessions[0]!,
+            id: 'session-here',
+            groupId: 'g2',
+            groupCode: 'T2',
+            weekday: 1,
+            startTime: '09:00',
+            endTime: '10:00',
+            // No room, so the only thing in the way is the group itself.
+            spaceId: null,
+            spaceName: null,
+            dateFrom: monday,
+            dateTo: monday,
+            recurrence: 'once',
+          },
+        ],
+      }
+
+      render(wrap(<PlannerGrid version={here} context={CONTEXT} />))
+
+      await user.click(screen.getByRole('button', { name: 'Selecciona la sessió MAT101 T2' }))
+
+      // The class is there to be seen, and the hour it takes is refused —
+      // with the reason, and without writing anything.
+      expect(within(screen.getByRole('grid')).getByText('T2')).toBeInTheDocument()
+      const cell = target('MAT101 T2', 'Dilluns', '09:00')
+      // Painted as impossible, which is what somebody sees before pressing.
+      expect(cell.className).toContain('load-over')
+
+      await user.click(cell)
+
+      // The reason is the group's own clash, said in the reader's language.
+      expect((await screen.findAllByText(/ja té una altra classe/)).length).toBeGreaterThan(0)
+      expect(
+        fetchMock.mock.calls.filter(
+          (call) => (call[1] as RequestInit | undefined)?.method === 'POST',
+        ),
+      ).toHaveLength(0)
+    })
+
     it('goes to the week the class lands in, rather than losing it', async () => {
       const user = userEvent.setup()
       const later = isoDate(addDays(mondayOf(new Date()), 70))
