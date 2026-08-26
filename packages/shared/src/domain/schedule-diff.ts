@@ -19,8 +19,12 @@ export interface SessionSnapshot {
   id: string
   groupId: string
   groupCode: string
+  /** The subject, for the screens that colour a class by it. */
+  subjectId?: string
   subjectCode: string
   subjectName: string
+  /** The colour the center chose for the subject, if it chose one. */
+  subjectColor?: string | null
   teacherProfileId: string | null
   teacherName: string | null
   /**

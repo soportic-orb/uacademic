@@ -132,8 +132,10 @@ export function registerCoordinationCalendarRoutes(app: FastifyInstance): void {
             date: row.date,
             startTime: row.startTime,
             endTime: row.endTime,
+            subjectId: row.subjectId,
             subjectCode: row.subjectCode,
             subjectName: row.subjectName,
+            subjectColor: row.subjectColor,
             groupCode: row.groupCode,
             spaceName: row.spaceName,
             topic: row.topic,
@@ -173,6 +175,7 @@ export function registerCoordinationCalendarRoutes(app: FastifyInstance): void {
       if (rows.length === 0) {
         document.fontSize(11).fillColor('#0F172A').text(t('calendar.empty'))
       } else {
+        writeLegend(document, rows)
         writeDays(document, rows)
       }
 
@@ -407,6 +410,7 @@ interface ColouredOccurrence {
   subjectId: string
   subjectCode: string
   subjectName: string
+  subjectColor: string | null
   groupId: string
   groupCode: string
   spaceId: string | null
@@ -419,6 +423,8 @@ interface ColouredOccurrence {
   /** From the subject id, so the screen and this agree without being told. */
   color: string
   background: string
+  /** The saturated version, for the stripe on paper and the legend dot. */
+  accent: string
 }
 
 function expandWithColour(
@@ -431,7 +437,9 @@ function expandWithColour(
 
   return sessions
     .flatMap((session) => {
-      const colour = calendarColor(session.subjectId)
+      // The colour the center chose for the subject, or the one its
+      // identifier gives it.
+      const colour = calendarColor(session.subjectId, session.subjectColor)
 
       return occurrencesBetween(toIcsSession(session), from, to, excluded).map((date) => ({
         sessionId: session.id,
@@ -441,6 +449,7 @@ function expandWithColour(
         subjectId: session.subjectId,
         subjectCode: session.subjectCode,
         subjectName: session.subjectName,
+        subjectColor: session.subjectColor,
         groupId: session.groupId,
         groupCode: session.groupCode,
         spaceId: session.spaceId,
@@ -451,6 +460,7 @@ function expandWithColour(
         teachers: session.teachers,
         color: colour.text,
         background: colour.background,
+        accent: colour.accent,
       }))
     })
     .sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime))
@@ -466,7 +476,7 @@ function expandWithColour(
  * only way to find out they were not there.
  */
 function filterOptions(sessions: readonly CalendarSession[]) {
-  const subjects = new Map<string, { id: string; label: string }>()
+  const subjects = new Map<string, { id: string; label: string; color: string | null }>()
   const teachers = new Map<string, { id: string; label: string }>()
   const groups = new Map<string, { id: string; label: string }>()
   const spaces = new Map<string, { id: string; label: string }>()
@@ -475,6 +485,9 @@ function filterOptions(sessions: readonly CalendarSession[]) {
     subjects.set(session.subjectId, {
       id: session.subjectId,
       label: `${session.subjectCode} · ${session.subjectName}`,
+      // The legend and the events have to agree about the colour, so it
+      // travels with the option rather than being derived twice.
+      color: session.subjectColor,
     })
     groups.set(session.groupId, {
       id: session.groupId,
@@ -561,6 +574,39 @@ function describeFilters(
  * Day by day, each class on its own line with its subject's colour beside it,
  * so the printed page reads the way the screen does.
  */
+/**
+ * The colours and what each of them is, before the list itself.
+ *
+ * A page of coloured stripes is only readable to somebody who already knows
+ * the timetable.
+ */
+function writeLegend(document: PDFKit.PDFDocument, rows: readonly ColouredOccurrence[]): void {
+  const subjects = new Map<string, ColouredOccurrence>()
+  for (const row of rows) if (!subjects.has(row.subjectId)) subjects.set(row.subjectId, row)
+
+  const left = document.page.margins.left
+  let x = left
+  const top = document.y
+
+  for (const row of subjects.values()) {
+    const label = `${row.subjectCode} ${row.subjectName}`
+    const width = Math.min(170, 14 + document.fontSize(8).widthOfString(label))
+    if (x + width > document.page.width - document.page.margins.right) break
+
+    document.rect(x, top + 2, 7, 7).fill(row.accent)
+    document
+      .fillColor('#475569')
+      .fontSize(8)
+      .text(label, x + 11, top, { width: width - 11, lineBreak: false, ellipsis: true })
+
+    x += width + 8
+  }
+
+  document.x = left
+  document.y = top + 14
+  document.moveDown(0.4)
+}
+
 function writeDays(document: PDFKit.PDFDocument, rows: readonly ColouredOccurrence[]): void {
   let currentDate = ''
 
@@ -578,8 +624,9 @@ function writeDays(document: PDFKit.PDFDocument, rows: readonly ColouredOccurren
 
     const top = document.y
     // The colour is a stripe rather than a fill: a page of pale blocks is
-    // expensive to print and harder to read than ink on paper.
-    document.rect(document.page.margins.left, top + 1, 4, 11).fill(row.background)
+    // expensive to print and harder to read than ink on paper. Saturated, so
+    // it is a colour rather than a suggestion of one.
+    document.rect(document.page.margins.left, top + 1, 4, 11).fill(row.accent)
 
     document
       .fillColor('#0F172A')

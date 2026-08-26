@@ -302,7 +302,12 @@
       "sendAll": "Envia’l a tot el professorat",
       "sent": "S'estan enviant {{count}} calendaris.",
       "sentNoMail": "No s'han enviat: aquesta instal·lació no té servidor de correu configurat.",
-      "format": "A4 apaïsat, un mes per pàgina. Només hi surten les classes de la versió publicada."
+      "format": "A4 apaïsat, un mes per pàgina. Només hi surten les classes de la versió publicada.",
+      "publishFirst": "Primer cal publicar l'horari: un esborrany encara no és la setmana de ningú.",
+      "dateNeeded": "Indica les dues dates del període.",
+      "errors": {
+        "notPublished": "Primer cal publicar l'horari: un esborrany encara no és la setmana de ningú."
+      }
     },
     "contractEdit": "Edita el contracte",
     "contractSaved": "Contracte actualitzat"
@@ -1227,6 +1232,7 @@
       "space": "Aula",
       "sessionMinutes": "Durada de la classe (min)",
       "coordinators": "Coordinació",
+      "color": "Color",
       "isTeachingDay": "Dia lectiu",
       "repeatsYearly": "Es repeteix cada any",
       "ects": "ECTS",

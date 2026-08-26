@@ -536,6 +536,21 @@ export function registerTeacherRoutes(app: FastifyInstance): void {
       const input = parseWith(sendSchedulesSchema, request.body)
       const client = prisma()
 
+      /*
+        Only a published timetable goes out.
+
+        A draft is nobody's week — it is the version a coordinator is still
+        moving classes around in — and thirty people receiving one would plan
+        their term from it. The screen says so too, but the screen is not the
+        guard.
+      */
+      const published = await context.db.scheduleVersion.count({
+        where: { academicYearId: context.academicYearId, status: 'published' },
+      })
+      if (published === 0) {
+        throw new AppError(409, 'CONFLICT', 'teachers.schedule.errors.notPublished')
+      }
+
       const profiles = await context.db.teacherProfile.findMany({
         where: {
           academicYearId: context.academicYearId,

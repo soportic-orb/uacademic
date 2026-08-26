@@ -1,4 +1,5 @@
 import type { ListResult } from '@uacademic/shared'
+import { CALENDAR_PALETTE } from '@uacademic/shared'
 import { useQueries } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -261,6 +262,11 @@ export function ResourceForm({
                         })
                       )}
                     </div>
+                  ) : field.type === 'color' ? (
+                    <ColorField
+                      value={String(values[field.name] ?? '')}
+                      onChange={(color) => setValues({ ...values, [field.name]: color })}
+                    />
                   ) : field.type === 'checkbox' ? (
                     <input
                       id={inputId}
@@ -629,6 +635,55 @@ function NewOption({
           {t('common.cancel')}
         </Button>
       </div>
+    </div>
+  )
+}
+
+/**
+ * Choosing a colour.
+ *
+ * The ten the platform draws calendars in, as a row of swatches, and a free
+ * picker beside them for a center whose subjects have colours of their own.
+ * Empty is a choice too — it means the colour derived from the subject's
+ * identifier, which is stable and needs no decision.
+ */
+function ColorField({ value, onChange }: { value: string; onChange: (color: string) => void }) {
+  const { t } = useTranslation()
+
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      {CALENDAR_PALETTE.map((colour) => (
+        <button
+          key={colour.accent}
+          type="button"
+          aria-label={colour.accent}
+          aria-pressed={value.toLowerCase() === colour.accent.toLowerCase()}
+          onClick={() => onChange(colour.accent)}
+          style={{ backgroundColor: colour.accent }}
+          className={cn(
+            'size-7 rounded-control border',
+            value.toLowerCase() === colour.accent.toLowerCase()
+              ? 'border-text ring-2 ring-ring'
+              : 'border-border',
+          )}
+        />
+      ))}
+
+      <label className="flex items-center gap-2 text-sm text-text-muted">
+        <span className="sr-only">{t('admin.fields.color')}</span>
+        <input
+          type="color"
+          value={/^#[0-9a-fA-F]{6}$/.test(value) ? value : '#0072ce'}
+          onChange={(event) => onChange(event.target.value)}
+          className="h-8 w-10 cursor-pointer rounded-control border border-border bg-surface"
+        />
+      </label>
+
+      {value ? (
+        <Button type="button" variant="ghost" onClick={() => onChange('')}>
+          {t('common.clear')}
+        </Button>
+      ) : null}
     </div>
   )
 }

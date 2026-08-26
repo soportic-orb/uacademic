@@ -14,6 +14,7 @@
 import {
   type IcsSession,
   buildIcsFeed,
+  calendarColor,
   latencyFor,
   occurrencesBetween,
   parseCenterSettings,
@@ -82,6 +83,8 @@ export interface CalendarSession {
   subjectId: string
   subjectCode: string
   subjectName: string
+  /** The colour the center chose for it, if it chose one. */
+  subjectColor: string | null
   groupId: string
   groupCode: string
   spaceId: string | null
@@ -122,6 +125,7 @@ export function registerCalendarRoutes(app: FastifyInstance): void {
         subjectId: session.subjectId,
         subjectCode: session.subjectCode,
         subjectName: session.subjectName,
+        subjectColor: session.subjectColor,
         groupCode: session.groupCode,
         spaceName: session.spaceName,
         // What the class is about, written on the block by whoever planned it.
@@ -398,8 +402,10 @@ function registerExportRoutes(app: FastifyInstance): void {
           date: row.date,
           startTime: row.startTime,
           endTime: row.endTime,
+          subjectId: row.subjectId,
           subjectCode: row.subjectCode,
           subjectName: row.subjectName,
+          subjectColor: row.subjectColor,
           groupCode: row.groupCode,
           spaceName: row.spaceName,
           topic: row.topic,
@@ -429,24 +435,75 @@ function registerExportRoutes(app: FastifyInstance): void {
     if (rows.length === 0) {
       document.fontSize(11).text(t('calendar.empty'))
     } else {
+      /*
+        The colours and what each of them is. A page of coloured rules is
+        only readable to somebody who already knows the timetable.
+      */
+      const left = document.page.margins.left
+      const subjects = new Map<string, (typeof rows)[number]>()
+      for (const row of rows) if (!subjects.has(row.subjectId)) subjects.set(row.subjectId, row)
+
+      let legendX = left
+      const legendY = document.y
+
+      for (const row of subjects.values()) {
+        const colour = calendarColor(row.subjectId, row.subjectColor)
+        const label = `${row.subjectCode} ${row.subjectName}`
+        const width = Math.min(170, 14 + document.fontSize(8).widthOfString(label))
+        if (legendX + width > document.page.width - document.page.margins.right) break
+
+        document.rect(legendX, legendY + 2, 7, 7).fill(colour.accent)
+        document
+          .fillColor('#475569')
+          .fontSize(8)
+          .text(label, legendX + 11, legendY, {
+            width: width - 11,
+            lineBreak: false,
+            ellipsis: true,
+          })
+
+        legendX += width + 8
+      }
+
+      document.x = left
+      document.y = legendY + 16
+
       let currentDate = ''
       for (const row of rows) {
         if (row.date !== currentDate) {
           currentDate = row.date
-          document.moveDown(0.5).fontSize(12).text(row.date, { underline: true })
+          document.x = left
+          document
+            .moveDown(0.5)
+            .fillColor('#0f172a')
+            .fontSize(12)
+            .text(row.date, { underline: true })
         }
-        document.fontSize(10).text(
-          [
-            `${row.startTime}–${row.endTime}`,
-            `${row.subjectCode} ${row.groupCode}`,
-            // What the class is: the topic where somebody wrote one, the
-            // subject in full where they did not.
-            row.topic ?? row.subjectName,
-            row.spaceName ?? '',
-          ]
-            .filter(Boolean)
-            .join('  '),
-        )
+
+        const colour = calendarColor(row.subjectId, row.subjectColor)
+        const top = document.y
+
+        // The subject's colour as a rule down the left of the line: ink on
+        // paper rather than a pale block, which is expensive to print.
+        document.rect(left, top + 1, 4, 11).fill(colour.accent)
+
+        document
+          .fillColor('#0f172a')
+          .fontSize(10)
+          .text(
+            [
+              `${row.startTime}–${row.endTime}`,
+              `${row.subjectCode} ${row.groupCode}`,
+              // What the class is: the topic where somebody wrote one, the
+              // subject in full where they did not.
+              row.topic ?? row.subjectName,
+              row.spaceName ?? '',
+            ]
+              .filter(Boolean)
+              .join('  '),
+            left + 10,
+            top,
+          )
       }
     }
 
@@ -546,7 +603,7 @@ export async function publishedSessionsWhere(
         select: {
           id: true,
           code: true,
-          subject: { select: { id: true, code: true, nameCa: true } },
+          subject: { select: { id: true, code: true, nameCa: true, color: true } },
         },
       },
       space: { select: { id: true, name: true } },
@@ -570,7 +627,11 @@ export async function publishedSessionsWhere(
     dateTo: Date
     recurrence: 'weekly' | 'biweekly' | 'once'
     topic: string | null
-    group: { id: string; code: string; subject: { id: string; code: string; nameCa: string } }
+    group: {
+      id: string
+      code: string
+      subject: { id: string; code: string; nameCa: string; color: string | null }
+    }
     space: { id: string; name: string } | null
     teacherProfile: { id: string; user: { firstName: string; lastName: string } } | null
     coTeachers: {
@@ -584,6 +645,7 @@ export async function publishedSessionsWhere(
     subjectId: row.group.subject.id,
     subjectCode: row.group.subject.code,
     subjectName: row.group.subject.nameCa,
+    subjectColor: row.group.subject.color,
     groupId: row.group.id,
     groupCode: row.group.code,
     spaceId: row.space?.id ?? null,

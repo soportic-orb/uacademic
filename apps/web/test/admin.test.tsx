@@ -492,6 +492,27 @@ describe('who coordinates a subject', () => {
     ).toBeInTheDocument()
   })
 
+  it('gives a subject a colour from the swatches', async () => {
+    const user = userEvent.setup()
+    render(wrap(<ResourcePage resource={resourceByKey('subjects')!} />))
+
+    await user.click(await screen.findByRole('button', { name: 'Edita' }))
+    const dialog = screen.getByRole('dialog')
+
+    // The palette the calendars are drawn in, offered as squares to press.
+    await user.click(within(dialog).getByRole('button', { name: '#7C3AED' }))
+    await user.click(within(dialog).getByRole('button', { name: 'Desa' }))
+
+    await waitFor(() => {
+      const patch = fetchMock.mock.calls.find(
+        (call) => (call[1] as RequestInit | undefined)?.method === 'PATCH',
+      )
+      expect(JSON.parse(String((patch![1] as RequestInit).body))).toMatchObject({
+        color: '#7C3AED',
+      })
+    })
+  })
+
   it('ticks the people already coordinating it, and sends the ones chosen', async () => {
     const user = userEvent.setup()
     render(wrap(<ResourcePage resource={resourceByKey('subjects')!} />))

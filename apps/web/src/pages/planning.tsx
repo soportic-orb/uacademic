@@ -80,7 +80,10 @@ export function PlanningPage() {
 
           {/* Sending happens after publishing, so it sits at the foot of the
               screen where the work ends rather than competing with the grid. */}
-          <ScheduleExport canSendToEveryone />
+          <ScheduleExport
+            canSendToEveryone
+            published={items.some((item) => item.status === 'published')}
+          />
         </>
       )}
     </div>

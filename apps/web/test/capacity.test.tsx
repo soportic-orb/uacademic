@@ -1,6 +1,6 @@
 import type { AvailabilityResponseDto, TeacherWorkloadDto } from '@uacademic/shared'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { ReactNode } from 'react'
 import { MemoryRouter } from 'react-router'
@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { AvailabilityEditor } from '../src/features/capacity/availability-editor'
 import { LoadPanel } from '../src/features/capacity/load-panel'
+import { ScheduleExport } from '../src/features/capacity/schedule-export'
 import { WorkloadBreakdown } from '../src/features/capacity/workload-breakdown'
 import { useSessionStore } from '../src/stores/session'
 
@@ -305,5 +306,61 @@ describe('personal workload breakdown', () => {
     )
 
     expect(screen.getByText('Encara no tens hores assignades en aquest curs.')).toBeInTheDocument()
+  })
+})
+
+/**
+ * Sending everybody their timetable. Two ways it used to go wrong: a date
+ * half-typed asked the server for a period that was not one, and a draft
+ * could be sent to thirty people who would then plan their term from it.
+ */
+describe('sending the timetable out', () => {
+  const fetchMock = vi.fn()
+
+  beforeEach(() => {
+    useSessionStore.getState().setCenterId('center-1')
+    vi.stubGlobal('fetch', fetchMock)
+    fetchMock.mockReset()
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ queued: 3, mailConfigured: true }),
+    } as Response)
+  })
+
+  afterEach(() => vi.unstubAllGlobals())
+
+  const dates = () => [...document.querySelectorAll<HTMLInputElement>('input[type="date"]')]
+
+  it('will not send a period that is only half typed', async () => {
+    const user = userEvent.setup()
+    render(wrap(<ScheduleExport canSendToEveryone />))
+
+    // What a date input reports while somebody is still typing one.
+    fireEvent.change(dates()[0]!, { target: { value: '' } })
+
+    expect(screen.getByRole('button', { name: /Envia/ })).toBeDisabled()
+    expect(screen.getByText(/les dues dates/)).toBeInTheDocument()
+
+    fireEvent.change(dates()[0]!, { target: { value: '2026-09-01' } })
+    expect(screen.getByRole('button', { name: /Envia/ })).toBeEnabled()
+
+    await user.click(screen.getByRole('button', { name: /Envia/ }))
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled())
+  })
+
+  it('asks for the timetable to be published before sending it', async () => {
+    const user = userEvent.setup()
+    render(wrap(<ScheduleExport canSendToEveryone published={false} />))
+
+    await user.click(screen.getByRole('button', { name: /Envia/ }))
+
+    // Said out loud, and nothing sent.
+    expect(await screen.findAllByText(/publicar l’horari|publicar l'horari/)).not.toHaveLength(0)
+    expect(
+      fetchMock.mock.calls.filter(
+        (call) => (call[1] as RequestInit | undefined)?.method === 'POST',
+      ),
+    ).toHaveLength(0)
   })
 })

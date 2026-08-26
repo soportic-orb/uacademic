@@ -17,8 +17,11 @@ export interface PlannerSessionDto {
   id: string
   groupId: string
   groupCode: string
+  subjectId: string
   subjectCode: string
   subjectName: string
+  /** The colour the center chose for the subject, if it chose one. */
+  subjectColor: string | null
   teacherProfileId: string | null
   teacherName: string | null
   /** Everyone giving the class, the one above first. */

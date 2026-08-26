@@ -3,7 +3,12 @@
  */
 import { describe, expect, it } from 'vitest'
 
-import { CALENDAR_PALETTE, calendarColor, paletteIndex } from '../src/domain/calendar-colors.js'
+import {
+  CALENDAR_PALETTE,
+  calendarColor,
+  colorFrom,
+  paletteIndex,
+} from '../src/domain/calendar-colors.js'
 
 describe('a subject’s colour', () => {
   it('is the same every time it is asked for', () => {
@@ -68,3 +73,37 @@ function luminance(hex: string): number {
 
   return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2]
 }
+
+describe('a colour somebody chose', () => {
+  it('uses it instead of the one the identifier would have given', () => {
+    const chosen = calendarColor('subject-1', '#0072CE')
+
+    expect(chosen.accent).toBe('#0072ce')
+    expect(chosen).not.toEqual(calendarColor('subject-1'))
+  })
+
+  it('falls back to the palette when the value is not a colour', () => {
+    for (const value of ['', 'blau', '#12345', null, undefined]) {
+      expect(calendarColor('subject-1', value)).toEqual(calendarColor('subject-1'))
+    }
+  })
+
+  it('reads a three-digit hex as the six-digit one it stands for', () => {
+    expect(calendarColor('subject-1', '#07C').accent).toBe('#0077cc')
+  })
+
+  it('makes a chip of tinted paper with dark writing, whatever was chosen', () => {
+    // The brightest thing the picker can offer, and the darkest.
+    for (const accent of ['#ffff00', '#000000', '#0072ce']) {
+      const colour = colorFrom(accent)
+      const light = (hex: string) =>
+        (Number.parseInt(hex.slice(1, 3), 16) +
+          Number.parseInt(hex.slice(3, 5), 16) +
+          Number.parseInt(hex.slice(5, 7), 16)) /
+        3
+
+      expect(light(colour.background)).toBeGreaterThan(light(colour.text) + 60)
+      expect(light(colour.background)).toBeGreaterThan(180)
+    }
+  })
+})

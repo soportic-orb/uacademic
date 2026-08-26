@@ -11,7 +11,14 @@
  * the same class: the weekly template, minus the days the center is shut.
  */
 import type { AppLocale } from '@uacademic/shared'
-import { isInMonth, monthsBetween, translate, weeksBetween, weeksOfMonth } from '@uacademic/shared'
+import {
+  calendarColor,
+  isInMonth,
+  monthsBetween,
+  translate,
+  weeksBetween,
+  weeksOfMonth,
+} from '@uacademic/shared'
 import PDFDocument from 'pdfkit'
 
 import {
@@ -33,6 +40,10 @@ export interface ScheduleEntry {
   spaceName: string | null
   /** What the class is about, when whoever planned it wrote it down. */
   topic: string | null
+  /** The subject, so the page can colour a class by it. */
+  subjectId: string
+  /** The colour the center chose for the subject, if it chose one. */
+  subjectColor?: string | null
 }
 
 export interface SchedulePdfInput {
@@ -58,7 +69,7 @@ export interface SchedulePdfInput {
 /** A4 landscape, in points. */
 const PAGE = { width: 842, height: 595 }
 const MARGIN = 32
-const HEADER_HEIGHT = 56
+const HEADER_HEIGHT = 68
 const WEEKDAY_ROW = 16
 
 const INK = '#0F172A'
@@ -113,6 +124,7 @@ export async function scheduleMonthlyPdf(input: SchedulePdfInput): Promise<Buffe
     // period asked for, so nothing is greyed out as filler.
     document.addPage()
     drawHeader(document, input, t, '')
+    drawLegend(document, input.entries)
     drawGrid(document, {
       weeks: weeksBetween(input.from, input.to),
       byDate,
@@ -134,6 +146,7 @@ export async function scheduleMonthlyPdf(input: SchedulePdfInput): Promise<Buffe
     }).format(new Date(Date.UTC(year, month - 1, 1)))
 
     drawHeader(document, input, t, monthName)
+    drawLegend(document, input.entries)
     drawGrid(document, {
       weeks: weeksOfMonth(year, month),
       byDate,
@@ -146,6 +159,42 @@ export async function scheduleMonthlyPdf(input: SchedulePdfInput): Promise<Buffe
 
   document.end()
   return finished
+}
+
+/**
+ * The colours, and what each of them is.
+ *
+ * A page of coloured chips is only readable to somebody who already knows the
+ * timetable. Every printed calendar carries the key, in the same order the
+ * subjects appear.
+ */
+function drawLegend(document: PDFKit.PDFDocument, entries: readonly ScheduleEntry[]): void {
+  const subjects = new Map<string, ScheduleEntry>()
+  for (const entry of entries) {
+    if (!subjects.has(entry.subjectId)) subjects.set(entry.subjectId, entry)
+  }
+  if (subjects.size === 0) return
+
+  const top = MARGIN + HEADER_HEIGHT - 16
+  let x = MARGIN
+
+  for (const entry of subjects.values()) {
+    const colour = calendarColor(entry.subjectId, entry.subjectColor)
+    const label = `${entry.subjectCode} ${entry.subjectName}`
+    const width = Math.min(150, 12 + document.fontSize(7).widthOfString(label))
+
+    // Wrapping rather than running off the page: a legend that is cut in half
+    // is a legend that names half the colours.
+    if (x + width > PAGE.width - MARGIN) break
+
+    document.rect(x, top, 7, 7).fill(colour.accent)
+    document
+      .fillColor(MUTED)
+      .fontSize(7)
+      .text(label, x + 10, top, { width: width - 10, lineBreak: false, ellipsis: true })
+
+    x += width + 8
+  }
 }
 
 function drawHeader(
@@ -226,6 +275,7 @@ function drawGrid(document: PDFKit.PDFDocument, options: GridOptions): void {
       let lineY = y + 15
 
       for (const entry of entries) {
+        const colour = calendarColor(entry.subjectId, entry.subjectColor)
         // Silently dropping what does not fit would be the worst outcome — a
         // class that exists and is not on the page — so the day says how many
         // it could not show.
@@ -239,11 +289,20 @@ function drawGrid(document: PDFKit.PDFDocument, options: GridOptions): void {
           break
         }
 
+        /*
+          The subject's colour behind the class, thinned against white: on
+          paper as on screen, a class is a chip of tinted paper with dark
+          writing on it. Toner is expensive and pale ink is unreadable.
+        */
+        document
+          .rect(x + 3, lineY - 2, cellWidth - 6, entry.spaceName ? 21 : 15)
+          .fill(colour.background)
+
         // The whole hour, not only when it starts: a printed timetable is
         // read away from the screen, and "when does this finish?" is the
         // second question anybody asks of it.
         document
-          .fillColor(INK)
+          .fillColor(colour.text)
           .fontSize(6.5)
           .text(
             `${entry.startTime}–${entry.endTime} ${entry.subjectCode} ${entry.groupCode}`,
@@ -255,7 +314,7 @@ function drawGrid(document: PDFKit.PDFDocument, options: GridOptions): void {
         // What the class is: its topic where somebody wrote one, and the
         // subject's name where they did not.
         document
-          .fillColor(MUTED)
+          .fillColor(colour.text)
           .fontSize(6)
           .text(entry.topic ?? entry.subjectName, x + 4, lineY + 7, {
             width: cellWidth - 8,
@@ -265,7 +324,7 @@ function drawGrid(document: PDFKit.PDFDocument, options: GridOptions): void {
 
         if (entry.spaceName) {
           document
-            .fillColor(MUTED)
+            .fillColor(colour.text)
             .fontSize(6)
             .text(entry.spaceName, x + 4, lineY + 13, {
               width: cellWidth - 8,
@@ -331,8 +390,10 @@ export async function buildSchedulePdf(
       date: row.date,
       startTime: row.startTime,
       endTime: row.endTime,
+      subjectId: row.subjectId,
       subjectCode: row.subjectCode,
       subjectName: row.subjectName,
+      subjectColor: row.subjectColor,
       groupCode: row.groupCode,
       spaceName: row.spaceName,
       topic: row.topic,

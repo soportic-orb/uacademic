@@ -313,6 +313,7 @@ export function registerAdminResources(app: FastifyInstance): void {
       term: asString(row.term),
       type: asString(row.type),
       teachingLanguage: asString(row.teachingLanguage),
+      color: row.color ?? null,
       academicYearId: asString(row.academicYearId),
       degreeId: asString(row.degreeId),
       degreeCode: asString((row.degree as { code?: string } | undefined)?.code),

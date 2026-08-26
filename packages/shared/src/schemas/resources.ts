@@ -89,6 +89,17 @@ export const subjectInputSchema = trilingualNameSchema.extend({
   type: z.enum(['basic', 'compulsory', 'elective', 'practicum', 'final_project']),
   teachingLanguage: z.enum(['ca', 'es', 'en', 'other']).default('ca'),
   /**
+   * The colour this subject's classes are drawn in.
+   *
+   * Empty means the one derived from the subject's own identifier, which is
+   * stable and needs no decision: a center only chooses where it cares.
+   */
+  color: z
+    .string()
+    .trim()
+    .regex(/^#[0-9a-fA-F]{6}$/, 'validation.invalidCode')
+    .nullish(),
+  /**
    * Who coordinates this subject.
    *
    * Coordination is per subject, not per center: being on this list is what

@@ -390,6 +390,52 @@ describe.skipIf(!hasDatabase)('the teacher calendar', () => {
       }
     })
 
+    /*
+      A page of coloured chips is only readable to somebody who already knows
+      the timetable, and a colour a center chose has to be the colour that
+      comes out of the printer.
+    */
+    it('prints the subject’s own colour, and a key to what the colours are', async () => {
+      const session = await prisma.classSession.findFirstOrThrow({
+        where: {
+          centerId,
+          scheduleVersion: { status: 'published' },
+          teacherProfile: { user: { email: SEED.teacherEmail } },
+        },
+        include: { group: { select: { subject: { select: { id: true, nameCa: true } } } } },
+      })
+
+      await prisma.subject.update({
+        where: { id: session.group.subject.id },
+        data: { color: '#7c3aed' },
+      })
+
+      try {
+        for (const view of ['agenda', 'month']) {
+          const response = await app.inject({
+            method: 'GET',
+            url: `/api/v1/calendar/export.pdf?${range}&view=${view}&date=2026-09-16`,
+            headers: asTeacher(),
+          })
+
+          const { pages } = await extractText(
+            new Uint8Array(response.rawPayload),
+            'application/pdf',
+            `${view}.pdf`,
+          )
+          const text = pages.map((page) => page.text).join(' ')
+
+          // The key names the subject in full, next to its colour.
+          expect(text).toContain(session.group.subject.nameCa)
+        }
+      } finally {
+        await prisma.subject.update({
+          where: { id: session.group.subject.id },
+          data: { color: null },
+        })
+      }
+    })
+
     it('refuses a range it cannot parse instead of guessing', async () => {
       const response = await app.inject({
         method: 'GET',

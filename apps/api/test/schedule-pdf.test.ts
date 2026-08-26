@@ -173,6 +173,39 @@ describe.skipIf(!hasDatabase)('the printable timetable', () => {
     expect(queued).toBe(response.json().queued)
   })
 
+  /*
+    A draft is nobody's week: it is the version a coordinator is still moving
+    classes around in, and thirty people receiving one would plan their term
+    from it.
+  */
+  it('refuses to send a timetable nobody has published', async () => {
+    const published = await prisma.scheduleVersion.findMany({
+      where: { centerId, status: 'published' },
+      select: { id: true },
+    })
+    await prisma.scheduleVersion.updateMany({
+      where: { id: { in: published.map((version) => version.id) } },
+      data: { status: 'draft' },
+    })
+
+    try {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/v1/teachers/schedules/send',
+        headers: { 'x-mock-user': SEED.adminEmail, 'x-center-id': centerId },
+        payload: { from: '2026-09-01', to: '2026-12-31' },
+      })
+
+      expect(response.statusCode).toBe(409)
+      expect(response.json().error.messageKey).toBe('teachers.schedule.errors.notPublished')
+    } finally {
+      await prisma.scheduleVersion.updateMany({
+        where: { id: { in: published.map((version) => version.id) } },
+        data: { status: 'published' },
+      })
+    }
+  })
+
   it('sends to only the people named, when the request names any', async () => {
     await prisma.job.deleteMany({ where: { type: 'teacher.schedule' } })
 

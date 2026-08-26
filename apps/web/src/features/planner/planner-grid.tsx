@@ -17,7 +17,7 @@ import {
   effectiveAvailability,
   isoDateOf,
 } from '@uacademic/shared'
-import { formatDate, formatHours, minutesToHours } from '@uacademic/shared'
+import { calendarColor, formatDate, formatHours, minutesToHours } from '@uacademic/shared'
 import { Clock, CopyPlus, Trash2, Undo2, Redo2, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -1137,14 +1137,22 @@ function SessionBlock({
   const { t } = useTranslation()
   /** Whether the hour is being typed rather than dragged. */
   const [typing, setTyping] = useState(false)
+  const colour = calendarColor(session.subjectId, session.subjectColor)
 
   return (
     <div
+      /*
+        The subject's own colour, thinned against white so the writing on it
+        stays readable — a class is a chip of tinted paper, not a block of
+        ink. A center that has not chosen one gets the colour its subject's
+        identifier gives it, which is the same one the calendars use.
+      */
+      style={{ backgroundColor: colour.background, borderColor: colour.accent }}
       className={cn(
         // Exactly the box of the hour it occupies. The edges and the buttons
         // hang off this, so they stay where the hour is; the writing scrolls
         // inside instead of spilling over the hours below.
-        'group absolute inset-0 rounded-sm border border-primary/30 bg-primary-surface text-left',
+        'group absolute inset-0 rounded-sm border text-left',
         held && 'ring-2 ring-ring',
         dimmed && 'opacity-40',
       )}

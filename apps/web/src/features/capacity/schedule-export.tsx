@@ -31,16 +31,33 @@ function defaultRange(): { from: string; to: string } {
 export function ScheduleExport({
   teacherId,
   canSendToEveryone = false,
+  published = true,
 }: {
   /** Whose timetable to download. Absent on the planning screen, which is
    * about everybody at once and has nobody in particular to print. */
   teacherId?: string
   canSendToEveryone?: boolean
+  /**
+   * Whether there is a published timetable to send.
+   *
+   * A draft is nobody's week: sending one out would put a timetable in front
+   * of thirty people that the coordinator is still moving around.
+   */
+  published?: boolean
 }) {
   const { t } = useTranslation()
   const toast = useToast()
   const [range, setRange] = useState(defaultRange)
   const [busy, setBusy] = useState(false)
+
+  /*
+    A date input reports an empty value while somebody is still typing one —
+    "2026-0" is not a date — so the state kept a blank, the button stayed
+    enabled, and pressing it asked the server to send a timetable for no
+    period at all. Now an incomplete date simply is not a range yet.
+  */
+  const complete = /^\d{4}-\d{2}-\d{2}$/.test(range.from) && /^\d{4}-\d{2}-\d{2}$/.test(range.to)
+  const usable = complete && range.to >= range.from
 
   const onError = (error: unknown) => {
     if (error instanceof ApiRequestError)
@@ -115,7 +132,7 @@ export function ScheduleExport({
           </label>
 
           {teacherId ? (
-            <Button onClick={() => void download()} disabled={busy || range.to < range.from}>
+            <Button onClick={() => void download()} disabled={busy || !usable}>
               <FileDown className="size-4" aria-hidden="true" />
               {busy ? t('common.loading') : t('teachers.schedule.download')}
             </Button>
@@ -124,14 +141,31 @@ export function ScheduleExport({
           {canSendToEveryone ? (
             <Button
               variant="secondary"
-              onClick={() => send.mutate()}
-              disabled={send.isPending || range.to < range.from}
+              onClick={() => {
+                // Said out loud rather than left as a disabled button nobody
+                // can explain: what is missing is a publication, and that is
+                // one press away on the bar at the top of this screen.
+                if (!published) {
+                  toast.warning('teachers.schedule.publishFirst', { durationMs: 8_000 })
+                  return
+                }
+                send.mutate()
+              }}
+              disabled={send.isPending || !usable}
             >
               <Send className="size-4" aria-hidden="true" />
               {send.isPending ? t('common.saving') : t('teachers.schedule.sendAll')}
             </Button>
           ) : null}
         </div>
+
+        {canSendToEveryone && !published ? (
+          <p className="mt-3 text-xs text-warning">{t('teachers.schedule.publishFirst')}</p>
+        ) : null}
+
+        {complete ? null : (
+          <p className="mt-3 text-xs text-text-muted">{t('teachers.schedule.dateNeeded')}</p>
+        )}
 
         <p className="mt-3 text-xs text-text-muted">{t('teachers.schedule.format')}</p>
       </CardBody>

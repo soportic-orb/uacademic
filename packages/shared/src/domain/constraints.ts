@@ -95,6 +95,8 @@ export interface GroupResource {
   subjectId: string
   subjectCode: string
   subjectName: string
+  /** The colour the center chose for the subject, if it chose one. */
+  subjectColor?: string | null
   /** Students expected. Null means nobody recorded it, so it cannot block. */
   capacity: number | null
   requiredSpaceType: string | null

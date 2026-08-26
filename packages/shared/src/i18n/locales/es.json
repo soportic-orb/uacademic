@@ -302,7 +302,12 @@
       "sendAll": "Enviarlo a todo el profesorado",
       "sent": "Se están enviando {{count}} calendarios.",
       "sentNoMail": "No se han enviado: esta instalación no tiene servidor de correo configurado.",
-      "format": "A4 apaisado, un mes por página. Solo salen las clases de la versión publicada."
+      "format": "A4 apaisado, un mes por página. Solo salen las clases de la versión publicada.",
+      "publishFirst": "Primero hay que publicar el horario: un borrador todavía no es la semana de nadie.",
+      "dateNeeded": "Indica las dos fechas del periodo.",
+      "errors": {
+        "notPublished": "Primero hay que publicar el horario: un borrador todavía no es la semana de nadie."
+      }
     },
     "contractEdit": "Editar el contrato",
     "contractSaved": "Contrato actualizado"
@@ -1227,6 +1232,7 @@
       "space": "Aula",
       "sessionMinutes": "Duración de la clase (min)",
       "coordinators": "Coordinación",
+      "color": "Color",
       "isTeachingDay": "Día lectivo",
       "repeatsYearly": "Se repite cada año",
       "ects": "ECTS",

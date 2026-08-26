@@ -89,7 +89,7 @@ export async function plannerContext(request: FastifyRequest): Promise<PlannerCo
     db.space.findMany(),
     db.group.findMany({
       where: { subject: { academicYearId: academicYear.id } },
-      include: { subject: { select: { id: true, code: true, nameCa: true } } },
+      include: { subject: { select: { id: true, code: true, nameCa: true, color: true } } },
     }),
     // Personal commitments imported from a connected calendar, for whoever
     // opted in. Start and end only — that is all that was ever read.
@@ -195,6 +195,7 @@ export async function plannerContext(request: FastifyRequest): Promise<PlannerCo
             subjectId: group.subject.id,
             subjectCode: group.subject.code,
             subjectName: group.subject.nameCa,
+            subjectColor: group.subject.color,
             capacity: group.capacity,
             requiredSpaceType: group.requiredSpaceType,
             requiredEquipment: stringList(group.requiredEquipmentJson),
@@ -210,7 +211,7 @@ const SESSION_INCLUDE = {
     select: {
       id: true,
       code: true,
-      subject: { select: { id: true, code: true, nameCa: true } },
+      subject: { select: { id: true, code: true, nameCa: true, color: true } },
     },
   },
   teacherProfile: {
@@ -229,7 +230,11 @@ const SESSION_INCLUDE = {
 export type SessionRow = Awaited<
   ReturnType<ScopedPrismaClient['classSession']['findMany']>
 >[number] & {
-  group: { id: string; code: string; subject: { id: string; code: string; nameCa: string } }
+  group: {
+    id: string
+    code: string
+    subject: { id: string; code: string; nameCa: string; color: string | null }
+  }
   teacherProfile: { id: string; user: { firstName: string; lastName: string } } | null
   coTeachers: {
     teacherProfileId: string
@@ -298,8 +303,10 @@ export function toSnapshot(row: SessionRow): SessionSnapshot {
     id: row.id,
     groupId: row.groupId,
     groupCode: row.group.code,
+    subjectId: row.group.subject.id,
     subjectCode: row.group.subject.code,
     subjectName: row.group.subject.nameCa,
+    subjectColor: row.group.subject.color,
     teacherProfileId: row.teacherProfileId,
     teacherName: row.teacherProfile
       ? `${row.teacherProfile.user.firstName} ${row.teacherProfile.user.lastName}`

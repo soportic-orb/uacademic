@@ -42,6 +42,7 @@ export interface FieldConfig {
     | 'multiSelect'
     | 'date'
     | 'checkbox'
+    | 'color'
     | 'url'
     | 'image'
     | 'dateRange'
@@ -365,6 +366,13 @@ export const ADMIN_RESOURCES: ResourceConfig[] = [
           { value: 'en', labelKey: 'language.en' },
           { value: 'other', labelKey: 'spaceType.other' },
         ],
+      },
+      {
+        // What colour this subject's classes are drawn in, everywhere they
+        // appear. Blank keeps the one derived from its identifier.
+        name: 'color',
+        labelKey: 'admin.fields.color',
+        type: 'color',
       },
       {
         // Coordination is per subject: being on this list is what makes

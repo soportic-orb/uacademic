@@ -362,6 +362,39 @@ describe.skipIf(!hasDatabase)('admin CRUD', () => {
     })
   })
 
+  describe('the colour of a subject', () => {
+    it('keeps what was chosen, and hands it back to the screens', async () => {
+      const subject = await prisma.subject.findFirstOrThrow({ where: { centerId } })
+
+      try {
+        const response = await app.inject({
+          method: 'PATCH',
+          url: `/api/v1/admin/subjects/${subject.id}`,
+          headers: asAdmin(),
+          payload: { color: '#7C3AED' },
+        })
+
+        expect(response.statusCode).toBe(200)
+        expect(response.json().color).toBe('#7C3AED')
+      } finally {
+        await prisma.subject.update({ where: { id: subject.id }, data: { color: null } })
+      }
+    })
+
+    it('refuses something that is not a colour', async () => {
+      const subject = await prisma.subject.findFirstOrThrow({ where: { centerId } })
+
+      const response = await app.inject({
+        method: 'PATCH',
+        url: `/api/v1/admin/subjects/${subject.id}`,
+        headers: asAdmin(),
+        payload: { color: 'blau' },
+      })
+
+      expect(response.statusCode).toBe(422)
+    })
+  })
+
   /**
    * Who coordinates a subject is chosen where the subject is, and choosing
    * somebody is the grant: every screen that asks "may they see this?" reads

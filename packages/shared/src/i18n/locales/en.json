@@ -302,7 +302,12 @@
       "sendAll": "Send it to all teaching staff",
       "sent": "{{count}} calendars are on their way.",
       "sentNoMail": "Nothing was sent: this installation has no mail server configured.",
-      "format": "A4 landscape, one month per page. Only classes from the published version appear."
+      "format": "A4 landscape, one month per page. Only classes from the published version appear.",
+      "publishFirst": "Publish the timetable first: a draft is nobody’s week yet.",
+      "dateNeeded": "Give both dates of the period.",
+      "errors": {
+        "notPublished": "Publish the timetable first: a draft is nobody’s week yet."
+      }
     },
     "contractEdit": "Edit the contract",
     "contractSaved": "Contract updated"
@@ -1227,6 +1232,7 @@
       "space": "Room",
       "sessionMinutes": "Class length (min)",
       "coordinators": "Coordination",
+      "color": "Colour",
       "isTeachingDay": "Teaching day",
       "repeatsYearly": "Comes round every year",
       "ects": "ECTS",

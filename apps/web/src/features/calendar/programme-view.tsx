@@ -53,6 +53,8 @@ interface ProgrammeEvent {
 interface Option {
   id: string
   label: string
+  /** Subjects only: the colour the center chose for it. */
+  color?: string | null
 }
 
 interface ProgrammeResponse {
@@ -484,7 +486,7 @@ function Legend({ subjects }: { subjects: Option[] }) {
       <p className="mb-1 text-xs text-text-muted">{t('calendar.coordination.legend')}</p>
       <ul className="flex flex-wrap gap-x-4 gap-y-1">
         {subjects.map((subject) => {
-          const colour = calendarColor(subject.id)
+          const colour = calendarColor(subject.id, subject.color)
           return (
             <li key={subject.id} className="flex items-center gap-1.5 text-xs text-text">
               <span

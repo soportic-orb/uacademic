@@ -53,6 +53,64 @@ export function paletteIndex(key: string, buckets = CALENDAR_PALETTE.length): nu
   return hash % buckets
 }
 
-export function calendarColor(key: string): CalendarColor {
+/**
+ * The colour of a subject.
+ *
+ * A center that has chosen one for a subject gets that one; everything else
+ * falls back to the palette, keyed on the subject's own identifier so the
+ * colour is stable and nobody has to pass colours around.
+ */
+export function calendarColor(key: string, chosen?: string | null): CalendarColor {
+  const accent = normalizeHex(chosen)
+  if (accent) return colorFrom(accent)
+
   return CALENDAR_PALETTE[paletteIndex(key)] as CalendarColor
+}
+
+/** `#abc` and `#AABBCC` alike, or nothing at all if it is not a colour. */
+export function normalizeHex(value: string | null | undefined): string | null {
+  if (!value) return null
+  const hex = value.trim().toLowerCase()
+
+  if (/^#[0-9a-f]{6}$/.test(hex)) return hex
+  if (/^#[0-9a-f]{3}$/.test(hex)) {
+    return `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}`
+  }
+  return null
+}
+
+function channels(hex: string): [number, number, number] {
+  return [
+    Number.parseInt(hex.slice(1, 3), 16),
+    Number.parseInt(hex.slice(3, 5), 16),
+    Number.parseInt(hex.slice(5, 7), 16),
+  ]
+}
+
+function toHex(channel: number): string {
+  return Math.max(0, Math.min(255, Math.round(channel)))
+    .toString(16)
+    .padStart(2, '0')
+}
+
+/**
+ * A chosen colour, turned into the three a calendar needs.
+ *
+ * The background is the colour thinned against white, and the text is the
+ * same colour taken most of the way to black: a class is a chip of tinted
+ * paper with dark writing on it, whichever colour was chosen, so the words
+ * stay readable (R8) — which "just use the colour" would not guarantee for
+ * the bright end of the picker.
+ */
+export function colorFrom(accent: string): CalendarColor {
+  const [red, green, blue] = channels(accent)
+
+  const tint = (channel: number) => toHex(channel + (255 - channel) * 0.82)
+  const shade = (channel: number) => toHex(channel * 0.45)
+
+  return {
+    background: `#${tint(red)}${tint(green)}${tint(blue)}`,
+    text: `#${shade(red)}${shade(green)}${shade(blue)}`,
+    accent,
+  }
 }
