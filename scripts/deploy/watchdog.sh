@@ -24,7 +24,11 @@ set -euo pipefail
 PATH="${PATH}:/usr/local/bin:/usr/bin:${HOME:-/root}/.nvm/versions/node/current/bin"
 PM2_BIN="${UACADEMIC_PM2_PATH:-$(command -v pm2 || true)}"
 
-HEALTH_URL="${UACADEMIC_HEALTH_URL:-http://127.0.0.1:3000/api/v1/health}"
+# The API's own default, the one `UACADEMIC_HEALTH_CHECK_URL` overrides and the
+# one the release script checks after a deployment. A watchdog pointed at the
+# wrong URL is worse than none: it would find the site "down" for ever and
+# restart a perfectly healthy app every cool-off.
+HEALTH_URL="${UACADEMIC_HEALTH_URL:-${UACADEMIC_HEALTH_CHECK_URL:-http://127.0.0.1:3001/health}}"
 PM2_APP="${UACADEMIC_PM2_APP:-uacademic}"
 STATE_DIR="${UACADEMIC_WATCHDOG_STATE:-/tmp/uacademic-watchdog}"
 FAILURES_BEFORE_RESTART="${UACADEMIC_WATCHDOG_FAILURES:-3}"
