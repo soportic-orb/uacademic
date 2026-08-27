@@ -62,13 +62,20 @@ Layout ready. What is left, in order:
   1. Fill in ${ROOT}/shared/.env (database URL, secrets, origins).
   2. Deploy a release:   scripts/deploy/release.sh <version> <artifact.tar.gz>
   3. Start PM2:          pm2 start ${ROOT}/current/ecosystem.config.cjs
-                         pm2 save
-                         pm2 startup   <- run the line it prints back.
-     Without that last step PM2 does not come back after a reboot, and the
-     site answers 502 until somebody starts it by hand.
-  4. Point Nginx at ${ROOT}/current/apps/web/dist and proxy /api to the API
+  4. Make it survive a reboot:
+                         scripts/deploy/autostart.sh
+     This is the step that is easy to skip and expensive to have skipped:
+     without it PM2 does not come back after a restart and the site answers
+     502 until somebody logs in and starts it by hand. The script writes the
+     systemd unit and saves the process list for it to resurrect; every later
+     deployment refreshes that list on its own.
+  5. Point Nginx at ${ROOT}/current/apps/web/dist and proxy /api to the API
      port — see scripts/deploy/nginx.conf.example.
-  5. If PM2 daemons are not allowed on this host, use the cron worker instead:
+  6. Optional, and worth it: the watchdog, for the case where the processes
+     are alive and not answering. PM2 cannot see that; a health check can.
+     * * * * * /usr/bin/flock -n /tmp/uacademic-watchdog.lock \
+         ${ROOT}/current/scripts/deploy/watchdog.sh
+  7. If PM2 daemons are not allowed on this host, use the cron worker instead:
      * * * * * /usr/bin/flock -n /tmp/uacademic-jobs.lock \\
          node ${ROOT}/current/apps/api/dist/jobs/tick.js
 

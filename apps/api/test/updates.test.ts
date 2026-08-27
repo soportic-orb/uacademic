@@ -9,7 +9,7 @@
  */
 import { disconnectPrisma, getPrismaClient } from '@uacademic/db'
 import type { FastifyInstance } from 'fastify'
-import { mkdtemp, mkdir, readlink, symlink, unlink, writeFile } from 'node:fs/promises'
+import { mkdtemp, mkdir, readFile, readlink, symlink, unlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
@@ -191,6 +191,45 @@ describe.skipIf(!hasDatabase)('installing a release', () => {
       })
       expect(recorded.status).toBe('applied')
       expect(recorded.appliedAt).not.toBeNull()
+    })
+
+    /*
+      What PM2 brings back after a reboot is the list it last saved. An update
+      that changed what runs and never saved it comes back as the version
+      before — and if nothing ever saved it, as nothing at all, which is the
+      502 somebody finds the next morning.
+    */
+    it('saves the process list after reloading, so a reboot brings this release back', async () => {
+      const calls = join(root, 'pm2-calls.txt')
+      const fakePm2 = join(root, 'pm2')
+      await writeFile(fakePm2, `#!/bin/sh\necho "$@" >> ${calls}\n`, { mode: 0o755 })
+
+      const configuration = (pm2: string) =>
+        setEnv(
+          loadEnv({
+            ...process.env,
+            NODE_ENV: 'test',
+            UACADEMIC_LOG_LEVEL: 'silent',
+            UACADEMIC_AUTH_MODE: 'mock',
+            UACADEMIC_DEPLOY_ROOT: root,
+            UACADEMIC_GITHUB_OTA_TOKEN: 'test-token',
+            UACADEMIC_PM2_PATH: pm2,
+          }),
+        )
+
+      configuration(fakePm2)
+
+      try {
+        // Everything is stubbed except the reload, which is the point here.
+        const { reload: _reload, ...rest } = hooks()
+        await applyUpdate(prisma, { release: RELEASE, userId }, { hooks: rest })
+
+        const recorded = (await readFile(calls, 'utf8')).trim().split('\n')
+        expect(recorded[0]).toContain('reload')
+        expect(recorded.at(-1)).toBe('save')
+      } finally {
+        configuration('pm2')
+      }
     })
 
     it('puts the symlink back when a step after the switch throws', async () => {

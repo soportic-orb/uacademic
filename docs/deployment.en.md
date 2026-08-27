@@ -221,8 +221,14 @@ Then, the first time only:
 ```bash
 pnpm --filter @uacademic/db exec prisma migrate deploy   # the script already does this
 pm2 start /var/www/uacademic/current/ecosystem.config.cjs
-pm2 save && pm2 startup
+scripts/deploy/autostart.sh          # the step that survives a reboot
 ```
+
+`autostart.sh` writes the systemd unit that runs `pm2 resurrect` at boot and
+saves the process list for it to bring back. It needs root once, for the unit
+file; run it under `sudo` or run it as the application user and it prints the
+one line to run as root. Every deployment after that refreshes the saved list
+on its own, so this is a one-off.
 
 **Deploying from a checkout instead**, which is how a first installation
 usually goes, is three commands and the middle one is not optional:
@@ -441,17 +447,38 @@ ss -ltnp | grep 3001                # who is listening, if anybody
 ```
 
 **`pm2 status` empty, right after rebooting the server.** The most common case
-of all: PM2 did not resurrect itself because its list is not saved to start
-with the machine. Start it and, above all, save it:
+of all: PM2 did not resurrect itself, because nothing starts PM2 when the
+machine starts. Bring the site back, then make it the last time:
 
 ```bash
 cd /var/www/uacademic/current
 pm2 start ecosystem.config.cjs
-pm2 save
-pm2 startup        # run the line it prints back — that is what fixes it
+scripts/deploy/autostart.sh          # under sudo, or follow what it prints
 ```
 
-Without the `pm2 startup`, the next reboot puts the site back on 502.
+That script is the fix, not the `pm2 start`: it installs the systemd unit that
+resurrects PM2 at boot and saves the list for it to resurrect. Check it took:
+
+```bash
+systemctl is-enabled pm2-$(id -un)   # "enabled"
+systemctl is-enabled mariadb         # the database is a separate service
+```
+
+Both have to say `enabled`, or the next reboot puts the site back on 502.
+
+**It answers, then stops answering, without the process dying.** PM2 restarts
+what crashes; it cannot see a process that is alive and stuck — a pool
+exhausted against a database that went away, an event loop blocked. The
+watchdog checks the answer rather than the process:
+
+```bash
+* * * * * /usr/bin/flock -n /tmp/uacademic-watchdog.lock \
+    /var/www/uacademic/current/scripts/deploy/watchdog.sh
+```
+
+It restarts only after three consecutive failed health checks and never twice
+within ten minutes, so a blip is ridden out and a real fault is left visible
+in `/tmp/uacademic-watchdog/watchdog.log` rather than churned over.
 
 **`pm2 status` `errored`, or with the restart counter climbing.** The API
 starts and dies. After an unclean stop the usual suspect is that **MariaDB was

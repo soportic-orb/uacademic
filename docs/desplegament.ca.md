@@ -223,8 +223,14 @@ Després, la primera vegada:
 ```bash
 pnpm --filter @uacademic/db exec prisma migrate deploy   # ja ho fa l'script
 pm2 start /var/www/uacademic/current/ecosystem.config.cjs
-pm2 save && pm2 startup
+scripts/deploy/autostart.sh          # el pas que sobreviu a un reinici
 ```
+
+`autostart.sh` escriu la unitat de systemd que executa `pm2 resurrect` a
+l'arrencada i desa la llista de processos perquè la torni a aixecar. Necessita
+root un cop, per al fitxer de la unitat: executa'l amb `sudo`, o executa'l amb
+l'usuari de l'aplicació i et dirà l'única línia que cal fer com a root. A
+partir d'aquí, cada desplegament refresca la llista pel seu compte.
 
 **Desplegar des d'un checkout**, que és com sol anar una primera instal·lació,
 són tres ordres i la del mig no és opcional:
@@ -450,17 +456,42 @@ ss -ltnp | grep 3001                # qui escolta, si és que hi ha algú
 ```
 
 **`pm2 status` buit, just després de reiniciar el servidor.** El cas més
-freqüent de tots: PM2 no s'ha resucitat sol perquè la seva llista no està
-desada per arrencar amb la màquina. Arrenca'l i, sobretot, desa-ho:
+freqüent de tots: PM2 no s'ha resucitat sol, perquè quan arrenca la màquina no
+hi ha res que arrenqui PM2. Torna a aixecar el lloc i fes que sigui l'última
+vegada:
 
 ```bash
 cd /var/www/uacademic/current
 pm2 start ecosystem.config.cjs
-pm2 save
-pm2 startup        # executa la línia que et torni; això és el que ho arregla
+scripts/deploy/autostart.sh          # amb sudo, o seguint el que t'imprimeix
 ```
 
-Sense el `pm2 startup`, el pròxim reinici tornarà a deixar el lloc en 502.
+L'arreglo és aquest script, no el `pm2 start`: instal·la la unitat de systemd
+que resucita PM2 a l'arrencada i desa la llista que ha de resucitar.
+Comprova que ha quedat posat:
+
+```bash
+systemctl is-enabled pm2-$(id -un)   # "enabled"
+systemctl is-enabled mariadb         # la base de dades és un servei a part
+```
+
+Tots dos han de dir `enabled`, o el pròxim reinici tornarà a deixar el lloc
+en 502.
+
+**Respon, i deixa de respondre sense que el procés mori.** PM2 reinicia el que
+peta; no pot veure un procés viu i encallat — un pool esgotat contra una base
+de dades que ha marxat, un bucle d'esdeveniments bloquejat. El vigilant mira la
+resposta, no el procés:
+
+```bash
+* * * * * /usr/bin/flock -n /tmp/uacademic-watchdog.lock \\
+    /var/www/uacademic/current/scripts/deploy/watchdog.sh
+```
+
+Només reinicia després de tres comprovacions fallides seguides i mai dues
+vegades en deu minuts, així que una intermitència es deixa passar i una avaria
+de debò queda visible a `/tmp/uacademic-watchdog/watchdog.log` en comptes de
+donar voltes.
 
 **`pm2 status` en `errored`, o amb el comptador de reinicis pujant.** L'API
 arrenca i mor. Després d'una aturada bruta el sospitós habitual és que

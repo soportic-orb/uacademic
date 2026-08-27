@@ -85,6 +85,17 @@ module.exports = {
       kill_timeout: 10_000,
       wait_ready: false,
       listen_timeout: 10_000,
+      /*
+        Backing off instead of hammering.
+
+        At boot the database is often a few seconds behind the app, and an API
+        with nowhere to connect exits immediately. With no delay PM2 spends its
+        sixteen restarts inside the first second and leaves the process
+        `errored` — the machine came back, the site did not. Backing off gives
+        MariaDB the time it needs, and a fault that is not about timing still
+        ends up stopped, just later and in the log.
+      */
+      exp_backoff_restart_delay: 2_000,
     },
     {
       name: 'uacademic-worker',
@@ -98,6 +109,8 @@ module.exports = {
       out_file: path.join(LOGS, 'worker.out.log'),
       time: true,
       kill_timeout: 30_000,
+      // The same reason as the API: at boot the database may not be up yet.
+      exp_backoff_restart_delay: 2_000,
     },
   ],
 }

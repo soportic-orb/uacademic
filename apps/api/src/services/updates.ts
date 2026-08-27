@@ -480,4 +480,13 @@ export async function applyUpdate(
 async function reloadApp(): Promise<void> {
   const configuration = env()
   await run(configuration.PM2_PATH, ['reload', configuration.PM2_APP_NAME, '--update-env'])
+
+  /*
+    What PM2 brings back after a reboot is the list it last saved. An update
+    that changed what runs and did not save it would come back as the version
+    before — or, if the list was never written at all, as nothing, which is
+    the 502 somebody finds the next morning. Failing to save is not worth
+    failing the update over: the release is already live and answering.
+  */
+  await run(configuration.PM2_PATH, ['save']).catch(() => undefined)
 }

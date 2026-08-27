@@ -81,6 +81,11 @@ ln -sfn "${RELEASE}" "${ROOT}/current"
 log "Reloading"
 pm2 reload "${PM2_APP}" --update-env || pm2 start "${ROOT}/current/ecosystem.config.cjs"
 
+# What PM2 resurrects after a reboot is this saved list. Writing it on every
+# deployment is what keeps "comes back on its own" true as the app changes —
+# see scripts/deploy/autostart.sh for the unit that reads it.
+pm2 save > /dev/null 2>&1 || true
+
 log "Health check"
 HEALTHY=0
 for attempt in $(seq 1 15); do
