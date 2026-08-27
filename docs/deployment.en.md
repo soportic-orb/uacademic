@@ -225,10 +225,27 @@ sudo bash scripts/deploy/autostart.sh   # the step that survives a reboot
 ```
 
 `autostart.sh` writes the systemd unit that runs `pm2 resurrect` at boot and
-saves the process list for it to bring back. It needs root once, for the unit
-file; run it under `sudo` or run it as the application user and it prints the
-one line to run as root. Every deployment after that refreshes the saved list
-on its own, so this is a one-off.
+saves the process list for it to bring back. Every deployment after that
+refreshes the saved list on its own, so this is a one-off.
+
+**Where sudo is restricted** — a managed panel usually is, and `pm2 startup`
+comes back "user is not allowed to execute … as root" — run it without sudo.
+It installs a `@reboot` line in the application user's own crontab instead,
+which needs nobody's permission:
+
+```cron
+@reboot sleep 30; cd <release>/current && pm2 start ecosystem.config.cjs
+```
+
+Weaker than the unit — cron has to be running, and `@reboot` fires early,
+hence the delay for the database — but it is the difference between coming
+back on its own and not. `crontab -l` shows it; deleting that line undoes it.
+
+Either way, the script refuses to do anything while PM2 is managing nothing:
+saving an empty list is the very failure it exists to prevent, and a unit that
+resurrects nothing looks exactly like no unit at all. If the site is answering
+and `pm2 list` is empty, something else is serving it — find out what before
+adding a second thing that starts it.
 
 **Deploying from a checkout instead**, which is how a first installation
 usually goes, is three commands and the middle one is not optional:

@@ -61,6 +61,62 @@ run_as_app() {
 
 log() { printf '\n\033[1m%s\033[0m\n' "$*"; }
 
+# The release the symlink points at, which is what a boot should start.
+CURRENT="${UACADEMIC_CURRENT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)}"
+CRON_TAG="# uacademic-autostart"
+
+#
+# A @reboot line in the application user's own crontab.
+#
+# Weaker than a systemd unit — cron has to be running, and @reboot fires
+# early — but it needs no root at all, which on a managed host is the
+# difference between having this and not having it. The ecosystem file is
+# started rather than `pm2 resurrect`, so it does not depend on a saved list
+# being right; the delay is for the database, which is often a few seconds
+# behind at boot.
+install_reboot_cron() {
+  local line="@reboot sleep 30; cd ${CURRENT} && ${PM2_BIN} start ecosystem.config.cjs ${CRON_TAG}"
+
+  local existing
+  existing="$(run_as_app "crontab -l" 2>/dev/null | grep -v -F "${CRON_TAG}" || true)"
+
+  printf '%s\n%s\n' "${existing}" "${line}" | sed '/^$/d' | run_as_app "crontab -"
+
+  log "Installed the @reboot line"
+  cat <<CRON
+${line}
+
+It is in the crontab of ${APP_USER}: \`crontab -l\` shows it, and removing
+that line undoes this. If you later get root, the systemd unit above is the
+better answer — it starts earlier and reports its state to \`systemctl\`.
+CRON
+}
+
+log "Looking at what PM2 is running"
+# Saving an empty list is the trap this script exists to avoid: the unit would
+# resurrect nothing, which looks exactly like no unit at all. So a list with
+# nothing in it is a stop, with the reason.
+if ! run_as_app "${PM2_BIN} pid uacademic" > /dev/null 2>&1; then
+  cat >&2 <<MANAGING
+
+PM2 is not running UAcademic for ${APP_USER}, so there is nothing to make
+come back. Start it first, from the release directory:
+
+  pm2 start ecosystem.config.cjs
+
+and run this again. If the site *is* answering, then something other than
+this user's PM2 is serving it — find out what before setting up a second
+thing to start it:
+
+  pm2 list                                  # as ${APP_USER}
+  sudo pm2 list                             # as root, if sudo allows it
+  systemctl list-units --type=service | grep -i uacademic
+  ps -ef | grep -i '[u]academic'
+
+MANAGING
+  exit 1
+fi
+
 log "Saving the process list"
 # What resurrect brings back is this file, so it has to be written *after* the
 # processes are running and *again* after every release — and as the user who
@@ -77,15 +133,22 @@ if [[ -f "${UNIT}" ]] && systemctl is-enabled --quiet "pm2-${APP_USER}" 2>/dev/n
 fi
 
 if [[ "$(id -u)" -ne 0 ]]; then
-  cat >&2 <<MANUAL
+  cat <<MANUAL
 
-The unit file needs root. Run this line, then this script again:
+The unit file needs root:
 
   sudo env PATH="\$PATH:$(dirname "${PM2_BIN}")" "${PM2_BIN}" startup systemd \\
     -u "${APP_USER}" --hp "${APP_HOME}"
 
+On a host where sudo is restricted — a managed panel usually is — that line
+comes back "not allowed". There is a way that needs nobody's permission, and
+it is what this script is about to do instead: a @reboot line in your own
+crontab.
+
 MANUAL
-  exit 1
+
+  install_reboot_cron
+  exit 0
 fi
 
 log "Installing the boot unit"

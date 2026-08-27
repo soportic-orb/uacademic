@@ -230,10 +230,28 @@ sudo bash scripts/deploy/autostart.sh   # el paso que sobrevive a un reinicio
 ```
 
 `autostart.sh` escribe la unidad de systemd que ejecuta `pm2 resurrect` al
-arrancar y guarda la lista de procesos para que la levante. Necesita root una
-vez, para el fichero de la unidad: ejecútalo con `sudo`, o ejecútalo con el
-usuario de la aplicación y te dirá la única línea que hay que hacer como root.
-A partir de ahí, cada despliegue refresca la lista por su cuenta.
+arrancar y guarda la lista de procesos para que la levante. A partir de ahí,
+cada despliegue refresca la lista por su cuenta.
+
+**Donde sudo está restringido** — un panel gestionado suele estarlo, y `pm2
+startup` responde «user is not allowed to execute … as root» — ejecútalo sin
+sudo. Entonces instala una línea `@reboot` en el crontab del propio usuario de
+la aplicación, que no necesita el permiso de nadie:
+
+```cron
+@reboot sleep 30; cd <release>/current && pm2 start ecosystem.config.cjs
+```
+
+Es más débil que la unidad — cron tiene que estar en marcha, y `@reboot` se
+dispara pronto, de ahí la espera para la base de datos — pero es la diferencia
+entre volver solo y no volver. `crontab -l` la muestra; borrar esa línea lo
+deshace.
+
+En ambos casos el script se planta si PM2 no gestiona nada: guardar una lista
+vacía es justo el fallo que quiere evitar, y una unidad que resucita la nada se
+parece a no tener unidad. Si el sitio responde y `pm2 list` está vacío, hay
+otra cosa sirviéndolo: averigua qué antes de añadir una segunda cosa que lo
+arranque.
 
 **Desplegar desde un checkout**, que es como suele ir una primera instalación,
 son tres órdenes y la de en medio no es opcional:
