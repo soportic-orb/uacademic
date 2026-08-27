@@ -223,7 +223,7 @@ Després, la primera vegada:
 ```bash
 pnpm --filter @uacademic/db exec prisma migrate deploy   # ja ho fa l'script
 pm2 start /var/www/uacademic/current/ecosystem.config.cjs
-scripts/deploy/autostart.sh          # el pas que sobreviu a un reinici
+sudo bash scripts/deploy/autostart.sh   # el pas que sobreviu a un reinici
 ```
 
 `autostart.sh` escriu la unitat de systemd que executa `pm2 resurrect` a
@@ -463,7 +463,7 @@ vegada:
 ```bash
 cd /var/www/uacademic/current
 pm2 start ecosystem.config.cjs
-scripts/deploy/autostart.sh          # amb sudo, o seguint el que t'imprimeix
+sudo bash scripts/deploy/autostart.sh   # o sense sudo, i segueix el que t'imprimeix
 ```
 
 L'arreglo és aquest script, no el `pm2 start`: instal·la la unitat de systemd

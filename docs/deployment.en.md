@@ -221,7 +221,7 @@ Then, the first time only:
 ```bash
 pnpm --filter @uacademic/db exec prisma migrate deploy   # the script already does this
 pm2 start /var/www/uacademic/current/ecosystem.config.cjs
-scripts/deploy/autostart.sh          # the step that survives a reboot
+sudo bash scripts/deploy/autostart.sh   # the step that survives a reboot
 ```
 
 `autostart.sh` writes the systemd unit that runs `pm2 resurrect` at boot and
@@ -453,7 +453,7 @@ machine starts. Bring the site back, then make it the last time:
 ```bash
 cd /var/www/uacademic/current
 pm2 start ecosystem.config.cjs
-scripts/deploy/autostart.sh          # under sudo, or follow what it prints
+sudo bash scripts/deploy/autostart.sh   # or run it plain and follow what it prints
 ```
 
 That script is the fix, not the `pm2 start`: it installs the systemd unit that

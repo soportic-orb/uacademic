@@ -15,30 +15,57 @@
 #      unit starts a PM2 with nothing in it, which looks identical to the
 #      failure it was meant to fix.
 #
-# Run once, from the application user, after the first release is running:
+# Run once, after the first release is running:
 #
-#   scripts/deploy/autostart.sh
+#   sudo bash scripts/deploy/autostart.sh
 #
-# It needs root only for the unit file. Run it under sudo, or run it as the
-# application user and it prints the one line to run as root and stops.
+# `bash` rather than the path alone because `sudo scripts/…` resolves the
+# command against root's PATH and a relative path is not a command — the shell
+# answers "command not found" for a file that is plainly there.
+#
+# Root is needed only for the unit file. Without sudo it does everything it
+# can and prints the one line to run as root.
 set -euo pipefail
 
 APP_USER="${SUDO_USER:-$(id -un)}"
 APP_HOME="$(getent passwd "${APP_USER}" | cut -d: -f6)"
-PM2_BIN="$(command -v pm2 || true)"
+
+# Under sudo the PATH is root's, and pm2 is usually installed for the
+# application user — so it is looked for as them before giving up.
+PM2_BIN="${UACADEMIC_PM2_PATH:-$(command -v pm2 || true)}"
+if [[ -z "${PM2_BIN}" && -n "${SUDO_USER:-}" ]]; then
+  PM2_BIN="$(su - "${APP_USER}" -c 'command -v pm2' 2>/dev/null || true)"
+fi
 
 if [[ -z "${PM2_BIN}" ]]; then
-  echo "pm2 is not on the PATH of ${APP_USER}. Install it first:" >&2
-  echo "  npm install --global pm2" >&2
+  cat >&2 <<'MISSING'
+pm2 was not found, neither on this PATH nor on the application user's.
+
+Install it, or say where it is:
+
+  npm install --global pm2
+  UACADEMIC_PM2_PATH=/path/to/pm2 sudo -E bash scripts/deploy/autostart.sh
+MISSING
   exit 1
 fi
+
+# PM2 keeps its state per user: run as root, `pm2 save` would save root's
+# (empty) list and the unit would resurrect nothing.
+run_as_app() {
+  if [[ -n "${SUDO_USER:-}" ]]; then
+    su - "${APP_USER}" -c "$*"
+  else
+    eval "$*"
+  fi
+}
 
 log() { printf '\n\033[1m%s\033[0m\n' "$*"; }
 
 log "Saving the process list"
 # What resurrect brings back is this file, so it has to be written *after* the
-# processes are running and *again* after every release.
-"${PM2_BIN}" save
+# processes are running and *again* after every release — and as the user who
+# owns the processes, which under sudo is not the user running this.
+run_as_app "${PM2_BIN} save"
 
 UNIT="/etc/systemd/system/pm2-${APP_USER}.service"
 
@@ -68,7 +95,7 @@ env PATH="${PATH}:$(dirname "${PM2_BIN}")" "${PM2_BIN}" startup systemd \
 systemctl enable "pm2-${APP_USER}" >/dev/null 2>&1 || true
 
 log "Done"
-cat <<NEXT
+cat <<'NEXT'
 UAcademic will start again by itself after a reboot.
 
 Two things worth knowing:
@@ -80,9 +107,16 @@ Two things worth knowing:
   * The database is a separate service. Check it also starts at boot:
       systemctl is-enabled mariadb   (or mysql)
     and enable it with `systemctl enable mariadb` if it says "disabled".
+NEXT
+
+# Outside the heredoc, which is quoted so that the backticks above are text
+# rather than commands: an unquoted one ran `pm2 save` a second time while
+# printing this and swallowed the words it was meant to show.
+cat <<CHECK
 
 To see that it really works, without waiting for the next outage:
 
-  sudo systemctl stop pm2-${APP_USER} && sudo systemctl start pm2-${APP_USER}
+  sudo systemctl restart pm2-${APP_USER}
   pm2 status
-NEXT
+
+CHECK

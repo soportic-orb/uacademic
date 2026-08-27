@@ -226,7 +226,7 @@ Después, la primera vez:
 ```bash
 pnpm --filter @uacademic/db exec prisma migrate deploy   # ya lo hace el script
 pm2 start /var/www/uacademic/current/ecosystem.config.cjs
-scripts/deploy/autostart.sh          # el paso que sobrevive a un reinicio
+sudo bash scripts/deploy/autostart.sh   # el paso que sobrevive a un reinicio
 ```
 
 `autostart.sh` escribe la unidad de systemd que ejecuta `pm2 resurrect` al
@@ -467,7 +467,7 @@ vez:
 ```bash
 cd /var/www/uacademic/current
 pm2 start ecosystem.config.cjs
-scripts/deploy/autostart.sh          # con sudo, o siguiendo lo que imprime
+sudo bash scripts/deploy/autostart.sh   # o sin sudo, y sigue lo que imprime
 ```
 
 El arreglo es ese script, no el `pm2 start`: instala la unidad de systemd que

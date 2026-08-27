@@ -63,7 +63,7 @@ Layout ready. What is left, in order:
   2. Deploy a release:   scripts/deploy/release.sh <version> <artifact.tar.gz>
   3. Start PM2:          pm2 start ${ROOT}/current/ecosystem.config.cjs
   4. Make it survive a reboot:
-                         scripts/deploy/autostart.sh
+                         sudo bash scripts/deploy/autostart.sh
      This is the step that is easy to skip and expensive to have skipped:
      without it PM2 does not come back after a restart and the site answers
      502 until somebody logs in and starts it by hand. The script writes the
