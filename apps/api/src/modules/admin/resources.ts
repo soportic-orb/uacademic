@@ -119,6 +119,8 @@ async function coordinatorWrite(
   client: PrismaClient,
   centerId: string,
   userIds: readonly string[],
+  /** Whether the subject already exists, which decides the shape below. */
+  existing: boolean,
 ): Promise<Record<string, unknown>> {
   const unique = [...new Set(userIds)]
 
@@ -144,11 +146,16 @@ async function coordinatorWrite(
     }
   }
 
-  return {
-    // The list replaces whatever was there: it is what the form showed.
-    deleteMany: {},
-    create: unique.map((userId) => ({ userId, centerId })),
-  }
+  const create = unique.map((userId) => ({ userId, centerId }))
+
+  /*
+    A subject being created has nothing to replace, and Prisma refuses
+    `deleteMany` in a create — "Unknown argument `deleteMany`", which reached
+    the screen as "something went wrong" on every new subject. Editing one
+    does replace: the list is what the form showed, so what is not in it is
+    not coordinating it any more.
+  */
+  return existing ? { deleteMany: {}, create } : { create }
 }
 
 /**
@@ -328,7 +335,12 @@ export function registerAdminResources(app: FastifyInstance): void {
 
       return {
         ...rest,
-        coordinators: await coordinatorWrite(context.client, context.centerId, coordinatorIds),
+        coordinators: await coordinatorWrite(
+          context.client,
+          context.centerId,
+          coordinatorIds,
+          Boolean(context.id),
+        ),
       }
     },
   } satisfies CrudResource<typeof subjectInputSchema>)

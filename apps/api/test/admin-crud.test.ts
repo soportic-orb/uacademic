@@ -5,7 +5,7 @@
  */
 import { disconnectPrisma, getPrismaClient } from '@uacademic/db'
 import type { FastifyInstance } from 'fastify'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 
 import {
   FOREIGN,
@@ -359,6 +359,78 @@ describe.skipIf(!hasDatabase)('admin CRUD', () => {
       })
 
       expect(response.statusCode).toBe(404)
+    })
+  })
+
+  /*
+    Creating one, which is a different Prisma call from editing one: a nested
+    write that is valid on update is not necessarily valid on create.
+  */
+  describe('creating a subject', () => {
+    const subject = (overrides: Record<string, unknown> = {}) => ({
+      academicYearId: '',
+      degreeId: '',
+      code: 'TEST101',
+      nameCa: 'Prova assignatura',
+      nameEs: 'Prueba asignatura',
+      nameEn: 'Test subject',
+      ects: 6,
+      year: 1,
+      term: 't1',
+      type: 'basic',
+      teachingLanguage: 'ca',
+      ...overrides,
+    })
+
+    const context = async () => {
+      const year = await prisma.academicYear.findFirstOrThrow({
+        where: { centerId, status: 'active' },
+      })
+      const degree = await prisma.degree.findFirstOrThrow({ where: { centerId } })
+      const person = await prisma.user.findFirstOrThrow({ where: { email: SEED.teacherEmail } })
+      return { academicYearId: year.id, degreeId: degree.id, userId: person.id }
+    }
+
+    afterEach(async () => {
+      await prisma.subject.deleteMany({ where: { centerId, code: { startsWith: 'TEST' } } })
+    })
+
+    it('creates one with nobody coordinating it yet', async () => {
+      const { academicYearId, degreeId } = await context()
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/v1/admin/subjects',
+        headers: asAdmin(),
+        // The empty list is what the form sends when nobody is ticked: it is
+        // a value, not an omission, or clearing the last name would be
+        // indistinguishable from not touching the field.
+        payload: subject({ academicYearId, degreeId, coordinatorIds: [] }),
+      })
+
+      expect(response.statusCode).toBe(201)
+      expect(response.json().coordinatorIds).toEqual([])
+    })
+
+    it('creates one with its coordination and its colour set', async () => {
+      const { academicYearId, degreeId, userId } = await context()
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/v1/admin/subjects',
+        headers: asAdmin(),
+        payload: subject({
+          academicYearId,
+          degreeId,
+          code: 'TEST102',
+          coordinatorIds: [userId],
+          color: '#7C3AED',
+        }),
+      })
+
+      expect(response.statusCode).toBe(201)
+      expect(response.json().coordinatorIds).toEqual([userId])
+      expect(response.json().color).toBe('#7C3AED')
     })
   })
 
