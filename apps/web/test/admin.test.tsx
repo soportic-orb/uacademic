@@ -106,6 +106,45 @@ describe('resource table', () => {
     })
   })
 
+  it('lets a kind of class be given a colour, on the way in and on the way out', async () => {
+    /*
+      The colour is what the days of that kind are washed with on a printed
+      programme, so it has to be editable on the type itself — and it has to
+      come back into the form when one is opened again, or every edit would
+      quietly clear it.
+    */
+    const user = userEvent.setup()
+    respondWith({
+      items: [
+        {
+          id: 'ct1',
+          nameCa: 'Laboratori',
+          nameEs: 'Laboratorio',
+          nameEn: 'Laboratory',
+          defaultMinutes: 180,
+          color: '#15803D',
+        },
+      ],
+      page: 1,
+      pageSize: 25,
+      total: 1,
+      totalPages: 1,
+    })
+
+    render(wrap(<ResourcePage resource={resourceByKey('class-types')!} />))
+
+    await user.click(await screen.findByRole('button', { name: 'Edita' }))
+
+    const dialog = screen.getByRole('dialog')
+    const picker = within(dialog).getByLabelText('Color')
+    expect(picker).toHaveValue('#15803d')
+    // And the palette beside it, for choosing without a colour wheel.
+    expect(within(dialog).getByRole('button', { name: '#15803D' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+  })
+
   it('renders enum columns through the catalog, not as raw values', async () => {
     respondWith({
       items: [
