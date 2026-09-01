@@ -29,6 +29,9 @@ export interface PlannerSessionDto {
   spaceId: string | null
   spaceName: string | null
   building: string | null
+  /** What kind of class it is, when the center keeps a list of kinds. */
+  classTypeId: string | null
+  classTypeName: string | null
   weekday: Weekday
   startTime: string
   endTime: string
@@ -212,6 +215,8 @@ export interface SessionInput {
   endTime: string
   /** What the class is about. Null clears what was written. */
   topic?: string | null
+  /** What kind of class it is. Null leaves it unsaid. */
+  classTypeId?: string | null
 }
 
 export function useCreateSession(versionId: string) {

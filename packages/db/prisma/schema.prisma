@@ -129,14 +129,6 @@ enum TeachingLanguage {
   other
 }
 
-enum GroupType {
-  theory
-  seminar
-  lab
-  practicum
-  tutoring
-}
-
 enum SpaceType {
   classroom
   seminar_room
@@ -441,6 +433,7 @@ model Center {
   auditLog               AuditLog[]
   calendarEntries        AcademicCalendarEntry[]
   calendarTypes          CalendarType[]
+  classTypes             ClassType[]
   importBatches          ImportBatch[]
 
   @@unique([universityId, code])
@@ -636,27 +629,27 @@ model SubjectCoordinator {
   @@map("subject_coordinators")
 }
 
+/// A set of students taught together.
+///
+/// What kind of class they are having, and how long it lasts, is not here: one
+/// group has lectures, practicals and laboratory sessions, of different
+/// lengths and in different rooms. That belongs to the class — see `ClassType`
+/// — and is chosen when the class is placed.
 model Group {
-  id                    String     @id @default(uuid(7)) @db.Char(36)
-  centerId              String     @map("center_id") @db.Char(36)
-  subjectId             String     @map("subject_id") @db.Char(36)
-  type                  GroupType
-  code                  String     @db.VarChar(32)
-  plannedHours          Decimal    @map("planned_hours") @db.Decimal(6, 2)
-  capacity              Int?       @db.SmallInt
-  requiredSpaceType     SpaceType? @map("required_space_type")
+  id                    String   @id @default(uuid(7)) @db.Char(36)
+  centerId              String   @map("center_id") @db.Char(36)
+  subjectId             String   @map("subject_id") @db.Char(36)
+  code                  String   @db.VarChar(32)
+  plannedHours          Decimal  @map("planned_hours") @db.Decimal(6, 2)
+  capacity              Int?     @db.SmallInt
   /// The room this group normally has. A default, not a rule: a session takes
   /// it when it is placed, and the planner may put that one session elsewhere.
-  spaceId               String?    @map("space_id") @db.Char(36)
-  /// How long a class of this group lasts, in minutes. Null means the center's
-  /// own default (`schedule.defaultSessionMinutes`), which is what most groups
-  /// want; a three-hour lab says so here.
-  sessionMinutes        Int?       @map("session_minutes") @db.SmallInt
+  spaceId               String?  @map("space_id") @db.Char(36)
   /// Equipment the room must have for this group, e.g. ["workstations"].
   /// A hard constraint of the planner (phase 3).
-  requiredEquipmentJson Json?      @map("required_equipment_json")
-  createdAt             DateTime   @default(now()) @map("created_at")
-  updatedAt             DateTime   @updatedAt @map("updated_at")
+  requiredEquipmentJson Json?    @map("required_equipment_json")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
 
   center  Center  @relation(fields: [centerId], references: [id], onDelete: Cascade)
   subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
@@ -846,6 +839,9 @@ model ClassSession {
   groupId           String     @map("group_id") @db.Char(36)
   teacherProfileId  String?    @map("teacher_profile_id") @db.Char(36)
   spaceId           String?    @map("space_id") @db.Char(36)
+  /// What kind of class this is — lecture, practical, laboratory — chosen when
+  /// it is placed. Null for the classes placed before a center had any types.
+  classTypeId       String?    @map("class_type_id") @db.Char(36)
   /// ISO weekday: 1 = Monday … 7 = Sunday.
   weekday           Int        @db.TinyInt
   startTime         String     @map("start_time") @db.Char(5)
@@ -867,6 +863,7 @@ model ClassSession {
   group           Group           @relation(fields: [groupId], references: [id], onDelete: Cascade)
   teacherProfile  TeacherProfile? @relation(fields: [teacherProfileId], references: [id], onDelete: SetNull)
   space           Space?          @relation(fields: [spaceId], references: [id], onDelete: SetNull)
+  classType       ClassType?      @relation(fields: [classTypeId], references: [id], onDelete: SetNull)
 
   changeRequests   ChangeRequest[]
   calendarMappings CalendarEventMap[]
@@ -1769,6 +1766,30 @@ model CalendarType {
 
   @@unique([centerId, key])
   @@map("calendar_types")
+}
+
+/// A kind of class a center gives: lecture, practical, laboratory, seminar.
+///
+/// It is the class that has a kind, not the group: one group has all of them,
+/// in different lengths and different rooms. Each type carries the length its
+/// classes usually last, which is what a class placed with it starts at — the
+/// planner can then stretch that one class like any other.
+model ClassType {
+  id             String   @id @default(uuid(7)) @db.Char(36)
+  centerId       String   @map("center_id") @db.Char(36)
+  nameCa         String   @map("name_ca") @db.VarChar(60)
+  nameEs         String   @map("name_es") @db.VarChar(60)
+  nameEn         String   @map("name_en") @db.VarChar(60)
+  /// How long one of its classes lasts, in minutes.
+  defaultMinutes Int      @default(60) @map("default_minutes") @db.SmallInt
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  center   Center         @relation(fields: [centerId], references: [id], onDelete: Cascade)
+  sessions ClassSession[]
+
+  @@unique([centerId, nameCa])
+  @@map("class_types")
 }
 
 model AcademicCalendarEntry {

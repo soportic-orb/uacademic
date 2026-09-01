@@ -3,6 +3,7 @@ import {
   carryYearly,
   calendarEntryInputSchema,
   centerInputSchema,
+  classTypeInputSchema,
   degreeInputSchema,
   entraTenantInputSchema,
   groupInputSchema,
@@ -352,10 +353,10 @@ export function registerAdminResources(app: FastifyInstance): void {
     scope: 'center',
     roles: { read: ['CENTER_ADMIN', 'COORDINATOR'], write: ['CENTER_ADMIN', 'COORDINATOR'] },
     inputSchema: groupInputSchema,
-    sortable: ['code', 'type', 'plannedHours'],
+    sortable: ['code', 'plannedHours'],
     defaultSort: 'code',
     searchFields: ['code'],
-    filterFields: ['subjectId', 'type'],
+    filterFields: ['subjectId'],
     include: {
       subject: { select: { code: true, nameCa: true } },
       space: { select: { name: true } },
@@ -366,19 +367,46 @@ export function registerAdminResources(app: FastifyInstance): void {
       return {
         id: asString(row.id),
         code: asString(row.code),
-        type: asString(row.type),
         plannedHours: asNumber(row.plannedHours),
         capacity: row.capacity ?? null,
-        requiredSpaceType: row.requiredSpaceType ?? null,
         spaceId: row.spaceId ?? null,
         spaceName: space?.name ?? null,
-        sessionMinutes: row.sessionMinutes ?? null,
         subjectId: asString(row.subjectId),
         subjectCode: asString(subject?.code),
         subjectName: asString(subject?.nameCa),
       }
     },
   } satisfies CrudResource<typeof groupInputSchema>)
+
+  /*
+    The kinds of class a center gives.
+
+    Read by coordinators as well as by admins: the planner offers them when a
+    class is placed, and it is the coordinator who places it.
+  */
+  registerCrudRoutes(app, {
+    path: 'admin/class-types',
+    model: 'classType',
+    entity: 'class_type',
+    scope: 'center',
+    roles: { read: ['CENTER_ADMIN', 'COORDINATOR', 'TEACHER'], write: ['CENTER_ADMIN'] },
+    inputSchema: classTypeInputSchema,
+    sortable: ['nameCa', 'defaultMinutes'],
+    defaultSort: 'nameCa',
+    searchFields: ['nameCa', 'nameEs', 'nameEn'],
+    serialize: (row) => ({
+      id: asString(row.id),
+      defaultMinutes: asNumber(row.defaultMinutes),
+      ...names(row),
+    }),
+    beforeWrite: (input) => ({
+      ...input,
+      // Blank is not a translation and neither is a guess: the Catalan name
+      // stands in until somebody writes the other two.
+      ...(input.nameEs?.trim() ? {} : { nameEs: input.nameCa }),
+      ...(input.nameEn?.trim() ? {} : { nameEn: input.nameCa }),
+    }),
+  } satisfies CrudResource<typeof classTypeInputSchema>)
 
   registerCrudRoutes(app, {
     path: 'admin/spaces',

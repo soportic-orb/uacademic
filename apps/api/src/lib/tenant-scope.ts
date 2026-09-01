@@ -14,6 +14,7 @@ export const TENANT_SCOPED_MODELS: readonly string[] = [
   'AcademicYear',
   'AcademicCalendarEntry',
   'CalendarType',
+  'ClassType',
   'UserCenterRole',
   'Degree',
   'Subject',

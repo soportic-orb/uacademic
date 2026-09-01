@@ -43,9 +43,9 @@ interface SessionRow {
   updatedAt: Date
   group: {
     code: string
-    type: string
     subject: { id: string; code: string; nameCa: string; academicYearId: string }
   }
+  classType: { nameCa: string } | null
   space: { name: string; building: string | null } | null
   teacherProfile: { user: { firstName: string; lastName: string } } | null
   coTeachers: { teacherProfile: { user: { firstName: string; lastName: string } } }[]
@@ -95,10 +95,10 @@ export async function sessionsForUser(
       group: {
         select: {
           code: true,
-          type: true,
           subject: { select: { id: true, code: true, nameCa: true, academicYearId: true } },
         },
       },
+      classType: { select: { nameCa: true } },
       space: { select: { name: true, building: true } },
       teacherProfile: { select: { user: { select: { firstName: true, lastName: true } } } },
       coTeachers: {
@@ -117,7 +117,9 @@ function values(row: SessionRow, context: DraftContext): Record<string, string> 
     subjectCode: row.group.subject.code,
     subjectName: row.group.subject.nameCa,
     groupCode: row.group.code,
-    groupType: row.group.type,
+    // What kind of class it is, which belongs to the class rather than to the
+    // group that has it.
+    classType: row.classType?.nameCa ?? '',
     spaceName: row.space?.name ?? '',
     building: row.space?.building ?? '',
     // Everyone giving it, so a shared class does not reach a phone under one

@@ -235,7 +235,7 @@ describe.skipIf(!hasDatabase)('contracting a teacher', () => {
         },
       })
       const group = await prisma.group.create({
-        data: { centerId, subjectId: subject.id, code: 'A1', type: 'theory', plannedHours: 60 },
+        data: { centerId, subjectId: subject.id, code: 'A1', plannedHours: 60 },
       })
 
       const offered = await app.inject({

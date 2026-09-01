@@ -108,7 +108,6 @@ export interface GroupResource {
   subjectColor?: string | null
   /** Students expected. Null means nobody recorded it, so it cannot block. */
   capacity: number | null
-  requiredSpaceType: string | null
   requiredEquipment: readonly string[]
 }
 

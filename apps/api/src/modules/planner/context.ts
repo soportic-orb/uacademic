@@ -45,6 +45,21 @@ export interface PlannerContext {
    * column of profile ids is not a column of colleagues.
    */
   directory: TeacherDirectoryEntry[]
+  /**
+   * The kinds of class this center gives, for the picker on a class block.
+   *
+   * The kind belongs to the class rather than to the group, so it is chosen
+   * where the class is: one group has lectures, practicals and laboratory
+   * sessions, of different lengths and in different rooms.
+   */
+  classTypes: ClassTypeOption[]
+}
+
+export interface ClassTypeOption {
+  id: string
+  name: string
+  /** Where a class placed with this type starts, in minutes. */
+  defaultMinutes: number
 }
 
 export interface TeacherDirectoryEntry {
@@ -59,6 +74,16 @@ export interface TeacherDirectoryEntry {
    * "overloaded" about a teacher whose own card said the opposite.
    */
   capacityHours: number
+}
+
+/** A trilingual name in the reader's language (R1). */
+function localeName(
+  request: FastifyRequest,
+  row: { nameCa: string; nameEs: string; nameEn: string },
+): string {
+  if (request.locale === 'es') return row.nameEs
+  if (request.locale === 'en') return row.nameEn
+  return row.nameCa
 }
 
 function stringList(value: unknown): string[] {
@@ -81,7 +106,7 @@ export async function plannerContext(request: FastifyRequest): Promise<PlannerCo
   const center = await prisma().center.findUnique({ where: { id: centerId } })
   const settings = parseCenterSettings(center?.settingsJson)
 
-  const [profiles, spaces, groups, busySlots] = await Promise.all([
+  const [profiles, spaces, groups, busySlots, classTypes] = await Promise.all([
     db.teacherProfile.findMany({
       where: { academicYearId: academicYear.id },
       include: {
@@ -101,6 +126,15 @@ export async function plannerContext(request: FastifyRequest): Promise<PlannerCo
       where: { teacherProfile: { academicYearId: academicYear.id } },
       select: { teacherProfileId: true, startAt: true, endAt: true },
       take: 5_000,
+    }),
+    /*
+      A center that has not written its kinds of class down yet simply has
+      none, and the picker is empty: the planner works without them, as it did
+      before they existed.
+    */
+    db.classType.findMany({ orderBy: { nameCa: 'asc' } }).catch((error: unknown) => {
+      request.log.error({ err: error }, 'class types unavailable')
+      return []
     }),
   ])
 
@@ -166,6 +200,11 @@ export async function plannerContext(request: FastifyRequest): Promise<PlannerCo
         capacityHours: load.capacityHours,
       }
     }),
+    classTypes: classTypes.map((type) => ({
+      id: type.id,
+      name: localeName(request, type),
+      defaultMinutes: type.defaultMinutes,
+    })),
     centerId,
     db,
     user,
@@ -199,7 +238,6 @@ export async function plannerContext(request: FastifyRequest): Promise<PlannerCo
             subjectName: group.subject.nameCa,
             subjectColor: group.subject.color,
             capacity: group.capacity,
-            requiredSpaceType: group.requiredSpaceType,
             requiredEquipment: stringList(group.requiredEquipmentJson),
           },
         ]),
@@ -227,6 +265,8 @@ const SESSION_INCLUDE = {
     },
   },
   space: { select: { id: true, name: true, building: true } },
+  // What kind of class it is: a lecture, a practical, a laboratory session.
+  classType: { select: { id: true, nameCa: true, nameEs: true, nameEn: true } },
 } as const
 
 export type SessionRow = Awaited<
@@ -243,6 +283,7 @@ export type SessionRow = Awaited<
     teacherProfile: { user: { firstName: string; lastName: string } }
   }[]
   space: { id: string; name: string; building: string | null } | null
+  classType: { id: string; nameCa: string; nameEs: string; nameEn: string } | null
 }
 
 export function sessionInclude() {
@@ -316,6 +357,8 @@ export function toSnapshot(row: SessionRow): SessionSnapshot {
     teachers: sessionTeachers(row),
     spaceId: row.spaceId,
     spaceName: row.space?.name ?? null,
+    classTypeId: row.classTypeId ?? null,
+    classTypeName: row.classType?.nameCa ?? null,
     weekday: row.weekday as Weekday,
     startTime: row.startTime,
     endTime: row.endTime,
@@ -405,16 +448,16 @@ export async function sessionRequirements(context: PlannerContext): Promise<Sess
 
     const resource = context.schedule.groups.get(group.id)
     const candidateSpaceIds = spaces
-      .filter((space) => !group.requiredSpaceType || space.type === group.requiredSpaceType)
       .filter((space) => (resource?.capacity ?? 0) <= space.capacity)
       .filter((space) =>
         (resource?.requiredEquipment ?? []).every((item) => space.equipment.includes(item)),
       )
       .map((space) => space.spaceId)
 
-    // A group's own class length when it has one: a three-hour lab needs a
-    // third of the sessions an hour-long seminar does for the same hours.
-    const sessionMinutes = group.sessionMinutes ?? defaultSessionMinutes
+    // The center's own class length: how long a given class lasts is now the
+    // kind of class it is (`class_types`), chosen when it is placed, and a
+    // group that has not been planned yet has no classes to read it from.
+    const sessionMinutes = defaultSessionMinutes
     const weeklyMinutes = (Number(group.plannedHours) / teachingWeeks) * 60
     const count = Math.max(1, Math.round(weeklyMinutes / sessionMinutes))
 

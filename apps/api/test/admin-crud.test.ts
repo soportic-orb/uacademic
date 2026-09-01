@@ -30,10 +30,12 @@ describe.skipIf(!hasDatabase)('admin CRUD', () => {
     await ensureForeignCenter()
     centerId = await seedCenterId()
     await prisma.space.deleteMany({ where: { centerId, name: { startsWith: 'Test ' } } })
+    await prisma.classType.deleteMany({ where: { centerId, nameCa: { startsWith: 'Test ' } } })
   })
 
   afterAll(async () => {
     await prisma.space.deleteMany({ where: { centerId, name: { startsWith: 'Test ' } } })
+    await prisma.classType.deleteMany({ where: { centerId, nameCa: { startsWith: 'Test ' } } })
     await app.close()
     await disconnectPrisma()
   })
@@ -161,6 +163,52 @@ describe.skipIf(!hasDatabase)('admin CRUD', () => {
       const update = audit.find((entry) => entry.action === 'update')
       expect((update?.beforeJson as { capacity?: number } | null)?.capacity).toBe(40)
       expect((update?.afterJson as { capacity?: number } | null)?.capacity).toBe(55)
+    })
+
+    it('keeps the kinds of class a center gives, with the length each lasts', async () => {
+      /*
+        A kind of class belongs to the class, not to the group: one group has
+        lectures, practicals and laboratory sessions, of different lengths. So
+        the center writes its kinds down here, and a class says which it is
+        when the planner places it.
+      */
+      const created = await app.inject({
+        method: 'POST',
+        url: '/api/v1/admin/class-types',
+        headers: asAdmin(),
+        payload: { nameCa: 'Test taller', defaultMinutes: 90 },
+      })
+
+      expect(created.statusCode).toBe(201)
+      const id = created.json().id
+      expect(created.json().defaultMinutes).toBe(90)
+      // Left blank, the other two languages take the Catalan name rather than
+      // an invented translation or an empty label (R1).
+      expect(created.json().nameEs).toBe('Test taller')
+      expect(created.json().nameEn).toBe('Test taller')
+
+      // The planner offers them, and it is the coordinator who plans.
+      const read = await app.inject({
+        method: 'GET',
+        url: '/api/v1/admin/class-types',
+        headers: asTeacher(),
+      })
+      expect(read.statusCode).toBe(200)
+      expect(read.json().items.some((item: { id: string }) => item.id === id)).toBe(true)
+
+      const byTeacher = await app.inject({
+        method: 'POST',
+        url: '/api/v1/admin/class-types',
+        headers: asTeacher(),
+        payload: { nameCa: 'Test prohibit', defaultMinutes: 60 },
+      })
+      expect(byTeacher.statusCode).toBe(403)
+
+      await app.inject({
+        method: 'DELETE',
+        url: `/api/v1/admin/class-types/${id}`,
+        headers: asAdmin(),
+      })
     })
 
     it('rejects invalid input with per-field keys', async () => {

@@ -253,7 +253,7 @@ export const readTools: Record<
     const sessions = await publishedSessions(context, { group: { subjectId: subject.id } })
     const groups = await context.db.group.findMany({
       where: { subjectId: subject.id },
-      select: { id: true, code: true, type: true, plannedHours: true, capacity: true },
+      select: { id: true, code: true, plannedHours: true, capacity: true },
     })
 
     return minimizeForModel({
@@ -265,7 +265,6 @@ export const readTools: Record<
       groups: groups.map((group) => ({
         groupId: group.id,
         code: group.code,
-        type: group.type,
         plannedHours: Number(group.plannedHours),
         capacity: group.capacity,
       })),

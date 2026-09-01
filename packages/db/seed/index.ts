@@ -411,11 +411,9 @@ async function seedSubjects(
           id: groupId,
           centerId: CENTER_ID,
           subjectId,
-          type: group.type,
           code: group.code,
           plannedHours: group.plannedHours,
           capacity: group.capacity,
-          requiredSpaceType: group.requiredSpaceType,
           requiredEquipmentJson: [...(group.requiredEquipment ?? [])],
         },
         update: {
@@ -456,6 +454,41 @@ async function seedSpaces() {
     spaceIds.push({ id, type: space.type, capacity: space.capacity })
   }
   return spaceIds
+}
+
+/**
+ * The kinds of class the demo center gives.
+ *
+ * A kind belongs to the class rather than to the group — one group has
+ * lectures, practicals and laboratory sessions alike — and each carries the
+ * length its classes usually last.
+ */
+async function seedClassTypes(): Promise<Map<string, string>> {
+  const types = [
+    { key: 'lecture', ca: 'Teoria', es: 'Teoría', en: 'Lecture', minutes: 60 },
+    { key: 'practical', ca: 'Pràctiques', es: 'Prácticas', en: 'Practical', minutes: 120 },
+    { key: 'lab', ca: 'Laboratori', es: 'Laboratorio', en: 'Laboratory', minutes: 180 },
+    { key: 'seminar', ca: 'Seminari', es: 'Seminario', en: 'Seminar', minutes: 90 },
+  ]
+
+  const byKey = new Map<string, string>()
+  for (const [position, type] of types.entries()) {
+    const id = seedId('classType', position + 1)
+    await prisma.classType.upsert({
+      where: { id },
+      create: {
+        id,
+        centerId: CENTER_ID,
+        nameCa: type.ca,
+        nameEs: type.es,
+        nameEn: type.en,
+        defaultMinutes: type.minutes,
+      },
+      update: { defaultMinutes: type.minutes },
+    })
+    byKey.set(type.key, id)
+  }
+  return byKey
 }
 
 async function seedAssignments(
@@ -1109,6 +1142,7 @@ async function main() {
   const profileByIndex = await seedTeachers()
   const { groupByKey } = await seedSubjects(degreeByCode, profileByIndex)
   const spaces = await seedSpaces()
+  await seedClassTypes()
   await seedAssignments(groupByKey, profileByIndex)
   const calendarEntries = await seedAcademicCalendar()
   const schedule = await seedSchedule(groupByKey, profileByIndex, spaces)

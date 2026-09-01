@@ -54,7 +54,6 @@ const CONTEXT: ScheduleContext = {
         subjectCode: 'MAT101',
         subjectName: 'Matemàtiques I',
         capacity: 40,
-        requiredSpaceType: null,
         requiredEquipment: [],
       },
     ],

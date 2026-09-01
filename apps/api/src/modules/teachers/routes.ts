@@ -49,7 +49,6 @@ import { loadWorkbook } from './export.js'
 interface AssignableGroupDto {
   id: string
   code: string
-  type: string
   plannedHours: number
   subjectCode: string
   subjectName: string
@@ -396,7 +395,6 @@ export function registerTeacherRoutes(app: FastifyInstance): void {
         items: groups.map((group) => ({
           id: group.id,
           code: group.code,
-          type: group.type,
           plannedHours: Number(group.plannedHours),
           subjectCode: group.subject.code,
           subjectName: group.subject.nameCa,

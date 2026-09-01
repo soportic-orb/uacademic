@@ -64,7 +64,6 @@ function group(id: string, overrides: Partial<GroupResource> = {}): GroupResourc
     subjectCode: `SUB${id}`,
     subjectName: `Assignatura ${id}`,
     capacity: 30,
-    requiredSpaceType: null,
     requiredEquipment: [],
     ...overrides,
   }

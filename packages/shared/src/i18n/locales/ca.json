@@ -1173,6 +1173,9 @@
     "groups": "Grups",
     "spaces": "Espais",
     "calendar": "Calendari acadèmic",
+    "classTypes": {
+      "title": "Tipus de classe"
+    },
     "calendarTypes": {
       "title": "Tipus de dia",
       "newOption": "+ Crea un tipus nou…",
@@ -1228,9 +1231,8 @@
       "dateFrom": "Des del",
       "dateTo": "Fins al",
       "plannedHours": "Hores previstes",
-      "requiredSpaceType": "Tipus d'espai necessari",
       "space": "Aula",
-      "sessionMinutes": "Durada de la classe (min)",
+      "defaultMinutes": "Durada per defecte (min)",
       "coordinators": "Coordinació",
       "color": "Color",
       "isTeachingDay": "Dia lectiu",
@@ -1387,13 +1389,6 @@
     "elective": "Optativa",
     "practicum": "Pràctiques",
     "final_project": "Treball final"
-  },
-  "groupType": {
-    "theory": "Teoria",
-    "seminar": "Seminari",
-    "lab": "Laboratori",
-    "practicum": "Pràctiques",
-    "tutoring": "Tutories"
   },
   "spaceType": {
     "classroom": "Aula",
@@ -1636,6 +1631,8 @@
       "over": "{{hours}} h de més"
     },
     "jumpedToWeek": "El grup es planifica a partir del {{date}}: t'hi hem portat.",
+    "classType": "Tipus de classe",
+    "noClassType": "Sense tipus",
     "topic": "Tema de la classe",
     "topicPlaceholder": "Tema…",
     "duplicate": {

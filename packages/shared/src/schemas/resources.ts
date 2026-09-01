@@ -111,15 +111,19 @@ export const subjectInputSchema = trilingualNameSchema.extend({
 })
 export type SubjectInput = z.infer<typeof subjectInputSchema>
 
+/**
+ * A set of students taught together.
+ *
+ * What kind of class they are having, how long it lasts and what room it needs
+ * are not asked here: a group has lectures, practicals and laboratory sessions
+ * alike, of different lengths and in different rooms. Those belong to the
+ * class and are chosen when it is placed — see `classTypeInputSchema`.
+ */
 export const groupInputSchema = z.object({
   subjectId: uuidSchema,
-  type: z.enum(['theory', 'seminar', 'lab', 'practicum', 'tutoring']),
   code: z.string().trim().min(1).max(32),
   plannedHours: decimalHoursSchema,
   capacity: z.coerce.number().int().min(1).max(2000).nullish(),
-  requiredSpaceType: z
-    .enum(['classroom', 'seminar_room', 'computer_lab', 'lab', 'auditorium', 'other'])
-    .nullish(),
   /**
    * The room this group normally meets in.
    *
@@ -128,17 +132,28 @@ export const groupInputSchema = z.object({
    * without the group changing.
    */
   spaceId: uuidSchema.nullish(),
-  /**
-   * How long one class of this group lasts, in minutes.
-   *
-   * Null means the center's own default: most groups have ordinary classes,
-   * and a three-hour lab is the exception that says so. The planner starts a
-   * class of this group at this length and the coordinator can still change
-   * that one class.
-   */
-  sessionMinutes: z.coerce.number().int().min(15).max(480).nullish(),
 })
 export type GroupInput = z.infer<typeof groupInputSchema>
+
+/**
+ * A kind of class: lecture, practical, laboratory, seminar.
+ *
+ * Each carries the length its classes usually last, which is where a class
+ * placed with it starts. The planner can stretch that one class afterwards
+ * like any other, so this is a default rather than a rule.
+ */
+export const classTypeInputSchema = z.object({
+  nameCa: z.string().trim().min(1).max(60),
+  /**
+   * Left blank the other two take the Catalan name, as the calendar types do:
+   * better than blocking somebody, and better than inventing a translation.
+   */
+  nameEs: z.string().trim().max(60).optional(),
+  nameEn: z.string().trim().max(60).optional(),
+  /** How long one of its classes lasts, in minutes. */
+  defaultMinutes: z.coerce.number().int().min(15).max(480).default(60),
+})
+export type ClassTypeInput = z.infer<typeof classTypeInputSchema>
 
 export const spaceInputSchema = z.object({
   building: z.string().trim().max(100).nullish(),

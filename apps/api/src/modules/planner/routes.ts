@@ -88,6 +88,14 @@ const sessionSchema = z.object({
   endTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
   /** What the class is about, typed on the block itself. */
   topic: z.string().trim().max(200).nullable().optional(),
+  /**
+   * What kind of class it is: a lecture, a practical, a laboratory session.
+   *
+   * The kind belongs to the class rather than to the group — one group has all
+   * of them, of different lengths and in different rooms — so it is chosen
+   * here, as the room and the topic are.
+   */
+  classTypeId: z.uuid().nullable().optional(),
 })
 
 /**
@@ -111,6 +119,7 @@ const sessionPatchSchema = z.object({
     .regex(/^([01]\d|2[0-3]):[0-5]\d$/)
     .optional(),
   topic: z.string().trim().max(200).nullable().optional(),
+  classTypeId: z.uuid().nullable().optional(),
 })
 
 /**
@@ -211,6 +220,7 @@ export function registerPlannerRoutes(app: FastifyInstance, bus: RealtimeTranspo
               dateTo: session.dateTo,
               recurrence: session.recurrence,
               topic: session.topic,
+              classTypeId: session.classTypeId,
               coTeachers: {
                 create: session.coTeachers.map((entry) => ({
                   teacherProfileId: entry.teacherProfileId,
@@ -394,6 +404,7 @@ function registerSessionRoutes(app: FastifyInstance): void {
           dateTo: day.date,
           recurrence: 'once',
           topic: input.topic ?? null,
+          classTypeId: input.classTypeId ?? null,
         },
       })
 
@@ -448,6 +459,7 @@ function registerSessionRoutes(app: FastifyInstance): void {
           ...(input.endTime ? { endTime: input.endTime } : {}),
           // `undefined` is "leave it"; `null` is "clear what was written".
           ...(input.topic !== undefined ? { topic: input.topic } : {}),
+          ...(input.classTypeId !== undefined ? { classTypeId: input.classTypeId } : {}),
         },
       })
 
@@ -540,6 +552,7 @@ function registerSessionRoutes(app: FastifyInstance): void {
             dateTo: day.date,
             recurrence: 'once',
             topic: source.topic,
+            classTypeId: source.classTypeId,
             coTeachers: {
               create: source.coTeachers.map((entry) => ({
                 teacherProfileId: entry.teacherProfileId,
@@ -794,7 +807,7 @@ async function versionDetail(context: PlannerContext, versionId: string) {
   // somebody is planning rather than only about what is left over.
   const groups = await context.db.group.findMany({
     where: { subject: { academicYearId: context.academicYearId } },
-    select: { id: true, plannedHours: true, sessionMinutes: true },
+    select: { id: true, plannedHours: true },
     orderBy: { code: 'asc' },
   })
 
@@ -820,6 +833,8 @@ async function versionDetail(context: PlannerContext, versionId: string) {
       groups: [...context.schedule.groups.values()],
       // Names and capacities, for the column of colleagues beside the week.
       directory: context.directory,
+      // The kinds of class this center gives, for the picker on a block.
+      classTypes: context.classTypes,
       calendar: calendar.map((entry) => ({
         dateFrom: entry.dateFrom.toISOString().slice(0, 10),
         dateTo: entry.dateTo.toISOString().slice(0, 10),
@@ -882,7 +897,7 @@ function groupPlans(
     candidateTeacherIds: readonly string[]
     candidateSpaceIds: readonly string[]
   }[],
-  groups: readonly { id: string; plannedHours: unknown; sessionMinutes: number | null }[],
+  groups: readonly { id: string; plannedHours: unknown }[],
   sessions: readonly PlannedSession[],
 ) {
   const { defaultSessionMinutes } = context.settings.schedule
@@ -910,7 +925,7 @@ function groupPlans(
 
     const state = groupPlanState({
       plannedHours,
-      sessionMinutes: row.sessionMinutes ?? requirement?.durationMinutes ?? defaultSessionMinutes,
+      sessionMinutes: requirement?.durationMinutes ?? defaultSessionMinutes,
       // Everything placed for this group in this version, which is the whole
       // year: classes are placed a date at a time, not a week at a time.
       placedMinutes: placedByGroup.get(row.id) ?? 0,
@@ -923,7 +938,7 @@ function groupPlans(
       subjectCode: resource?.subjectCode ?? '',
       subjectName: resource?.subjectName ?? '',
       plannedHours,
-      durationMinutes: row.sessionMinutes ?? requirement?.durationMinutes ?? defaultSessionMinutes,
+      durationMinutes: requirement?.durationMinutes ?? defaultSessionMinutes,
       targetMinutes: state.targetMinutes,
       placedMinutes: state.placedMinutes,
       remainingMinutes: state.remainingMinutes,

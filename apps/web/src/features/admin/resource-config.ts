@@ -400,7 +400,6 @@ export const ADMIN_RESOURCES: ResourceConfig[] = [
         render: 'nameWithCode',
         codeKey: 'subjectCode',
       },
-      { key: 'type', labelKey: 'admin.fields.type', render: 'enum', enumPrefix: 'groupType' },
       { key: 'spaceName', labelKey: 'admin.fields.space' },
       {
         key: 'plannedHours',
@@ -408,13 +407,6 @@ export const ADMIN_RESOURCES: ResourceConfig[] = [
         render: 'number',
         align: 'right',
         sortable: true,
-      },
-    ],
-    filters: [
-      {
-        name: 'type',
-        labelKey: 'admin.fields.type',
-        options: enumOptions('groupType', ['theory', 'seminar', 'lab', 'practicum', 'tutoring']),
       },
     ],
     fields: [
@@ -428,13 +420,6 @@ export const ADMIN_RESOURCES: ResourceConfig[] = [
       },
       { name: 'code', labelKey: 'admin.fields.code', type: 'text', required: true },
       {
-        name: 'type',
-        labelKey: 'admin.fields.type',
-        type: 'select',
-        required: true,
-        options: enumOptions('groupType', ['theory', 'seminar', 'lab', 'practicum', 'tutoring']),
-      },
-      {
         name: 'plannedHours',
         labelKey: 'admin.fields.plannedHours',
         type: 'number',
@@ -443,14 +428,6 @@ export const ADMIN_RESOURCES: ResourceConfig[] = [
       },
       { name: 'capacity', labelKey: 'admin.fields.capacity', type: 'number' },
       {
-        // How long one of its classes lasts. Blank keeps the center's own
-        // default, which is what most groups want.
-        name: 'sessionMinutes',
-        labelKey: 'admin.fields.sessionMinutes',
-        type: 'number',
-        step: '5',
-      },
-      {
         // The room this group normally meets in: a session placed for it
         // starts there instead of being typed in again every time.
         name: 'spaceId',
@@ -458,18 +435,40 @@ export const ADMIN_RESOURCES: ResourceConfig[] = [
         type: 'select',
         optionsFrom: { path: 'admin/spaces', labelField: 'name' },
       },
+    ],
+  },
+  {
+    /*
+      The kinds of class a center gives.
+
+      A lecture, a practical and a laboratory session are different lengths and
+      want different rooms, and one group has all three — so this is a list of
+      its own rather than a field on the group, and a class says which it is
+      when it is placed.
+    */
+    key: 'class-types',
+    path: 'admin/class-types',
+    titleKey: 'admin.classTypes.title',
+    roles: ['CENTER_ADMIN'],
+    labelField: 'nameCa',
+    columns: [
+      { key: 'nameCa', labelKey: 'admin.fields.name', sortable: true },
       {
-        name: 'requiredSpaceType',
-        labelKey: 'admin.fields.requiredSpaceType',
-        type: 'select',
-        options: enumOptions('spaceType', [
-          'classroom',
-          'seminar_room',
-          'computer_lab',
-          'lab',
-          'auditorium',
-          'other',
-        ]),
+        key: 'defaultMinutes',
+        labelKey: 'admin.fields.defaultMinutes',
+        render: 'number',
+        align: 'right',
+        sortable: true,
+      },
+    ],
+    fields: [
+      ...TRILINGUAL_FIELDS,
+      {
+        name: 'defaultMinutes',
+        labelKey: 'admin.fields.defaultMinutes',
+        type: 'number',
+        required: true,
+        step: '5',
       },
     ],
   },

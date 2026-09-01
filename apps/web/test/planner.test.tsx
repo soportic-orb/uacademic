@@ -109,7 +109,6 @@ const CONTEXT = {
       subjectCode: 'MAT101',
       subjectName: 'Matemàtiques I',
       capacity: 40,
-      requiredSpaceType: null,
       requiredEquipment: [],
     },
     {
@@ -119,7 +118,6 @@ const CONTEXT = {
       subjectCode: 'MAT101',
       subjectName: 'Matemàtiques I',
       capacity: 40,
-      requiredSpaceType: null,
       requiredEquipment: [],
     },
   ],
@@ -160,6 +158,8 @@ const VERSION: VersionDetailDto = {
       spaceId: 's1',
       spaceName: 'Aula 1.1',
       building: 'A',
+      classTypeId: null,
+      classTypeName: null,
       weekday: 1,
       startTime: '09:00',
       endTime: '10:00',
@@ -793,6 +793,44 @@ describe('the visual planner', () => {
     into hairlines because the cells asked for a percentage of a table cell
     that had no height of its own.
   */
+  describe('what kind of class it is', () => {
+    const withTypes = {
+      ...CONTEXT,
+      classTypes: [
+        { id: 'ct1', name: 'Teoria', defaultMinutes: 60 },
+        { id: 'ct2', name: 'Laboratori', defaultMinutes: 180 },
+      ],
+    }
+
+    it('offers the kinds the center gives, and records the one chosen', async () => {
+      const user = userEvent.setup()
+      render(wrap(<PlannerGrid version={VERSION} context={withTypes} />))
+
+      await user.selectOptions(screen.getAllByLabelText('Tipus de classe')[0]!, 'ct2')
+
+      await waitFor(() => {
+        const patch = fetchMock.mock.calls.find(
+          (call) => (call[1] as RequestInit | undefined)?.method === 'PATCH',
+        )
+        /*
+          And the class takes the length that kind of class lasts: that is what
+          the length on the type is for. The block's edges still drag
+          afterwards, so it is a starting point rather than a rule.
+        */
+        expect(JSON.parse(String((patch![1] as RequestInit).body))).toMatchObject({
+          classTypeId: 'ct2',
+          endTime: '12:00',
+        })
+      })
+    })
+
+    it('says nothing about kinds when the center keeps no list of them', () => {
+      render(wrap(<PlannerGrid version={VERSION} context={CONTEXT} />))
+
+      expect(screen.queryByLabelText('Tipus de classe')).not.toBeInTheDocument()
+    })
+  })
+
   it('gives every slot of the grid a height, in the same unit the blocks use', () => {
     render(wrap(<PlannerGrid version={VERSION} context={CONTEXT} />))
 

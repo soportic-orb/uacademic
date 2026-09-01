@@ -326,6 +326,54 @@ describe.skipIf(!hasDatabase)('the planner', () => {
       expect(removed.json().sessions).toHaveLength(0)
     })
 
+    it('records what kind of class was placed, and offers the center’s kinds', async () => {
+      /*
+        A lecture, a practical and a laboratory session are different lengths
+        and want different rooms, and one group has all three — so the kind
+        belongs to the class and is chosen when it is placed, beside its room
+        and its topic.
+      */
+      const version = await createVersion('class kind')
+      const group = await prisma.group.findFirstOrThrow({ where: { centerId } })
+      const classType = await prisma.classType.findFirstOrThrow({ where: { centerId } })
+
+      // The picker beside the class: what this center gives, and how long each
+      // kind lasts.
+      expect(
+        (version.context.classTypes as { id: string; defaultMinutes: number }[]).find(
+          (type) => type.id === classType.id,
+        ),
+      ).toMatchObject({ defaultMinutes: classType.defaultMinutes })
+
+      const created = await app.inject({
+        method: 'POST',
+        url: `/api/v1/planner/versions/${version.id}/sessions`,
+        headers: asCoordinator(),
+        payload: {
+          groupId: group.id,
+          date: ON[3],
+          startTime: '16:00',
+          endTime: '17:00',
+          classTypeId: classType.id,
+        },
+      })
+
+      expect(created.statusCode).toBe(201)
+      const session = created.json().sessions[0]
+      expect(session.classTypeId).toBe(classType.id)
+      expect(session.classTypeName).toBe(classType.nameCa)
+
+      // And it can be taken back off, like the room and the topic.
+      const cleared = await app.inject({
+        method: 'PATCH',
+        url: `/api/v1/planner/versions/${version.id}/sessions/${session.id}`,
+        headers: asCoordinator(),
+        payload: { classTypeId: null },
+      })
+      expect(cleared.statusCode).toBe(200)
+      expect(cleared.json().sessions[0].classTypeId).toBeNull()
+    })
+
     it('places a class given by two people, and keeps both of them', async () => {
       const version = await createVersion('co-teaching')
       const group = await prisma.group.findFirstOrThrow({ where: { centerId } })
@@ -533,24 +581,6 @@ describe.skipIf(!hasDatabase)('the planner', () => {
         expect(series.json().skipped).toBe(1)
       } finally {
         await prisma.academicCalendarEntry.delete({ where: { id: holiday.id } })
-      }
-    })
-
-    it('starts a class of a group at the length that group teaches in', async () => {
-      const group = await prisma.group.findFirstOrThrow({ where: { centerId } })
-      await prisma.group.update({ where: { id: group.id }, data: { sessionMinutes: 180 } })
-
-      try {
-        const version = await createVersion('lab length')
-        const plan = (version.groups as { groupId: string; durationMinutes: number }[]).find(
-          (entry) => entry.groupId === group.id,
-        )
-
-        // What a drag from the groups column places, rather than the center's
-        // own default.
-        expect(plan?.durationMinutes).toBe(180)
-      } finally {
-        await prisma.group.update({ where: { id: group.id }, data: { sessionMinutes: null } })
       }
     })
 
@@ -879,12 +909,12 @@ describe.skipIf(!hasDatabase)('the planner', () => {
       const endTime = `${String(Number(startTime.slice(0, 2)) + 2).padStart(2, '0')}:${startTime.slice(3)}`
 
       // A group an ordinary classroom can hold: the room below is one, and a
-      // group that needs a laboratory would fail on the room rather than on
-      // the hours this test is about.
+      // group that needs equipment would fail on the room rather than on the
+      // hours this test is about.
       const group = await prisma.group.findFirstOrThrow({
         where: {
           subject: { academicYearId: profile.academicYearId },
-          requiredSpaceType: 'classroom',
+          requiredEquipmentJson: { equals: [] },
           capacity: { lte: 200 },
         },
         orderBy: { code: 'asc' },

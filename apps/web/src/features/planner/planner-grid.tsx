@@ -40,7 +40,7 @@ import {
 } from './queries'
 import { laneLayout } from './lanes'
 import { TeacherRail } from './teacher-rail'
-import type { TeacherDirectoryEntry } from './use-planner'
+import type { ClassTypeOption, TeacherDirectoryEntry } from './use-planner'
 import { dateOfWeekday, isoDate, mondayOf, openingWeek, parseIsoDate } from './week-dates'
 import { WeekNavigator } from './week-navigator'
 import {
@@ -167,6 +167,33 @@ export function PlannerGrid({
       await updateSession.mutateAsync({
         sessionId: session.id,
         values: { topic: topic.trim() || null },
+      })
+    } catch (error) {
+      onError(error)
+    }
+  }
+
+  /**
+   * What kind of class this is: a lecture, a practical, a laboratory session.
+   *
+   * The kind carries the length its classes usually last, so choosing one also
+   * sets how long this class is — that is what the length on the type is for.
+   * It is a starting point like every other: the edges of the block still drag
+   * afterwards. A class already at the type's length is left alone rather than
+   * rewritten to the same hours.
+   */
+  const setClassType = async (session: PlannerSessionDto, classTypeId: string | null) => {
+    const chosen = (context.classTypes ?? []).find((type) => type.id === classTypeId)
+    const endTime = chosen ? addMinutes(session.startTime, chosen.defaultMinutes) : session.endTime
+    const fits = endTime > session.startTime && endTime <= version.grid.dayEnd
+
+    try {
+      await updateSession.mutateAsync({
+        sessionId: session.id,
+        values: {
+          classTypeId,
+          ...(fits && endTime !== session.endTime ? { endTime } : {}),
+        },
       })
     } catch (error) {
       onError(error)
@@ -841,6 +868,10 @@ export function PlannerGrid({
                                     onTopic={(topic) => void setTopic(session, topic)}
                                     spaces={context.spaces}
                                     onSpace={(spaceId) => void setSpace(session, spaceId)}
+                                    classTypes={context.classTypes ?? []}
+                                    onClassType={(classTypeId) =>
+                                      void setClassType(session, classTypeId)
+                                    }
                                     onDuplicate={() => setDuplicating(session)}
                                     slotMinutes={version.grid.slotMinutes}
                                     onResize={(edge, slots) =>
@@ -1111,6 +1142,8 @@ function SessionBlock({
   onTopic,
   spaces,
   onSpace,
+  classTypes,
+  onClassType,
   onDuplicate,
   slotMinutes,
   onResize,
@@ -1131,6 +1164,9 @@ function SessionBlock({
   onTopic: (topic: string) => void
   spaces: SpaceResource[]
   onSpace: (spaceId: string | null) => void
+  /** The kinds of class the center gives. Empty when it keeps no list. */
+  classTypes: ClassTypeOption[]
+  onClassType: (classTypeId: string | null) => void
   /** Opens the panel that repeats this class across the term. */
   onDuplicate: () => void
   /** How long one row of the grid is, which is what an edge moves by. */
@@ -1280,6 +1316,35 @@ function SessionBlock({
               ))}
             </select>
           </label>
+        ) : null}
+
+        {/*
+        What kind of class it is: a lecture, a practical, a laboratory
+        session. Chosen here because the kind belongs to the class and not to
+        the group — one group has all of them — and choosing one sets how long
+        the class lasts, which is what the kind carries.
+      */}
+        {editable && classTypes.length > 0 ? (
+          <label className="block">
+            <span className="sr-only">{t('planner.classType')}</span>
+            <select
+              value={session.classTypeId ?? ''}
+              onChange={(event) => onClassType(event.target.value || null)}
+              onClick={(event) => event.stopPropagation()}
+              className="w-full truncate rounded-sm border border-border bg-surface px-1 py-0.5 text-xs text-text"
+            >
+              <option value="">{t('planner.noClassType')}</option>
+              {classTypes.map((type) => (
+                <option key={type.id} value={type.id}>
+                  {type.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : session.classTypeName ? (
+          <span className="block truncate text-text-muted" title={session.classTypeName}>
+            {session.classTypeName}
+          </span>
         ) : null}
 
         {/*

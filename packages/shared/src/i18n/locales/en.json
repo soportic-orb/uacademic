@@ -1173,6 +1173,9 @@
     "groups": "Groups",
     "spaces": "Spaces",
     "calendar": "Academic calendar",
+    "classTypes": {
+      "title": "Class types"
+    },
     "calendarTypes": {
       "title": "Kinds of day",
       "newOption": "+ Create a new type…",
@@ -1228,9 +1231,8 @@
       "dateFrom": "From",
       "dateTo": "To",
       "plannedHours": "Planned hours",
-      "requiredSpaceType": "Required space type",
       "space": "Room",
-      "sessionMinutes": "Class length (min)",
+      "defaultMinutes": "Default length (min)",
       "coordinators": "Coordination",
       "color": "Colour",
       "isTeachingDay": "Teaching day",
@@ -1387,13 +1389,6 @@
     "elective": "Elective",
     "practicum": "Practicum",
     "final_project": "Final project"
-  },
-  "groupType": {
-    "theory": "Theory",
-    "seminar": "Seminar",
-    "lab": "Lab",
-    "practicum": "Practicum",
-    "tutoring": "Tutoring"
   },
   "spaceType": {
     "classroom": "Classroom",
@@ -1636,6 +1631,8 @@
       "over": "{{hours}} h too many"
     },
     "jumpedToWeek": "This group's term starts on {{date}} — taken you to that week.",
+    "classType": "Class type",
+    "noClassType": "No type",
     "topic": "Class topic",
     "topicPlaceholder": "Topic…",
     "duplicate": {

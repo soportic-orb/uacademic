@@ -41,6 +41,20 @@ export interface PlannerContextDto {
   calendar?: CalendarDayEntry[]
   /** Who the teachers are; the engine's own list is deliberately anonymous. */
   directory: TeacherDirectoryEntry[]
+  /**
+   * The kinds of class this center gives, chosen on the class itself.
+   *
+   * Absent for a center that has written none down, which is the state every
+   * center starts in and the planner works in.
+   */
+  classTypes?: ClassTypeOption[]
+}
+
+export interface ClassTypeOption {
+  id: string
+  name: string
+  /** How long a class placed with this kind starts out, in minutes. */
+  defaultMinutes: number
 }
 
 export function buildScheduleContext(context: PlannerContextDto): ScheduleContext {

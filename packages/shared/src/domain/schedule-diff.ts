@@ -36,6 +36,9 @@ export interface SessionSnapshot {
   teachers?: readonly { teacherProfileId: string; name: string }[]
   spaceId: string | null
   spaceName: string | null
+  /** What kind of class it is, when the center keeps a list of kinds. */
+  classTypeId?: string | null
+  classTypeName?: string | null
   weekday: Weekday
   startTime: ClockTime
   endTime: ClockTime

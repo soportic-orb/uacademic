@@ -40,7 +40,7 @@ export const CALENDAR_TEMPLATE_KEYS: readonly string[] = [
   'subjectCode',
   'subjectName',
   'groupCode',
-  'groupType',
+  'classType',
   'spaceName',
   'building',
   'teacherName',

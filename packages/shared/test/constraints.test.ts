@@ -63,7 +63,6 @@ function group(groupId: string, overrides: Partial<GroupResource> = {}): GroupRe
     subjectCode: 'MAT101',
     subjectName: 'Matemàtiques I',
     capacity: 40,
-    requiredSpaceType: null,
     requiredEquipment: [],
     ...overrides,
   }
