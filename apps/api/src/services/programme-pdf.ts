@@ -68,12 +68,17 @@ const COLUMNS = [
 ] as const
 
 const ROW_HEIGHT = 15
+/** The strip at the head of a row that carries the subject's dot. */
+const DOT_COLUMN = 12
 
 /** The strip of month calendars: four across, which fits an A4 page. */
 const MONTH_COLUMNS = 4
 const MONTH_GAP = 10
 const MONTH_WIDTH = (CONTENT - MONTH_GAP * (MONTH_COLUMNS - 1)) / MONTH_COLUMNS
-const MINI_CELL = MONTH_WIDTH / 7
+/** Breathing room between the frame of a month and the days inside it. */
+const MONTH_PADDING = 3
+const GRID_WIDTH = MONTH_WIDTH - MONTH_PADDING * 2
+const MINI_CELL = GRID_WIDTH / 7
 /** A day of a mini calendar: its number, with room for the dots beneath. */
 const MINI_ROW = 11
 
@@ -225,23 +230,35 @@ function drawMonth(document: PDFKit.PDFDocument, options: MonthOptions): number 
     timeZone: 'UTC',
   }).format(new Date(Date.UTC(options.year, options.month - 1, 1)))
 
+  const weeks = weeksOfMonth(options.year, options.month)
+  const inner = { x: options.x + MONTH_PADDING, y: options.y + MONTH_PADDING }
+  const headingsY = inner.y + 9
+  const gridTop = headingsY + 7
+  const height = gridTop - options.y + weeks.length * MINI_ROW + MONTH_PADDING
+
+  /*
+    A light frame round the month. Eleven grids of small numbers side by side
+    read as one field of numbers; the box is what makes each of them a month.
+  */
+  document
+    .roundedRect(options.x, options.y, MONTH_WIDTH, height, 3)
+    .lineWidth(0.5)
+    .strokeColor(RULE)
+    .stroke()
+
   document
     .fontSize(7)
     .fillColor(INK)
-    .text(label, options.x, options.y, { width: MONTH_WIDTH, lineBreak: false, ellipsis: true })
+    .text(label, inner.x, inner.y, { width: GRID_WIDTH, lineBreak: false, ellipsis: true })
 
-  const headingsY = options.y + 9
   document.fontSize(5).fillColor(MUTED)
   options.weekdays.forEach((name, column) => {
-    document.text(name, options.x + column * MINI_CELL, headingsY, {
+    document.text(name, inner.x + column * MINI_CELL, headingsY, {
       width: MINI_CELL,
       align: 'center',
       lineBreak: false,
     })
   })
-
-  const weeks = weeksOfMonth(options.year, options.month)
-  const gridTop = headingsY + 7
 
   weeks.forEach((week, rowIndex) => {
     week.forEach((date, column) => {
@@ -249,7 +266,7 @@ function drawMonth(document: PDFKit.PDFDocument, options: MonthOptions): number 
       // the month is part of what makes it recognisable at a glance.
       if (!isInMonth(date, options.year, options.month)) return
 
-      const x = options.x + column * MINI_CELL
+      const x = inner.x + column * MINI_CELL
       const cellTop = gridTop + rowIndex * MINI_ROW
       const onThisDay = options.byDate.get(date) ?? []
 
@@ -297,7 +314,7 @@ function drawMonth(document: PDFKit.PDFDocument, options: MonthOptions): number 
     })
   })
 
-  return gridTop - options.y + weeks.length * MINI_ROW
+  return height
 }
 
 /** Monday first, everywhere in this product (CLAUDE.md §5). */
@@ -402,7 +419,7 @@ function drawKeys(
 
 function columnWidths(): number[] {
   const fixed = COLUMNS.reduce((total, column) => total + column.width, 0)
-  return COLUMNS.map((column) => (column.width === 0 ? CONTENT - fixed : column.width))
+  return COLUMNS.map((column) => (column.width === 0 ? CONTENT - DOT_COLUMN - fixed : column.width))
 }
 
 function drawColumnHeadings(
@@ -411,7 +428,7 @@ function drawColumnHeadings(
   top: number,
 ): number {
   const widths = columnWidths()
-  let x = MARGIN
+  let x = MARGIN + DOT_COLUMN
 
   document.fontSize(7).fillColor(MUTED)
   for (const [index, column] of COLUMNS.entries()) {
@@ -434,17 +451,34 @@ function drawColumnHeadings(
   return y + 3
 }
 
-/** One class: its row tinted with the subject's colour, its text still read. */
+/**
+ * One class: the row washed with the colour of the kind of class it is, and
+ * marked at its head with a dot in the colour of its subject.
+ *
+ * The same two colours the calendars above use, and in the same roles — the
+ * wash says what kind of work it is, the dot says which subject — so the list
+ * and the calendars can be read against each other without a second key.
+ */
 function drawRow(
   document: PDFKit.PDFDocument,
   entry: ProgrammeEntry,
   locale: AppLocale,
   top: number,
 ): number {
-  const colour = calendarColor(entry.subjectId, entry.subjectColor)
+  const subject = calendarColor(entry.subjectId, entry.subjectColor)
+  // A class of no particular kind keeps a plain line rather than borrowing a
+  // colour that would mean something it does not.
+  const kind = entry.classTypeId ? calendarColor(entry.classTypeId, entry.classTypeColor) : null
   const widths = columnWidths()
 
-  document.rect(MARGIN, top, CONTENT, ROW_HEIGHT).fillColor(colour.background).fill()
+  if (kind) {
+    document.rect(MARGIN, top, CONTENT, ROW_HEIGHT).fillColor(kind.background).fill()
+  }
+
+  document
+    .circle(MARGIN + DOT_COLUMN / 2, top + ROW_HEIGHT / 2, 2.4)
+    .fillColor(subject.accent)
+    .fill()
 
   const date = new Intl.DateTimeFormat(locale, {
     day: '2-digit',
@@ -463,8 +497,8 @@ function drawRow(
     entry.spaceName ?? '',
   ]
 
-  let x = MARGIN
-  document.fontSize(7.5).fillColor(colour.text)
+  let x = MARGIN + DOT_COLUMN
+  document.fontSize(7.5).fillColor(kind ? kind.text : INK)
   for (const [index, cell] of cells.entries()) {
     document.text(cell, x + 3, top + 4, {
       width: (widths[index] ?? 0) - 6,
