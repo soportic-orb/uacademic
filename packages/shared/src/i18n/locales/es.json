@@ -1524,6 +1524,11 @@
       "teacher": "{{group}} pasa de {{previousTeacher}} a {{teacher}}.",
       "space": "{{group}} cambia de {{previousSpace}} a {{space}}."
     },
+    "session": {
+      "errors": {
+        "closedDay": "El centro está cerrado ese día: no se pueden poner clases."
+      }
+    },
     "version": {
       "title": "Versiones del horario",
       "current": "Versión activa",
@@ -1618,7 +1623,7 @@
     },
     "closedOn": "El centro está cerrado: {{name}}",
     "closedLegend": "Centro cerrado",
-    "closedLegendHint": "Festivo o periodo vacacional del calendario académico. Puedes planificar igualmente: la semana es una plantilla y ese día se salta al generar las clases.",
+    "closedLegendHint": "Festivo o periodo vacacional del calendario académico. No se pueden poner clases.",
     "thisWeekCount": "{{shown}} de {{total}} clases esta semana",
     "groups": {
       "title": "Grupos",

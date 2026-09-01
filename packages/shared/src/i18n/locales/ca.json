@@ -1524,6 +1524,11 @@
       "teacher": "{{group}} passa de {{previousTeacher}} a {{teacher}}.",
       "space": "{{group}} canvia de {{previousSpace}} a {{space}}."
     },
+    "session": {
+      "errors": {
+        "closedDay": "El centre és tancat aquell dia: no s'hi poden posar classes."
+      }
+    },
     "version": {
       "title": "Versions de l'horari",
       "current": "Versió activa",
@@ -1618,7 +1623,7 @@
     },
     "closedOn": "El centre és tancat: {{name}}",
     "closedLegend": "Centre tancat",
-    "closedLegendHint": "Festiu o període vacacional del calendari acadèmic. Pots planificar-hi igualment: la setmana és una plantilla i aquell dia se salta quan es generen les classes.",
+    "closedLegendHint": "Festiu o període vacacional del calendari acadèmic. No s'hi poden posar classes.",
     "thisWeekCount": "{{shown}} de {{total}} classes aquesta setmana",
     "groups": {
       "title": "Grups",

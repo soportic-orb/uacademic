@@ -831,6 +831,58 @@ describe('the visual planner', () => {
     })
   })
 
+  describe('a day the center is shut', () => {
+    /*
+      A holiday from the academic calendar. The engine would call its hours
+      perfectly free — they are, there is simply nobody in the building — so
+      the grid has to say so itself.
+    */
+    const closedTuesday = {
+      ...CONTEXT,
+      calendar: [
+        {
+          dateFrom: isoDate(addDays(mondayOf(new Date()), 1)),
+          dateTo: isoDate(addDays(mondayOf(new Date()), 1)),
+          type: 'holiday',
+          name: 'Festiu de prova',
+          isTeachingDay: false,
+        },
+      ],
+    }
+
+    it('greys its hours out instead of offering them', async () => {
+      const user = userEvent.setup()
+      render(wrap(<PlannerGrid version={VERSION} context={closedTuesday} />))
+
+      await user.click(screen.getByRole('button', { name: 'Selecciona la sessió MAT101 T2' }))
+
+      const closed = target('MAT101 T2', 'Dimarts', '10:00')
+      expect(closed).toHaveClass('bg-surface-muted')
+      expect(closed).toHaveAttribute('aria-disabled', 'true')
+      // The day beside it is a working day and still offers itself.
+      expect(target('MAT101 T2', 'Dilluns', '10:00')).not.toHaveClass('bg-surface-muted')
+    })
+
+    it('refuses a class placed on it, and says why', async () => {
+      const user = userEvent.setup()
+      render(wrap(<PlannerGrid version={VERSION} context={closedTuesday} />))
+
+      await user.click(screen.getByRole('button', { name: 'Selecciona la sessió MAT101 T2' }))
+      await user.click(target('MAT101 T2', 'Dimarts', '10:00'))
+
+      // The refusal names the day, in the toast that is this product's only
+      // way of saying anything (design system §4).
+      const toast = await screen.findByRole('status')
+      expect(toast).toHaveTextContent('El centre és tancat: Festiu de prova')
+      // Nothing was written: the refusal is the answer, not a warning after it.
+      expect(
+        fetchMock.mock.calls.filter(
+          (call) => (call[1] as RequestInit | undefined)?.method === 'POST',
+        ),
+      ).toHaveLength(0)
+    })
+  })
+
   it('gives every slot of the grid a height, in the same unit the blocks use', () => {
     render(wrap(<PlannerGrid version={VERSION} context={CONTEXT} />))
 

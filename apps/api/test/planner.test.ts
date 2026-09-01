@@ -536,6 +536,66 @@ describe.skipIf(!hasDatabase)('the planner', () => {
       expect(new Set(sessions.map((session) => session.weekday))).toEqual(new Set([1, 3]))
     })
 
+    it('refuses a class placed on a day the center is closed', async () => {
+      /*
+        The grid greys those hours out, and this is what makes the refusal
+        true rather than a suggestion: the constraint engine sees a perfectly
+        free slot — it is free, there is simply nobody in the building — so
+        the calendar has to be read here.
+      */
+      const version = await createVersion('closed day')
+      const group = await prisma.group.findFirstOrThrow({ where: { centerId } })
+      const year = await prisma.academicYear.findFirstOrThrow({
+        where: { centerId, status: 'active' },
+      })
+
+      const holiday = await prisma.academicCalendarEntry.create({
+        data: {
+          centerId,
+          academicYearId: year.id,
+          type: 'holiday',
+          dateFrom: new Date(`${ON[4]}T00:00:00Z`),
+          dateTo: new Date(`${ON[4]}T00:00:00Z`),
+          nameCa: 'Prova festiu graella',
+          nameEs: 'Prova festiu graella',
+          nameEn: 'Prova festiu graella',
+          isTeachingDay: false,
+        },
+      })
+
+      try {
+        const refused = await app.inject({
+          method: 'POST',
+          url: `/api/v1/planner/versions/${version.id}/sessions`,
+          headers: asCoordinator(),
+          payload: { groupId: group.id, date: ON[4], startTime: '13:00', endTime: '14:00' },
+        })
+
+        expect(refused.statusCode).toBe(409)
+        expect(refused.json().error.messageKey).toBe('planner.session.errors.closedDay')
+
+        // The day before is an ordinary Wednesday and takes the class.
+        const placed = await app.inject({
+          method: 'POST',
+          url: `/api/v1/planner/versions/${version.id}/sessions`,
+          headers: asCoordinator(),
+          payload: { groupId: group.id, date: ON[3], startTime: '13:00', endTime: '14:00' },
+        })
+        expect(placed.statusCode).toBe(201)
+
+        // And moving that class onto the holiday is refused the same way.
+        const moved = await app.inject({
+          method: 'PATCH',
+          url: `/api/v1/planner/versions/${version.id}/sessions/${placed.json().sessions[0].id}`,
+          headers: asCoordinator(),
+          payload: { date: ON[4] },
+        })
+        expect(moved.statusCode).toBe(409)
+      } finally {
+        await prisma.academicCalendarEntry.delete({ where: { id: holiday.id } })
+      }
+    })
+
     it('does not put a class on a day the center is closed', async () => {
       const version = await createVersion('series over a holiday')
       const group = await prisma.group.findFirstOrThrow({ where: { centerId } })

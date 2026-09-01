@@ -372,6 +372,22 @@ export function registerPlannerRoutes(app: FastifyInstance, bus: RealtimeTranspo
   registerSessionRoutes(app)
 }
 
+/**
+ * A day the center is shut takes no classes.
+ *
+ * The academic calendar is where a center says which days it teaches on, and a
+ * holiday is not one of them: the grid greys those columns out, and this is
+ * what makes the refusal true rather than a suggestion — a class dropped there
+ * by an older client, or moved there by a series, would otherwise sit on a day
+ * nobody comes in.
+ */
+async function refuseClosedDay(context: PlannerContext, date: string): Promise<void> {
+  const closed = await nonTeachingDates(context.db, date, date)
+  if (closed.length === 0) return
+
+  throw new AppError(409, 'CONFLICT', 'planner.session.errors.closedDay')
+}
+
 function registerSessionRoutes(app: FastifyInstance): void {
   app.post(
     '/api/v1/planner/versions/:id/sessions',
@@ -384,6 +400,7 @@ function registerSessionRoutes(app: FastifyInstance): void {
         throw AppError.validation([{ path: 'endTime', messageKey: 'validation.invalidRange' }])
       }
       const day = dayOf(input.date)
+      await refuseClosedDay(context, input.date)
 
       const created = await context.db.classSession.create({
         data: {
@@ -438,6 +455,9 @@ function registerSessionRoutes(app: FastifyInstance): void {
       if (endTime <= startTime) {
         throw AppError.validation([{ path: 'endTime', messageKey: 'validation.invalidRange' }])
       }
+      // Moving a class is moving its date, so a move onto a closed day is
+      // refused exactly as placing one there is.
+      if (input.date) await refuseClosedDay(context, input.date)
 
       await context.db.classSession.update({
         where: { id: before.id },

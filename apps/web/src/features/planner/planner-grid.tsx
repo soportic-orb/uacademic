@@ -397,6 +397,19 @@ export function PlannerGrid({
   /** Commits a placement, recording how to take it back. */
   const place = async (target: { weekday: number; start: string }) => {
     if (!held) return
+
+    /*
+      A day the center is shut takes no classes. It is refused before the
+      constraints are read at all: the engine would call the slot perfectly
+      free, which it is — there is simply nobody in the building.
+    */
+    const closure = closures.get(isoDateOf(dateOfWeekday(weekStart, target.weekday)))
+    if (closure) {
+      setAnnouncement(t('planner.closedOn', { name: closure.name }))
+      toast.error('planner.closedOn', { params: { name: closure.name } })
+      return
+    }
+
     const evaluation = evaluations.get(cellKey(target.weekday, target.start))
 
     if (evaluation?.status === 'blocked') {
@@ -801,8 +814,12 @@ export function PlannerGrid({
                                 onKeyDown(event, dayIndex, slotIndex)
                               }}
                               onClick={() => void place({ weekday, start: slot.start })}
+                              aria-disabled={closed ? true : undefined}
                               onDragOver={(event) => {
-                                if (held && evaluation?.status !== 'blocked') event.preventDefault()
+                                // A closed day never offers itself as a drop.
+                                if (held && !closed && evaluation?.status !== 'blocked') {
+                                  event.preventDefault()
+                                }
                               }}
                               onDrop={() => void place({ weekday, start: slot.start })}
                               /*
@@ -816,9 +833,17 @@ export function PlannerGrid({
                               style={{ height: SLOT_HEIGHT }}
                               className={cn(
                                 'w-full rounded-sm border border-transparent',
-                                evaluation
-                                  ? STATUS_STYLE[evaluation.status]
-                                  : 'bg-surface-muted/40',
+                                /*
+                                  Grey, whatever the engine thinks of the slot:
+                                  the hours of a day the center is shut are not
+                                  free hours, and painting them green would be
+                                  offering something that is then refused.
+                                */
+                                closed
+                                  ? 'cursor-not-allowed bg-surface-muted'
+                                  : evaluation
+                                    ? STATUS_STYLE[evaluation.status]
+                                    : 'bg-surface-muted/40',
                                 isCursor && 'ring-2 ring-ring',
                               )}
                             >

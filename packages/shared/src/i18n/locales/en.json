@@ -1524,6 +1524,11 @@
       "teacher": "{{group}} moves from {{previousTeacher}} to {{teacher}}.",
       "space": "{{group}} moves from {{previousSpace}} to {{space}}."
     },
+    "session": {
+      "errors": {
+        "closedDay": "The center is closed that day: no class can be placed on it."
+      }
+    },
     "version": {
       "title": "Schedule versions",
       "current": "Active version",
@@ -1618,7 +1623,7 @@
     },
     "closedOn": "The center is closed: {{name}}",
     "closedLegend": "Center closed",
-    "closedLegendHint": "A holiday or holiday period from the academic calendar. You can still plan on it: the week is a template, and that date is skipped when the classes are generated.",
+    "closedLegendHint": "A holiday or holiday period from the academic calendar. No class can be placed on it.",
     "thisWeekCount": "{{shown}} of {{total}} classes this week",
     "groups": {
       "title": "Groups",
