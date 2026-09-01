@@ -67,7 +67,10 @@ const COLUMNS = [
   { key: 'space', width: 82 },
 ] as const
 
+/** The shortest a row of the list gets: one line, with room to breathe. */
 const ROW_HEIGHT = 15
+const ROW_FONT_SIZE = 7.5
+const ROW_PADDING = 3
 /** The strip at the head of a row that carries the subject's dot. */
 const DOT_COLUMN = 12
 
@@ -122,13 +125,15 @@ export async function programmePdf(input: ProgrammePdfInput): Promise<Buffer> {
   for (const entry of entries) {
     // A row that would fall off the bottom starts the next page, under its own
     // headings: a table whose columns are named on page one only is a table
-    // nobody can read on page two.
-    if (y + ROW_HEIGHT > PAGE.height - MARGIN) {
+    // nobody can read on page two. Measured first, because a row with three
+    // people giving the class is three lines tall.
+    const height = rowHeight(document, entry, input.locale)
+    if (y + height > PAGE.height - MARGIN) {
       document.addPage()
       y = drawColumnHeadings(document, t, MARGIN)
     }
 
-    y = drawRow(document, entry, input.locale, y)
+    y = drawRow(document, entry, input.locale, y, height)
   }
 
   document.end()
@@ -451,6 +456,50 @@ function drawColumnHeadings(
   return y + 3
 }
 
+/** What one class reads as, column by column. */
+function rowCells(entry: ProgrammeEntry, locale: AppLocale): string[] {
+  const date = new Intl.DateTimeFormat(locale, {
+    day: '2-digit',
+    month: '2-digit',
+    year: '2-digit',
+    timeZone: 'UTC',
+  }).format(new Date(`${entry.date}T00:00:00Z`))
+
+  return [
+    date,
+    `${entry.startTime}–${entry.endTime}`,
+    // What the class is: the topic where somebody wrote one, the subject and
+    // group where they did not — never an empty line.
+    entry.topic ?? `${entry.subjectCode} ${entry.groupCode}`,
+    entry.teacherName ?? '',
+    entry.spaceName ?? '',
+  ]
+}
+
+/**
+ * How tall the row has to be to hold what is in it.
+ *
+ * A class given by three people is three lines of names, and a long topic is
+ * two lines of topic. Cutting them off loses the very thing the column is
+ * there for, and letting them run over the row below made the page unreadable
+ * — so the row grows instead.
+ */
+export function rowHeight(
+  document: PDFKit.PDFDocument,
+  entry: ProgrammeEntry,
+  locale: AppLocale,
+): number {
+  const widths = columnWidths()
+  document.fontSize(ROW_FONT_SIZE)
+
+  const tallest = rowCells(entry, locale).reduce((height, cell, index) => {
+    if (!cell) return height
+    return Math.max(height, document.heightOfString(cell, { width: (widths[index] ?? 0) - 6 }))
+  }, 0)
+
+  return Math.max(ROW_HEIGHT, Math.ceil(tallest) + ROW_PADDING * 2)
+}
+
 /**
  * One class: the row washed with the colour of the kind of class it is, and
  * marked at its head with a dot in the colour of its subject.
@@ -464,6 +513,7 @@ function drawRow(
   entry: ProgrammeEntry,
   locale: AppLocale,
   top: number,
+  height: number,
 ): number {
   const subject = calendarColor(entry.subjectId, entry.subjectColor)
   // A class of no particular kind keeps a plain line rather than borrowing a
@@ -472,41 +522,22 @@ function drawRow(
   const widths = columnWidths()
 
   if (kind) {
-    document.rect(MARGIN, top, CONTENT, ROW_HEIGHT).fillColor(kind.background).fill()
+    document.rect(MARGIN, top, CONTENT, height).fillColor(kind.background).fill()
   }
 
+  // Beside the first line rather than in the middle of the row: on a row three
+  // names tall, a dot floating in the centre belongs to nothing.
   document
-    .circle(MARGIN + DOT_COLUMN / 2, top + ROW_HEIGHT / 2, 2.4)
+    .circle(MARGIN + DOT_COLUMN / 2, top + ROW_PADDING + 3.5, 2.4)
     .fillColor(subject.accent)
     .fill()
 
-  const date = new Intl.DateTimeFormat(locale, {
-    day: '2-digit',
-    month: '2-digit',
-    year: '2-digit',
-    timeZone: 'UTC',
-  }).format(new Date(`${entry.date}T00:00:00Z`))
-
-  const cells = [
-    date,
-    `${entry.startTime}–${entry.endTime}`,
-    // What the class is: the topic where somebody wrote one, the subject and
-    // group where they did not — never an empty line.
-    entry.topic ?? `${entry.subjectCode} ${entry.groupCode}`,
-    entry.teacherName ?? '',
-    entry.spaceName ?? '',
-  ]
-
   let x = MARGIN + DOT_COLUMN
-  document.fontSize(7.5).fillColor(kind ? kind.text : INK)
-  for (const [index, cell] of cells.entries()) {
-    document.text(cell, x + 3, top + 4, {
-      width: (widths[index] ?? 0) - 6,
-      lineBreak: false,
-      ellipsis: true,
-    })
+  document.fontSize(ROW_FONT_SIZE).fillColor(kind ? kind.text : INK)
+  for (const [index, cell] of rowCells(entry, locale).entries()) {
+    document.text(cell, x + 3, top + ROW_PADDING, { width: (widths[index] ?? 0) - 6 })
     x += widths[index] ?? 0
   }
 
-  return top + ROW_HEIGHT
+  return top + height
 }

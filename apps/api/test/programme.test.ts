@@ -333,6 +333,64 @@ describe.skipIf(!hasDatabase)('the teaching programme', () => {
       }
     })
 
+    it('gives a class with a long line of names the room to print it', async () => {
+      /*
+        Four people giving one class is three lines of names in a column that
+        is one line tall: they used to run over the two rows beneath and take
+        those with them. The row is measured and grown instead.
+      */
+      const session = await prisma.classSession.findFirstOrThrow({
+        where: { centerId, scheduleVersion: { status: 'published' } },
+      })
+      const others = await prisma.teacherProfile.findMany({
+        where: { centerId, id: { not: session.teacherProfileId ?? undefined } },
+        include: { user: { select: { lastName: true } } },
+        take: 3,
+      })
+      const topic =
+        'M1 Concepte de salut, determinants i desigualtats socials en salut al llarg del curs'
+
+      await prisma.classSession.update({ where: { id: session.id }, data: { topic } })
+      await prisma.sessionTeacher.createMany({
+        data: others.map((profile) => ({
+          centerId,
+          sessionId: session.id,
+          teacherProfileId: profile.id,
+        })),
+        skipDuplicates: true,
+      })
+
+      try {
+        const response = await app.inject({
+          method: 'GET',
+          url: '/api/v1/calendar/coordination.pdf?from=2026-10-05&to=2026-10-05&view=programme',
+          headers: asAdmin(),
+        })
+        const { pages } = await extractText(
+          new Uint8Array(response.rawPayload),
+          'application/pdf',
+          'long-rows.pdf',
+        )
+        // Read as one string: what is on the page is there whole, even where
+        // the column wrapped it onto a second line — which is the point.
+        const text = pages
+          .map((page) => page.text)
+          .join(' ')
+          .replace(/\s+/g, ' ')
+
+        expect(text).toContain(topic)
+        for (const profile of others) {
+          expect(text).toContain(profile.user.lastName)
+        }
+      } finally {
+        await prisma.sessionTeacher.deleteMany({ where: { sessionId: session.id } })
+        await prisma.classSession.update({
+          where: { id: session.id },
+          data: { topic: session.topic },
+        })
+      }
+    })
+
     it('prints a month as a month and a week as a week', async () => {
       await coordinate()
 
