@@ -2,7 +2,7 @@
 --
 -- A kind of class belongs to the class, not to the group: one group has
 -- lectures, practicals and laboratory sessions, of different lengths and in
--- different rooms. So the group loses the three columns that said otherwise.
+-- different rooms.
 CREATE TABLE `class_types` (
   `id` CHAR(36) NOT NULL,
   `center_id` CHAR(36) NOT NULL,
@@ -25,6 +25,10 @@ ALTER TABLE `sessions` ADD COLUMN `class_type_id` CHAR(36) NULL;
 ALTER TABLE `sessions` ADD CONSTRAINT `sessions_class_type_id_fkey`
   FOREIGN KEY (`class_type_id`) REFERENCES `class_types`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
-ALTER TABLE `groups` DROP COLUMN `type`;
-ALTER TABLE `groups` DROP COLUMN `session_minutes`;
-ALTER TABLE `groups` DROP COLUMN `required_space_type`;
+-- The group's own kind, class length and room type go out of use here: they
+-- describe a class rather than a group. The columns stay behind, merely
+-- relaxed, because a release runs its migration while the previous code is
+-- still serving requests and has to survive a rollback — code that reads a
+-- column that is gone cannot. A later release removes them.
+ALTER TABLE `groups`
+  MODIFY COLUMN `type` ENUM('theory', 'seminar', 'lab', 'practicum', 'tutoring') NULL;
