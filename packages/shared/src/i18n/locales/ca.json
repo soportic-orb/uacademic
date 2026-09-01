@@ -1664,7 +1664,19 @@
       "day": "Dia",
       "week": "Setmana",
       "month": "Mes",
-      "agenda": "Agenda"
+      "agenda": "Agenda",
+      "programme": "Programació"
+    },
+    "programme": {
+      "printHint": "La programació docent s’imprimeix per a tot el curs acadèmic.",
+      "title": "Programació docent",
+      "columns": {
+        "date": "Data",
+        "time": "Horari",
+        "topic": "Tema",
+        "teacher": "Docent",
+        "space": "Aula"
+      }
     },
     "today": "Avui",
     "previous": "Anterior",

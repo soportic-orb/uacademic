@@ -263,6 +263,65 @@ describe.skipIf(!hasDatabase)('the teaching programme', () => {
       }
     })
 
+    it('prints the year’s programme: the months, then every class in date order', async () => {
+      /*
+        Not a slice of the calendar but the plan: the teaching months across
+        the top with a dot on every day something happens, and beneath them
+        the classes themselves — date, hours, what it is about, who gives it
+        and where — however narrow a window the screen happened to be showing.
+      */
+      const session = await prisma.classSession.findFirstOrThrow({
+        where: { centerId, scheduleVersion: { status: 'published' } },
+        include: { group: { select: { subject: { select: { code: true } } } } },
+      })
+      const space = await prisma.space.create({
+        data: {
+          centerId,
+          name: 'Prova aula programa',
+          building: 'Prova',
+          capacity: 40,
+          type: 'classroom',
+        },
+      })
+      await prisma.classSession.update({
+        where: { id: session.id },
+        data: { spaceId: space.id, topic: 'Prova tema anual' },
+      })
+
+      try {
+        // A single day on screen: the programme still prints the year.
+        const response = await app.inject({
+          method: 'GET',
+          url: '/api/v1/calendar/coordination.pdf?from=2026-10-05&to=2026-10-05&view=programme',
+          headers: asAdmin(),
+        })
+        expect(response.statusCode).toBe(200)
+
+        const { pages } = await extractText(
+          new Uint8Array(response.rawPayload),
+          'application/pdf',
+          'programme-year.pdf',
+        )
+        const text = pages.map((page) => page.text).join(' ')
+
+        // The strip of teaching months at the top of the first page.
+        expect(text.toLowerCase()).toContain('set')
+        expect(text.toLowerCase()).toContain('gen')
+        // The list beneath it: a class of the year that is not on that day.
+        expect(text).toContain('Prova tema anual')
+        expect(text).toContain(space.name)
+        expect(text).toContain(`${session.startTime}–${session.endTime}`)
+        // And the key, so the colours mean something.
+        expect(text).toContain(session.group.subject.code)
+      } finally {
+        await prisma.classSession.update({
+          where: { id: session.id },
+          data: { spaceId: session.spaceId, topic: session.topic },
+        })
+        await prisma.space.delete({ where: { id: space.id } })
+      }
+    })
+
     it('prints a month as a month and a week as a week', async () => {
       await coordinate()
 

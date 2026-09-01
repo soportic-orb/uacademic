@@ -522,8 +522,15 @@ function Legend({ subjects }: { subjects: Option[] }) {
   )
 }
 
-/** The three shapes a printed programme comes in. */
-export type PrintView = 'week' | 'month' | 'agenda'
+/**
+ * The shapes a printed programme comes in.
+ *
+ * The first three are the views on screen, printed as what they are. The
+ * fourth is a document rather than a view: the plan for the year — the months
+ * across the top with a dot on every teaching day, then every class beneath in
+ * date order — which is why it takes no period of its own.
+ */
+export type PrintView = 'week' | 'month' | 'agenda' | 'programme'
 
 /**
  * What to print.
@@ -555,6 +562,10 @@ function PrintDialog({
   // the whole of it is there.
   const complete = /^\d{4}-\d{2}-\d{2}$/.test(from) && /^\d{4}-\d{2}-\d{2}$/.test(to)
 
+  // The programme is the year's plan, so it prints the year: asking for dates
+  // it will not use would be asking a question with no effect.
+  const wholeYear = shape === 'programme'
+
   return (
     <div
       role="dialog"
@@ -571,8 +582,9 @@ function PrintDialog({
             <input
               type="date"
               value={from}
+              disabled={wholeYear}
               onChange={(event) => setFrom(event.target.value)}
-              className="h-10 w-full rounded-control border border-border bg-surface px-2 text-sm text-text"
+              className="h-10 w-full rounded-control border border-border bg-surface px-2 text-sm text-text disabled:opacity-50"
             />
           </label>
 
@@ -582,8 +594,9 @@ function PrintDialog({
               type="date"
               value={to}
               min={from}
+              disabled={wholeYear}
               onChange={(event) => setTo(event.target.value)}
-              className="h-10 w-full rounded-control border border-border bg-surface px-2 text-sm text-text"
+              className="h-10 w-full rounded-control border border-border bg-surface px-2 text-sm text-text disabled:opacity-50"
             />
           </label>
         </div>
@@ -593,7 +606,7 @@ function PrintDialog({
             {t('calendar.coordination.printView')}
           </legend>
           <div className="flex flex-wrap gap-3">
-            {(['week', 'month', 'agenda'] as PrintView[]).map((option) => (
+            {(['week', 'month', 'agenda', 'programme'] as PrintView[]).map((option) => (
               <label key={option} className="flex items-center gap-1.5 text-sm text-text">
                 <input
                   type="radio"
@@ -609,14 +622,16 @@ function PrintDialog({
           </div>
         </fieldset>
 
-        <p className="text-xs text-text-muted">{t('calendar.coordination.printHint')}</p>
+        <p className="text-xs text-text-muted">
+          {wholeYear ? t('calendar.programme.printHint') : t('calendar.coordination.printHint')}
+        </p>
 
         <div className="flex justify-end gap-2">
           <Button variant="ghost" onClick={onClose}>
             {t('common.cancel')}
           </Button>
           <Button
-            disabled={busy || !complete || to < from}
+            disabled={busy || (!wholeYear && (!complete || to < from))}
             onClick={() => {
               setBusy(true)
               void onPrint({ from, to, view: shape }).finally(() => setBusy(false))

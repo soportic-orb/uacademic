@@ -23,6 +23,7 @@ import PDFDocument from 'pdfkit'
 import { z } from 'zod'
 
 import { writeAuditLog } from '../../lib/audit.js'
+import { programmePdf } from '../../services/programme-pdf.js'
 import { scheduleMonthlyPdf } from '../../services/schedule-pdf.js'
 import { AppError } from '../../lib/errors.js'
 import { type PrismaClient, prisma } from '../../lib/prisma.js'
@@ -51,10 +52,37 @@ type Filters = z.infer<typeof filterSchema>
 
 /** What the PDF prints: whichever slice of the range is on screen. */
 const printSchema = filterSchema.extend({
-  view: z.enum(['day', 'week', 'month', 'agenda']).default('agenda'),
+  /**
+   * `programme` is the odd one out: it is not a slice of the calendar but the
+   * plan for the year — the months across the top and every class beneath —
+   * so it prints the whole academic period rather than the week on screen.
+   */
+  view: z.enum(['day', 'week', 'month', 'agenda', 'programme']).default('agenda'),
   /** The date the view is showing. Ignored by `agenda`, which prints the range. */
   date: z.iso.date().optional(),
 })
+
+/**
+ * The year the center is teaching, for the views that are about the year
+ * rather than about a week of it. Falls back to the range asked for when no
+ * year is active, which is a center that has not opened one yet.
+ */
+export async function academicYearRange(
+  db: PrismaClient,
+  fallback: { from: string; to: string },
+): Promise<{ from: string; to: string }> {
+  const year = await db.academicYear.findFirst({
+    where: { status: 'active' },
+    orderBy: { startDate: 'desc' },
+    select: { startDate: true, endDate: true },
+  })
+  if (!year) return fallback
+
+  return {
+    from: year.startDate.toISOString().slice(0, 10),
+    to: year.endDate.toISOString().slice(0, 10),
+  }
+}
 
 export function registerCoordinationCalendarRoutes(app: FastifyInstance): void {
   app.get(
@@ -101,9 +129,15 @@ export function registerCoordinationCalendarRoutes(app: FastifyInstance): void {
       const { db } = requireCenterScope(request)
       const t = (key: string) => translate(request.locale, key)
 
-      // The printed range is the one on screen, not the one fetched: somebody
-      // looking at a week and pressing print expects that week.
-      const range = rangeForView(query)
+      /*
+        The printed range is the one on screen, not the one fetched: somebody
+        looking at a week and pressing print expects that week. The programme
+        is the exception — it is the plan for the year, so it prints the year.
+      */
+      const range =
+        query.view === 'programme'
+          ? await academicYearRange(db, { from: query.from, to: query.to })
+          : rangeForView(query)
       const sessions = await visibleSessions(request, db, { ...query, ...range })
       const excluded = await nonTeachingDates(db, range.from, range.to)
       const rows = expandWithColour(sessions, { ...query, ...range }, excluded)
@@ -114,6 +148,44 @@ export function registerCoordinationCalendarRoutes(app: FastifyInstance): void {
         printed calendar that is not the calendar in front of somebody is a
         different document.
       */
+      if (query.view === 'programme') {
+        const center = await prisma().center.findUnique({
+          where: { id: requireCenterScope(request).centerId },
+          select: { name: true },
+        })
+
+        const programme = await programmePdf({
+          title: t('calendar.programme.title'),
+          centerName: center?.name ?? '',
+          note: describeFilters(rows, query, t),
+          from: range.from,
+          to: range.to,
+          locale: request.locale,
+          entries: rows.map((row) => ({
+            date: row.date,
+            startTime: row.startTime,
+            endTime: row.endTime,
+            subjectId: row.subjectId,
+            subjectCode: row.subjectCode,
+            subjectName: row.subjectName,
+            subjectColor: row.subjectColor,
+            groupCode: row.groupCode,
+            topic: row.topic,
+            // Everyone giving it: a shared class is not one person's.
+            teacherName:
+              row.teachers.length > 0
+                ? row.teachers.map((person) => person.name).join(', ')
+                : row.teacherName,
+            spaceName: row.spaceName,
+          })),
+        })
+
+        return reply
+          .header('content-type', 'application/pdf')
+          .header('content-disposition', 'attachment; filename="uacademic-programme.pdf"')
+          .send(programme)
+      }
+
       if (query.view === 'month' || query.view === 'week') {
         const center = await prisma().center.findUnique({
           where: { id: requireCenterScope(request).centerId },
@@ -517,12 +589,14 @@ function filterOptions(sessions: readonly CalendarSession[]) {
 
 /** The dates a view covers, so the paper matches the screen. */
 export function rangeForView(input: {
-  view: 'day' | 'week' | 'month' | 'agenda'
+  view: 'day' | 'week' | 'month' | 'agenda' | 'programme'
   date?: string | undefined
   from: string
   to: string
 }): { from: string; to: string } {
-  if (input.view === 'agenda' || !input.date) return { from: input.from, to: input.to }
+  if (input.view === 'agenda' || input.view === 'programme' || !input.date) {
+    return { from: input.from, to: input.to }
+  }
 
   const day = new Date(`${input.date}T00:00:00Z`)
 

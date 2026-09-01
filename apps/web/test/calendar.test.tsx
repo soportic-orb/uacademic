@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { ReactNode } from 'react'
 import { MemoryRouter } from 'react-router'
@@ -178,7 +178,9 @@ describe('the teacher calendar', () => {
     render(wrap(<CalendarView />))
     await waitFor(() => expect(fetchMock).toHaveBeenCalled())
 
+    // Printing asks what shape the page should be before it makes one.
     await user.click(screen.getByRole('button', { name: /Exporta a PDF/ }))
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: /Exporta/ }))
     await user.click(screen.getByRole('button', { name: /Exporta a Excel/ }))
 
     await waitFor(() => {
@@ -187,6 +189,44 @@ describe('the teacher calendar', () => {
       expect(urls.some((url) => url.includes('/calendar/export.xlsx?'))).toBe(true)
     })
     expect(createObjectURL).toHaveBeenCalledTimes(2)
+  })
+
+  it('prints the shape that was asked for, including the year’s programme', async () => {
+    /*
+      The view on screen is the obvious answer and not always the right one:
+      somebody looking at next Tuesday may want the plan for the year, which is
+      a document rather than a view.
+    */
+    const user = userEvent.setup()
+    vi.stubGlobal('URL', {
+      ...URL,
+      createObjectURL: vi.fn(() => 'blob:x'),
+      revokeObjectURL: vi.fn(),
+    })
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+
+    fetchMock.mockImplementation((input: string) =>
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () =>
+          String(input).includes('/calendar/feed') ? { active: false, id: null } : SESSIONS,
+        blob: async () => new Blob(['x']),
+      } as Response),
+    )
+
+    render(wrap(<CalendarView />))
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled())
+
+    await user.click(screen.getByRole('button', { name: /Exporta a PDF/ }))
+    const dialog = screen.getByRole('dialog')
+    await user.click(within(dialog).getByRole('radio', { name: 'Programació' }))
+    await user.click(within(dialog).getByRole('button', { name: /Exporta/ }))
+
+    await waitFor(() => {
+      const urls = fetchMock.mock.calls.map((call) => String(call[0]))
+      expect(urls.some((url) => url.includes('view=programme'))).toBe(true)
+    })
   })
 })
 

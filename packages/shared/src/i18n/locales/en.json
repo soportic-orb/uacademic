@@ -1664,7 +1664,19 @@
       "day": "Day",
       "week": "Week",
       "month": "Month",
-      "agenda": "Agenda"
+      "agenda": "Agenda",
+      "programme": "Programme"
+    },
+    "programme": {
+      "printHint": "The teaching programme prints the whole academic year.",
+      "title": "Teaching programme",
+      "columns": {
+        "date": "Date",
+        "time": "Time",
+        "topic": "Topic",
+        "teacher": "Teacher",
+        "space": "Room"
+      }
     },
     "today": "Today",
     "previous": "Previous",

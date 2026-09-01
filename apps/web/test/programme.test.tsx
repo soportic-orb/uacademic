@@ -195,6 +195,35 @@ describe('the teaching programme', () => {
     })
   })
 
+  it('prints the year’s programme for the teacher the screen is filtered to', async () => {
+    /*
+      The programme is the plan rather than a slice of the calendar, so it
+      takes no period of its own: whatever the screen is showing, it prints the
+      academic year — for everybody, or for the one colleague chosen here.
+    */
+    const user = userEvent.setup()
+    view(<ProgrammeView />)
+
+    await ready()
+    await user.selectOptions(screen.getByLabelText('Docent'), 'p1')
+    await user.click(screen.getByRole('button', { name: 'Imprimeix programació' }))
+
+    const dialog = screen.getByRole('dialog')
+    await user.click(within(dialog).getByLabelText('Programació'))
+
+    // The dates are not asked for: the year is not a choice here.
+    const dates = [...dialog.querySelectorAll<HTMLInputElement>('input[type="date"]')]
+    expect(dates.every((input) => input.disabled)).toBe(true)
+
+    await user.click(within(dialog).getByRole('button', { name: 'Imprimeix programació' }))
+
+    await waitFor(() => {
+      const print = requested.find((url) => url.includes('/calendar/coordination.pdf'))
+      expect(print).toContain('view=programme')
+      expect(print).toContain('teacherProfileId=p1')
+    })
+  })
+
   it('will not print a period that is only half typed', async () => {
     const user = userEvent.setup()
     view(<ProgrammeView />)

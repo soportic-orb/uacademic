@@ -58,6 +58,14 @@ const VIEWS = {
 
 type ViewKey = keyof typeof VIEWS
 
+/**
+ * What a printed calendar can be: the four views on screen, plus the year's
+ * programme — the months across the top with a dot on every teaching day, and
+ * every class beneath it in date order.
+ */
+type PrintShape = ViewKey | 'programme'
+const PRINT_SHAPES: PrintShape[] = ['day', 'week', 'month', 'agenda', 'programme']
+
 const LOCALES = { ca: caLocale, es: esLocale, en: enLocale }
 
 /**
@@ -82,6 +90,8 @@ export function CalendarView() {
   const mockUserEmail = useSessionStore((state) => state.mockUserEmail)
 
   const [view, setView] = useState<ViewKey>('week')
+  /** Whether the "what shape of PDF?" dialog is open. */
+  const [printing, setPrinting] = useState(false)
   const [subjectId, setSubjectId] = useState('')
   const [range, setRange] = useState(() => rangeAround(new Date()))
   const calendarRef = useRef<FullCalendar>(null)
@@ -123,14 +133,14 @@ export function CalendarView() {
     [sessions.data],
   )
 
-  const download = async (format: 'pdf' | 'xlsx') => {
+  const download = async (format: 'pdf' | 'xlsx', shape: PrintShape = view) => {
     try {
-      // The page prints what is on screen: this view, on this date. The Excel
-      // export stays the whole fetched range, which is what a spreadsheet is
-      // for.
+      // The page prints the shape that was asked for, on the date on screen.
+      // The Excel export stays the whole fetched range, which is what a
+      // spreadsheet is for.
       const shown = calendarRef.current?.getApi().getDate() ?? new Date()
       const printQuery =
-        format === 'pdf' ? `${query}&view=${view}&date=${shown.toISOString().slice(0, 10)}` : query
+        format === 'pdf' ? `${query}&view=${shape}&date=${shown.toISOString().slice(0, 10)}` : query
 
       const blob = await apiDownload(`/api/v1/calendar/export.${format}?${printQuery}`)
       const url = URL.createObjectURL(blob)
@@ -144,11 +154,21 @@ export function CalendarView() {
       if (error instanceof ApiRequestError)
         toast.raw({ variant: 'error', message: error.localizedMessage })
       else toast.error('calendar.export.failed')
+    } finally {
+      setPrinting(false)
     }
   }
 
   return (
     <div className="space-y-6">
+      {printing ? (
+        <PrintShapeDialog
+          view={view}
+          onClose={() => setPrinting(false)}
+          onPrint={(shape) => download('pdf', shape)}
+        />
+      ) : null}
+
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-text">{t('calendar.title')}</h1>
@@ -156,7 +176,7 @@ export function CalendarView() {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <Button variant="secondary" onClick={() => void download('pdf')}>
+          <Button variant="secondary" onClick={() => setPrinting(true)}>
             <FileText className="size-4" aria-hidden="true" />
             {t('calendar.export.pdf')}
           </Button>
@@ -306,6 +326,82 @@ export function CalendarView() {
           }
         />
       </Card>
+    </div>
+  )
+}
+
+/**
+ * What shape the PDF should be.
+ *
+ * Printing used to hand over whichever view happened to be open, which is
+ * right often enough and wrong whenever somebody wants the year's programme
+ * while looking at next Tuesday. So it is asked, with the view on screen
+ * already chosen.
+ */
+function PrintShapeDialog({
+  view,
+  onClose,
+  onPrint,
+}: {
+  view: ViewKey
+  onClose: () => void
+  onPrint: (shape: PrintShape) => Promise<void>
+}) {
+  const { t } = useTranslation()
+  const [shape, setShape] = useState<PrintShape>(view)
+  const [busy, setBusy] = useState(false)
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={t('calendar.export.pdf')}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+    >
+      <div className="w-full max-w-sm space-y-4 rounded-card border border-border bg-surface p-5">
+        <h2 className="text-lg font-semibold text-text">{t('calendar.export.pdf')}</h2>
+
+        <fieldset>
+          <legend className="mb-1 text-xs text-text-muted">
+            {t('calendar.coordination.printView')}
+          </legend>
+          <div className="flex flex-wrap gap-3">
+            {PRINT_SHAPES.map((option) => (
+              <label key={option} className="flex items-center gap-1.5 text-sm text-text">
+                <input
+                  type="radio"
+                  name="calendar-print-view"
+                  value={option}
+                  checked={shape === option}
+                  onChange={() => setShape(option)}
+                  className="size-4"
+                />
+                {t(`calendar.views.${option}`)}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+
+        {shape === 'programme' ? (
+          <p className="text-xs text-text-muted">{t('calendar.programme.printHint')}</p>
+        ) : null}
+
+        <div className="flex justify-end gap-2">
+          <Button variant="ghost" onClick={onClose}>
+            {t('common.cancel')}
+          </Button>
+          <Button
+            disabled={busy}
+            onClick={() => {
+              setBusy(true)
+              void onPrint(shape).finally(() => setBusy(false))
+            }}
+          >
+            <FileText className="size-4" aria-hidden="true" />
+            {busy ? t('common.loading') : t('calendar.export.pdf')}
+          </Button>
+        </div>
+      </div>
     </div>
   )
 }

@@ -1664,7 +1664,19 @@
       "day": "Día",
       "week": "Semana",
       "month": "Mes",
-      "agenda": "Agenda"
+      "agenda": "Agenda",
+      "programme": "Programación"
+    },
+    "programme": {
+      "printHint": "La programación docente se imprime para todo el curso académico.",
+      "title": "Programación docente",
+      "columns": {
+        "date": "Fecha",
+        "time": "Horario",
+        "topic": "Tema",
+        "teacher": "Docente",
+        "space": "Aula"
+      }
     },
     "today": "Hoy",
     "previous": "Anterior",

@@ -40,7 +40,12 @@ import {
   tombstoneToIcsSession,
 } from '../../services/calendar/drafts.js'
 import { registerCalendarConnectionRoutes } from './connections-routes.js'
-import { rangeForView, registerCoordinationCalendarRoutes } from './coordination-routes.js'
+import {
+  academicYearRange,
+  rangeForView,
+  registerCoordinationCalendarRoutes,
+} from './coordination-routes.js'
+import { programmePdf } from '../../services/programme-pdf.js'
 import { scheduleMonthlyPdf } from '../../services/schedule-pdf.js'
 import { requireCenterScope, requireUser } from '../../plugins/context.js'
 
@@ -59,7 +64,12 @@ const rangeSchema = z.object({
  * agenda as the list it already is.
  */
 const printSchema = rangeSchema.extend({
-  view: z.enum(['day', 'week', 'month', 'agenda']).default('agenda'),
+  /**
+   * `programme` is the odd one out: not a slice of the calendar but the plan
+   * for the year — the months across the top and every class beneath — so it
+   * prints the whole academic period rather than what is on screen.
+   */
+  view: z.enum(['day', 'week', 'month', 'agenda', 'programme']).default('agenda'),
   /** The date the view is centred on. Ignored by `agenda`. */
   date: z.iso.date().optional(),
 })
@@ -376,11 +386,52 @@ function registerExportRoutes(app: FastifyInstance): void {
     const query = parseWith(printSchema, request.query)
     const t = (key: string) => translate(request.locale, key)
 
-    // The period on screen, not the window the browser happened to fetch.
-    const range = rangeForView(query)
+    // The period on screen, not the window the browser happened to fetch —
+    // except the programme, which is the year and prints the year.
+    const range =
+      query.view === 'programme'
+        ? await academicYearRange(db, { from: query.from, to: query.to })
+        : rangeForView(query)
     const sessions = await publishedSessionsFor(db, user.userId, query.subjectId)
     const excluded = await nonTeachingDates(db, range.from, range.to)
     const rows = expand(sessions, range.from, range.to, excluded)
+
+    if (query.view === 'programme') {
+      const center = await prisma().center.findUnique({
+        where: { id: centerId },
+        select: { name: true },
+      })
+
+      const programme = await programmePdf({
+        title: t('calendar.programme.title'),
+        centerName: center?.name ?? '',
+        note: `${user.firstName} ${user.lastName}`,
+        from: range.from,
+        to: range.to,
+        locale: request.locale,
+        entries: rows.map((row) => ({
+          date: row.date,
+          startTime: row.startTime,
+          endTime: row.endTime,
+          subjectId: row.subjectId,
+          subjectCode: row.subjectCode,
+          subjectName: row.subjectName,
+          subjectColor: row.subjectColor,
+          groupCode: row.groupCode,
+          topic: row.topic,
+          teacherName:
+            row.teachers.length > 0
+              ? row.teachers.map((person) => person.name).join(', ')
+              : row.teacherName,
+          spaceName: row.spaceName,
+        })),
+      })
+
+      return reply
+        .header('content-type', 'application/pdf')
+        .header('content-disposition', 'attachment; filename="uacademic-programme.pdf"')
+        .send(programme)
+    }
 
     // A month and a week are drawn as a calendar page, which is what the
     // screen shows; a day and the agenda are a list, which is also what the

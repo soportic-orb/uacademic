@@ -316,6 +316,37 @@ describe.skipIf(!hasDatabase)('the teacher calendar', () => {
       expect(everything.rawPayload.length).toBeGreaterThan(week.rawPayload.length)
     })
 
+    it('prints its own programme for the year, whatever week is on screen', async () => {
+      /*
+        The teacher's own plan rather than a slice of it: the teaching months
+        with a dot on every day they teach, and every class of theirs beneath
+        in date order. One day was asked for on screen; the year comes back.
+      */
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/v1/calendar/export.pdf?from=2026-09-16&to=2026-09-16&view=programme',
+        headers: asTeacher(),
+      })
+
+      expect(response.statusCode).toBe(200)
+      const { pages } = await extractText(
+        new Uint8Array(response.rawPayload),
+        'application/pdf',
+        'programme.pdf',
+      )
+      const text = pages.map((page) => page.text).join(' ')
+
+      // The whole academic year, not the day that was on screen.
+      expect(text).toContain('2026-09-14 – 2027-07-31')
+      // A row of teaching months across the top, each with its days.
+      expect(text.toLowerCase()).toContain('des. del 26')
+      expect(text).toContain('1 2 3 4 5')
+      // And the classes beneath, in date order, with the hours, the person
+      // giving them and the room.
+      expect(text).toMatch(/\d{2}\/12\/26 \d{2}:\d{2}–\d{2}:\d{2}/)
+      expect(text).toContain('Data Horari Tema Docent Aula')
+    })
+
     it('prints a month as a month', async () => {
       const response = await app.inject({
         method: 'GET',
