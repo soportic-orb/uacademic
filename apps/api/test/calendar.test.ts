@@ -338,9 +338,10 @@ describe.skipIf(!hasDatabase)('the teacher calendar', () => {
 
       // The whole academic year, not the day that was on screen.
       expect(text).toContain('2026-09-14 – 2027-07-31')
-      // A row of teaching months across the top, each with its days.
-      expect(text.toLowerCase()).toContain('des. del 26')
-      expect(text).toContain('1 2 3 4 5')
+      // A mini calendar per teaching month before anything else, weeks and
+      // all, with the days that have classes dotted.
+      expect(text.toLowerCase()).toContain('desembre del 26')
+      expect(text.indexOf('desembre')).toBeLessThan(text.indexOf('Data Horari'))
       // And the classes beneath, in date order, with the hours, the person
       // giving them and the room.
       expect(text).toMatch(/\d{2}\/12\/26 \d{2}:\d{2}–\d{2}:\d{2}/)

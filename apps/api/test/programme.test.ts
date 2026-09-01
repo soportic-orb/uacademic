@@ -304,9 +304,11 @@ describe.skipIf(!hasDatabase)('the teaching programme', () => {
         )
         const text = pages.map((page) => page.text).join(' ')
 
-        // The strip of teaching months at the top of the first page.
-        expect(text.toLowerCase()).toContain('set')
-        expect(text.toLowerCase()).toContain('gen')
+        // A mini calendar per teaching month at the top of the first page,
+        // before the list they summarise.
+        expect(text.toLowerCase()).toContain('setembre del 26')
+        expect(text.toLowerCase()).toContain('gener del 27')
+        expect(text.indexOf('setembre')).toBeLessThan(text.indexOf('Data Horari'))
         // The list beneath it: a class of the year that is not on that day.
         expect(text).toContain('Prova tema anual')
         expect(text).toContain(space.name)

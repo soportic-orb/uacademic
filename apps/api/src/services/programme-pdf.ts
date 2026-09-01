@@ -12,7 +12,7 @@
  * and the screen cannot disagree about when a class happens.
  */
 import type { AppLocale } from '@uacademic/shared'
-import { calendarColor, monthsBetween, translate } from '@uacademic/shared'
+import { calendarColor, isInMonth, monthsBetween, translate, weeksOfMonth } from '@uacademic/shared'
 import PDFDocument from 'pdfkit'
 
 export interface ProgrammeEntry {
@@ -63,8 +63,14 @@ const COLUMNS = [
 ] as const
 
 const ROW_HEIGHT = 15
-const MONTH_ROW = 15
-const DAY_CELL = (CONTENT - 52) / 31
+
+/** The strip of month calendars: four across, which fits an A4 page. */
+const MONTH_COLUMNS = 4
+const MONTH_GAP = 10
+const MONTH_WIDTH = (CONTENT - MONTH_GAP * (MONTH_COLUMNS - 1)) / MONTH_COLUMNS
+const MINI_CELL = MONTH_WIDTH / 7
+/** A day of a mini calendar: its number, with room for the dots beneath. */
+const MINI_ROW = 11
 
 export async function programmePdf(input: ProgrammePdfInput): Promise<Buffer> {
   const t = (key: string, params?: Record<string, string | number>) =>
@@ -142,12 +148,16 @@ function drawHeader(
 }
 
 /**
- * The year across the top: a row per teaching month, a dot on every day that
- * has a class, in the colour of the subject it belongs to.
+ * The year across the top, as calendars.
  *
- * Several subjects on one day means several dots side by side in the same
- * cell, up to what fits: the point is "this day is busy, and with what", not
- * an exact count.
+ * One small month grid per teaching month — Monday first, the weeks reading
+ * down as they do on a wall — with a dot on every day that has a class, in the
+ * colour of the subject it belongs to. Several subjects on one day means
+ * several dots side by side: the question this answers is "which days are
+ * busy, and with what", not how many classes each holds.
+ *
+ * They come before the list because that is the order somebody reads a plan
+ * in: the shape of the year first, then the classes that make it up.
  */
 function drawMonths(
   document: PDFKit.PDFDocument,
@@ -165,69 +175,118 @@ function drawMonths(
     byDate.set(entry.date, day)
   }
 
+  const weekdays = weekdayInitials(input.locale)
   let y = top
 
-  // The day numbers, once, above the months they label.
+  for (let index = 0; index < months.length; index += MONTH_COLUMNS) {
+    const row = months.slice(index, index + MONTH_COLUMNS)
+    let tallest = 0
+
+    for (const [column, { year, month }] of row.entries()) {
+      const height = drawMonth(document, {
+        x: MARGIN + column * (MONTH_WIDTH + MONTH_GAP),
+        y,
+        year,
+        month,
+        weekdays,
+        locale: input.locale,
+        byDate,
+      })
+      tallest = Math.max(tallest, height)
+    }
+
+    y += tallest + MONTH_GAP
+  }
+
+  return y + 4
+}
+
+interface MonthOptions {
+  x: number
+  y: number
+  year: number
+  /** 1 = January, as `monthsBetween` gives it. */
+  month: number
+  weekdays: string[]
+  locale: AppLocale
+  byDate: Map<string, ProgrammeEntry[]>
+}
+
+/** One month, drawn from its own top-left corner. Returns how tall it came out. */
+function drawMonth(document: PDFKit.PDFDocument, options: MonthOptions): number {
+  const label = new Intl.DateTimeFormat(options.locale, {
+    month: 'long',
+    year: '2-digit',
+    timeZone: 'UTC',
+  }).format(new Date(Date.UTC(options.year, options.month - 1, 1)))
+
+  document
+    .fontSize(7)
+    .fillColor(INK)
+    .text(label, options.x, options.y, { width: MONTH_WIDTH, lineBreak: false, ellipsis: true })
+
+  const headingsY = options.y + 9
   document.fontSize(5).fillColor(MUTED)
-  for (let day = 1; day <= 31; day += 1) {
-    document.text(String(day), MARGIN + 52 + (day - 1) * DAY_CELL, y, {
-      width: DAY_CELL,
+  options.weekdays.forEach((name, column) => {
+    document.text(name, options.x + column * MINI_CELL, headingsY, {
+      width: MINI_CELL,
       align: 'center',
       lineBreak: false,
     })
-  }
-  y += 8
+  })
 
-  for (const { year, month } of months) {
-    const label = new Intl.DateTimeFormat(input.locale, {
-      month: 'short',
-      year: '2-digit',
-      timeZone: 'UTC',
-    }).format(new Date(Date.UTC(year, month - 1, 1)))
+  const weeks = weeksOfMonth(options.year, options.month)
+  const gridTop = headingsY + 7
 
-    document
-      .fontSize(7)
-      .fillColor(INK)
-      .text(label, MARGIN, y + 4, { width: 48, lineBreak: false, ellipsis: true })
+  weeks.forEach((week, rowIndex) => {
+    week.forEach((date, column) => {
+      // Days of the months either side keep their place empty: the shape of
+      // the month is part of what makes it recognisable at a glance.
+      if (!isInMonth(date, options.year, options.month)) return
 
-    const days = new Date(Date.UTC(year, month, 0)).getUTCDate()
+      const x = options.x + column * MINI_CELL
+      const cellTop = gridTop + rowIndex * MINI_ROW
 
-    for (let day = 1; day <= 31; day += 1) {
-      const x = MARGIN + 52 + (day - 1) * DAY_CELL
       document
-        .rect(x, y, DAY_CELL, MONTH_ROW)
-        .lineWidth(0.3)
-        .strokeColor(RULE)
-        .fillColor(day <= days ? '#FFFFFF' : '#F1F5F9')
-        .fillAndStroke()
+        .fontSize(5)
+        .fillColor(INK)
+        .text(String(Number(date.slice(8, 10))), x, cellTop, {
+          width: MINI_CELL,
+          align: 'center',
+          lineBreak: false,
+        })
 
-      if (day > days) continue
-
-      const iso = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
       const subjects = new Map<string, ProgrammeEntry>()
-      for (const entry of byDate.get(iso) ?? []) {
+      for (const entry of options.byDate.get(date) ?? []) {
         if (!subjects.has(entry.subjectId)) subjects.set(entry.subjectId, entry)
       }
-      if (subjects.size === 0) continue
+      if (subjects.size === 0) return
 
       const dots = [...subjects.values()].slice(0, 3)
-      const radius = 1.6
-      const spacing = radius * 2 + 0.8
-      let dotX = x + DAY_CELL / 2 - ((dots.length - 1) * spacing) / 2
+      const radius = 1.1
+      const spacing = radius * 2 + 0.6
+      let dotX = x + MINI_CELL / 2 - ((dots.length - 1) * spacing) / 2
 
       for (const entry of dots) {
         document
-          .circle(dotX, y + MONTH_ROW / 2, radius)
+          .circle(dotX, cellTop + 8, radius)
           .fillColor(calendarColor(entry.subjectId, entry.subjectColor).accent)
           .fill()
         dotX += spacing
       }
-    }
+    })
+  })
 
-    y += MONTH_ROW
-  }
+  return gridTop - options.y + weeks.length * MINI_ROW
+}
 
-  return y + 10
+/** Monday first, everywhere in this product (CLAUDE.md §5). */
+function weekdayInitials(locale: AppLocale): string[] {
+  const formatter = new Intl.DateTimeFormat(locale, { weekday: 'narrow', timeZone: 'UTC' })
+  // 2026-01-05 was a Monday.
+  return [0, 1, 2, 3, 4, 5, 6].map((offset) =>
+    formatter.format(new Date(Date.UTC(2026, 0, 5 + offset))),
+  )
 }
 
 /**
