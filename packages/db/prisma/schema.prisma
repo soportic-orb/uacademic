@@ -1782,6 +1782,9 @@ model ClassType {
   nameEn         String   @map("name_en") @db.VarChar(60)
   /// How long one of its classes lasts, in minutes.
   defaultMinutes Int      @default(60) @map("default_minutes") @db.SmallInt
+  /// The colour its classes are shaded in — a wash behind the day rather than
+  /// ink on it, since the subject's own colour is what the day is marked with.
+  color          String?  @db.Char(7)
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 

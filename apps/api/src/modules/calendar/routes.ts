@@ -99,6 +99,11 @@ export interface CalendarSession {
   groupCode: string
   spaceId: string | null
   spaceName: string | null
+  /** What kind of class it is, when the center keeps a list of kinds. */
+  classTypeId: string | null
+  classTypeName: string | null
+  /** The colour that kind of class is washed with, if one was chosen. */
+  classTypeColor: string | null
   /** What the class is about, as written on the planner block. */
   topic: string | null
   teacherProfileId: string | null
@@ -418,6 +423,9 @@ function registerExportRoutes(app: FastifyInstance): void {
           subjectName: row.subjectName,
           subjectColor: row.subjectColor,
           groupCode: row.groupCode,
+          classTypeId: row.classTypeId,
+          classTypeName: row.classTypeName,
+          classTypeColor: row.classTypeColor,
           topic: row.topic,
           teacherName:
             row.teachers.length > 0
@@ -658,6 +666,8 @@ export async function publishedSessionsWhere(
         },
       },
       space: { select: { id: true, name: true } },
+      // What kind of class it is, and the colour that kind is washed with.
+      classType: { select: { id: true, nameCa: true, color: true } },
       teacherProfile: {
         select: { id: true, user: { select: { firstName: true, lastName: true } } },
       },
@@ -684,6 +694,7 @@ export async function publishedSessionsWhere(
       subject: { id: string; code: string; nameCa: string; color: string | null }
     }
     space: { id: string; name: string } | null
+    classType: { id: string; nameCa: string; color: string | null } | null
     teacherProfile: { id: string; user: { firstName: string; lastName: string } } | null
     coTeachers: {
       teacherProfileId: string
@@ -701,6 +712,9 @@ export async function publishedSessionsWhere(
     groupCode: row.group.code,
     spaceId: row.space?.id ?? null,
     spaceName: row.space?.name ?? null,
+    classTypeId: row.classType?.id ?? null,
+    classTypeName: row.classType?.nameCa ?? null,
+    classTypeColor: row.classType?.color ?? null,
     topic: row.topic,
     teacherProfileId: row.teacherProfile?.id ?? null,
     teacherName: row.teacherProfile

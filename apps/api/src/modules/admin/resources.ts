@@ -397,6 +397,7 @@ export function registerAdminResources(app: FastifyInstance): void {
     serialize: (row) => ({
       id: asString(row.id),
       defaultMinutes: asNumber(row.defaultMinutes),
+      color: row.color ?? null,
       ...names(row),
     }),
     beforeWrite: (input) => ({

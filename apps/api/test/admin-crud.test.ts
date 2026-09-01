@@ -176,12 +176,14 @@ describe.skipIf(!hasDatabase)('admin CRUD', () => {
         method: 'POST',
         url: '/api/v1/admin/class-types',
         headers: asAdmin(),
-        payload: { nameCa: 'Test taller', defaultMinutes: 90 },
+        payload: { nameCa: 'Test taller', defaultMinutes: 90, color: '#7C3AED' },
       })
 
       expect(created.statusCode).toBe(201)
       const id = created.json().id
       expect(created.json().defaultMinutes).toBe(90)
+      // The colour its days are washed with on a printed programme.
+      expect(created.json().color).toBe('#7C3AED')
       // Left blank, the other two languages take the Catalan name rather than
       // an invented translation or an empty label (R1).
       expect(created.json().nameEs).toBe('Test taller')

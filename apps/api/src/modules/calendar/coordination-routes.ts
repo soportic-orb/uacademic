@@ -170,6 +170,9 @@ export function registerCoordinationCalendarRoutes(app: FastifyInstance): void {
             subjectName: row.subjectName,
             subjectColor: row.subjectColor,
             groupCode: row.groupCode,
+            classTypeId: row.classTypeId,
+            classTypeName: row.classTypeName,
+            classTypeColor: row.classTypeColor,
             topic: row.topic,
             // Everyone giving it: a shared class is not one person's.
             teacherName:
@@ -487,6 +490,10 @@ interface ColouredOccurrence {
   groupCode: string
   spaceId: string | null
   spaceName: string | null
+  /** What kind of class it is, and the colour that kind is washed with. */
+  classTypeId: string | null
+  classTypeName: string | null
+  classTypeColor: string | null
   topic: string | null
   teacherProfileId: string | null
   teacherName: string | null
@@ -526,6 +533,9 @@ function expandWithColour(
         groupCode: session.groupCode,
         spaceId: session.spaceId,
         spaceName: session.spaceName,
+        classTypeId: session.classTypeId,
+        classTypeName: session.classTypeName,
+        classTypeColor: session.classTypeColor,
         topic: session.topic,
         teacherProfileId: session.teacherProfileId,
         teacherName: session.teacherName,

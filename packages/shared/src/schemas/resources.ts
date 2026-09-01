@@ -152,6 +152,18 @@ export const classTypeInputSchema = z.object({
   nameEn: z.string().trim().max(60).optional(),
   /** How long one of its classes lasts, in minutes. */
   defaultMinutes: z.coerce.number().int().min(15).max(480).default(60),
+  /**
+   * The colour its classes are shaded in.
+   *
+   * Shown as a wash rather than as ink: on a calendar the day's colour says
+   * what kind of class it is, and the subject's own colour marks it. Empty
+   * means the one derived from the type's identifier.
+   */
+  color: z
+    .string()
+    .trim()
+    .regex(/^#[0-9a-fA-F]{6}$/, 'validation.invalidCode')
+    .nullish(),
 })
 export type ClassTypeInput = z.infer<typeof classTypeInputSchema>
 

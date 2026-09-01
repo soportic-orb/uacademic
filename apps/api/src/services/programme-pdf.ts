@@ -26,6 +26,11 @@ export interface ProgrammeEntry {
   /** The colour the center chose for the subject, if it chose one. */
   subjectColor?: string | null
   groupCode: string
+  /** What kind of class it is, when the center keeps a list of kinds. */
+  classTypeId?: string | null
+  classTypeName?: string | null
+  /** The colour that kind of class is washed with, if one was chosen. */
+  classTypeColor?: string | null
   /** What the class is about, when whoever planned it wrote it down. */
   topic: string | null
   /** Everyone giving it, already joined: a shared class has two names. */
@@ -246,6 +251,21 @@ function drawMonth(document: PDFKit.PDFDocument, options: MonthOptions): number 
 
       const x = options.x + column * MINI_CELL
       const cellTop = gridTop + rowIndex * MINI_ROW
+      const onThisDay = options.byDate.get(date) ?? []
+
+      /*
+        The kind of class the day is given over to, as a wash behind it: the
+        first one of the day, because a day is usually one kind of work and a
+        cell this small cannot say "half practical" without saying nothing.
+        A wash rather than ink, so the day's number and its dots stay legible.
+      */
+      const kind = onThisDay.find((entry) => entry.classTypeId)
+      if (kind?.classTypeId) {
+        document
+          .rect(x + 0.5, cellTop - 1, MINI_CELL - 1, MINI_ROW)
+          .fillColor(calendarColor(kind.classTypeId, kind.classTypeColor).background)
+          .fill()
+      }
 
       document
         .fontSize(5)
@@ -257,7 +277,7 @@ function drawMonth(document: PDFKit.PDFDocument, options: MonthOptions): number 
         })
 
       const subjects = new Map<string, ProgrammeEntry>()
-      for (const entry of options.byDate.get(date) ?? []) {
+      for (const entry of onThisDay) {
         if (!subjects.has(entry.subjectId)) subjects.set(entry.subjectId, entry)
       }
       if (subjects.size === 0) return
@@ -301,36 +321,83 @@ function drawLegend(
   top: number,
 ): number {
   const subjects = new Map<string, ProgrammeEntry>()
+  const kinds = new Map<string, ProgrammeEntry>()
   for (const entry of entries) {
     if (!subjects.has(entry.subjectId)) subjects.set(entry.subjectId, entry)
+    if (entry.classTypeId && !kinds.has(entry.classTypeId)) kinds.set(entry.classTypeId, entry)
   }
   if (subjects.size === 0) return top
 
+  // The subjects are what the dots mean, so their swatch is a dot.
+  let y = drawKeys(
+    document,
+    [...subjects.values()].map((entry) => ({
+      label: `${entry.subjectCode} ${entry.subjectName}`,
+      colour: calendarColor(entry.subjectId, entry.subjectColor).accent,
+      shape: 'dot' as const,
+    })),
+    top,
+  )
+
+  // The kinds of class are what the days are washed with, so their swatch is
+  // the same wash.
+  if (kinds.size > 0) {
+    y = drawKeys(
+      document,
+      [...kinds.values()].map((entry) => ({
+        label: entry.classTypeName ?? '',
+        colour: calendarColor(entry.classTypeId ?? '', entry.classTypeColor).background,
+        shape: 'wash' as const,
+      })),
+      y,
+    )
+  }
+
+  return y + 4
+}
+
+/** One line of keys, wrapping onto the next when the page runs out. */
+function drawKeys(
+  document: PDFKit.PDFDocument,
+  keys: readonly { label: string; colour: string; shape: 'dot' | 'wash' }[],
+  top: number,
+): number {
   let x = MARGIN
   let y = top
 
-  for (const entry of subjects.values()) {
-    const colour = calendarColor(entry.subjectId, entry.subjectColor)
-    const label = `${entry.subjectCode} ${entry.subjectName}`
-    const width = Math.min(170, 12 + document.fontSize(7).widthOfString(label))
+  for (const key of keys) {
+    const width = Math.min(170, 12 + document.fontSize(7).widthOfString(key.label))
 
-    // Wrapping onto a second line rather than running off the page: a legend
-    // cut in half names half the colours.
+    // Wrapping rather than running off the page: a legend cut in half names
+    // half the colours.
     if (x + width > PAGE.width - MARGIN) {
       x = MARGIN
       y += 11
     }
 
-    document.rect(x, y, 7, 7).fill(colour.accent)
+    if (key.shape === 'dot') {
+      document
+        .circle(x + 3.5, y + 3.5, 3)
+        .fillColor(key.colour)
+        .fill()
+    } else {
+      document
+        .rect(x, y, 7, 7)
+        .fillColor(key.colour)
+        .strokeColor(RULE)
+        .lineWidth(0.3)
+        .fillAndStroke()
+    }
+
     document
       .fillColor(MUTED)
       .fontSize(7)
-      .text(label, x + 10, y, { width: width - 10, lineBreak: false, ellipsis: true })
+      .text(key.label, x + 10, y, { width: width - 10, lineBreak: false, ellipsis: true })
 
     x += width + 8
   }
 
-  return y + 14
+  return y + 11
 }
 
 function columnWidths(): number[] {

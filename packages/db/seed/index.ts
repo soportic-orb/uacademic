@@ -464,11 +464,33 @@ async function seedSpaces() {
  * length its classes usually last.
  */
 async function seedClassTypes(): Promise<Map<string, string>> {
+  // The colour is a wash behind a day on a printed programme, never ink on it.
   const types = [
-    { key: 'lecture', ca: 'Teoria', es: 'Teoría', en: 'Lecture', minutes: 60 },
-    { key: 'practical', ca: 'Pràctiques', es: 'Prácticas', en: 'Practical', minutes: 120 },
-    { key: 'lab', ca: 'Laboratori', es: 'Laboratorio', en: 'Laboratory', minutes: 180 },
-    { key: 'seminar', ca: 'Seminari', es: 'Seminario', en: 'Seminar', minutes: 90 },
+    { key: 'lecture', ca: 'Teoria', es: 'Teoría', en: 'Lecture', minutes: 60, color: '#0072CE' },
+    {
+      key: 'practical',
+      ca: 'Pràctiques',
+      es: 'Prácticas',
+      en: 'Practical',
+      minutes: 120,
+      color: '#B45309',
+    },
+    {
+      key: 'lab',
+      ca: 'Laboratori',
+      es: 'Laboratorio',
+      en: 'Laboratory',
+      minutes: 180,
+      color: '#15803D',
+    },
+    {
+      key: 'seminar',
+      ca: 'Seminari',
+      es: 'Seminario',
+      en: 'Seminar',
+      minutes: 90,
+      color: '#7C3AED',
+    },
   ]
 
   const byKey = new Map<string, string>()
@@ -483,8 +505,9 @@ async function seedClassTypes(): Promise<Map<string, string>> {
         nameEs: type.es,
         nameEn: type.en,
         defaultMinutes: type.minutes,
+        color: type.color,
       },
-      update: { defaultMinutes: type.minutes },
+      update: { defaultMinutes: type.minutes, color: type.color },
     })
     byKey.set(type.key, id)
   }

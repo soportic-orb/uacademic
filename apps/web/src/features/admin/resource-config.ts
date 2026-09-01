@@ -470,6 +470,13 @@ export const ADMIN_RESOURCES: ResourceConfig[] = [
         required: true,
         step: '5',
       },
+      {
+        // What colour the days of this kind of class are washed with on a
+        // printed programme. Blank keeps the one its identifier gives it.
+        name: 'color',
+        labelKey: 'admin.fields.color',
+        type: 'color',
+      },
     ],
   },
   {

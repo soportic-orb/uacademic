@@ -283,9 +283,12 @@ describe.skipIf(!hasDatabase)('the teaching programme', () => {
           type: 'classroom',
         },
       })
+      // A kind of class on it, which is what the days of the mini calendars
+      // are washed with and what the second row of the key names.
+      const classType = await prisma.classType.findFirstOrThrow({ where: { centerId } })
       await prisma.classSession.update({
         where: { id: session.id },
-        data: { spaceId: space.id, topic: 'Prova tema anual' },
+        data: { spaceId: space.id, topic: 'Prova tema anual', classTypeId: classType.id },
       })
 
       try {
@@ -313,12 +316,18 @@ describe.skipIf(!hasDatabase)('the teaching programme', () => {
         expect(text).toContain('Prova tema anual')
         expect(text).toContain(space.name)
         expect(text).toContain(`${session.startTime}–${session.endTime}`)
-        // And the key, so the colours mean something.
+        // And the key, so the colours mean something: the subjects the dots
+        // stand for, and the kinds of class the days are washed with.
         expect(text).toContain(session.group.subject.code)
+        expect(text).toContain(classType.nameCa)
       } finally {
         await prisma.classSession.update({
           where: { id: session.id },
-          data: { spaceId: session.spaceId, topic: session.topic },
+          data: {
+            spaceId: session.spaceId,
+            topic: session.topic,
+            classTypeId: session.classTypeId,
+          },
         })
         await prisma.space.delete({ where: { id: space.id } })
       }
