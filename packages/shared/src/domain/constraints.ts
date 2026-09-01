@@ -21,6 +21,7 @@ import {
   findConflictsFor,
   sessionTeacherIds,
 } from './conflicts.js'
+import { slotOccurrences } from './schedule-calendar.js'
 import type { CenterSettings } from './settings.js'
 import { type ClockTime, type Weekday, durationHours, round2, toMinutes, sumHours } from './time.js'
 
@@ -73,11 +74,19 @@ export interface TeacherResource {
   /** Weekly availability windows; anything uncovered counts as unavailable. */
   availability: readonly AvailabilityEntry[]
   /**
-   * Hours the contract leaves for this week — annual capacity divided by the
-   * center's teaching weeks. Null means "not contracted", which blocks nothing
-   * by itself but is reported when hours are assigned anyway.
+   * Hours the contract leaves for the year, less approved reductions.
+   *
+   * The year, not a typical week. A version of the timetable holds the classes
+   * of the whole year — one dated class at a time, from September to July — so
+   * a week's worth of contract was the wrong thing to weigh them against: a
+   * teacher with sixty annual hours read as three hundred per cent full by
+   * October, the planner refused to publish, and their own card said they were
+   * under-loaded. Two answers to one question is one answer too many.
+   *
+   * Null means "not contracted", which blocks nothing by itself but is
+   * reported when hours are assigned anyway.
    */
-  weeklyCapacityHours: number | null
+  capacityHours: number | null
 }
 
 export interface SpaceResource {
@@ -153,6 +162,31 @@ function softKey(constraint: SoftConstraint): string {
 
 function sessionHours(session: PlannedSession): number {
   return durationHours({ start: session.startTime, end: session.endTime })
+}
+
+/**
+ * What one class costs the contract of whoever gives it: its hours over the
+ * whole year, not the hours of a single day of it.
+ *
+ * A class placed by hand is one row on one date and costs its own length; a
+ * class the generator laid out is one row repeated over a term and costs that
+ * length once per week of it. Counting rows instead read a full timetable as
+ * a fourteenth of itself, and a term of hand-placed classes as fourteen
+ * timetables.
+ */
+function sessionLoadHours(session: PlannedSession): number {
+  return round2(
+    sessionHours(session) *
+      slotOccurrences({
+        weekday: session.weekday,
+        // UTC, as the dates come off the database: a `DATE` column is a day,
+        // not a moment, and reading it locally is a day out west of London.
+        dateFrom: session.dateFrom.toISOString().slice(0, 10),
+        dateTo: session.dateTo.toISOString().slice(0, 10),
+        // A class with nothing said about repeating is a class on its date.
+        recurrence: session.recurrence ?? 'once',
+      }),
+  )
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -266,16 +300,14 @@ function capacityViolations(
   // shares the room, not the contract.
   for (const teacherProfileId of sessionTeacherIds(candidate)) {
     const teacher = context.teachers.get(teacherProfileId)
-    if (!teacher || teacher.weeklyCapacityHours === null) continue
+    if (!teacher || teacher.capacityHours === null) continue
 
-    const ceiling = round2(
-      teacher.weeklyCapacityHours * (context.settings.load.maxOverloadPercent / 100),
-    )
+    const ceiling = round2(teacher.capacityHours * (context.settings.load.maxOverloadPercent / 100))
     const scheduled = sumHours([
-      sessionHours(candidate),
+      sessionLoadHours(candidate),
       ...others
         .filter((session) => sessionTeacherIds(session).includes(teacherProfileId))
-        .map(sessionHours),
+        .map(sessionLoadHours),
     ])
 
     if (scheduled <= ceiling) continue
@@ -661,14 +693,14 @@ export function summarizePlan(
     for (const teacherProfileId of sessionTeacherIds(session)) {
       hoursByTeacher.set(
         teacherProfileId,
-        round2((hoursByTeacher.get(teacherProfileId) ?? 0) + sessionHours(session)),
+        round2((hoursByTeacher.get(teacherProfileId) ?? 0) + sessionLoadHours(session)),
       )
     }
   }
 
   let teachersOutOfRange = 0
   for (const [teacherProfileId, hours] of hoursByTeacher) {
-    const capacity = context.teachers.get(teacherProfileId)?.weeklyCapacityHours
+    const capacity = context.teachers.get(teacherProfileId)?.capacityHours
     if (capacity === null || capacity === undefined || capacity <= 0) continue
     const ratio = (hours / capacity) * 100
     if (ratio < context.settings.load.thresholds.underBelow) teachersOutOfRange += 1

@@ -116,3 +116,27 @@ export function occursOn(slot: RecurringSlot, date: string): boolean {
   if (!Number.isInteger(weeks)) return false
   return slot.recurrence === 'weekly' || weeks % 2 === 0
 }
+
+/**
+ * How many times the slot happens between its own two dates.
+ *
+ * What a class costs a teacher's contract is the hours it takes over the
+ * year, and the planner stores classes two ways: one row per date for the
+ * ones a coordinator places by hand, and one repeating row per term for the
+ * ones the generator lays out. Counting rows instead of occurrences reads a
+ * generated timetable as a fourteenth of itself.
+ *
+ * Closures are not deducted: this is the shape of the term, and a holiday
+ * removed from every teacher's contract equally is not what decides whether
+ * one of them is over it.
+ */
+export function slotOccurrences(slot: RecurringSlot): number {
+  if (slot.recurrence === 'once') return 1
+
+  const first = dayNumber(firstClassDate(slot))
+  const last = dayNumber(slot.dateTo)
+  if (last < first) return 0
+
+  const weeks = Math.floor((last - first) / 7)
+  return slot.recurrence === 'weekly' ? weeks + 1 : Math.floor(weeks / 2) + 1
+}

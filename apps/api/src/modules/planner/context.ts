@@ -21,7 +21,6 @@ import {
   busyToAvoidEntries,
   computeTeacherLoad,
   parseCenterSettings,
-  weeklyCapacityFrom,
   withExternalBusy,
 } from '@uacademic/shared'
 import type { FastifyRequest } from 'fastify'
@@ -52,9 +51,14 @@ export interface TeacherDirectoryEntry {
   teacherProfileId: string
   name: string
   avatarUrl: string | null
-  /** Contracted hours for the year, less approved reductions. */
+  /**
+   * Contracted hours for the year, less approved reductions.
+   *
+   * One number, the annual one, because that is what the planner weighs its
+   * classes against. A second, weekly figure lived here until the rail said
+   * "overloaded" about a teacher whose own card said the opposite.
+   */
   capacityHours: number
-  weeklyCapacityHours: number | null
 }
 
 function stringList(value: unknown): string[] {
@@ -137,8 +141,8 @@ export async function plannerContext(request: FastifyRequest): Promise<PlannerCo
         {
           teacherProfileId: profile.id,
           availability,
-          weeklyCapacityHours:
-            load.capacityHours > 0 ? weeklyCapacityFrom(load.capacityHours, settings) : null,
+          // The year's contract, because a version holds the year's classes.
+          capacityHours: load.capacityHours > 0 ? load.capacityHours : null,
         },
       ]
     }),
@@ -160,8 +164,6 @@ export async function plannerContext(request: FastifyRequest): Promise<PlannerCo
         name: `${profile.user.firstName} ${profile.user.lastName}`.trim(),
         avatarUrl: profile.user.avatarUrl,
         capacityHours: load.capacityHours,
-        weeklyCapacityHours:
-          load.capacityHours > 0 ? weeklyCapacityFrom(load.capacityHours, settings) : null,
       }
     }),
     centerId,

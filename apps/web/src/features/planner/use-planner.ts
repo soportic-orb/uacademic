@@ -28,8 +28,8 @@ export interface TeacherDirectoryEntry {
   teacherProfileId: string
   name: string
   avatarUrl: string | null
+  /** The year's contract, less approved reductions: what the engine judges by. */
   capacityHours: number
-  weeklyCapacityHours: number | null
 }
 
 export interface PlannerContextDto {

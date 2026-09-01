@@ -857,6 +857,108 @@ describe.skipIf(!hasDatabase)('the planner', () => {
       expect(response.json().error.messageKey).toBe('planner.version.errors.blockingViolations')
     })
 
+    it('publishes a year of classes for a teacher whose contract covers them', async () => {
+      /*
+        A version holds every class of the year, one date at a time, so a
+        teacher's hours in it are the year's hours. Weighed against a week's
+        share of their contract instead, a normally contracted teacher tripped
+        the capacity rule and publication was refused for "conflicts" nobody
+        could find on the grid.
+
+        A version of its own, with nothing in it but this year of classes, so
+        the only rule it can break is the one under test.
+      */
+      const version = await createVersion('year')
+      const profile = await prisma.teacherProfile.findFirstOrThrow({
+        where: { user: { email: SEED.teacherEmail } },
+        include: { availability: { orderBy: { weekday: 'asc' } } },
+      })
+      // Mornings, Monday to Friday, as this teacher declared them.
+      const window = profile.availability.find((entry) => entry.level !== 'unavailable')!
+      const startTime = window.startTime
+      const endTime = `${String(Number(startTime.slice(0, 2)) + 2).padStart(2, '0')}:${startTime.slice(3)}`
+
+      // A group an ordinary classroom can hold: the room below is one, and a
+      // group that needs a laboratory would fail on the room rather than on
+      // the hours this test is about.
+      const group = await prisma.group.findFirstOrThrow({
+        where: {
+          subject: { academicYearId: profile.academicYearId },
+          requiredSpaceType: 'classroom',
+          capacity: { lte: 200 },
+        },
+        orderBy: { code: 'asc' },
+      })
+
+      // A room of this test's own, so nothing it places lands on top of a
+      // class the center already holds. Cleared first in case an earlier run
+      // failed before it could put the room back.
+      await prisma.space.deleteMany({ where: { centerId, name: 'Prova aula anual' } })
+      const space = await prisma.space.create({
+        data: {
+          centerId,
+          name: 'Prova aula anual',
+          building: 'Prova',
+          capacity: 200,
+          type: 'classroom',
+        },
+      })
+
+      // Enough two-hour classes to fill four fifths of the contract: a full
+      // year's work, and inside it.
+      const contracted = Number(profile.contractedHours)
+      expect(contracted).toBeGreaterThan(0)
+      const wanted = Math.floor((contracted * 0.8) / 2)
+
+      const dates: Date[] = []
+      for (let day = 0; dates.length < wanted && day < 500; day += 1) {
+        const date = new Date(Date.UTC(2026, 8, 21) + day * 24 * 60 * 60 * 1000)
+        // Only the days this teacher is available on.
+        if (
+          !profile.availability.some((entry) => entry.weekday === ((date.getUTCDay() + 6) % 7) + 1)
+        )
+          continue
+        dates.push(date)
+      }
+      expect(dates).toHaveLength(wanted)
+
+      await prisma.classSession.createMany({
+        data: dates.map((date) => ({
+          centerId,
+          scheduleVersionId: version.id,
+          groupId: group.id,
+          teacherProfileId: profile.id,
+          spaceId: space.id,
+          weekday: ((date.getUTCDay() + 6) % 7) + 1,
+          startTime,
+          endTime,
+          dateFrom: date,
+          dateTo: date,
+          recurrence: 'once',
+        })),
+      })
+
+      await app.inject({
+        method: 'PATCH',
+        url: `/api/v1/planner/versions/${version.id}/status`,
+        headers: asCoordinator(),
+        payload: { status: 'in_review' },
+      })
+
+      const response = await app.inject({
+        method: 'PATCH',
+        url: `/api/v1/planner/versions/${version.id}/status`,
+        headers: asCoordinator(),
+        payload: { status: 'published' },
+      })
+
+      expect(response.statusCode).toBe(200)
+
+      await prisma.classSession.deleteMany({ where: { spaceId: space.id } })
+      await prisma.space.delete({ where: { id: space.id } })
+      await prisma.notification.deleteMany({ where: { type: 'schedule.published' } })
+    })
+
     it('refuses a transition the lifecycle does not allow', async () => {
       const response = await app.inject({
         method: 'PATCH',

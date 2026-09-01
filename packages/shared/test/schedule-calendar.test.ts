@@ -7,6 +7,7 @@ import {
   firstClassDate,
   isoDateOf,
   occursOn,
+  slotOccurrences,
 } from '../src/domain/schedule-calendar.js'
 
 /**
@@ -135,5 +136,35 @@ describe('when a repeating class happens', () => {
     expect(firstClassDate(sunday)).toBe('2026-03-08')
     expect(occursOn(sunday, '2026-03-08')).toBe(true)
     expect(occursOn(sunday, '2026-03-07')).toBe(false)
+  })
+})
+
+describe('how often a class happens', () => {
+  const slot = (recurrence: 'weekly' | 'biweekly' | 'once', dateTo = '2026-12-18') => ({
+    weekday: 3,
+    dateFrom: '2026-09-14',
+    dateTo,
+    recurrence,
+  })
+
+  it('counts every week of the term for a weekly class', () => {
+    // Wednesdays from 16 September to 16 December inclusive.
+    expect(slotOccurrences(slot('weekly'))).toBe(14)
+  })
+
+  it('counts every other week for a fortnightly one', () => {
+    expect(slotOccurrences(slot('biweekly'))).toBe(7)
+  })
+
+  it('counts a class placed on a date once, whatever range it carries', () => {
+    expect(slotOccurrences(slot('once'))).toBe(1)
+  })
+
+  it('counts the single week of a term that holds one', () => {
+    expect(slotOccurrences(slot('weekly', '2026-09-18'))).toBe(1)
+  })
+
+  it('counts nothing when the term ends before the class first falls', () => {
+    expect(slotOccurrences(slot('weekly', '2026-09-15'))).toBe(0)
   })
 })

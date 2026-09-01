@@ -39,7 +39,9 @@ const ALL_DAY: AvailabilityEntry[] = [1, 2, 3].map((weekday) => ({
 }))
 
 function teacher(id: string, overrides: Partial<TeacherResource> = {}): TeacherResource {
-  return { teacherProfileId: id, availability: ALL_DAY, weeklyCapacityHours: 10, ...overrides }
+  // A year's contract, which is what a term of weekly classes is weighed
+  // against.
+  return { teacherProfileId: id, availability: ALL_DAY, capacityHours: 600, ...overrides }
 }
 
 function space(id: string, overrides: Partial<SpaceResource> = {}): SpaceResource {

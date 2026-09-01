@@ -36,7 +36,9 @@ function teacher(
   return {
     teacherProfileId,
     availability: MORNINGS,
-    weeklyCapacityHours: 8,
+    // A year's contract: a weekly class over a term is twenty of itself, and
+    // that is what the engine weighs.
+    capacityHours: 240,
     ...overrides,
   }
 }
@@ -110,6 +112,16 @@ function session(id: string, overrides: Partial<PlannedSession> = {}): PlannedSe
   }
 }
 
+/**
+ * A class on one date, which is what the planner writes when a coordinator
+ * places one. Its hours are its own length, with nothing repeating them.
+ */
+const on = (date: string) => ({
+  recurrence: 'once' as const,
+  dateFrom: new Date(date),
+  dateTo: new Date(date),
+})
+
 const constraintsOf = (violations: { constraint: string }[]) =>
   violations.map((violation) => violation.constraint)
 
@@ -177,27 +189,92 @@ describe('hard constraints', () => {
   })
 
   it('blocks hours beyond the contracted ceiling, using the center’s own limit', () => {
-    // 8 h of weekly capacity, ceiling 120 % → 9.6 h. Six existing hours plus a
-    // four-hour session is 10.
+    // A contract of 8 h, ceiling 120 % → 9.6 h. Six hours already placed on
+    // their own dates, plus a four-hour class, is 10.
+    const short = context({ teachers: [teacher('t1', { capacityHours: 8 })] })
     const existing = [
-      session('b', { weekday: 2, groupId: 'g2', startTime: '08:00', endTime: '11:00' }),
-      session('c', { weekday: 3, groupId: 'g2', startTime: '08:00', endTime: '11:00' }),
+      session('b', {
+        weekday: 2,
+        groupId: 'g2',
+        startTime: '08:00',
+        endTime: '11:00',
+        ...on('2026-09-15'),
+      }),
+      session('c', {
+        weekday: 3,
+        groupId: 'g2',
+        startTime: '08:00',
+        endTime: '11:00',
+        ...on('2026-09-16'),
+      }),
     ]
-    const candidate = session('a', { weekday: 4, startTime: '09:00', endTime: '13:00' })
+    const candidate = session('a', {
+      weekday: 4,
+      startTime: '09:00',
+      endTime: '13:00',
+      ...on('2026-09-17'),
+    })
 
-    const violations = evaluatePlacement(candidate, existing, context())
+    const violations = evaluatePlacement(candidate, existing, short)
     expect(constraintsOf(violations)).toContain('teacherCapacity')
     expect(violations[0]?.params).toMatchObject({ scheduled: 10, ceiling: 9.6 })
 
-    // The same week is legal for a center that tolerates more overload.
+    // The same placement is legal for a center that tolerates more overload.
     const tolerant = context({
       settings: parseCenterSettings({ load: { maxOverloadPercent: 200 } }),
+      teachers: [teacher('t1', { capacityHours: 8 })],
     })
     expect(evaluatePlacement(candidate, existing, tolerant)).toEqual([])
   })
 
+  it('costs a repeating class every week it repeats', () => {
+    /*
+      The generator lays a timetable out as one row per class per term, so a
+      Monday class is twenty Mondays. Counting the row once read a full
+      timetable as a twentieth of itself and nobody was ever near their
+      contract.
+
+      Two hours every Monday from mid-September to the end of January is 40 h
+      against a contract of 30, whose ceiling is 36.
+    */
+    const short = context({ teachers: [teacher('t1', { capacityHours: 30 })] })
+    const violations = evaluatePlacement(session('a'), [], short)
+
+    expect(constraintsOf(violations)).toContain('teacherCapacity')
+    expect(violations[0]?.params).toMatchObject({ scheduled: 40, ceiling: 36 })
+  })
+
+  it('weighs a year of classes against the year’s contract, not against a week of it', () => {
+    /*
+      The version holds every class of the year, one date at a time. Judging
+      that pile against a weekly ceiling read a normally contracted teacher as
+      three hundred per cent full by October: the planner refused to publish
+      for "conflicts" while the teacher's own card called them under-loaded.
+
+      240 contracted hours, ceiling 120 % → 288. A hundred and ten two-hour
+      classes is 220 hours: inside the contract, and nothing to report.
+    */
+    const contracted = context({ teachers: [teacher('t1', { capacityHours: 240 })] })
+    const year = Array.from({ length: 109 }, (_, index) => {
+      // A date each, because these classes happen one day at a time rather
+      // than repeating: two of them on one date would be the same class twice.
+      const date = new Date(Date.UTC(2026, 8, 15 + index))
+      return session(`d${index}`, {
+        weekday: (((date.getUTCDay() + 6) % 7) + 1) as Weekday,
+        recurrence: 'once',
+        dateFrom: date,
+        dateTo: date,
+      })
+    })
+
+    expect(constraintsOf(evaluatePlacement(session('a'), year, contracted))).not.toContain(
+      'teacherCapacity',
+    )
+    expect(summarizePlan([session('a'), ...year], 0, contracted).teachersOutOfRange).toBe(0)
+  })
+
   it('does not judge the capacity of a teacher with no contract recorded', () => {
-    const noContract = context({ teachers: [teacher('t1', { weeklyCapacityHours: null })] })
+    const noContract = context({ teachers: [teacher('t1', { capacityHours: null })] })
     const many = [1, 2, 3, 4, 5].map((weekday) =>
       session(`x${weekday}`, { weekday: weekday as Weekday, groupId: 'g2' }),
     )
@@ -272,7 +349,7 @@ describe('hard constraints', () => {
     const hostile = context({
       spaces: [space('s1', { capacity: 1, equipment: [] })],
       groups: [group('g1', { requiredEquipment: ['linux'] }), group('g2', { code: 'T2' })],
-      teachers: [teacher('t1', { weeklyCapacityHours: 0.5 })],
+      teachers: [teacher('t1', { capacityHours: 0.5 })],
     })
 
     const clash = [
@@ -599,12 +676,9 @@ describe('the planner summary', () => {
     expect(summary).toMatchObject({ placed: 2, pending: 3, blocked: 1 })
   })
 
-  it('counts teachers whose week falls outside the contracted range', () => {
+  it('counts teachers whose hours fall outside the contracted range', () => {
     const settings = parseCenterSettings({})
-    const teachers = [
-      teacher('t1', { weeklyCapacityHours: 8 }),
-      teacher('t2', { weeklyCapacityHours: 8 }),
-    ]
+    const teachers = [teacher('t1', { capacityHours: 8 }), teacher('t2', { capacityHours: 8 })]
     // t1 gets 2 h of 8 (under), t2 gets nothing at all and is not counted.
     const summary = summarizePlan([session('a')], 0, context({ settings, teachers }))
 
@@ -666,27 +740,46 @@ describe('a class given by two people', () => {
   })
 
   it('spends the hour out of both contracts, not just the first one’s', () => {
-    const shared = session('a', { teacherProfileId: 't1', coTeacherIds: ['t2'] })
-    // t2 already has a full week of their own.
-    const theirOwnWeek = [
-      session('b', { teacherProfileId: 't2', weekday: 2, startTime: '09:00', endTime: '13:00' }),
-      session('c', { teacherProfileId: 't2', weekday: 3, startTime: '09:00', endTime: '13:00' }),
+    const shared = session('a', {
+      teacherProfileId: 't1',
+      coTeacherIds: ['t2'],
+      ...on('2026-09-14'),
+    })
+    // t2's contract of eight hours is already spent on their own classes.
+    const theirOwn = [
+      session('b', {
+        teacherProfileId: 't2',
+        groupId: 'g2',
+        weekday: 2,
+        startTime: '09:00',
+        endTime: '13:00',
+        ...on('2026-09-15'),
+      }),
+      session('c', {
+        teacherProfileId: 't2',
+        groupId: 'g2',
+        weekday: 3,
+        startTime: '09:00',
+        endTime: '13:00',
+        ...on('2026-09-16'),
+      }),
     ]
 
-    const violations = evaluatePlacement(shared, theirOwnWeek, context())
+    const violations = evaluatePlacement(
+      shared,
+      theirOwn,
+      context({ teachers: [teacher('t1'), teacher('t2', { capacityHours: 8 })] }),
+    )
 
     expect(constraintsOf(violations)).toEqual(['teacherCapacity'])
   })
 
-  it('counts the class in the weekly hours of everyone giving it', () => {
+  it('counts the class in the hours of everyone giving it', () => {
     const summary = summarizePlan(
-      [session('a', { teacherProfileId: 't1', coTeacherIds: ['t2'] })],
+      [session('a', { teacherProfileId: 't1', coTeacherIds: ['t2'], ...on('2026-09-14') })],
       0,
       context({
-        teachers: [
-          teacher('t1', { weeklyCapacityHours: 2 }),
-          teacher('t2', { weeklyCapacityHours: 20 }),
-        ],
+        teachers: [teacher('t1', { capacityHours: 2 }), teacher('t2', { capacityHours: 20 })],
       }),
     )
 

@@ -1,4 +1,4 @@
-import { formatHours, formatPercent } from '@uacademic/shared'
+import { formatHours, formatPercent, slotOccurrences } from '@uacademic/shared'
 import { useTranslation } from 'react-i18next'
 
 import { LoadBadge } from '../../components/data/load-badge'
@@ -9,13 +9,18 @@ import { cn } from '../../lib/cn'
 import type { PlannerSessionDto } from './queries'
 import type { TeacherDirectoryEntry } from './use-planner'
 
-/** Hours a session is worth, from its own start and end. */
+/**
+ * Hours a class costs its teacher's contract: its own length, once for every
+ * time it happens. A class placed by hand happens on its date; one the
+ * generator laid out happens every week of its term.
+ */
 function sessionHours(session: PlannerSessionDto): number {
   const minutes =
     Number(session.endTime.slice(0, 2)) * 60 +
     Number(session.endTime.slice(3)) -
     (Number(session.startTime.slice(0, 2)) * 60 + Number(session.startTime.slice(3)))
-  return minutes / 60
+
+  return (minutes / 60) * slotOccurrences(session)
 }
 
 /**
@@ -59,8 +64,14 @@ export function TeacherRail({
 
         {directory.map((teacher) => {
           const hours = assigned.get(teacher.teacherProfileId) ?? 0
-          const weekly = teacher.weeklyCapacityHours
-          const ratio = weekly && weekly > 0 ? (hours / weekly) * 100 : null
+          /*
+            The year's contract, which is what this version's classes add up
+            against. It used to be a week's worth, so a teacher with a term of
+            classes placed read as three hundred per cent full here while
+            their own card called them under-loaded.
+          */
+          const capacity = teacher.capacityHours
+          const ratio = capacity > 0 ? (hours / capacity) * 100 : null
           const picked = selectedId === teacher.teacherProfileId
 
           return (
@@ -93,7 +104,8 @@ export function TeacherRail({
 
                 <span className="tabular block text-xs text-text-muted">
                   {formatHours(locale, hours)}
-                  {weekly ? ` / ${formatHours(locale, weekly)}` : ''} {t('common.hoursShort')}
+                  {capacity > 0 ? ` / ${formatHours(locale, capacity)}` : ''}{' '}
+                  {t('common.hoursShort')}
                 </span>
 
                 {ratio === null ? null : (

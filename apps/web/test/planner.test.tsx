@@ -44,21 +44,18 @@ const CONTEXT = {
       name: 'Marta Puig',
       avatarUrl: null,
       capacityHours: 240,
-      weeklyCapacityHours: 8,
     },
     {
       teacherProfileId: 'p2',
       name: 'Sergi Vila',
       avatarUrl: null,
       capacityHours: 120,
-      weeklyCapacityHours: 4,
     },
     {
       teacherProfileId: 'p3',
       name: 'Aina Bosch',
       avatarUrl: null,
       capacityHours: 240,
-      weeklyCapacityHours: 8,
     },
   ],
   teachers: [
@@ -68,7 +65,8 @@ const CONTEXT = {
         { weekday: 1 as const, startTime: '09:00', endTime: '12:00', level: 'available' as const },
         { weekday: 2 as const, startTime: '09:00', endTime: '10:00', level: 'available' as const },
       ],
-      weeklyCapacityHours: 8,
+      // A year's contract: what the classes of a whole version add up against.
+      capacityHours: 240,
     },
     {
       teacherProfileId: 'p2',
@@ -83,14 +81,14 @@ const CONTEXT = {
         },
         { weekday: 1 as const, startTime: '15:00', endTime: '18:00', level: 'avoid' as const },
       ],
-      weeklyCapacityHours: 4,
+      capacityHours: 120,
     },
     {
       teacherProfileId: 'p3',
       availability: [
         { weekday: 1 as const, startTime: '09:00', endTime: '14:00', level: 'available' as const },
       ],
-      weeklyCapacityHours: 8,
+      capacityHours: 240,
     },
   ],
   spaces: [
@@ -704,9 +702,14 @@ describe('the visual planner', () => {
 
       // Their own button in the rail, not the one that takes them off a class.
       const rail = screen.getByRole('button', { name: /^Marta Puig/ })
-      // One placed hour of the eight this contract leaves for a week.
-      expect(rail).toHaveTextContent('1')
-      expect(rail).toHaveTextContent('8')
+      /*
+        One placed hour of the 240 the contract covers for the year, which is
+        the year the grid's classes belong to. Measured against a week's share
+        of that contract instead, a teacher with a term of classes placed read
+        as overloaded here while their own card called them under-loaded.
+      */
+      expect(rail).toHaveTextContent('1,00 / 240,00')
+      expect(rail).toHaveTextContent('Infracàrrega')
     })
 
     it('shows who is teaching each class, not only the subject code', () => {
