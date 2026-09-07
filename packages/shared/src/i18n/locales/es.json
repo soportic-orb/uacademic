@@ -859,7 +859,14 @@
         "set": "Este rol tiene un menú por defecto definido.",
         "notSet": "Este rol todavía no tiene ninguno: empieza con el orden original de la plataforma.",
         "clear": "Borrar este por defecto",
-        "saved": "Menú por defecto guardado"
+        "saved": "Menú por defecto guardado",
+        "apply": "Aplicar a todos",
+        "applyHint": "Sustituye el menú de todo el mundo con este rol por el de aquí, aunque se lo hubieran ordenado.",
+        "applyConfirm": "Se aplicará este menú a todas las personas con el rol {{role}} y se perderá el orden que cada una se hubiera hecho. ¿Quieres continuar?",
+        "applied": "Menú aplicado a {{count}} personas",
+        "errors": {
+          "notSet": "Este rol no tiene ningún menú por defecto definido: no hay nada que aplicar."
+        }
       },
       "unsaved": "Tienes cambios sin guardar.",
       "saved": "Todo guardado.",

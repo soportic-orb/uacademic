@@ -18,7 +18,7 @@ import {
   removeSeparator,
   renameSeparator,
 } from '@uacademic/shared'
-import { ArrowDown, ArrowUp, Minus, Plus, RotateCcw, Trash2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, Minus, Plus, RotateCcw, Trash2, UsersRound } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
@@ -31,6 +31,7 @@ import { ApiRequestError } from '../../lib/api'
 import {
   DEFAULT_ROLE_ORDER,
   newSeparatorId,
+  useApplyMenuDefault,
   useMenuDefaults,
   useMenuLayout,
   useSaveMenuDefaults,
@@ -129,6 +130,7 @@ export function MenuDefaultsCard() {
   const toast = useToast()
   const query = useMenuDefaults(true)
   const save = useSaveMenuDefaults()
+  const apply = useApplyMenuDefault()
   const [role, setRole] = useState<DefaultedRole>('TEACHER')
 
   if (query.isPending) return <CardSkeleton />
@@ -153,6 +155,29 @@ export function MenuDefaultsCard() {
       },
     )
 
+  /**
+   * Give this menu to everybody who holds the role, arrangements and all.
+   *
+   * Confirmed first, and not out of ceremony: it is the one action here that
+   * overwrites something other people made, and there is no undo for the
+   * orders it replaces.
+   */
+  const applyToEveryone = () => {
+    if (!window.confirm(t('settings.menu.defaults.applyConfirm', { role: t(`roles.${role}`) }))) {
+      return
+    }
+
+    apply.mutate(role, {
+      onSuccess: (result) =>
+        toast.success('settings.menu.defaults.applied', { params: { count: result.applied } }),
+      onError: (error) => {
+        if (error instanceof ApiRequestError)
+          toast.raw({ variant: 'error', message: error.localizedMessage })
+        else toast.error('errors.generic')
+      },
+    })
+  }
+
   return (
     <Card className="max-w-2xl">
       <CardHeader
@@ -160,10 +185,16 @@ export function MenuDefaultsCard() {
         description={t('settings.menu.defaults.hint')}
         action={
           entries.length > 0 ? (
-            <Button variant="secondary" onClick={() => persist([])}>
-              <RotateCcw className="size-4" aria-hidden="true" />
-              {t('settings.menu.defaults.clear')}
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="secondary" onClick={() => persist([])}>
+                <RotateCcw className="size-4" aria-hidden="true" />
+                {t('settings.menu.defaults.clear')}
+              </Button>
+              <Button variant="secondary" disabled={apply.isPending} onClick={applyToEveryone}>
+                <UsersRound className="size-4" aria-hidden="true" />
+                {apply.isPending ? t('common.loading') : t('settings.menu.defaults.apply')}
+              </Button>
+            </div>
           ) : null
         }
       />
@@ -187,7 +218,7 @@ export function MenuDefaultsCard() {
 
         <p className="text-xs text-text-muted">
           {entries.length > 0
-            ? t('settings.menu.defaults.set')
+            ? `${t('settings.menu.defaults.set')} ${t('settings.menu.defaults.applyHint')}`
             : t('settings.menu.defaults.notSet')}
         </p>
 

@@ -859,7 +859,14 @@
         "set": "This role has a default menu.",
         "notSet": "This role has none yet: it starts in the platform's own order.",
         "clear": "Clear this default",
-        "saved": "Default menu saved"
+        "saved": "Default menu saved",
+        "apply": "Apply to everyone",
+        "applyHint": "Replaces the menu of everybody holding this role with this one, arrangements included.",
+        "applyConfirm": "This menu will be given to everybody with the {{role}} role, and whatever each of them arranged will be lost. Continue?",
+        "applied": "Menu applied to {{count}} people",
+        "errors": {
+          "notSet": "This role has no default menu set: there is nothing to apply."
+        }
       },
       "unsaved": "You have unsaved changes.",
       "saved": "Everything is saved.",

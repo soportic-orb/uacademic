@@ -4,12 +4,19 @@
  * SUPERADMIN only, and not by convention — this is the one role that crosses
  * centers, and an update touches every one of them at once.
  */
-import { SUPPORTED_LOCALES, localeSchema, menuDefaultsSchema, translate } from '@uacademic/shared'
-import type { FastifyInstance } from 'fastify'
+import {
+  DEFAULTED_ROLES,
+  SUPPORTED_LOCALES,
+  localeSchema,
+  menuDefaultsSchema,
+  translate,
+} from '@uacademic/shared'
+import type { FastifyInstance, FastifyRequest } from 'fastify'
 import { z } from 'zod'
 
 import { env } from '../../config/env.js'
 import { writeAuditLog } from '../../lib/audit.js'
+import { toJson } from '../../lib/json.js'
 import { enqueueJob } from '../../jobs/worker.js'
 import { AppError } from '../../lib/errors.js'
 import { prisma } from '../../lib/prisma.js'
@@ -31,6 +38,9 @@ import {
 } from '../../services/updates.js'
 
 const SUPERADMIN = ['SUPERADMIN'] as const
+
+/** Only the three roles a default menu is kept for. */
+const applyRoleSchema = z.object({ role: z.enum(DEFAULTED_ROLES) })
 
 export function registerPlatformRoutes(app: FastifyInstance): void {
   app.get('/api/v1/platform/version', { config: { roles: [...SUPERADMIN] } }, async () =>
@@ -111,6 +121,63 @@ export function registerPlatformRoutes(app: FastifyInstance): void {
       })
 
       return { defaults }
+    },
+  )
+
+  /**
+   * Hand a role's default menu to everybody who holds it, arrangement and all.
+   *
+   * The default is normally a starting point that leaves alone anybody who has
+   * arranged their own — which is right when the menu changes shape and wrong
+   * when a center has agreed on an order and half the staff are still on an
+   * old one. So this exists as a deliberate, separate act: it overwrites what
+   * those people arranged, it is asked for explicitly, and it says how many
+   * menus it rewrote.
+   *
+   * Only the people who hold the role, in any center: a menu belongs to a
+   * person, not to a membership, and somebody who is a coordinator here and a
+   * lecturer there has one menu between them.
+   */
+  app.post(
+    '/api/v1/platform/menu-defaults/:role/apply',
+    { config: { roles: [...SUPERADMIN] } },
+    async (request: FastifyRequest<{ Params: { role: string } }>) => {
+      const actor = requireUser(request)
+      const role = parseWith(applyRoleSchema, request.params).role
+      const entries = (await menuDefaults(prisma()))[role] ?? []
+
+      // Nothing to force: an unset default is "the order the product
+      // declares", and pushing that out would clear arrangements in the name
+      // of a decision nobody made.
+      if (entries.length === 0) {
+        throw new AppError(409, 'CONFLICT', 'settings.menu.defaults.errors.notSet')
+      }
+
+      const holders = await prisma().userCenterRole.findMany({
+        where: { role, OR: [{ validTo: null }, { validTo: { gte: new Date() } }] },
+        select: { userId: true },
+        distinct: ['userId'],
+      })
+
+      const applied = await prisma().user.updateMany({
+        where: { id: { in: holders.map((holder) => holder.userId) } },
+        // The shape a personal layout is stored in, which is what `/me/menu`
+        // reads back: a bare list here is a layout nobody can read.
+        data: { menuLayoutJson: toJson({ entries }) },
+      })
+
+      await writeAuditLog(prisma(), {
+        centerId: null,
+        userId: actor.userId,
+        entity: 'platform_settings',
+        entityId: 'menuDefaults',
+        action: 'apply',
+        after: { role, applied: applied.count },
+        source: 'user',
+        ip: request.ip,
+      })
+
+      return { role, applied: applied.count }
     },
   )
 

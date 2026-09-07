@@ -32,6 +32,8 @@ const defaults = { value: {} as Record<string, unknown[]> }
 const pending = { value: { changes: 0, absences: 0 } }
 const saved: unknown[][] = []
 const savedDefaults: Record<string, unknown[]>[] = []
+/** Every "give this menu to everybody" the screen asked for. */
+const applied: string[] = []
 
 beforeEach(() => {
   useSessionStore.setState({ centerId: 'center-1' })
@@ -42,6 +44,7 @@ beforeEach(() => {
   useMenuSectionsStore.setState({ collapsed: {} })
   saved.length = 0
   savedDefaults.length = 0
+  applied.length = 0
 
   vi.stubGlobal(
     'fetch',
@@ -53,6 +56,10 @@ beforeEach(() => {
       }
 
       if (url.includes('/api/v1/platform/menu-defaults')) {
+        if (init?.method === 'POST') {
+          applied.push(url)
+          return { ok: true, status: 200, json: async () => ({ applied: 7 }) } as Response
+        }
         if (init?.method === 'PUT') {
           const body = JSON.parse(String(init.body)) as { defaults: Record<string, unknown[]> }
           savedDefaults.push(body.defaults)
@@ -321,6 +328,43 @@ describe('the menu each role starts with', () => {
 
     await waitFor(() => expect(savedDefaults).toHaveLength(1))
     expect(savedDefaults[0]!.TEACHER).toEqual([{ kind: 'item', key: 'messages' }])
+  })
+
+  describe('handing that menu to everybody who holds the role', () => {
+    it('is offered only once the role has a menu to hand out', async () => {
+      view(<MenuDefaultsCard />)
+
+      // Nothing set: there is nothing to force on anybody.
+      await screen.findByText(/Aquest rol encara no en té cap/)
+      expect(screen.queryByRole('button', { name: 'Aplica a tothom' })).not.toBeInTheDocument()
+    })
+
+    it('asks first, because it overwrites what other people arranged', async () => {
+      defaults.value = { TEACHER: [{ kind: 'item', key: 'messages' }] }
+      const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
+
+      view(<MenuDefaultsCard />)
+      await userEvent.click(await screen.findByRole('button', { name: 'Aplica a tothom' }))
+
+      expect(confirm).toHaveBeenCalled()
+      // Answered no: nothing was sent.
+      expect(applied).toHaveLength(0)
+      confirm.mockRestore()
+    })
+
+    it('applies the role on screen, and says how many menus it changed', async () => {
+      defaults.value = { COORDINATOR: [{ kind: 'item', key: 'planning' }] }
+      const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true)
+
+      view(<MenuDefaultsCard />)
+      await userEvent.click(await screen.findByRole('button', { name: 'Coordinació' }))
+      await userEvent.click(screen.getByRole('button', { name: 'Aplica a tothom' }))
+
+      await waitFor(() => expect(applied).toHaveLength(1))
+      expect(applied[0]).toContain('/menu-defaults/COORDINATOR/apply')
+      expect(await screen.findByRole('status')).toHaveTextContent('7')
+      confirm.mockRestore()
+    })
   })
 
   it('says whether the role has a default at all', async () => {

@@ -859,7 +859,14 @@
         "set": "Aquest rol té un menú per defecte definit.",
         "notSet": "Aquest rol encara no en té cap: comença amb l'ordre original de la plataforma.",
         "clear": "Esborra aquest per defecte",
-        "saved": "Menú per defecte desat"
+        "saved": "Menú per defecte desat",
+        "apply": "Aplica a tothom",
+        "applyHint": "Substitueix el menú de tothom qui tingui aquest rol pel que hi ha aquí, encara que se l'haguessin ordenat.",
+        "applyConfirm": "S'aplicarà aquest menú a tothom amb el rol {{role}} i es perdrà l'ordre que cadascú s'hagués fet. Vols continuar?",
+        "applied": "Menú aplicat a {{count}} persones",
+        "errors": {
+          "notSet": "Aquest rol no té cap menú per defecte definit: no hi ha res per aplicar."
+        }
       },
       "unsaved": "Tens canvis sense desar.",
       "saved": "Tot desat.",

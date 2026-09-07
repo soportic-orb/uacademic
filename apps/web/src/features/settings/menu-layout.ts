@@ -91,5 +91,28 @@ export function useSaveMenuDefaults() {
   })
 }
 
+/**
+ * Hand a role's default menu to everybody who holds it.
+ *
+ * The default normally leaves alone anybody who has arranged their own menu —
+ * that is what makes it a default. This is the deliberate exception, for when
+ * a center has agreed on an order and wants everybody on it, so it is its own
+ * request and it says how many menus it rewrote.
+ */
+export function useApplyMenuDefault() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (role: Role) =>
+      apiJson<{ role: Role; applied: number }>(
+        `/api/v1/platform/menu-defaults/${role}/apply`,
+        'POST',
+        {},
+      ),
+    // Whoever asked for this may hold the role themselves.
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['menu-layout'] }),
+  })
+}
+
 /** Roles a default can be set for, in the order they are shown. */
 export const DEFAULT_ROLE_ORDER: readonly Role[] = ['CENTER_ADMIN', 'COORDINATOR', 'TEACHER']

@@ -181,6 +181,81 @@ describe.skipIf(!hasDatabase)('a personal menu order', () => {
       expect(response.statusCode).toBe(422)
     })
 
+    describe('handing it to everybody who holds the role', () => {
+      /*
+        Only the menus these tests handed out: the roles they applied. A
+        blanket update over the users table is both more than this test did
+        and enough to disturb whatever runs next.
+      */
+      afterEach(async () => {
+        await prisma.user.updateMany({
+          where: { centerRoles: { some: { role: { in: ['TEACHER', 'CENTER_ADMIN'] } } } },
+          data: { menuLayoutJson: Prisma.DbNull },
+        })
+      })
+
+      const applyTo = (role: string, headers?: Record<string, string>) =>
+        app.inject({
+          method: 'POST',
+          url: `/api/v1/platform/menu-defaults/${role}/apply`,
+          headers: headers ?? {
+            'x-mock-user': SEED.superadminEmail,
+            'x-center-id': centerId,
+          },
+          payload: {},
+        })
+
+      it('overwrites the order those people arranged, and counts them', async () => {
+        /*
+          The opposite of what a default does, on purpose: a center that has
+          agreed on an order wants everybody on it, including the people who
+          had arranged their own. So it is asked for separately and it says
+          how many menus it rewrote.
+        */
+        await write([{ kind: 'item', key: 'messages' }])
+        await setDefaults({ TEACHER: [{ kind: 'item', key: 'planning' }] })
+
+        const response = await applyTo('TEACHER')
+
+        expect(response.statusCode).toBe(200)
+        expect(response.json().applied).toBeGreaterThan(0)
+        // Their own arrangement is gone, replaced by the role's.
+        expect((await read()).json()).toEqual({
+          entries: [{ kind: 'item', key: 'planning' }],
+          personalised: true,
+        })
+
+        const audit = await prisma.auditLog.findFirst({
+          where: { entity: 'platform_settings', entityId: 'menuDefaults', action: 'apply' },
+          orderBy: { createdAt: 'desc' },
+        })
+        expect((audit?.afterJson as { role?: string } | null)?.role).toBe('TEACHER')
+      })
+
+      it('leaves alone the people who do not hold the role', async () => {
+        await write([{ kind: 'item', key: 'messages' }])
+        await setDefaults({ CENTER_ADMIN: [{ kind: 'item', key: 'admin' }] })
+
+        expect((await applyTo('CENTER_ADMIN')).statusCode).toBe(200)
+
+        // This one is a lecturer: their own order is untouched.
+        expect((await read()).json().entries).toEqual([{ kind: 'item', key: 'messages' }])
+      })
+
+      it('refuses when the role has no default to hand out', async () => {
+        const response = await applyTo('TEACHER')
+
+        expect(response.statusCode).toBe(409)
+        expect(response.json().error.messageKey).toBe('settings.menu.defaults.errors.notSet')
+      })
+
+      it('is the platform administrator’s to do, and nobody else’s', async () => {
+        await setDefaults({ TEACHER: [{ kind: 'item', key: 'planning' }] })
+
+        expect((await applyTo('TEACHER', headers())).statusCode).toBe(403)
+      })
+    })
+
     it('leaves the product’s own order when nobody has set one', async () => {
       expect((await read()).json().entries).toEqual([])
     })
