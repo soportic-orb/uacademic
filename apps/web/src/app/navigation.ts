@@ -24,6 +24,8 @@ import {
 } from 'lucide-react'
 import type { ComponentType } from 'react'
 
+import { CalendarDot } from '../components/brand/icons'
+
 export interface NavItem {
   /** i18n key under `nav.` */
   key: string
@@ -61,9 +63,11 @@ export const NAV_ITEMS: NavItem[] = [
     roles: ['TEACHER', 'COORDINATOR'],
   },
   {
+    // A calendar with a class placed on it: the planner is where classes land,
+    // which none of the plain calendars in the icon set says.
     key: 'planning',
     path: '/planning',
-    icon: CalendarDays,
+    icon: CalendarDot,
     roles: ['CENTER_ADMIN', 'COORDINATOR'],
     mobile: true,
   },

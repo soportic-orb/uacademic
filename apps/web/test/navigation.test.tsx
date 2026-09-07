@@ -6,6 +6,7 @@ import { MemoryRouter } from 'react-router'
 import { describe, expect, it } from 'vitest'
 
 import { mobileNavItems, navItemsForRoles } from '../src/app/navigation'
+import { CalendarDot } from '../src/components/brand/icons'
 import { LoadBadge } from '../src/components/data/load-badge'
 import { Sidebar } from '../src/components/layout/sidebar'
 
@@ -47,6 +48,17 @@ describe('role-based navigation', () => {
   it('reserves the platform section for the superadmin', () => {
     expect(navItemsForRoles(['SUPERADMIN']).map((item) => item.key)).toContain('platform')
     expect(navItemsForRoles(['CENTER_ADMIN']).map((item) => item.key)).not.toContain('platform')
+  })
+
+  it('gives the planner its own icon, not a plain calendar', () => {
+    // Every entry beside it is a calendar of some sort; the planner is where
+    // classes are placed, and it says so rather than reading as one more date
+    // screen.
+    const planning = navItemsForRoles(['COORDINATOR']).find((item) => item.key === 'planning')
+    const calendar = navItemsForRoles(['COORDINATOR']).find((item) => item.key === 'calendar')
+
+    expect(planning?.icon).toBe(CalendarDot)
+    expect(calendar?.icon).not.toBe(CalendarDot)
   })
 
   it('keeps the mobile bar at five entries for every role', () => {
