@@ -1551,6 +1551,11 @@ model AppVersion {
   appliedAt  DateTime?        @map("applied_at")
   appliedBy  String?          @map("applied_by") @db.Char(36)
   status     AppVersionStatus @default(available)
+  /// Why it failed, in the words of whatever refused: a tar that would not
+  /// unpack, a migration that would not run, a health check that never
+  /// answered. An update that fails and says only "it failed" is one nobody
+  /// can act on — least of all the person it happened to.
+  detail     String?          @db.Text
   changelog  String?          @db.Text
   createdAt  DateTime         @default(now()) @map("created_at")
 

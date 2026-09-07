@@ -15,7 +15,7 @@ import { join } from 'node:path'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 
 import { loadEnv, setEnv } from '../src/config/env.js'
-import { applyUpdate } from '../src/services/updates.js'
+import { applyUpdate, updateStatus } from '../src/services/updates.js'
 import { SEED, createTestApp, hasDatabase, seedCenterId } from './helpers.js'
 
 const ARTEFACT = Buffer.from('a release, as bytes')
@@ -256,6 +256,63 @@ describe.skipIf(!hasDatabase)('installing a release', () => {
 
       expect(result.status).toBe('rolled_back')
       expect(await readlink(join(root, 'current'))).toBe(applied)
+    })
+
+    it('records why it failed, where the panel can read it', async () => {
+      /*
+        "It did not work" is not something anybody can act on. The reason —
+        the migration's own words, the tar's, the health check's — used to
+        reach a log file on the server and nowhere else, so whoever was
+        watching the update was told nothing and whoever came to fix it had
+        nothing to go on.
+      */
+      const next = { ...RELEASE, version: '2026.09.02-9' }
+      const result = await applyUpdate(
+        prisma,
+        { release: next, userId },
+        {
+          hooks: hooks({
+            migrate: async () => {
+              throw new Error('Error: P3009 migrate found failed migrations')
+            },
+          }),
+        },
+      )
+
+      expect(result.status).not.toBe('applied')
+
+      const recorded = await prisma.appVersion.findFirstOrThrow({
+        where: { version: next.version },
+      })
+      expect(recorded.detail).toContain('P3009')
+
+      // And it comes back with the status the screen reads.
+      const status = await updateStatus(prisma)
+      const entry = status.history.find((row) => row.version === next.version)
+      expect(entry?.detail).toContain('P3009')
+    })
+
+    it('does not carry the reason of a failed attempt into the release that works', async () => {
+      const next = { ...RELEASE, version: '2026.09.02-10' }
+      await applyUpdate(
+        prisma,
+        { release: next, userId },
+        {
+          hooks: hooks({
+            extract: async () => {
+              throw new Error('tar: unexpected EOF')
+            },
+          }),
+        },
+      )
+
+      await applyUpdate(prisma, { release: next, userId }, { hooks: hooks() })
+
+      const recorded = await prisma.appVersion.findFirstOrThrow({
+        where: { version: next.version },
+      })
+      expect(recorded.status).toBe('applied')
+      expect(recorded.detail).toBeNull()
     })
 
     it('refuses an artefact whose checksum does not match, before unpacking it', async () => {

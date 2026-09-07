@@ -46,6 +46,8 @@ interface PlatformStatus {
     status: 'available' | 'applying' | 'applied' | 'failed' | 'rolled_back'
     appliedAt: string | null
     changelog: string | null
+    /** Why it failed, in the words of whatever refused. Null when it worked. */
+    detail: string | null
   }[]
 }
 
@@ -73,12 +75,31 @@ export function PlatformPage() {
     if (!awaiting || !outcome || outcome.status === 'applying') return
 
     setAwaiting(null)
-    if (outcome.status === 'applied')
+    if (outcome.status === 'applied') {
       toast.success('platform.applied', { params: { version: awaiting } })
-    else if (outcome.status === 'rolled_back')
-      toast.error('platform.rolledBack', { durationMs: 16_000 })
-    else toast.error('platform.failed', { durationMs: 16_000 })
-  }, [awaiting, outcome, toast])
+      return
+    }
+
+    /*
+      What went wrong, in the words of whatever refused it — a migration that
+      would not run, a tar that would not unpack, a health check that never
+      answered. "It did not work" is not something anybody can act on, and the
+      reason was reaching a log file on the server and nowhere else.
+    */
+    const rolledBack = outcome.status === 'rolled_back'
+    if (outcome.detail) {
+      toast.raw({
+        variant: 'error',
+        message: t(rolledBack ? 'platform.rolledBackWhy' : 'platform.failedWhy', {
+          detail: outcome.detail,
+        }),
+        durationMs: 24_000,
+      })
+      return
+    }
+
+    toast.error(rolledBack ? 'platform.rolledBack' : 'platform.failed', { durationMs: 16_000 })
+  }, [awaiting, outcome, t, toast])
 
   const mail = useQuery({
     queryKey: ['platform-mail'],
@@ -306,27 +327,40 @@ export function PlatformPage() {
           ) : (
             <ul className="divide-y divide-border">
               {status.data.history.map((entry) => (
-                <li key={entry.version} className="flex items-center justify-between gap-3 py-2">
-                  <span className="text-sm text-text">{entry.version}</span>
-                  <span className="flex items-center gap-3 text-xs text-text-muted">
-                    {entry.appliedAt
-                      ? formatDate(locale, new Date(entry.appliedAt), {
-                          dateStyle: 'medium',
-                          timeStyle: 'short',
-                        })
-                      : null}
-                    <span
-                      className={`rounded-control border px-2 py-0.5 ${
-                        entry.status === 'applied'
-                          ? 'border-success/30 bg-success/10 text-success'
-                          : entry.status === 'failed' || entry.status === 'rolled_back'
-                            ? 'border-danger/30 bg-danger/10 text-danger'
-                            : 'border-border bg-surface-muted'
-                      }`}
-                    >
-                      {t(`platform.status.${entry.status}`)}
+                <li key={entry.version} className="py-2">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-sm text-text">{entry.version}</span>
+                    <span className="flex items-center gap-3 text-xs text-text-muted">
+                      {entry.appliedAt
+                        ? formatDate(locale, new Date(entry.appliedAt), {
+                            dateStyle: 'medium',
+                            timeStyle: 'short',
+                          })
+                        : null}
+                      <span
+                        className={`rounded-control border px-2 py-0.5 ${
+                          entry.status === 'applied'
+                            ? 'border-success/30 bg-success/10 text-success'
+                            : entry.status === 'failed' || entry.status === 'rolled_back'
+                              ? 'border-danger/30 bg-danger/10 text-danger'
+                              : 'border-border bg-surface-muted'
+                        }`}
+                      >
+                        {t(`platform.status.${entry.status}`)}
+                      </span>
                     </span>
-                  </span>
+                  </div>
+
+                  {/*
+                    The reason stays on the screen after the toast has gone:
+                    whoever comes to fix it is rarely the person who watched it
+                    fail, and it is the first thing they need.
+                  */}
+                  {entry.detail ? (
+                    <p className="mt-1 max-h-32 overflow-y-auto whitespace-pre-wrap break-words rounded-control bg-surface-muted p-2 font-mono text-xs text-text-muted">
+                      {entry.detail}
+                    </p>
+                  ) : null}
                 </li>
               ))}
             </ul>

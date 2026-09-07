@@ -68,6 +68,8 @@ export interface UpdateStatus {
     status: string
     appliedAt: string | null
     changelog: string | null
+    /** Why it failed, when it did. Null for everything that worked. */
+    detail: string | null
   }[]
 }
 
@@ -80,6 +82,9 @@ interface GitHubRelease {
   prerelease: boolean
   assets: { name: string; url: string; browser_download_url: string }[]
 }
+
+/** Long enough for a stack-less error and a command's last words. */
+const DETAIL_LIMIT = 2_000
 
 export function updatesConfigured(): boolean {
   return Boolean(env().GITHUB_OTA_TOKEN)
@@ -231,6 +236,7 @@ export async function updateStatus(client: PrismaClient): Promise<UpdateStatus> 
       status: entry.status,
       appliedAt: entry.appliedAt?.toISOString() ?? null,
       changelog: entry.changelog,
+      detail: entry.detail,
     })),
   }
 }
@@ -338,13 +344,19 @@ export async function applyUpdate(
       status: 'applying',
       appliedBy: input.userId,
     },
-    update: { status: 'applying', appliedBy: input.userId },
+    update: { status: 'applying', appliedBy: input.userId, detail: null },
   })
 
   const fail = async (error: unknown, status: 'failed' | 'rolled_back'): Promise<ApplyResult> => {
     const message = error instanceof Error ? error.message : String(error)
 
-    await client.appVersion.update({ where: { id: record.id }, data: { status } })
+    await client.appVersion.update({
+      where: { id: record.id },
+      // The reason, kept where the panel can read it. It used to live only in
+      // the audit log and the server's own log file, so the person watching
+      // the update was told "it did not work" and nothing else.
+      data: { status, detail: message.slice(0, DETAIL_LIMIT) },
+    })
     await writeAuditLog(client, {
       centerId: null,
       userId: input.userId,
@@ -433,7 +445,9 @@ export async function applyUpdate(
 
     await client.appVersion.update({
       where: { id: record.id },
-      data: { status: 'applied', appliedAt: new Date(), appliedBy: input.userId },
+      // Cleared: a version that has just been installed is not carrying the
+      // reason an earlier attempt at it failed.
+      data: { status: 'applied', appliedAt: new Date(), appliedBy: input.userId, detail: null },
     })
 
     await writeAuditLog(client, {
