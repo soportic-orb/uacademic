@@ -21,6 +21,8 @@ import {
 } from '@uacademic/shared'
 import PDFDocument from 'pdfkit'
 
+import { stampPages } from './calendar-pdf.js'
+
 import {
   expand,
   nonTeachingDates,
@@ -56,6 +58,11 @@ export interface SchedulePdfInput {
   to: string
   locale: AppLocale
   entries: readonly ScheduleEntry[]
+  /**
+   * Words on the top right of every page — "provisional timetable" — for a
+   * timetable that has not been published. Absent for one that has.
+   */
+  stamp?: string
   /**
    * How the page is laid out.
    *
@@ -93,6 +100,8 @@ export async function scheduleMonthlyPdf(input: SchedulePdfInput): Promise<Buffe
   const finished = new Promise<Buffer>((resolve) =>
     document.on('end', () => resolve(Buffer.concat(chunks))),
   )
+
+  if (input.stamp) stampPages(document, input.stamp)
 
   const byDate = new Map<string, ScheduleEntry[]>()
   for (const entry of input.entries) {

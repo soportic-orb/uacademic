@@ -334,6 +334,18 @@
       "title": "Cap versió d'horari",
       "description": "Crea una versió d'esborrany per començar a col·locar sessions.",
       "action": "Crea una versió"
+    },
+    "print": {
+      "title": "Impressió de calendaris",
+      "hint": "Exporta les classes d’aquesta versió en PDF, amb el mateix format que la programació docent.",
+      "teacher": "Docent",
+      "allTeachers": "Tot el professorat",
+      "subjects": "Assignatures",
+      "allSubjects": "Totes les assignatures",
+      "view": "Tipus d’impressió",
+      "export": "Exporta en PDF",
+      "provisional": "Calendari provisional",
+      "draftHint": "Aquesta versió encara no està publicada: cada pàgina del PDF ho indicarà."
     }
   },
   "messages": {

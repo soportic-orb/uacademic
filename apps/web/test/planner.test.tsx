@@ -8,6 +8,7 @@ import { MemoryRouter } from 'react-router'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { Toaster } from '../src/components/feedback/toaster'
+import { CalendarPrint } from '../src/features/planner/calendar-print'
 import { PlannerGrid } from '../src/features/planner/planner-grid'
 import { addDays, isoDate, mondayOf } from '../src/features/planner/week-dates'
 import type { VersionDetailDto } from '../src/features/planner/queries'
@@ -856,6 +857,49 @@ describe('the visual planner', () => {
       render(wrap(<PlannerGrid version={VERSION} context={CONTEXT} />))
 
       expect(screen.queryByLabelText('Tipus de classe')).not.toBeInTheDocument()
+    })
+  })
+
+  describe('printing what is on the screen', () => {
+    /*
+      The programme screen prints what is published; a coordinator planning
+      next term needs the same document about the draft in front of them, and
+      about one colleague or one subject of it.
+    */
+    it('asks for a period, a colleague, subjects and a shape, and sends them', async () => {
+      const user = userEvent.setup()
+      const blob = vi.fn(() => 'blob:calendar')
+      vi.stubGlobal('URL', { ...URL, createObjectURL: blob, revokeObjectURL: vi.fn() })
+      vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+
+      render(wrap(<CalendarPrint version={VERSION} />))
+
+      await user.selectOptions(screen.getByLabelText('Docent'), 'p1')
+      await user.selectOptions(screen.getByLabelText('Tipus d’impressió'), 'programme')
+      await user.click(screen.getByRole('checkbox', { name: 'MAT101' }))
+      await user.click(screen.getByRole('button', { name: /Exporta en PDF/ }))
+
+      await waitFor(() => {
+        const url = fetchMock.mock.calls
+          .map((call) => String(call[0]))
+          .find((entry) => entry.includes('/calendar.pdf'))
+        expect(url).toContain('/planner/versions/v1/calendar.pdf')
+        expect(url).toContain('view=programme')
+        expect(url).toContain('teacherProfileId=p1')
+        expect(url).toContain('subjectIds=sub-1')
+      })
+    })
+
+    it('says that a draft prints as a draft', () => {
+      render(wrap(<CalendarPrint version={VERSION} />))
+
+      expect(screen.getByText(/encara no està publicada/)).toBeInTheDocument()
+    })
+
+    it('says nothing of the sort about a published version', () => {
+      render(wrap(<CalendarPrint version={{ ...VERSION, status: 'published', editable: false }} />))
+
+      expect(screen.queryByText(/encara no està publicada/)).not.toBeInTheDocument()
     })
   })
 

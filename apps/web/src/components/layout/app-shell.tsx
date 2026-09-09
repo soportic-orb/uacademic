@@ -63,7 +63,7 @@ export function AppShell() {
     the only thing that scrolls is the content column.
   */
   return (
-    <div className="flex h-dvh overflow-hidden bg-bg">
+    <div className="flex h-viewport overflow-hidden bg-bg">
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-control focus:bg-surface focus:px-4 focus:py-2 focus:text-text"

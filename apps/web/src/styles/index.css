@@ -102,6 +102,26 @@
     border-radius: 4px;
   }
 
+  /*
+    One screen tall, on browsers that know about the dynamic viewport and on
+    browsers that do not.
+
+    `100dvh` alone is a declaration an older engine drops, and a shell that was
+    meant to be exactly one screen tall then becomes as tall as its content:
+    the page itself scrolls, the sidebar ends wherever the content does, and
+    below it is bare background. Declaring `vh` first and `dvh` second gives
+    each engine the best height it understands.
+  */
+  .h-viewport {
+    height: 100vh;
+    height: 100dvh;
+  }
+
+  .min-h-viewport {
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
   /* Every hour figure aligns in columns. */
   .tabular {
     font-variant-numeric: tabular-nums;

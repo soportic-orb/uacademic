@@ -19,12 +19,10 @@ import {
   translate,
 } from '@uacademic/shared'
 import type { FastifyInstance, FastifyRequest } from 'fastify'
-import PDFDocument from 'pdfkit'
 import { z } from 'zod'
 
 import { writeAuditLog } from '../../lib/audit.js'
-import { programmePdf } from '../../services/programme-pdf.js'
-import { scheduleMonthlyPdf } from '../../services/schedule-pdf.js'
+import { calendarPdf } from '../../services/calendar-pdf.js'
 import { AppError } from '../../lib/errors.js'
 import { type PrismaClient, prisma } from '../../lib/prisma.js'
 import { parseWith } from '../../lib/validate.js'
@@ -148,118 +146,52 @@ export function registerCoordinationCalendarRoutes(app: FastifyInstance): void {
         printed calendar that is not the calendar in front of somebody is a
         different document.
       */
-      if (query.view === 'programme') {
-        const center = await prisma().center.findUnique({
-          where: { id: requireCenterScope(request).centerId },
-          select: { name: true },
-        })
+      const center = await prisma().center.findUnique({
+        where: { id: requireCenterScope(request).centerId },
+        select: { name: true },
+      })
 
-        const programme = await programmePdf({
-          title: t('calendar.programme.title'),
-          centerName: center?.name ?? '',
-          note: describeFilters(rows, query, t),
-          from: range.from,
-          to: range.to,
-          locale: request.locale,
-          entries: rows.map((row) => ({
-            date: row.date,
-            startTime: row.startTime,
-            endTime: row.endTime,
-            subjectId: row.subjectId,
-            subjectCode: row.subjectCode,
-            subjectName: row.subjectName,
-            subjectColor: row.subjectColor,
-            groupCode: row.groupCode,
-            classTypeId: row.classTypeId,
-            classTypeName: row.classTypeName,
-            classTypeColor: row.classTypeColor,
-            topic: row.topic,
-            // Everyone giving it: a shared class is not one person's.
-            teacherName:
-              row.teachers.length > 0
-                ? row.teachers.map((person) => person.name).join(', ')
-                : row.teacherName,
-            spaceName: row.spaceName,
-          })),
-        })
-
-        return reply
-          .header('content-type', 'application/pdf')
-          .header('content-disposition', 'attachment; filename="uacademic-programme.pdf"')
-          .send(programme)
-      }
-
-      if (query.view === 'month' || query.view === 'week') {
-        const center = await prisma().center.findUnique({
-          where: { id: requireCenterScope(request).centerId },
-          select: { name: true },
-        })
-
-        const grid = await scheduleMonthlyPdf({
-          teacherName: `${user.firstName} ${user.lastName}`,
-          centerName: center?.name ?? '',
-          note: describeFilters(rows, query, t),
-          from: range.from,
-          to: range.to,
-          locale: request.locale,
-          layout: query.view === 'week' ? 'weeks' : 'month',
-          entries: rows.map((row) => ({
-            date: row.date,
-            startTime: row.startTime,
-            endTime: row.endTime,
-            subjectId: row.subjectId,
-            subjectCode: row.subjectCode,
-            subjectName: row.subjectName,
-            subjectColor: row.subjectColor,
-            groupCode: row.groupCode,
-            spaceName: row.spaceName,
-            topic: row.topic,
-          })),
-        })
-
-        return reply
-          .header('content-type', 'application/pdf')
-          .header('content-disposition', 'attachment; filename="uacademic-programme.pdf"')
-          .send(grid)
-      }
-
-      // A day and the agenda are lists, and a list reads down a page.
-      const document = new PDFDocument({ size: 'A4', margin: 36 })
-      const chunks: Buffer[] = []
-      document.on('data', (chunk: Buffer) => chunks.push(chunk))
-      const finished = new Promise<Buffer>((resolve) =>
-        document.on('end', () => resolve(Buffer.concat(chunks))),
-      )
-
-      document.fontSize(18).fillColor('#0F172A').text(t('calendar.coordination.title'))
-      document
-        .fontSize(10)
-        .fillColor('#475569')
-        .text(
-          [
-            `${user.firstName} ${user.lastName}`,
-            `${range.from} – ${range.to}`,
-            t(`calendar.views.${query.view}`),
-            describeFilters(rows, query, t),
-          ]
-            .filter(Boolean)
-            .join(' · '),
-        )
-      document.moveDown()
-
-      if (rows.length === 0) {
-        document.fontSize(11).fillColor('#0F172A').text(t('calendar.empty'))
-      } else {
-        writeLegend(document, rows)
-        writeDays(document, rows)
-      }
-
-      document.end()
+      const pdf = await calendarPdf({
+        view: query.view,
+        title:
+          query.view === 'programme'
+            ? t('calendar.programme.title')
+            : t('calendar.coordination.title'),
+        centerName: center?.name ?? '',
+        note: [`${user.firstName} ${user.lastName}`, describeFilters(rows, query, t)]
+          .filter(Boolean)
+          .join(' · '),
+        from: range.from,
+        to: range.to,
+        locale: request.locale,
+        emptyLabel: t('calendar.empty'),
+        entries: rows.map((row) => ({
+          date: row.date,
+          startTime: row.startTime,
+          endTime: row.endTime,
+          subjectId: row.subjectId,
+          subjectCode: row.subjectCode,
+          subjectName: row.subjectName,
+          subjectColor: row.subjectColor,
+          groupCode: row.groupCode,
+          classTypeId: row.classTypeId,
+          classTypeName: row.classTypeName,
+          classTypeColor: row.classTypeColor,
+          topic: row.topic,
+          // Everyone giving it: a shared class is not one person's.
+          teacherName:
+            row.teachers.length > 0
+              ? row.teachers.map((person) => person.name).join(', ')
+              : row.teacherName,
+          teachers: row.teachers,
+          spaceName: row.spaceName,
+        })),
+      })
 
       return reply
         .header('content-type', 'application/pdf')
         .header('content-disposition', 'attachment; filename="uacademic-programme.pdf"')
-        .send(await finished)
+        .send(pdf)
     },
   )
 
@@ -664,71 +596,3 @@ function describeFilters(
  * A page of coloured stripes is only readable to somebody who already knows
  * the timetable.
  */
-function writeLegend(document: PDFKit.PDFDocument, rows: readonly ColouredOccurrence[]): void {
-  const subjects = new Map<string, ColouredOccurrence>()
-  for (const row of rows) if (!subjects.has(row.subjectId)) subjects.set(row.subjectId, row)
-
-  const left = document.page.margins.left
-  let x = left
-  const top = document.y
-
-  for (const row of subjects.values()) {
-    const label = `${row.subjectCode} ${row.subjectName}`
-    const width = Math.min(170, 14 + document.fontSize(8).widthOfString(label))
-    if (x + width > document.page.width - document.page.margins.right) break
-
-    document.rect(x, top + 2, 7, 7).fill(row.accent)
-    document
-      .fillColor('#475569')
-      .fontSize(8)
-      .text(label, x + 11, top, { width: width - 11, lineBreak: false, ellipsis: true })
-
-    x += width + 8
-  }
-
-  document.x = left
-  document.y = top + 14
-  document.moveDown(0.4)
-}
-
-function writeDays(document: PDFKit.PDFDocument, rows: readonly ColouredOccurrence[]): void {
-  let currentDate = ''
-
-  for (const row of rows) {
-    if (document.y > document.page.height - document.page.margins.bottom - 40) {
-      document.addPage()
-      currentDate = ''
-    }
-
-    if (row.date !== currentDate) {
-      currentDate = row.date
-      document.moveDown(0.4).fontSize(12).fillColor('#0F172A').text(row.date, { underline: true })
-      document.moveDown(0.2)
-    }
-
-    const top = document.y
-    // The colour is a stripe rather than a fill: a page of pale blocks is
-    // expensive to print and harder to read than ink on paper. Saturated, so
-    // it is a colour rather than a suggestion of one.
-    document.rect(document.page.margins.left, top + 1, 4, 11).fill(row.accent)
-
-    document
-      .fillColor('#0F172A')
-      .fontSize(10)
-      .text(
-        [
-          `${row.startTime}–${row.endTime}`,
-          `${row.subjectCode} ${row.groupCode}`,
-          // What the class is: its topic where somebody wrote one, and the
-          // subject's name where they did not.
-          row.topic ?? row.subjectName,
-          row.teachers.map((person) => person.name).join(', '),
-          row.spaceName ?? '',
-        ]
-          .filter(Boolean)
-          .join('   '),
-        document.page.margins.left + 10,
-        top,
-      )
-  }
-}

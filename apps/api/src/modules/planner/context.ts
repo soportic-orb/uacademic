@@ -265,8 +265,9 @@ const SESSION_INCLUDE = {
     },
   },
   space: { select: { id: true, name: true, building: true } },
-  // What kind of class it is: a lecture, a practical, a laboratory session.
-  classType: { select: { id: true, nameCa: true, nameEs: true, nameEn: true } },
+  // What kind of class it is: a lecture, a practical, a laboratory session,
+  // and the colour a printed calendar washes its days with.
+  classType: { select: { id: true, nameCa: true, nameEs: true, nameEn: true, color: true } },
 } as const
 
 export type SessionRow = Awaited<
@@ -283,7 +284,13 @@ export type SessionRow = Awaited<
     teacherProfile: { user: { firstName: string; lastName: string } }
   }[]
   space: { id: string; name: string; building: string | null } | null
-  classType: { id: string; nameCa: string; nameEs: string; nameEn: string } | null
+  classType: {
+    id: string
+    nameCa: string
+    nameEs: string
+    nameEn: string
+    color: string | null
+  } | null
 }
 
 export function sessionInclude() {

@@ -59,7 +59,7 @@ export function ActivatePage() {
   if (done) return <Navigate to="/" replace />
 
   return (
-    <main className="flex min-h-dvh items-center justify-center bg-bg px-4 py-12">
+    <main className="flex min-h-viewport items-center justify-center bg-bg px-4 py-12">
       <div className="w-full max-w-md space-y-6">
         <header className="text-center">
           <Logo className="text-2xl" title={t('common.appName')} />

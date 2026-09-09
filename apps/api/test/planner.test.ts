@@ -10,6 +10,7 @@ import { disconnectPrisma, getPrismaClient } from '@uacademic/db'
 import type { FastifyInstance } from 'fastify'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 
+import { extractText } from '../src/services/documents/extract.js'
 import { SEED, createTestApp, hasDatabase, seedCenterId } from './helpers.js'
 
 const TEST_PREFIX = 'Test planner '
@@ -865,6 +866,99 @@ describe.skipIf(!hasDatabase)('the planner', () => {
       expect(
         response.json().violations.map((violation: { constraint: string }) => violation.constraint),
       ).toContain('teacherUnavailable')
+    })
+  })
+
+  describe('printing what is on the screen', () => {
+    it('prints a draft, and says on every page that it is one', async () => {
+      /*
+        A timetable that has not been published is exactly what a department
+        meeting needs on paper — that is how one gets agreed — so printing does
+        not wait for publication. It must never be mistaken for the real thing
+        either, hence the words on every page.
+      */
+      const version = await createVersion('printing', publishedVersionId)
+
+      const response = await app.inject({
+        method: 'GET',
+        url: `/api/v1/planner/versions/${version.id}/calendar.pdf?from=2026-09-14&to=2026-10-31&view=agenda`,
+        headers: asCoordinator(),
+      })
+
+      expect(response.statusCode).toBe(200)
+      expect(response.headers['content-type']).toBe('application/pdf')
+
+      const { pages } = await extractText(
+        new Uint8Array(response.rawPayload),
+        'application/pdf',
+        'draft.pdf',
+      )
+      expect(pages.length).toBeGreaterThan(0)
+      for (const page of pages) expect(page.text).toContain('Calendari provisional')
+    })
+
+    it('says nothing of the sort once the version is published', async () => {
+      const response = await app.inject({
+        method: 'GET',
+        url: `/api/v1/planner/versions/${publishedVersionId}/calendar.pdf?from=2026-09-14&to=2026-09-20&view=week`,
+        headers: asCoordinator(),
+      })
+
+      const { pages } = await extractText(
+        new Uint8Array(response.rawPayload),
+        'application/pdf',
+        'published.pdf',
+      )
+      expect(pages.map((page) => page.text).join(' ')).not.toContain('provisional')
+    })
+
+    it('prints the colleague and the subjects that were asked for, and nobody else', async () => {
+      const version = await createVersion('filtered', publishedVersionId)
+      const sessions = version.sessions as {
+        teacherProfileId: string | null
+        subjectCode: string
+        groupCode: string
+      }[]
+      const mine = sessions.find((session) => session.teacherProfileId)!
+      const profile = await prisma.teacherProfile.findFirstOrThrow({
+        where: { id: mine.teacherProfileId! },
+        include: { user: { select: { lastName: true } } },
+      })
+
+      const response = await app.inject({
+        method: 'GET',
+        url: `/api/v1/planner/versions/${version.id}/calendar.pdf?from=2026-09-14&to=2026-12-18&view=agenda&teacherProfileId=${profile.id}`,
+        headers: asCoordinator(),
+      })
+
+      const { pages } = await extractText(
+        new Uint8Array(response.rawPayload),
+        'application/pdf',
+        'one-teacher.pdf',
+      )
+      const text = pages.map((page) => page.text).join(' ')
+
+      expect(text).toContain(profile.user.lastName)
+      // Everybody else's classes are out: a colleague who gives none of these
+      // does not appear on a page about this one.
+      const others = await prisma.teacherProfile.findMany({
+        where: { centerId, id: { not: profile.id } },
+        include: { user: { select: { lastName: true } } },
+        take: 20,
+      })
+      const named = others.filter((other) => text.includes(other.user.lastName))
+      // Co-teachers of the same classes are legitimately there; nobody else is.
+      expect(named.length).toBeLessThan(others.length)
+    })
+
+    it('refuses somebody who does not plan', async () => {
+      const response = await app.inject({
+        method: 'GET',
+        url: `/api/v1/planner/versions/${publishedVersionId}/calendar.pdf?from=2026-09-14&to=2026-09-20&view=week`,
+        headers: asTeacher(),
+      })
+
+      expect(response.statusCode).toBe(403)
     })
   })
 

@@ -17,7 +17,7 @@ export function RequireSession({ children }: { children: ReactNode }) {
 
   if (isLoading) {
     return (
-      <div className="min-h-dvh bg-bg p-8" role="status" aria-label={t('states.loadingLabel')}>
+      <div className="min-h-viewport bg-bg p-8" role="status" aria-label={t('states.loadingLabel')}>
         <div className="mx-auto grid max-w-4xl gap-4 md:grid-cols-3">
           <CardSkeleton />
           <CardSkeleton />

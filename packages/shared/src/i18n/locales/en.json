@@ -334,6 +334,18 @@
       "title": "No schedule version",
       "description": "Create a draft version to start placing sessions.",
       "action": "Create version"
+    },
+    "print": {
+      "title": "Printing calendars",
+      "hint": "Export this version’s classes as a PDF, in the same shape as the teaching programme.",
+      "teacher": "Teacher",
+      "allTeachers": "Every teacher",
+      "subjects": "Subjects",
+      "allSubjects": "Every subject",
+      "view": "Shape of the page",
+      "export": "Export as PDF",
+      "provisional": "Provisional timetable",
+      "draftHint": "This version is not published yet: every page of the PDF will say so."
     }
   },
   "messages": {

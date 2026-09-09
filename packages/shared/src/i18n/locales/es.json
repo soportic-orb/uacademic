@@ -334,6 +334,18 @@
       "title": "Ninguna versión de horario",
       "description": "Crea una versión en borrador para empezar a colocar sesiones.",
       "action": "Crear versión"
+    },
+    "print": {
+      "title": "Impresión de calendarios",
+      "hint": "Exporta las clases de esta versión en PDF, con el mismo formato que la programación docente.",
+      "teacher": "Docente",
+      "allTeachers": "Todo el profesorado",
+      "subjects": "Asignaturas",
+      "allSubjects": "Todas las asignaturas",
+      "view": "Tipo de impresión",
+      "export": "Exportar en PDF",
+      "provisional": "Calendario provisional",
+      "draftHint": "Esta versión todavía no está publicada: cada página del PDF lo indicará."
     }
   },
   "messages": {

@@ -19,6 +19,8 @@ import {
   summarizePlan,
   toMinutes,
   diffSchedules,
+  occurrencesBetween,
+  translate,
 } from '@uacademic/shared'
 import type { FastifyInstance, FastifyRequest } from 'fastify'
 import { z } from 'zod'
@@ -30,12 +32,15 @@ import type { RealtimeTransport } from '../../lib/realtime.js'
 import { parseWith } from '../../lib/validate.js'
 import {
   type PlannerContext,
+  type SessionRow,
   plannerContext,
   sessionInclude,
   sessionRequirements,
+  sessionTeachers,
   toPlannedSession,
   toSnapshot,
 } from './context.js'
+import { type CalendarPrintEntry, calendarPdf } from '../../services/calendar-pdf.js'
 import { publishVersion, readSnapshot } from './publish.js'
 import { nonTeachingDates } from '../calendar/routes.js'
 
@@ -149,6 +154,30 @@ const duplicateSchema = z.object({
     .optional(),
   /** The last day of the series, inclusive. */
   until: z.iso.date(),
+})
+
+/**
+ * Printing the classes of one version, whatever state it is in.
+ *
+ * A draft is exactly what a department meeting needs on paper — that is how a
+ * timetable gets agreed — so this does not wait for publication. Every page of
+ * an unpublished one says so instead.
+ */
+const printSchema = z.object({
+  from: z.iso.date(),
+  to: z.iso.date(),
+  view: z.enum(['day', 'week', 'month', 'agenda', 'programme']).default('agenda'),
+  teacherProfileId: z.uuid().optional(),
+  /** Comma-separated: a browser sends a list of chosen subjects as one field. */
+  subjectIds: z
+    .string()
+    .optional()
+    .transform((value) =>
+      (value ?? '')
+        .split(',')
+        .map((entry) => entry.trim())
+        .filter(Boolean),
+    ),
 })
 
 const validateSchema = sessionSchema.extend({
@@ -355,6 +384,58 @@ export function registerPlannerRoutes(app: FastifyInstance, bus: RealtimeTranspo
         changes: diff.changes,
         byTeacher: diff.byTeacher,
       }
+    },
+  )
+
+  /**
+   * The classes of this version as paper, in whichever shape was asked for.
+   *
+   * The same document the programme screen prints — same shapes, same colours,
+   * same key — because a timetable that looks different depending on which
+   * screen printed it is two documents.
+   */
+  app.get(
+    '/api/v1/planner/versions/:id/calendar.pdf',
+    { config: { roles: [...COORDINATION] } },
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply) => {
+      const context = await plannerContext(request)
+      const version = await findVersion(context, request.params.id)
+      const query = parseWith(printSchema, request.query)
+      const t = (key: string) => translate(request.locale, key)
+
+      const rows = await loadSessions(context, version.id)
+      const excluded = await nonTeachingDates(context.db, query.from, query.to)
+      const entries = printableEntries(rows, query, excluded)
+
+      const center = await prisma().center.findUnique({
+        where: { id: context.centerId },
+        select: { name: true },
+      })
+
+      const teacher = query.teacherProfileId
+        ? context.directory.find((entry) => entry.teacherProfileId === query.teacherProfileId)
+        : undefined
+
+      const pdf = await calendarPdf({
+        view: query.view,
+        title:
+          query.view === 'programme' ? t('calendar.programme.title') : t('planning.print.title'),
+        centerName: center?.name ?? '',
+        note: [version.name, teacher?.name].filter(Boolean).join(' · '),
+        // A version nobody has published is a proposal, and every page of it
+        // has to say so or it will be read as the timetable.
+        ...(version.status === 'published' ? {} : { stamp: t('planning.print.provisional') }),
+        from: query.from,
+        to: query.to,
+        locale: request.locale,
+        emptyLabel: t('calendar.empty'),
+        entries,
+      })
+
+      return reply
+        .header('content-type', 'application/pdf')
+        .header('content-disposition', 'attachment; filename="uacademic-calendar.pdf"')
+        .send(pdf)
     },
   )
 
@@ -779,6 +860,69 @@ async function requireEditable(context: PlannerContext, id: string) {
     throw new AppError(409, 'CONFLICT', 'planner.version.errors.notEditable')
   }
   return version
+}
+
+/**
+ * One entry per class that actually happens in the period, filtered to the
+ * teacher and the subjects that were asked for.
+ *
+ * The same expansion every calendar uses — the days the center is shut are
+ * already out of it — so the paper and the screen cannot disagree about when a
+ * class happens.
+ */
+function printableEntries(
+  rows: readonly SessionRow[],
+  query: { from: string; to: string; teacherProfileId?: string | undefined; subjectIds: string[] },
+  excluded: readonly string[],
+): CalendarPrintEntry[] {
+  const from = new Date(`${query.from}T00:00:00Z`)
+  const to = new Date(`${query.to}T00:00:00Z`)
+  const subjects = new Set(query.subjectIds)
+
+  return rows
+    .filter((row) => subjects.size === 0 || subjects.has(row.group.subject.id))
+    .filter(
+      (row) =>
+        !query.teacherProfileId ||
+        sessionTeachers(row).some((person) => person.teacherProfileId === query.teacherProfileId),
+    )
+    .flatMap((row) => {
+      const snapshot = toSnapshot(row)
+      const teachers = sessionTeachers(row)
+
+      return occurrencesBetween(
+        {
+          id: row.id,
+          summary: `${snapshot.subjectCode} ${snapshot.groupCode}`,
+          weekday: snapshot.weekday,
+          startTime: snapshot.startTime,
+          endTime: snapshot.endTime,
+          dateFrom: row.dateFrom,
+          dateTo: row.dateTo,
+          recurrence: snapshot.recurrence,
+        },
+        from,
+        to,
+        excluded,
+      ).map((date) => ({
+        date: date.toISOString().slice(0, 10),
+        startTime: snapshot.startTime,
+        endTime: snapshot.endTime,
+        subjectId: snapshot.subjectId ?? row.group.subject.id,
+        subjectCode: snapshot.subjectCode,
+        subjectName: snapshot.subjectName,
+        subjectColor: snapshot.subjectColor ?? null,
+        groupCode: snapshot.groupCode,
+        classTypeId: snapshot.classTypeId ?? null,
+        classTypeName: snapshot.classTypeName ?? null,
+        classTypeColor: row.classType?.color ?? null,
+        topic: row.topic ?? null,
+        teacherName: teachers.map((person) => person.name).join(', ') || null,
+        teachers,
+        spaceName: snapshot.spaceName,
+      }))
+    })
+    .sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime))
 }
 
 async function loadSessions(context: PlannerContext, versionId: string) {

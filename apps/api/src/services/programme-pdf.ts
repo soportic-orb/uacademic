@@ -15,6 +15,8 @@ import type { AppLocale } from '@uacademic/shared'
 import { calendarColor, isInMonth, monthsBetween, translate, weeksOfMonth } from '@uacademic/shared'
 import PDFDocument from 'pdfkit'
 
+import { stampPages } from './calendar-pdf.js'
+
 export interface ProgrammeEntry {
   /** `YYYY-MM-DD`. */
   date: string
@@ -43,6 +45,11 @@ export interface ProgrammePdfInput {
   centerName: string
   /** Whose programme it is, or which filters produced it. */
   note?: string
+  /**
+   * Words on the top right of every page — "provisional timetable" — for a
+   * plan that has not been published. Absent for one that has.
+   */
+  stamp?: string
   from: string
   to: string
   locale: AppLocale
@@ -101,6 +108,8 @@ export async function programmePdf(input: ProgrammePdfInput): Promise<Buffer> {
   const finished = new Promise<Buffer>((resolve) =>
     document.on('end', () => resolve(Buffer.concat(chunks))),
   )
+
+  if (input.stamp) stampPages(document, input.stamp)
 
   const entries = [...input.entries].sort(
     (a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime),

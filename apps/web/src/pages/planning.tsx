@@ -9,6 +9,7 @@ import { Button } from '../components/ui/button'
 import { Card, CardBody, CardHeader } from '../components/ui/card'
 import { useToast } from '../hooks/use-toast'
 import { ApiRequestError } from '../lib/api'
+import { CalendarPrint } from '../features/planner/calendar-print'
 import { CompareView } from '../features/planner/compare-view'
 import { PlannerGrid } from '../features/planner/planner-grid'
 import { ScheduleExport } from '../features/capacity/schedule-export'
@@ -77,6 +78,10 @@ export function PlanningPage() {
           ) : null}
 
           <PlannerGrid version={version.data} context={version.data.context} />
+
+          {/* Printing what is on screen, published or not: a draft on paper
+              is how a timetable gets agreed. */}
+          <CalendarPrint version={version.data} />
 
           {/* Sending happens after publishing, so it sits at the foot of the
               screen where the work ends rather than competing with the grid. */}
