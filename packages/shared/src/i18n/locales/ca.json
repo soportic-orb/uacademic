@@ -1699,6 +1699,7 @@
       "title": "Programació docent",
       "columns": {
         "date": "Data",
+        "group": "Grup",
         "time": "Horari",
         "topic": "Tema",
         "teacher": "Docent",

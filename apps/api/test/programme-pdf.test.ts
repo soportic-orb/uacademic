@@ -8,7 +8,8 @@
 import PDFDocument from 'pdfkit'
 import { describe, expect, it } from 'vitest'
 
-import { type ProgrammeEntry, rowHeight } from '../src/services/programme-pdf.js'
+import { extractText } from '../src/services/documents/extract.js'
+import { type ProgrammeEntry, programmePdf, rowHeight } from '../src/services/programme-pdf.js'
 
 const entry = (overrides: Partial<ProgrammeEntry> = {}): ProgrammeEntry => ({
   date: '2027-01-11',
@@ -56,5 +57,47 @@ describe('the height of a row', () => {
 
   it('does not shrink below one line for a class with nothing written on it', () => {
     expect(height({ topic: null, teacherName: null, spaceName: null })).toBe(15)
+  })
+})
+
+/** A real, if tiny, PNG: enough for PDFKit to embed something. */
+const PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+  'base64',
+)
+
+const printed = async (input: Partial<Parameters<typeof programmePdf>[0]> = {}) => {
+  const bytes = await programmePdf({
+    title: 'Programació docent',
+    centerName: "Facultat d'Infermeria i Fisioteràpia",
+    from: '2027-01-01',
+    to: '2027-01-31',
+    locale: 'ca',
+    entries: [entry()],
+    ...input,
+  })
+  const { pages } = await extractText(new Uint8Array(bytes), 'application/pdf', 'programme.pdf')
+  return pages.map((page) => page.text).join(' ')
+}
+
+describe('what the printed programme says', () => {
+  it('names the group of every class, in a column before the hour', async () => {
+    /*
+      Two classes of one subject on one morning are told apart by their group
+      and by nothing else, so "SP-B1" belongs on the paper and not only on the
+      screen it was planned on.
+    */
+    const text = await printed({ entries: [entry({ groupCode: 'SP-B1' })] })
+
+    expect(text).toContain('SP-B1')
+    expect(text.replace(/\s+/g, ' ')).toContain('Data Grup Horari')
+  })
+
+  it('prints the document whether or not there is a logo to head it with', async () => {
+    // The mark of whoever issued it, at the head of the page.
+    expect(await printed({ logo: PNG })).toContain('Programació docent')
+    // And bytes that are not an image are a header without a logo, never a
+    // timetable that failed to print.
+    expect(await printed({ logo: Buffer.from('not an image') })).toContain('Programació docent')
   })
 })

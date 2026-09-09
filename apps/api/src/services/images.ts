@@ -84,3 +84,21 @@ export function avatarUrlFor(userId: string, version: string): string {
 export function universityLogoUrlFor(universityId: string, version: string): string {
   return `/api/v1/universities/${universityId}/logo?v=${version}`
 }
+
+/**
+ * The logo to print on a document a center issues.
+ *
+ * The picture belongs to the university — one institution, one mark — so a
+ * center's document carries the logo of the university it belongs to. Bytes
+ * rather than a URL: this is going into a PDF, not into a page.
+ */
+export async function institutionLogo(universityId: string | null): Promise<Buffer | null> {
+  if (!universityId) return null
+
+  const image = await readImage('universities', universityId)
+  // PDFKit embeds PNG and JPEG. A GIF or a WebP is a logo we cannot draw, and
+  // a header without one is better than a document that will not print.
+  if (!image || (image.mime !== 'image/png' && image.mime !== 'image/jpeg')) return null
+
+  return image.bytes
+}

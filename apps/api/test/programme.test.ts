@@ -272,7 +272,7 @@ describe.skipIf(!hasDatabase)('the teaching programme', () => {
       */
       const session = await prisma.classSession.findFirstOrThrow({
         where: { centerId, scheduleVersion: { status: 'published' } },
-        include: { group: { select: { subject: { select: { code: true } } } } },
+        include: { group: { select: { code: true, subject: { select: { code: true } } } } },
       })
       const space = await prisma.space.create({
         data: {
@@ -306,15 +306,20 @@ describe.skipIf(!hasDatabase)('the teaching programme', () => {
           'programme-year.pdf',
         )
         const text = pages.map((page) => page.text).join(' ')
+        // A name too long for its column is printed over two lines rather than
+        // cut, so what is looked for is the words and not where they broke.
+        const flat = text.replace(/\s+/g, ' ')
 
         // A mini calendar per teaching month at the top of the first page,
         // before the list they summarise.
         expect(text.toLowerCase()).toContain('setembre del 26')
         expect(text.toLowerCase()).toContain('gener del 27')
-        expect(text.indexOf('setembre')).toBeLessThan(text.indexOf('Data Horari'))
+        expect(text.indexOf('setembre')).toBeLessThan(text.indexOf('Data Grup Horari'))
         // The list beneath it: a class of the year that is not on that day.
-        expect(text).toContain('Prova tema anual')
-        expect(text).toContain(space.name)
+        expect(flat).toContain('Prova tema anual')
+        expect(flat).toContain(space.name)
+        // Which group is being taught, in its own column before the hour.
+        expect(flat).toContain(session.group.code)
         expect(text).toContain(`${session.startTime}–${session.endTime}`)
         // And the key, so the colours mean something: the subjects the dots
         // stand for, and the kinds of class the days are washed with.

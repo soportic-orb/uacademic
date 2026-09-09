@@ -87,6 +87,22 @@
     color-scheme: dark;
   }
 
+  /*
+    The height chain the shell stands on.
+
+    `100dvh` is the right answer on a phone, where the address bar comes and
+    goes, and it is a declaration older engines drop entirely — which left the
+    shell as tall as its content, the page itself scrolling, and bare
+    background under a sidebar that ended halfway down. A plain percentage
+    works in every browser ever shipped, so that is the floor and `dvh` is the
+    upgrade.
+  */
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
   body {
     background-color: var(--bg);
     color: var(--text);
@@ -109,17 +125,29 @@
     `100dvh` alone is a declaration an older engine drops, and a shell that was
     meant to be exactly one screen tall then becomes as tall as its content:
     the page itself scrolls, the sidebar ends wherever the content does, and
-    below it is bare background. Declaring `vh` first and `dvh` second gives
-    each engine the best height it understands.
+    below it is bare background.
+
+    The fallback is written as `@supports` rather than as two declarations of
+    the same property, because the two-declaration form is exactly what a
+    minifier is entitled to collapse — and did, leaving the build with the
+    `dvh` line alone and the bug still there.
   */
   .h-viewport {
-    height: 100vh;
-    height: 100dvh;
+    height: 100%;
   }
 
   .min-h-viewport {
-    min-height: 100vh;
-    min-height: 100dvh;
+    min-height: 100%;
+  }
+
+  @supports (height: 100dvh) {
+    .h-viewport {
+      height: 100dvh;
+    }
+
+    .min-h-viewport {
+      min-height: 100dvh;
+    }
   }
 
   /* Every hour figure aligns in columns. */

@@ -40,6 +40,11 @@ export interface CalendarPrintInput {
    * Absent for a published one, which needs no warning.
    */
   stamp?: string
+  /**
+   * The institution's logo, as PNG or JPEG bytes: a document that leaves the
+   * building carries the mark of who issued it.
+   */
+  logo?: Buffer
   from: string
   to: string
   locale: AppLocale
@@ -59,6 +64,7 @@ export async function calendarPdf(input: CalendarPrintInput): Promise<Buffer> {
       centerName: input.centerName,
       ...(input.note ? { note: input.note } : {}),
       ...(input.stamp ? { stamp: input.stamp } : {}),
+      ...(input.logo ? { logo: input.logo } : {}),
       from: input.from,
       to: input.to,
       locale: input.locale,

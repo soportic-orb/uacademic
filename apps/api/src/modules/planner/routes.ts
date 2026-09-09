@@ -41,6 +41,7 @@ import {
   toSnapshot,
 } from './context.js'
 import { type CalendarPrintEntry, calendarPdf } from '../../services/calendar-pdf.js'
+import { institutionLogo } from '../../services/images.js'
 import { publishVersion, readSnapshot } from './publish.js'
 import { nonTeachingDates } from '../calendar/routes.js'
 
@@ -409,8 +410,9 @@ export function registerPlannerRoutes(app: FastifyInstance, bus: RealtimeTranspo
 
       const center = await prisma().center.findUnique({
         where: { id: context.centerId },
-        select: { name: true },
+        select: { name: true, universityId: true },
       })
+      const logo = await institutionLogo(center?.universityId ?? null)
 
       const teacher = query.teacherProfileId
         ? context.directory.find((entry) => entry.teacherProfileId === query.teacherProfileId)
@@ -421,6 +423,7 @@ export function registerPlannerRoutes(app: FastifyInstance, bus: RealtimeTranspo
         title:
           query.view === 'programme' ? t('calendar.programme.title') : t('planning.print.title'),
         centerName: center?.name ?? '',
+        ...(logo ? { logo } : {}),
         note: [version.name, teacher?.name].filter(Boolean).join(' · '),
         // A version nobody has published is a proposal, and every page of it
         // has to say so or it will be read as the timetable.

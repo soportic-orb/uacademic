@@ -46,6 +46,7 @@ import {
   registerCoordinationCalendarRoutes,
 } from './coordination-routes.js'
 import { programmePdf } from '../../services/programme-pdf.js'
+import { institutionLogo } from '../../services/images.js'
 import { scheduleMonthlyPdf } from '../../services/schedule-pdf.js'
 import { requireCenterScope, requireUser } from '../../plugins/context.js'
 
@@ -404,12 +405,14 @@ function registerExportRoutes(app: FastifyInstance): void {
     if (query.view === 'programme') {
       const center = await prisma().center.findUnique({
         where: { id: centerId },
-        select: { name: true },
+        select: { name: true, universityId: true },
       })
+      const logo = await institutionLogo(center?.universityId ?? null)
 
       const programme = await programmePdf({
         title: t('calendar.programme.title'),
         centerName: center?.name ?? '',
+        ...(logo ? { logo } : {}),
         note: `${user.firstName} ${user.lastName}`,
         from: range.from,
         to: range.to,

@@ -1699,6 +1699,7 @@
       "title": "Programación docente",
       "columns": {
         "date": "Fecha",
+        "group": "Grupo",
         "time": "Horario",
         "topic": "Tema",
         "teacher": "Docente",

@@ -341,11 +341,11 @@ describe.skipIf(!hasDatabase)('the teacher calendar', () => {
       // A mini calendar per teaching month before anything else, weeks and
       // all, with the days that have classes dotted.
       expect(text.toLowerCase()).toContain('desembre del 26')
-      expect(text.indexOf('desembre')).toBeLessThan(text.indexOf('Data Horari'))
-      // And the classes beneath, in date order, with the hours, the person
-      // giving them and the room.
-      expect(text).toMatch(/\d{2}\/12\/26 \d{2}:\d{2}–\d{2}:\d{2}/)
-      expect(text).toContain('Data Horari Tema Docent Aula')
+      expect(text.indexOf('desembre')).toBeLessThan(text.indexOf('Data Grup Horari'))
+      // And the classes beneath, in date order, with the group, the hours,
+      // the person giving them and the room.
+      expect(text).toMatch(/\d{2}\/12\/26 \S+ \d{2}:\d{2}–\d{2}:\d{2}/)
+      expect(text).toContain('Data Grup Horari Tema Docent Aula')
     })
 
     it('prints a month as a month', async () => {

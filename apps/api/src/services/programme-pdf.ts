@@ -50,6 +50,14 @@ export interface ProgrammePdfInput {
    * plan that has not been published. Absent for one that has.
    */
   stamp?: string
+  /**
+   * The institution's logo, as PNG or JPEG bytes.
+   *
+   * A document that leaves the building carries the mark of who issued it. It
+   * is drawn at the height of the two lines beside it, so the header stays one
+   * band however tall the original image is.
+   */
+  logo?: Buffer
   from: string
   to: string
   locale: AppLocale
@@ -65,13 +73,19 @@ const INK = '#0F172A'
 const MUTED = '#64748B'
 const RULE = '#CBD5E1'
 
-/** The list's columns, as fractions of the width they are given. */
+/**
+ * The list's columns. A width of zero takes whatever is left over, which is
+ * the topic: it is the one that is worth a second line.
+ */
 const COLUMNS = [
-  { key: 'date', width: 62 },
-  { key: 'time', width: 74 },
+  { key: 'date', width: 58 },
+  // Which group is being taught, before the hour: two classes of one subject
+  // on one morning are told apart by their group and by nothing else.
+  { key: 'group', width: 58 },
+  { key: 'time', width: 70 },
   { key: 'topic', width: 0 },
-  { key: 'teacher', width: 118 },
-  { key: 'space', width: 82 },
+  { key: 'teacher', width: 105 },
+  { key: 'space', width: 74 },
 ] as const
 
 /** The shortest a row of the list gets: one line, with room to breathe. */
@@ -149,22 +163,44 @@ export async function programmePdf(input: ProgrammePdfInput): Promise<Buffer> {
   return finished
 }
 
+/** The two lines of the header, and the height the logo is drawn at. */
+const HEADER_LINES = 30
+/** The widest a logo may be before it is scaled down to fit. */
+const LOGO_WIDTH = 110
+
 function drawHeader(
   document: PDFKit.PDFDocument,
   input: ProgrammePdfInput,
   t: (key: string, params?: Record<string, string | number>) => string,
 ): number {
+  let left = MARGIN
+
+  if (input.logo) {
+    /*
+      Scaled to fit the height of the two lines beside it, so a header is one
+      band whatever the original image is. Bad bytes are a header without a
+      logo and never a document that failed to print: whoever asked for this
+      wants the timetable.
+    */
+    try {
+      document.image(input.logo, MARGIN, MARGIN - 2, { fit: [LOGO_WIDTH, HEADER_LINES] })
+      left = MARGIN + LOGO_WIDTH + 10
+    } catch {
+      // Nothing to do: the text is the document.
+    }
+  }
+
   document
     .fillColor(INK)
     .fontSize(16)
-    .text(input.title || t('calendar.title'), MARGIN, MARGIN)
+    .text(input.title || t('calendar.title'), left, MARGIN)
 
   document
     .fillColor(MUTED)
     .fontSize(9)
     .text(
       [input.centerName, `${input.from} – ${input.to}`, input.note].filter(Boolean).join(' · '),
-      MARGIN,
+      left,
       MARGIN + 20,
     )
 
@@ -476,10 +512,12 @@ function rowCells(entry: ProgrammeEntry, locale: AppLocale): string[] {
 
   return [
     date,
+    entry.groupCode,
     `${entry.startTime}–${entry.endTime}`,
-    // What the class is: the topic where somebody wrote one, the subject and
-    // group where they did not — never an empty line.
-    entry.topic ?? `${entry.subjectCode} ${entry.groupCode}`,
+    // What the class is: the topic where somebody wrote one, the subject where
+    // they did not — never an empty line, and never the group, which now has a
+    // column of its own.
+    entry.topic ?? entry.subjectName,
     entry.teacherName ?? '',
     entry.spaceName ?? '',
   ]

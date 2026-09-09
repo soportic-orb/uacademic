@@ -23,6 +23,7 @@ import { z } from 'zod'
 
 import { writeAuditLog } from '../../lib/audit.js'
 import { calendarPdf } from '../../services/calendar-pdf.js'
+import { institutionLogo } from '../../services/images.js'
 import { AppError } from '../../lib/errors.js'
 import { type PrismaClient, prisma } from '../../lib/prisma.js'
 import { parseWith } from '../../lib/validate.js'
@@ -148,8 +149,9 @@ export function registerCoordinationCalendarRoutes(app: FastifyInstance): void {
       */
       const center = await prisma().center.findUnique({
         where: { id: requireCenterScope(request).centerId },
-        select: { name: true },
+        select: { name: true, universityId: true },
       })
+      const logo = await institutionLogo(center?.universityId ?? null)
 
       const pdf = await calendarPdf({
         view: query.view,
@@ -158,6 +160,7 @@ export function registerCoordinationCalendarRoutes(app: FastifyInstance): void {
             ? t('calendar.programme.title')
             : t('calendar.coordination.title'),
         centerName: center?.name ?? '',
+        ...(logo ? { logo } : {}),
         note: [`${user.firstName} ${user.lastName}`, describeFilters(rows, query, t)]
           .filter(Boolean)
           .join(' · '),

@@ -1699,6 +1699,7 @@
       "title": "Teaching programme",
       "columns": {
         "date": "Date",
+        "group": "Group",
         "time": "Time",
         "topic": "Topic",
         "teacher": "Teacher",
