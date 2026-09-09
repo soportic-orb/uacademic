@@ -61,9 +61,19 @@ export function AppShell() {
     The viewport is the frame, not the page: the shell is exactly one screen
     tall and hides its own overflow, so the sidebar and the header stay put and
     the only thing that scrolls is the content column.
+
+    `relative` on the frame and on the content column is what makes that hold.
+    Hiding overflow does not clip an absolutely positioned descendant whose
+    containing block is outside the box doing the hiding — and a `sr-only` box
+    is absolutely positioned, so every announcement region and every hidden
+    label deep in a long screen was measured against the page itself. The page
+    then grew to reach the lowest of them, the whole document scrolled, and
+    under a sidebar that is exactly one screen tall came a band of bare
+    background. Positioning the two containers keeps those boxes inside the
+    column that scrolls.
   */
   return (
-    <div className="flex h-viewport overflow-hidden bg-bg">
+    <div className="relative flex h-viewport overflow-hidden bg-bg">
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-control focus:bg-surface focus:px-4 focus:py-2 focus:text-text"
@@ -82,7 +92,7 @@ export function AppShell() {
           onToggleSidebar={() => setCollapsed((v) => !v)}
         />
 
-        <main id="main" className="flex-1 overflow-y-auto px-4 pb-24 pt-6 md:px-8 md:pb-8">
+        <main id="main" className="relative flex-1 overflow-y-auto px-4 pb-24 pt-6 md:px-8 md:pb-8">
           {isPending ? (
             <div className="grid gap-4 md:grid-cols-3">
               <CardSkeleton />
