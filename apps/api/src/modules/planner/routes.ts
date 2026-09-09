@@ -120,6 +120,11 @@ const sessionPatchSchema = z.object({
     .optional(),
   topic: z.string().trim().max(200).nullable().optional(),
   classTypeId: z.uuid().nullable().optional(),
+  /**
+   * Set when these hours are somebody's own — an edge dragged, an hour typed.
+   * From then on nothing else about the class moves them.
+   */
+  hoursPinned: z.boolean().optional(),
 })
 
 /**
@@ -480,6 +485,7 @@ function registerSessionRoutes(app: FastifyInstance): void {
           // `undefined` is "leave it"; `null` is "clear what was written".
           ...(input.topic !== undefined ? { topic: input.topic } : {}),
           ...(input.classTypeId !== undefined ? { classTypeId: input.classTypeId } : {}),
+          ...(input.hoursPinned !== undefined ? { hoursPinned: input.hoursPinned } : {}),
         },
       })
 
@@ -573,6 +579,8 @@ function registerSessionRoutes(app: FastifyInstance): void {
             recurrence: 'once',
             topic: source.topic,
             classTypeId: source.classTypeId,
+            // A copy of a class somebody sized is a class of those hours.
+            hoursPinned: source.hoursPinned,
             coTeachers: {
               create: source.coTeachers.map((entry) => ({
                 teacherProfileId: entry.teacherProfileId,

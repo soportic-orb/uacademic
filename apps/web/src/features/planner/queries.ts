@@ -32,6 +32,13 @@ export interface PlannerSessionDto {
   /** What kind of class it is, when the center keeps a list of kinds. */
   classTypeId: string | null
   classTypeName: string | null
+  /**
+   * Whether these hours are somebody's own rather than a default.
+   *
+   * Set the moment an edge is dragged or an hour typed, and from then on
+   * nothing else about the class moves them.
+   */
+  hoursPinned: boolean
   weekday: Weekday
   startTime: string
   endTime: string
@@ -217,6 +224,8 @@ export interface SessionInput {
   topic?: string | null
   /** What kind of class it is. Null leaves it unsaid. */
   classTypeId?: string | null
+  /** Sent with hours somebody set themselves, never with a default. */
+  hoursPinned?: boolean
 }
 
 export function useCreateSession(versionId: string) {

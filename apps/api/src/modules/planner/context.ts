@@ -359,6 +359,7 @@ export function toSnapshot(row: SessionRow): SessionSnapshot {
     spaceName: row.space?.name ?? null,
     classTypeId: row.classTypeId ?? null,
     classTypeName: row.classType?.nameCa ?? null,
+    hoursPinned: row.hoursPinned ?? false,
     weekday: row.weekday as Weekday,
     startTime: row.startTime,
     endTime: row.endTime,

@@ -160,6 +160,7 @@ const VERSION: VersionDetailDto = {
       building: 'A',
       classTypeId: null,
       classTypeName: null,
+      hoursPinned: false,
       weekday: 1,
       startTime: '09:00',
       endTime: '10:00',
@@ -824,6 +825,33 @@ describe('the visual planner', () => {
       })
     })
 
+    it('leaves alone the hours somebody set themselves', async () => {
+      /*
+        A coordinator drags a class to the hours it is really taught in, then
+        changes what kind of class it is — and the class snapped back to the
+        length that kind usually lasts. Those hours are a decision; nothing
+        else about the class may undo it.
+      */
+      const user = userEvent.setup()
+      const sized = {
+        ...VERSION,
+        sessions: VERSION.sessions.map((session) => ({ ...session, hoursPinned: true })),
+      }
+
+      render(wrap(<PlannerGrid version={sized} context={withTypes} />))
+
+      await user.selectOptions(screen.getAllByLabelText('Tipus de classe')[0]!, 'ct2')
+
+      await waitFor(() => {
+        const patch = fetchMock.mock.calls.find(
+          (call) => (call[1] as RequestInit | undefined)?.method === 'PATCH',
+        )
+        const body = JSON.parse(String((patch![1] as RequestInit).body)) as Record<string, unknown>
+        expect(body.classTypeId).toBe('ct2')
+        expect(body).not.toHaveProperty('endTime')
+      })
+    })
+
     it('says nothing about kinds when the center keeps no list of them', () => {
       render(wrap(<PlannerGrid version={VERSION} context={CONTEXT} />))
 
@@ -984,6 +1012,24 @@ describe('the visual planner', () => {
       } finally {
         restore()
       }
+    })
+
+    it('marks the hours as somebody’s own, so nothing else moves them again', async () => {
+      const restore = withRowHeight(40)
+      render(wrap(<PlannerGrid version={VERSION} context={CONTEXT} />))
+
+      drag(screen.getByRole('button', { name: 'Allarga o escurça per baix' }), 100, 140)
+
+      await waitFor(() => {
+        const patch = fetchMock.mock.calls.find(
+          (call) => (call[1] as RequestInit | undefined)?.method === 'PATCH',
+        )
+        expect(JSON.parse(String((patch![1] as RequestInit).body))).toMatchObject({
+          hoursPinned: true,
+        })
+      })
+
+      restore()
     })
 
     it('moves the start of the class when it is the top edge that is dragged', async () => {

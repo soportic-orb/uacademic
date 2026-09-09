@@ -331,12 +331,25 @@ describe('the menu each role starts with', () => {
   })
 
   describe('handing that menu to everybody who holds the role', () => {
-    it('is offered only once the role has a menu to hand out', async () => {
+    it('stays on the screen, disabled, while the role has no menu to hand out', async () => {
+      /*
+        Hidden until there was something to apply, the control was simply
+        missing for anybody who had not saved that role's menu yet — and "where
+        is the button?" is a worse question than "why is it greyed out?", which
+        the line under the roles answers.
+      */
       view(<MenuDefaultsCard />)
 
-      // Nothing set: there is nothing to force on anybody.
       await screen.findByText(/Aquest rol encara no en té cap/)
-      expect(screen.queryByRole('button', { name: 'Aplica a tothom' })).not.toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Aplica a tothom' })).toBeDisabled()
+    })
+
+    it('is offered as soon as the role has one', async () => {
+      defaults.value = { TEACHER: [{ kind: 'item', key: 'messages' }] }
+
+      view(<MenuDefaultsCard />)
+
+      expect(await screen.findByRole('button', { name: 'Aplica a tothom' })).toBeEnabled()
     })
 
     it('asks first, because it overwrites what other people arranged', async () => {

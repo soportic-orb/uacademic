@@ -176,23 +176,24 @@ export function PlannerGrid({
   /**
    * What kind of class this is: a lecture, a practical, a laboratory session.
    *
-   * The kind carries the length its classes usually last, so choosing one also
-   * sets how long this class is — that is what the length on the type is for.
-   * It is a starting point like every other: the edges of the block still drag
-   * afterwards. A class already at the type's length is left alone rather than
-   * rewritten to the same hours.
+   * The kind carries the length its classes usually last, and a class that is
+   * still at whatever length it was placed with takes it. A class whose hours
+   * somebody has set — an edge dragged to the hours it is really taught in, an
+   * hour typed — keeps them: those hours are a decision, and changing the kind
+   * of class, its room or its topic is not a reason to undo it.
    */
   const setClassType = async (session: PlannerSessionDto, classTypeId: string | null) => {
     const chosen = (context.classTypes ?? []).find((type) => type.id === classTypeId)
     const endTime = chosen ? addMinutes(session.startTime, chosen.defaultMinutes) : session.endTime
     const fits = endTime > session.startTime && endTime <= version.grid.dayEnd
+    const takesTheLength = Boolean(chosen) && !session.hoursPinned && fits
 
     try {
       await updateSession.mutateAsync({
         sessionId: session.id,
         values: {
           classTypeId,
-          ...(fits && endTime !== session.endTime ? { endTime } : {}),
+          ...(takesTheLength && endTime !== session.endTime ? { endTime } : {}),
         },
       })
     } catch (error) {
@@ -223,7 +224,11 @@ export function PlannerGrid({
     if (startTime < version.grid.dayStart || endTime > version.grid.dayEnd) return
 
     try {
-      await updateSession.mutateAsync({ sessionId: session.id, values: { startTime, endTime } })
+      // Hours somebody dragged are theirs from now on.
+      await updateSession.mutateAsync({
+        sessionId: session.id,
+        values: { startTime, endTime, hoursPinned: true },
+      })
     } catch (error) {
       onError(error)
     }
@@ -250,7 +255,10 @@ export function PlannerGrid({
     }
 
     try {
-      await updateSession.mutateAsync({ sessionId: session.id, values: { startTime, endTime } })
+      await updateSession.mutateAsync({
+        sessionId: session.id,
+        values: { startTime, endTime, hoursPinned: true },
+      })
     } catch (error) {
       onError(error)
     }

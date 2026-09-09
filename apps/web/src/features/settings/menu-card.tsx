@@ -184,18 +184,30 @@ export function MenuDefaultsCard() {
         title={t('settings.menu.defaults.title')}
         description={t('settings.menu.defaults.hint')}
         action={
-          entries.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2">
+            {/* Nothing to put back when the role has no menu of its own. */}
+            {entries.length > 0 ? (
               <Button variant="secondary" onClick={() => persist([])}>
                 <RotateCcw className="size-4" aria-hidden="true" />
                 {t('settings.menu.defaults.clear')}
               </Button>
-              <Button variant="secondary" disabled={apply.isPending} onClick={applyToEveryone}>
-                <UsersRound className="size-4" aria-hidden="true" />
-                {apply.isPending ? t('common.loading') : t('settings.menu.defaults.apply')}
-              </Button>
-            </div>
-          ) : null
+            ) : null}
+
+            {/*
+              Always on the screen, so that "where is the button?" is never the
+              question: a role with no menu saved yet has nothing to hand out,
+              and the card says so under the roles rather than hiding the
+              control that would do it.
+            */}
+            <Button
+              variant="secondary"
+              disabled={apply.isPending || entries.length === 0}
+              onClick={applyToEveryone}
+            >
+              <UsersRound className="size-4" aria-hidden="true" />
+              {apply.isPending ? t('common.loading') : t('settings.menu.defaults.apply')}
+            </Button>
+          </div>
         }
       />
       <CardBody className="space-y-4">

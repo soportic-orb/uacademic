@@ -842,6 +842,11 @@ model ClassSession {
   /// What kind of class this is — lecture, practical, laboratory — chosen when
   /// it is placed. Null for the classes placed before a center had any types.
   classTypeId       String?    @map("class_type_id") @db.Char(36)
+  /// Whether somebody set these hours themselves, by dragging an edge or by
+  /// typing them. Once they have, nothing else about the class may move them:
+  /// a coordinator who has fitted a class to the hours it is actually taught
+  /// in does not expect changing its room to hand it back a default.
+  hoursPinned       Boolean    @default(false) @map("hours_pinned")
   /// ISO weekday: 1 = Monday … 7 = Sunday.
   weekday           Int        @db.TinyInt
   startTime         String     @map("start_time") @db.Char(5)

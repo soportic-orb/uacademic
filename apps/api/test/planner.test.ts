@@ -374,6 +374,49 @@ describe.skipIf(!hasDatabase)('the planner', () => {
       expect(cleared.json().sessions[0].classTypeId).toBeNull()
     })
 
+    it('remembers hours somebody set themselves, so nothing else moves them', async () => {
+      /*
+        A coordinator drags a class to the hours it is really taught in, then
+        changes what kind of class it is — and it snapped back to the length
+        that kind usually lasts. The row now says the hours were a decision,
+        and the planner reads it before applying any default.
+      */
+      const version = await createVersion('own hours')
+      const group = await prisma.group.findFirstOrThrow({ where: { centerId } })
+
+      const created = await app.inject({
+        method: 'POST',
+        url: `/api/v1/planner/versions/${version.id}/sessions`,
+        headers: asCoordinator(),
+        payload: { groupId: group.id, date: ON[3], startTime: '16:00', endTime: '17:00' },
+      })
+      expect(created.json().sessions[0].hoursPinned).toBe(false)
+
+      const dragged = await app.inject({
+        method: 'PATCH',
+        url: `/api/v1/planner/versions/${version.id}/sessions/${created.json().sessions[0].id}`,
+        headers: asCoordinator(),
+        payload: { startTime: '16:00', endTime: '18:30', hoursPinned: true },
+      })
+
+      expect(dragged.statusCode).toBe(200)
+      const session = dragged.json().sessions[0]
+      expect(session).toMatchObject({ startTime: '16:00', endTime: '18:30', hoursPinned: true })
+
+      // And a change to anything else leaves both the hours and the decision.
+      const renamed = await app.inject({
+        method: 'PATCH',
+        url: `/api/v1/planner/versions/${version.id}/sessions/${session.id}`,
+        headers: asCoordinator(),
+        payload: { topic: 'Prova tema' },
+      })
+      expect(renamed.json().sessions[0]).toMatchObject({
+        endTime: '18:30',
+        hoursPinned: true,
+        topic: 'Prova tema',
+      })
+    })
+
     it('places a class given by two people, and keeps both of them', async () => {
       const version = await createVersion('co-teaching')
       const group = await prisma.group.findFirstOrThrow({ where: { centerId } })

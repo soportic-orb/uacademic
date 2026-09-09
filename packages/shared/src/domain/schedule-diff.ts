@@ -39,6 +39,8 @@ export interface SessionSnapshot {
   /** What kind of class it is, when the center keeps a list of kinds. */
   classTypeId?: string | null
   classTypeName?: string | null
+  /** Whether somebody set these hours themselves rather than taking a default. */
+  hoursPinned?: boolean
   weekday: Weekday
   startTime: ClockTime
   endTime: ClockTime
