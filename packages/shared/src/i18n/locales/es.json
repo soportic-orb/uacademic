@@ -903,7 +903,8 @@
       "alreadyRunning": "Ya hay una actualización en curso.",
       "mailNotConfigured": "El correo no está configurado en esta instalación.",
       "notLinked": "Esta instalación no se ejecuta desde el enlace «current», así que actualizar no cambiaría el código que corre. Ejecuta scripts/deploy/promote.sh una vez y vuelve a intentarlo.",
-      "sameRelease": "Esta versión es la que ya se está ejecutando: instalarla sobrescribiría el directorio desde el que corre. Si la pantalla dice otra versión instalada, es que falta el fichero VERSION en la release."
+      "sameRelease": "Esta versión es la que ya se está ejecutando: instalarla sobrescribiría el directorio desde el que corre. Si la pantalla dice otra versión instalada, es que falta el fichero VERSION en la release.",
+      "nodeTooOld": "El Node de este servidor es demasiado antiguo para instalar una versión nueva. Actualízalo a la versión que pide la plataforma e inténtalo de nuevo."
     },
     "releasePath": "Se ejecuta desde",
     "lastInstalled": "Última instalada desde aquí",
@@ -927,7 +928,9 @@
       "hint": "Los idiomas que la gente puede elegir. Apagar uno no borra ninguna traducción: solo deja de ofrecerlo.",
       "saved": "Idiomas actualizados",
       "last": "es el último que queda"
-    }
+    },
+    "node": "Node del servidor",
+    "nodeNeeded": "se necesita {{required}} o superior"
   },
   "assistant": {
     "title": "Asistente IA",

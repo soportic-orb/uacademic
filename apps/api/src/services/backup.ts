@@ -19,6 +19,7 @@ import { createGzip } from 'node:zlib'
 import { pipeline } from 'node:stream/promises'
 
 import { env } from '../config/env.js'
+import { childEnv } from '../lib/child-path.js'
 
 export interface BackupResult {
   file: string
@@ -77,7 +78,10 @@ export async function createBackup(now: Date = new Date()): Promise<BackupResult
       '--default-character-set=utf8mb4',
       connection.database,
     ],
-    { env: { ...process.env, MYSQL_PWD: connection.password } },
+    // The same `PATH` repair the updater makes: `mysqldump` shells out for
+    // compression on some builds, and a process manager's environment is not
+    // a login shell's.
+    { env: { ...childEnv([configuration.MYSQLDUMP_PATH]), MYSQL_PWD: connection.password } },
   )
 
   const errors: Buffer[] = []

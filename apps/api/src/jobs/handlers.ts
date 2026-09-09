@@ -24,6 +24,7 @@ import type { Logger } from 'pino'
 import { spawn } from 'node:child_process'
 
 import { env } from '../config/env.js'
+import { childEnv } from '../lib/child-path.js'
 import { toJson } from '../lib/json.js'
 import { scopedPrisma } from '../lib/prisma.js'
 import { type ConnectionRow, pullBusy, syncConnection } from '../services/calendar/sync.js'
@@ -236,13 +237,16 @@ export function buildJobHandlers(client: PrismaClient, logger: Logger): Record<s
       // returns, or the job stays locked and is retried as a stale one — which
       // would install the same release a second time.
       const configuration = env()
+      // `/bin/sh` by its path, and a `PATH` the shell can then work with: this
+      // process was started by a process manager, whose environment need not
+      // contain either.
       const restart = spawn(
-        'sh',
+        '/bin/sh',
         [
           '-c',
           `sleep 10; ${JSON.stringify(configuration.PM2_PATH)} restart ${JSON.stringify(`${configuration.PM2_APP_NAME}-worker`)}`,
         ],
-        { detached: true, stdio: 'ignore' },
+        { detached: true, stdio: 'ignore', env: childEnv([configuration.PM2_PATH]) },
       )
       restart.unref()
     },

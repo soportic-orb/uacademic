@@ -38,6 +38,10 @@ interface PlatformStatus {
   currentVersion: string | null
   runningVersion: string | null
   releasePath: string
+  /** The Node this server runs, and the one a release needs. */
+  nodeVersion: string
+  nodeRequired: string
+  nodeSupported: boolean
   checkedAt: string
   available: { version: string; changelog: string; publishedAt: string } | null
   updateAvailable: boolean
@@ -183,6 +187,20 @@ export function PlatformPage() {
           <dl className="grid gap-1 text-xs text-text-muted sm:grid-cols-[auto_1fr] sm:gap-x-3">
             <dt>{t('platform.releasePath')}</dt>
             <dd className="break-all font-mono">{status.data.releasePath}</dd>
+            {/*
+              The runtime, which is invisible everywhere else and decides
+              whether an update can work at all: the tools an update runs are
+              Node programs, and on a Node older than the release was built
+              for they fail with messages about shells and lockfiles that say
+              nothing about the cause.
+            */}
+            <dt>{t('platform.node')}</dt>
+            <dd className={status.data.nodeSupported ? 'font-mono' : 'font-mono text-danger'}>
+              {status.data.nodeVersion}
+              {status.data.nodeSupported
+                ? null
+                : ` — ${t('platform.nodeNeeded', { required: status.data.nodeRequired })}`}
+            </dd>
             {status.data.currentVersion &&
             status.data.currentVersion !== status.data.runningVersion ? (
               <>
@@ -223,7 +241,16 @@ export function PlatformPage() {
                 {t('platform.invisible')}
               </p>
 
-              <Button disabled={update.isPending} onClick={() => update.mutate()}>
+              {status.data.nodeSupported ? null : (
+                <p className="rounded-control border border-danger/30 bg-danger/10 p-3 text-sm text-danger">
+                  {t('platform.errors.nodeTooOld')}
+                </p>
+              )}
+
+              <Button
+                disabled={update.isPending || !status.data.nodeSupported}
+                onClick={() => update.mutate()}
+              >
                 {update.isPending ? (
                   <Loader2 className="size-4 motion-safe:animate-spin" aria-hidden="true" />
                 ) : (

@@ -31,6 +31,7 @@ import {
 } from '../../services/platform-settings.js'
 import {
   latestRelease,
+  nodeIsSupported,
   releaseIsAlreadyRunning,
   updateStatus,
   updateWouldTakeEffect,
@@ -251,6 +252,17 @@ export function registerPlatformRoutes(app: FastifyInstance): void {
 
     if (!updatesConfigured()) {
       throw new AppError(503, 'SERVICE_UNAVAILABLE', 'platform.errors.notConfigured')
+    }
+
+    /*
+      A release is built for a Node this host may not have. Refused here rather
+      than found out halfway through: the tools an update runs are Node
+      programs, and on an old runtime they fail with messages about shells and
+      lockfiles that say nothing about the actual cause.
+    */
+    // The panel shows both versions, so the message stays a sentence.
+    if (!nodeIsSupported()) {
+      throw new AppError(409, 'CONFLICT', 'platform.errors.nodeTooOld')
     }
 
     const release = await latestRelease()

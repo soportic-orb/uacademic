@@ -36,11 +36,17 @@ const platform = {
   history: [] as Record<string, unknown>[],
 }
 
+/** What the server says about its own runtime, which a test may vary. */
+const node = { version: 'v22.12.0', supported: true }
+
 const status = () => ({
   configured: true,
   currentVersion: '2026.09.01-53',
   runningVersion: '2026.09.01-53',
   releasePath: '/home/uacademic/releases/2026.09.01-53',
+  nodeVersion: node.version,
+  nodeRequired: '22.12.0',
+  nodeSupported: node.supported,
   checkedAt: new Date().toISOString(),
   available: {
     version: '2026.09.07-54',
@@ -60,6 +66,8 @@ describe('the platform panel', () => {
     // would otherwise still be on screen during the next.
     useToastStore.setState({ toasts: [] })
     platform.history = []
+    node.version = 'v22.12.0'
+    node.supported = true
 
     fetchMock.mockReset()
     fetchMock.mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -140,6 +148,33 @@ describe('the platform panel', () => {
 
     // Whoever comes to fix it is rarely the person who watched it fail.
     await waitFor(() => expect(screen.getByText(/P3009/)).toBeInTheDocument())
+  })
+
+  describe('a server whose Node is too old to install a release', () => {
+    /*
+      The tools an update runs are Node programs. On an old runtime they fail
+      halfway through with messages about shells and lockfiles that say nothing
+      about the cause — four failed updates on a real installation, and the
+      runtime named nowhere on the screen.
+    */
+    it('says so, and does not offer a button that cannot work', async () => {
+      node.version = 'v20.11.1'
+      node.supported = false
+
+      view(<PlatformPage />)
+
+      expect(await screen.findByText(/massa antic/)).toBeInTheDocument()
+      expect(await screen.findByRole('button', { name: /Actualitza ara/ })).toBeDisabled()
+      // And the version it has, beside what it needs.
+      expect(screen.getByText(/v20\.11\.1/)).toBeInTheDocument()
+    })
+
+    it('offers the update when the runtime is new enough', async () => {
+      view(<PlatformPage />)
+
+      expect(await screen.findByRole('button', { name: /Actualitza ara/ })).toBeEnabled()
+      expect(screen.queryByText(/massa antic/)).not.toBeInTheDocument()
+    })
   })
 
   it('says nothing extra about the versions that installed cleanly', async () => {

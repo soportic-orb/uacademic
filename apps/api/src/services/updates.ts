@@ -34,6 +34,7 @@ import type { PrismaClient } from '@uacademic/db'
 
 import { env } from '../config/env.js'
 import { writeAuditLog } from '../lib/audit.js'
+import { childEnv } from '../lib/child-path.js'
 import { createBackup } from './backup.js'
 
 export interface ReleaseInfo {
@@ -58,6 +59,18 @@ export interface UpdateStatus {
   runningVersion: string | null
   /** The directory the running code was loaded from. */
   releasePath: string
+  /**
+   * The Node this process runs on, and the Node a release needs.
+   *
+   * On the screen because it is invisible everywhere else and it decides
+   * whether an update can work at all: the tools an update runs are Node
+   * programs, and a host whose Node is older than the release was built for
+   * fails halfway through with a message about something else entirely.
+   */
+  nodeVersion: string
+  nodeRequired: string
+  /** False when this host's Node is too old to install a release. */
+  nodeSupported: boolean
   available: ReleaseInfo | null
   /** True when the release on GitHub is not the one running here. */
   updateAvailable: boolean
@@ -85,6 +98,30 @@ interface GitHubRelease {
 
 /** Long enough for a stack-less error and a command's last words. */
 const DETAIL_LIMIT = 2_000
+
+/**
+ * The Node a release is built for, as the root manifest declares it.
+ *
+ * Kept as a number rather than a range because the only question worth asking
+ * here is "is this host's Node old enough to break the update?", and the
+ * answer decided an installation that failed four times in a row with
+ * `spawn sh ENOENT` — the shell was the symptom, the runtime was the cause.
+ */
+const NODE_REQUIRED = '22.12.0'
+
+function nodeIsSupported(version: string = process.version): boolean {
+  const parts = version.replace(/^v/, '').split('.').map(Number)
+  const wanted = NODE_REQUIRED.split('.').map(Number)
+
+  for (const [index, floor] of wanted.entries()) {
+    const found = parts[index] ?? 0
+    if (found > floor) return true
+    if (found < floor) return false
+  }
+  return true
+}
+
+export { NODE_REQUIRED, nodeIsSupported }
 
 export function updatesConfigured(): boolean {
   return Boolean(env().GITHUB_OTA_TOKEN)
@@ -226,6 +263,9 @@ export async function updateStatus(client: PrismaClient): Promise<UpdateStatus> 
     currentVersion: installed,
     runningVersion: running,
     releasePath: releaseRoot(),
+    nodeVersion: process.version,
+    nodeRequired: NODE_REQUIRED,
+    nodeSupported: nodeIsSupported(),
     available,
     checkedAt: new Date().toISOString(),
     // Compared against what is running, not against what was last installed
@@ -255,9 +295,33 @@ async function expectedChecksum(url: string | null): Promise<string | null> {
 }
 
 /** Runs a command and captures what it said, for the record. */
-function run(command: string, args: string[], cwd?: string): Promise<string> {
+/**
+ * Run one of the tools an update needs, and keep what it said.
+ *
+ * Exported for the test that pins the environment it gets: an inherited `PATH`
+ * with no `/bin` in it is what made every update on a real installation fail
+ * with `spawn sh ENOENT`.
+ */
+export function run(command: string, args: string[], cwd?: string): Promise<string> {
+  const configuration = env()
+
   return new Promise((resolve, reject) => {
-    const child = spawn(command, args, { cwd, env: process.env })
+    /*
+      A `PATH` the child can work with, rather than whatever the process
+      manager passed down. `pnpm` here is spawned by its absolute path and
+      starts fine; what failed on a real installation was `pnpm` running the
+      migration through a shell — `spawn sh ENOENT`, because `/bin` was not on
+      the inherited `PATH`. The same environment resolved `node` to an older
+      one, so a release built for Node 22 migrated under Node 20.
+    */
+    const child = spawn(command, args, {
+      cwd,
+      env: childEnv([
+        configuration.PNPM_PATH,
+        configuration.PM2_PATH,
+        configuration.MYSQLDUMP_PATH,
+      ]),
+    })
     const output: Buffer[] = []
 
     child.stdout.on('data', (chunk: Buffer) => output.push(chunk))

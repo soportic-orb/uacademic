@@ -903,7 +903,8 @@
       "alreadyRunning": "An update is already running.",
       "mailNotConfigured": "Email is not configured on this installation.",
       "notLinked": "This installation does not run from the `current` link, so updating would not change the code being served. Run scripts/deploy/promote.sh once and try again.",
-      "sameRelease": "This is the release already running: installing it would overwrite the directory it runs from. If the screen names a different installed version, the release is missing its VERSION file."
+      "sameRelease": "This is the release already running: installing it would overwrite the directory it runs from. If the screen names a different installed version, the release is missing its VERSION file.",
+      "nodeTooOld": "This server’s Node is too old to install a release. Update it to the version the platform asks for and try again."
     },
     "releasePath": "Running from",
     "lastInstalled": "Last installed from here",
@@ -927,7 +928,9 @@
       "hint": "The languages people can choose. Switching one off removes no translation — it stops being offered.",
       "saved": "Languages updated",
       "last": "the last one left"
-    }
+    },
+    "node": "Server Node",
+    "nodeNeeded": "{{required}} or newer is needed"
   },
   "assistant": {
     "title": "AI assistant",

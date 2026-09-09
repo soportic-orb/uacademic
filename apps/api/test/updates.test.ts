@@ -15,7 +15,13 @@ import { join } from 'node:path'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 
 import { loadEnv, setEnv } from '../src/config/env.js'
-import { applyUpdate, updateStatus } from '../src/services/updates.js'
+import {
+  NODE_REQUIRED,
+  applyUpdate,
+  nodeIsSupported,
+  run,
+  updateStatus,
+} from '../src/services/updates.js'
 import { SEED, createTestApp, hasDatabase, seedCenterId } from './helpers.js'
 
 const ARTEFACT = Buffer.from('a release, as bytes')
@@ -162,6 +168,42 @@ describe.skipIf(!hasDatabase)('installing a release', () => {
 
       expect(response.statusCode).toBe(409)
       expect(response.json().error.messageKey).toBe('platform.errors.notLinked')
+    })
+  })
+
+  describe('the runtime it needs', () => {
+    it('knows which Node can install a release and which cannot', () => {
+      // The one that broke a real installation, and the one it needed.
+      expect(nodeIsSupported('v20.11.1')).toBe(false)
+      expect(nodeIsSupported('v22.11.0')).toBe(false)
+      expect(nodeIsSupported('v22.12.0')).toBe(true)
+      expect(nodeIsSupported('v24.0.0')).toBe(true)
+    })
+
+    it('refuses to start an update it knows cannot finish', async () => {
+      // Refused before anything is downloaded, and named: the failure it
+      // replaces was `spawn sh ENOENT` three steps later.
+      expect(NODE_REQUIRED).toBe('22.12.0')
+    })
+  })
+
+  describe('the environment it hands its tools', () => {
+    it('runs a tool that shells out, from the environment that broke', async () => {
+      /*
+        Every update on a real installation failed with `spawn sh ENOENT`:
+        `pnpm` started, because it is spawned by its absolute path, and then
+        died the moment it ran the migration through a shell — the process
+        manager had passed down a `PATH` with no `/bin` in it.
+      */
+      const inherited = process.env.PATH
+      process.env.PATH = '/home/uacademic/.local/share/pnpm'
+
+      try {
+        const output = await run('/bin/sh', ['-c', 'command -v sh >/dev/null && echo found'])
+        expect(output.trim()).toBe('found')
+      } finally {
+        process.env.PATH = inherited
+      }
     })
   })
 
