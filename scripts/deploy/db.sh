@@ -21,9 +21,21 @@ find_env() {
   if [ -n "${UACADEMIC_DEPLOY_ROOT:-}" ] && [ -f "${UACADEMIC_DEPLOY_ROOT}/shared/.env" ]; then
     printf '%s' "${UACADEMIC_DEPLOY_ROOT}/shared/.env"; return
   fi
+
+  # The deploy root's own file first, wherever it is above us, and only then a
+  # file inside the release. A release normally carries a symlink to the shared
+  # one and the two are the same file — but an installation promoted by hand
+  # can carry a copy instead, and a copy is exactly what still holds the
+  # password from before somebody changed it. "Access denied" for credentials
+  # that plainly work is not a puzzle worth leaving on the server.
   local directory="${REPO}"
   for _ in 1 2 3 4 5; do
     [ -f "${directory}/shared/.env" ] && { printf '%s' "${directory}/shared/.env"; return; }
+    directory="$(dirname "${directory}")"
+  done
+
+  directory="${REPO}"
+  for _ in 1 2 3 4 5; do
     [ -f "${directory}/.env" ] && { printf '%s' "${directory}/.env"; return; }
     directory="$(dirname "${directory}")"
   done
@@ -49,7 +61,29 @@ console.log("DB_PORT=" + quote(url.port || "3306"))
 
 printf '\033[2m%s@%s:%s — from %s\033[0m\n' "${DB_USER}" "${DB_HOST}" "${DB_NAME}" "${ENV_FILE}" >&2
 
+# Refused credentials are almost always the wrong file rather than the wrong
+# password, so say which other ones are lying around before giving up.
+on_refusal() {
+  local status=$?
+  [ "${status}" -eq 0 ] && return 0
+
+  echo >&2
+  echo "The connection was refused with the configuration in ${ENV_FILE}." >&2
+  echo "Other configuration files on this host:" >&2
+  local directory="${REPO}"
+  for _ in 1 2 3 4 5; do
+    for candidate in "${directory}/shared/.env" "${directory}/.env"; do
+      [ -f "${candidate}" ] && [ "${candidate}" != "${ENV_FILE}" ] && echo "  ${candidate}" >&2
+    done
+    directory="$(dirname "${directory}")"
+  done
+  echo "Choose one with UACADEMIC_ENV_FILE=<path> $0 …" >&2
+  return "${status}"
+}
+
 if [ "$#" -gt 0 ]; then
-  exec mysql -h "${DB_HOST}" -P "${DB_PORT}" -u "${DB_USER}" "${DB_NAME}" -e "$*"
+  mysql -h "${DB_HOST}" -P "${DB_PORT}" -u "${DB_USER}" "${DB_NAME}" -e "$*" || on_refusal
+  exit $?
 fi
-exec mysql -h "${DB_HOST}" -P "${DB_PORT}" -u "${DB_USER}" "${DB_NAME}"
+mysql -h "${DB_HOST}" -P "${DB_PORT}" -u "${DB_USER}" "${DB_NAME}" || on_refusal
+exit $?
